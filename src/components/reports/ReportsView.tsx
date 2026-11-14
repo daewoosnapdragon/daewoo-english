@@ -22,9 +22,8 @@ import { letterRows, assessmentsUpTo, noticings as buildNoticings, nextWithoutCo
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
-import PhrasesDrawer from '@/components/reports/PhrasesDrawer'
 import CommentBuilder from '@/components/reports/CommentBuilder'
-import { insertAt, goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
+import { goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 
 type LangKey = 'en' | 'ko'
@@ -430,13 +429,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const [classComments, setClassComments] = useState<Record<string, { text: string; skipped: boolean }>>({})
-  // The pronoun the bank fills in (set once per student, remembered on the roster) and the Phrases drawer.
+  // The pronoun the bank fills in (set once per student, remembered on the roster).
   const [pronoun, setPronoun] = useState<Pronoun | null>(null)
   // The name used in comments: confirmed on the roster (goes_by) or suggested from english_name until then.
   const [goesBy, setGoesBy] = useState<string | null>(null)
   const [calledDraft, setCalledDraft] = useState('')
   const [builderOpen, setBuilderOpen] = useState(false)
-  const [phrasesOpen, setPhrasesOpen] = useState<boolean>(() => { try { return localStorage.getItem('daewoo_phrases_open') === '1' } catch { return false } })
   const boxRef = useRef<HTMLTextAreaElement>(null)
   const [editingGrades, setEditingGrades] = useState(false)
   const [editGradeValues, setEditGradeValues] = useState<Record<string, string>>({})
@@ -753,7 +751,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     ;(students.find((x: any) => x.id === studentId) || {} as any).pronoun = p
     logActivity('edited', `Pronoun set · ${studentName} · ${p}`)
   }
-  const togglePhrases = () => { const next = !phrasesOpen; setPhrasesOpen(next); try { localStorage.setItem('daewoo_phrases_open', next ? '1' : '0') } catch {} }
   const calledName = goesByFrom(data?.student?.english_name, goesBy)
   const saveCalled = async () => {
     const next = calledDraft.trim()
@@ -770,15 +767,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     setComment(next); scheduleSave({ comment: next }); setBuilderOpen(false)
     setTimeout(() => { boxRef.current?.focus() }, 0)
   }
-  // A phrase lands at the cursor, then the box gets focus back with the cursor after it.
-  const insertPhrase = (sentence: string) => {
-    const el = boxRef.current
-    const at = el && document.activeElement === el ? el.selectionEnd : (el?.selectionEnd ?? comment.length) || comment.length
-    const r = insertAt(comment, at, sentence)
-    setComment(r.text); scheduleSave({ comment: r.text })
-    setTimeout(() => { if (boxRef.current) { boxRef.current.focus(); boxRef.current.setSelectionRange(r.cursor, r.cursor) } }, 0)
-  }
-
   // Auto-saves immediately so the chart toggle persists without a comment save
   const toggleHideComparison = async () => {
     const next = !hideComparison
@@ -1093,7 +1081,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="print:hidden flex items-center justify-between gap-4 flex-wrap mt-3">
                   <div className="flex items-center gap-4 flex-wrap">
                   <button type="button" onClick={() => setBuilderOpen(true)} className="text-[12px] font-semibold text-accent underline underline-offset-[3px] hover:text-accent-hover py-1">Build a comment</button>
-                  <button type="button" onClick={togglePhrases} aria-expanded={phrasesOpen} className="text-[12px] text-accent underline underline-offset-[3px] hover:text-accent-hover py-1">{phrasesOpen ? 'Hide phrases' : 'Phrases'}</button>
                   <span className={`text-[11.5px] ${saveState === 'error' ? 'text-warn' : 'text-[#64748b]'}`}>
                     {saveState === 'saving' ? 'Saving…'
                       : saveState === 'unsaved' ? 'Typing…'
@@ -1113,14 +1100,6 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="flex items-center gap-1.5 text-[10px] text-[#94a3b8] italic mt-2"><Lock size={11} /> Viewing {selectedClass}&apos;s report card — leave feedback in Review &amp; Approve.</div>
               )}
             </div>
-            {canEdit && phrasesOpen && (
-              <PhrasesDrawer className="print:hidden"
-                student={{ id: studentId, name: calledName, pronoun, grade: Number(d.semesterGrade || s.grade) || null }}
-                scores={Object.fromEntries(DOMAINS.map(dom => [dom, d.domainNa[dom] ? null : d.domainGrades[dom]]))}
-                wida={d.facts.wida?.level ?? null} doc="report_card"
-                classComments={Object.entries(classComments).filter(([id, c]) => id !== studentId && c.text).map(([, c]) => c.text)}
-                onInsert={insertPhrase} onClose={togglePhrases} />
-            )}
             {canEdit && builderOpen && (
               <CommentBuilder
                 student={{ id: studentId, name: calledName, pronoun, grade: Number(d.semesterGrade || s.grade) || null }}
