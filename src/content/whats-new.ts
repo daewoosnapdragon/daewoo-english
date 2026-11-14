@@ -26,6 +26,11 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     path: '/reports', guide: 'reports',
   },
   {
+    id: 'progress-snapshot', date: '2026-11-16', title: 'Reports: the progress report remembers what it printed',
+    body: 'Every time a progress report is printed, on its own or as a batch, the app keeps the grades it showed. The report card’s fact sheet then shows the change since the progress report as the real difference from what parents received, rather than a rebuild from the papers’ dates. The note under the letters says which it is.',
+    path: '/reports', guide: 'reports',
+  },
+  {
     id: 'student-pronoun', date: '2026-11-16', title: 'Students: a pronoun and a called-name per student',
     body: 'You can now set each student’s pronoun (he, she or they) once, above the report card comment box or on the student page, and it is remembered; the comment builder fills its sentences with it. Called, next to it, is the name used in comments: the app suggests the English name in brackets or the given name after the family name, and you keep it with Enter or type another once. The report card no longer has Skip comment. What parents already read on the fact sheet shows this semester’s progress report in full and every earlier comment, newest first, and the fact sheet lists every rubric-scored piece this semester with each criterion’s level; tap one to read what the rubric says for the level the student got.',
     path: '/reports', guide: 'reports',

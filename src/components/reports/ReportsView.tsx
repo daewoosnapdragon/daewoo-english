@@ -20,6 +20,7 @@ import { loadTeachers } from '@/lib/classTeacherData'
 import { commentChecks } from '@/lib/commentChecks'
 import { letterRows, assessmentsUpTo, midtermAsOf, MIDTERM_MIN_PAPERS, noticings as buildNoticings, nextWithoutComment, rubricPieces, type LetterRow, type RubricPiece } from '@/lib/factSheet'
 import { codesFromAssessments } from '@/lib/taughtSkills'
+import { snapshotRows, saveProgressSnapshot, loadProgressSnapshot, SNAPSHOT_DOMAINS, type SnapshotRow } from '@/lib/progressSnapshot'
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
 import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
@@ -639,6 +640,17 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     }
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const monthOf = (iso: string | null) => iso ? MONTHS[Number(iso.split('-')[1]) - 1] : ''
+    const dayOf = (iso: string | null) => iso ? `${Number(iso.split('-')[2])} ${monthOf(iso)}` : ''
+    // What the progress report actually printed wins over the rebuild above.
+    let midDate = midCutoff
+    let midNote: string | null = midterm ? `Since ${monthOf(midCutoff)} is rebuilt from papers dated up to ${dayOf(midCutoff)}; an area shows it only with ${MIDTERM_MIN_PAPERS} or more papers by then.` : null
+    const snap = await loadProgressSnapshot(studentId, semesterId)
+    if (snap && SNAPSHOT_DOMAINS.some(dom => snap.grades[dom] != null)) {
+      midterm = {}
+      DOMAINS.forEach(dom => { midterm![dom] = snap.grades[dom] ?? null })
+      midDate = snap.takenAt ? snap.takenAt.slice(0, 10) : midCutoff
+      midNote = `Since ${monthOf(midDate)} is what the progress report printed${midDate ? ` on ${dayOf(midDate)}` : ''}.`
+    }
     const factRows = letterRows(domainGrades, domainNa, midterm, prevDomainGrades)
     const readingSem = readingSemRes.data || []
     const rd = (r: any) => r ? { level: r.reading_level || r.passage_level || null, cwpm: r.cwpm ?? null, date: r.date || null } : null
@@ -697,8 +709,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       reviewerNote,
       reviewerNoteAck,
       reviewerNoteByName,
-      factRows, sinceMidLabel: midterm ? `Since ${monthOf(midCutoff)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
-      sinceMidNote: midterm ? `Since ${monthOf(midCutoff)} is rebuilt from papers dated up to ${Number(midCutoff!.split('-')[2])} ${monthOf(midCutoff)}; an area shows it only with ${MIDTERM_MIN_PAPERS} or more papers by then.` : null,
+      factRows, sinceMidLabel: midterm ? `Since ${monthOf(midDate)}` : null, sinceLastLabel: prevDomainGrades && prevSem ? `Since ${prevSem.name.split(' ')[0]}` : null,
+      sinceMidNote: midNote,
       facts, noticings, rubrics, quotes, assessedCodes,
     })
     setPronoun((student as any).pronoun || null)
@@ -1391,10 +1403,12 @@ function progressSheetsHtml(entries: ProgressEntry[], fullForAll: boolean): stri
 }
 
 // ─── Print one progress report ──────────────────────────────────
-function printProgressReport(s: any, d: any, comment: string) {
+function printProgressReport(s: any, d: any, comment: string, snapshot?: SnapshotRow[]) {
   const pw = window.open('', '_blank')
   if (!pw) return
   logActivity('printed', `Progress report · ${s.english_name}`)
+  // What this print showed, for the report card's "since October".
+  if (snapshot) saveProgressSnapshot(snapshot)
   const text = d.commentSkipped ? '' : comment
   const size = progressSizeFor(text, !!d.commentSkipped)
   const body = size === 'half'
@@ -1414,6 +1428,8 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
   // Progress reports keep every student's card in both sizes, so the preview
   // can switch between half pages where they fit and full pages for everyone.
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([])
+  // The grades each progress report in the preview shows; written when it is printed.
+  const [pendingSnapshot, setPendingSnapshot] = useState<SnapshotRow[]>([])
   const [progressHead, setProgressHead] = useState('')
   const [fullForAll, setFullForAll] = useState(initialFullForAll)
   const assembleProgress = (entries: ProgressEntry[], head: string, all: boolean) => head + progressSheetsHtml(entries, all) + reportCardShrinkScript(false, 15) + '</body></html>'
@@ -1578,6 +1594,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
       let body = ''
       const entries: ProgressEntry[] = []
 
+      const snapRows: SnapshotRow[] = []
       for (let i = 0; i < students.length; i++) {
         const student = students[i]
         const { data: myGrades } = await supabase.from('semester_grades').select('*')
@@ -1621,12 +1638,13 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
         } else {
           const text = baseData.commentSkipped ? '' : (commentData?.text || '')
           entries.push({ name: student.english_name, size: progressSizeFor(text, baseData.commentSkipped), full: progressCardHtml(student, baseData, text, 'full'), half: progressCardHtml(student, baseData, text, 'half') })
+          snapRows.push(...snapshotRows(student.id, semesterId, domainGrades, domainNa, currentTeacher?.id || null))
         }
         setProgress({ current: i + 1, total: students.length })
       }
 
       if (isCard) setPreviewHtml(head + body + reportCardShrinkScript(false) + '</body></html>')
-      else { setProgressEntries(entries); setProgressHead(head); setPreviewHtml(assembleProgress(entries, head, fullForAll)) }
+      else { setProgressEntries(entries); setProgressHead(head); setPendingSnapshot(snapRows); setPreviewHtml(assembleProgress(entries, head, fullForAll)) }
       }
     } catch (err: any) {
       showToast(`Failed to generate reports: ${err?.message || 'unknown error'}`)
@@ -1641,6 +1659,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
     logActivity('printed', `${scope === 'grade' ? progress.total : students.length} ${kind === 'report_card' ? 'report cards' : 'progress reports'} · ${scope === 'grade' ? `whole Grade ${grade}` : cls}`)
     iframe.contentWindow.focus()
     iframe.contentWindow.print()
+    if (kind === 'progress' && pendingSnapshot.length) saveProgressSnapshot(pendingSnapshot)
   }
 
   const handleClose = () => {
@@ -1884,7 +1903,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         <div className="flex items-center gap-2">
           {canEdit && !editingGrades && <button onClick={startEditGrades} className={tb}>{ko ? '성적 수정' : 'Edit grades'}</button>}
           <button onClick={() => setShowRefPanel(!showRefPanel)} className={`${tb} ${showRefPanel ? 'bg-ink text-paper border-ink hover:text-paper' : ''}`}><BarChart3 size={13} /> {ko ? '학생 참고 자료' : 'Student reference'}</button>
-          <button onClick={() => printProgressReport(s, printable, commentText)} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded bg-navy text-white text-[12.5px] font-medium hover:bg-navy-dark"><Printer size={13} /> {ko ? '인쇄' : 'Print'}</button>
+          <button onClick={() => printProgressReport(s, printable, commentText, snapshotRows(studentId, semesterId, d.domainGrades, d.domainNa, currentTeacher?.id || null))} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded bg-navy text-white text-[12.5px] font-medium hover:bg-navy-dark"><Printer size={13} /> {ko ? '인쇄' : 'Print'}</button>
         </div>
       </div>
 
