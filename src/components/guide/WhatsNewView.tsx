@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useWhatsNew } from './useWhatsNew'
 import { startTour } from '@/lib/tour'
+import { canManageWhatsNew } from '@/lib/activity'
 import { setOverride, type EffectiveEntry, type WhatsNewOverrides } from '@/lib/whatsNewOverrides'
 import { REPLAY_KEY } from './WhatsNewModal'
 import { CalendarClock, RotateCcw } from 'lucide-react'
@@ -16,7 +17,8 @@ import { CalendarClock, RotateCcw } from 'lucide-react'
 // Coming up box with each future batch. Manage shows every entry with a
 // switch and a date, so an entry can be turned off, moved to another day
 // or released now without a deploy; a changed entry says what the code
-// has, with Reset to put it back. Teachers see none of this.
+// has, with Reset to put it back. Only the Snapdragon account gets the
+// Coming up box and Manage; other admins see scheduled entries read-only.
 
 const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const fmtShort = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -28,10 +30,11 @@ export default function WhatsNewView() {
   const { entries, scheduled, unseen, loaded, today, markSeen, overrides, saveOverrides } = useWhatsNew()
   const router = useRouter()
   const isAdmin = currentTeacher?.role === 'admin'
+  const canManage = canManageWhatsNew(currentTeacher)
   const [manage, setManage] = useState(false)
 
   const shown = entries
-    .filter(e => isAdmin ? (manage || !e.off) : (!e.off && e.date <= today))
+    .filter(e => (isAdmin || canManage) ? (manage || !e.off) : (!e.off && e.date <= today))
     .sort((a, b) => b.date.localeCompare(a.date))
   const dates = Array.from(new Set(shown.map(e => e.date)))
   const unseenIds = new Set(unseen.map(e => e.id))
@@ -64,11 +67,11 @@ export default function WhatsNewView() {
           <Link href="/guide" className="text-ink-2 hover:text-ink">How to use this app →</Link>
           {unseen.length > 0 && <button onClick={markSeen} className="h-8 px-3 rounded border border-rule-2 text-ink-2 hover:text-ink">Mark all as read</button>}
           <button onClick={() => { try { sessionStorage.setItem(REPLAY_KEY, '1') } catch {}; router.push('/') }} title="Opens the dashboard with the popup other teachers see on their first visit after a release" className="h-8 px-3 rounded border border-rule-2 text-ink-2 hover:text-ink">See the popup again</button>
-          {isAdmin && <button onClick={() => setManage(m => !m)} aria-pressed={manage} className={`h-8 px-3 rounded border text-[13px] ${manage ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>Manage</button>}
+          {canManage && <button onClick={() => setManage(m => !m)} aria-pressed={manage} className={`h-8 px-3 rounded border text-[13px] ${manage ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>Manage</button>}
         </div>
       </div>
 
-      {isAdmin && loaded && (scheduled.length > 0 || manage) && (
+      {canManage && loaded && (scheduled.length > 0 || manage) && (
         <section className="mb-8 p-4 rounded border border-rule-2 bg-paper-2/60">
           <h2 className="eyebrow flex items-center gap-2 mb-2"><CalendarClock size={13} className="text-accent" />Coming up</h2>
           {batchDates.length === 0 && <p className="text-[13px] text-ink-2">Nothing is scheduled. Every entry that is on is already out.</p>}
@@ -105,7 +108,7 @@ export default function WhatsNewView() {
               <article key={e.id} className={`py-3 grid grid-cols-[14px_minmax(0,1fr)] gap-3 ${e.off ? 'opacity-60' : ''}`}>
                 <span className={`mt-2 w-2 h-2 rounded-full ${unseenIds.has(e.id) ? 'bg-accent' : 'bg-transparent'}`} />
                 <div>
-                  {manage && isAdmin && (
+                  {manage && canManage && (
                     <div className="flex items-center gap-3 flex-wrap mb-2 text-[12px]">
                       <button role="switch" aria-checked={!e.off} onClick={() => setOff(e, !e.off)} title={e.off ? 'Off: nobody sees it. Click to turn on.' : 'On. Click to turn off.'}
                         className={`relative w-9 h-5 rounded-full transition-colors ${e.off ? 'bg-rule-2' : 'bg-accent'}`}>
