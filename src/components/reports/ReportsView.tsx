@@ -24,7 +24,8 @@ import { loadClassNa, loadGradeClassNa, saveClassNa, carryOverCandidates, assess
 import { snapshotRows, saveProgressSnapshot, loadProgressSnapshot, SNAPSHOT_DOMAINS, type SnapshotRow } from '@/lib/progressSnapshot'
 import { plainName } from '@/components/curriculum/standards-plain'
 import { WIDA_LEVELS } from '@/lib/wida'
-import FactSheet, { type FactSheetFacts, type FactSheetQuote } from '@/components/reports/FactSheet'
+import FactSheet, { type FactSheetFacts } from '@/components/reports/FactSheet'
+import PriorComments, { type PriorComment } from '@/components/reports/PriorComments'
 import CommentBuilder from '@/components/reports/CommentBuilder'
 import { goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
@@ -162,7 +163,7 @@ interface ReportData {
   facts: FactSheetFacts
   noticings: string[]
   rubrics: RubricPiece[]
-  quotes: FactSheetQuote[]
+  quotes: PriorComment[]
   /** CCSS codes tagged on the class's assessments this semester, for the builder's taught-first ordering. */
   assessedCodes: string[]
 }
@@ -679,13 +680,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
       const { data: extra } = await supabase.from('semesters').select('id, name').in('id', unknownSemIds)
       ;(extra || []).forEach((x: any) => semNames.set(x.id, x.name))
     }
-    const quotes: FactSheetQuote[] = (pastCommentsRes.data || [])
+    const quotes: PriorComment[] = (pastCommentsRes.data || [])
       .filter((c: any) => c.text?.trim() && !c.is_skipped && !(c.semester_id === semesterId && c.report_type === 'report_card'))
       .sort((a: any, b: any) => ((semRank.get(b.semester_id) ?? -1) - (semRank.get(a.semester_id) ?? -1)) || ((a.report_type === 'report_card' ? 0 : 1) - (b.report_type === 'report_card' ? 0 : 1)))
-      .map((c: any) => {
-        const isCurrentProgress = c.semester_id === semesterId && c.report_type === 'progress_report'
-        return { text: c.text.trim(), label: `${REPORT_DOCUMENT_LABEL[c.report_type as ReportDocument]?.en || c.report_type}, ${semNames.get(c.semester_id) || 'earlier semester'}`, full: isCurrentProgress }
-      })
+      .map((c: any) => ({ text: c.text.trim(), label: `${REPORT_DOCUMENT_LABEL[c.report_type as ReportDocument]?.en || c.report_type} · ${semNames.get(c.semester_id) || 'earlier semester'}` }))
     const cmap: Record<string, { text: string; skipped: boolean }> = {}
     ;(classCommentsRes.data || []).forEach((c: any) => { cmap[c.student_id] = { text: (c.text || '').trim(), skipped: !!c.is_skipped } })
     setClassComments(cmap)
@@ -1053,7 +1051,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Fact sheet + comment (the editor; the fact sheet and controls are screen only) ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex flex-wrap items-start gap-x-10 gap-y-6">
-            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} sinceMidNote={d.sinceMidNote} facts={d.facts} noticings={d.noticings} rubrics={d.rubrics} quotes={d.quotes} />
+            <FactSheet className="print:hidden" rows={d.factRows} sinceMidLabel={d.sinceMidLabel} sinceLastLabel={d.sinceLastLabel} sinceMidNote={d.sinceMidNote} facts={d.facts} noticings={d.noticings} rubrics={d.rubrics} />
             <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
               <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>
@@ -1078,6 +1076,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   </div>
                 )}
               </div>
+              <PriorComments comments={d.quotes} className="print:hidden mb-4" />
               {canEdit && currentDoc === 'progress_report' && (
                 <div className="print:hidden mb-2.5 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11.5px] text-amber-900">
                   <span>This box is the end-of-semester report card comment. Mid-semester comments belong on the progress report.</span>

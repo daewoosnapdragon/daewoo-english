@@ -6,8 +6,10 @@ import type { LetterRow, RubricPiece } from '@/lib/factSheet'
 // ─── Fact sheet ──────────────────────────────────────────────────
 // The narrow column beside the report card comment box: what the app
 // already knows about the student, laid out to be read before writing and
-// glanced at after. Screen only, never printed. It lives inside the white
-// report card, so it uses the card's own greys rather than the page theme.
+// glanced at after. The comments parents already read sit above the editor
+// instead (PriorComments) so they get a full line length. Screen only, never
+// printed. It lives inside the white report card, so it uses the card's own
+// greys rather than the page theme.
 
 export interface FactSheetFacts {
   attendance: { absent: number; tardy: number; total: number } | null
@@ -16,8 +18,6 @@ export interface FactSheetFacts {
   wida: { level: number; name: string } | null
   behaviorCount: number
 }
-
-export interface FactSheetQuote { text: string; label: string; /** Shown in full from the start (this semester's progress report). */ full?: boolean }
 
 export interface FactSheetProps {
   rows: LetterRow[]
@@ -31,8 +31,6 @@ export interface FactSheetProps {
   noticings: string[]
   /** Every rubric-scored piece this semester, newest first. */
   rubrics: RubricPiece[]
-  /** Every comment parents have already read, newest first. */
-  quotes: FactSheetQuote[]
   className?: string
 }
 
@@ -44,18 +42,6 @@ function MonthDay({ iso }: { iso: string | null }) {
   const [, m, d] = iso.split('-').map(Number)
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   return <>{d} {MONTHS[(m || 1) - 1]}</>
-}
-
-function Quote({ q }: { q: FactSheetQuote }) {
-  const [open, setOpen] = useState(!!q.full)
-  const long = q.text.length > 220
-  return (
-    <figure className="m-0 pl-3 flex flex-col gap-1" style={{ borderLeft: '1px solid #C8CED8' }}>
-      <figcaption className="text-[10.5px]" style={{ color: MUTED }}>{q.label}</figcaption>
-      <blockquote className="m-0 font-display text-[13.5px] leading-[1.45] whitespace-pre-wrap" style={{ color: '#475569' }}>{open || !long ? q.text : `${q.text.slice(0, 220).trimEnd()}…`}</blockquote>
-      {long && <button type="button" onClick={() => setOpen(o => !o)} className="self-start text-[11px] underline underline-offset-2" style={{ color: MUTED }}>{open ? 'Show less' : 'Show all'}</button>}
-    </figure>
-  )
 }
 
 function RubricRow({ p }: { p: RubricPiece }) {
@@ -82,7 +68,7 @@ function RubricRow({ p }: { p: RubricPiece }) {
   )
 }
 
-export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMidNote, facts, noticings, rubrics, quotes, className = '' }: FactSheetProps) {
+export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMidNote, facts, noticings, rubrics, className = '' }: FactSheetProps) {
   const reading = (r: FactSheetFacts['readingNow']) => r ? [r.level, r.cwpm != null ? `${Math.round(r.cwpm)} wpm` : null].filter(Boolean).join(' · ') : ''
   return (
     <aside aria-label="Fact sheet" className={`flex-[0_1_300px] min-w-[250px] flex flex-col gap-5 text-[12.5px] leading-snug ${className}`} style={{ color: INK }}>
@@ -146,13 +132,6 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMi
           <ul className="m-0 p-0 list-none flex flex-col gap-2">
             {rubrics.map(p => <RubricRow key={p.assessmentId} p={p} />)}
           </ul>
-        </section>
-      )}
-
-      {quotes.length > 0 && (
-        <section className="flex flex-col gap-2.5">
-          <H>What parents already read</H>
-          {quotes.map((q, i) => <Quote key={i} q={q} />)}
         </section>
       )}
 
