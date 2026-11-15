@@ -31,6 +31,9 @@ export function canViewActivity(t: { role?: string; english_class?: string; is_h
   return !!t && t.english_class === 'Snapdragon'
 }
 
+/** Only the Snapdragon teacher's account sees what is coming on What's new and can hold, move or turn off an entry. */
+export const canManageWhatsNew = canViewActivity
+
 let actor: { id: string; name: string } | null = null
 /** Set by the app context whenever the signed-in teacher changes. */
 export function setActivityActor(t: { id: string; name: string } | null) { actor = t }
