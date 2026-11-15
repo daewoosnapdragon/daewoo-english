@@ -21,6 +21,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'report-card-prior-comments', date: '2026-11-16', title: 'Reports: what parents already read, above the box, and a tidier comment builder',
+    body: 'You can now read every comment a family has already received right above the report card comment box, at full width and one document at a time: a tab for each of the last three, this semester’s progress report first, and Earlier for the rest. It used to be squeezed into the fact sheet column. Build a comment is laid out as one card per part of the comment, in the order the comment reads, with a list on the left that counts what you have ticked in each part and jumps to it.',
+    path: '/reports', guide: 'report-cards',
+  },
+  {
     id: 'phonics-partly', date: '2026-11-16', title: 'Phonics: a partly-right mark, and Mastered is simply 90%',
     body: 'You can now tap a word a third time for partly right, in amber, when a student is nearly there: one sound off, or right only after a long struggle. It counts as half a word, so a sheet can read 17½/20, and the pencil works on a partly as on an error. Mastered is now 90% or more on the sheet, full stop: the “automatic” checkbox is still under the words as a teaching note but no longer changes the score, so the Mastered / Proficient+ switch on the comparison is gone and the bands are Beginning, Developing, Mastered. On Classes compared each cell now reads as a percentage with the number of students checked under it.',
     path: '/reading?tab=phonics', guide: 'reading',
