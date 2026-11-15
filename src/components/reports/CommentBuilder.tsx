@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { percentToLetter } from '@/lib/utils'
 import { tierForScore, suggestBand, gradeBand, usageCounts, BANDS, type Band, type Pronoun, type Tier } from '@/lib/phrases'
 import { loadPhraseBank, usablePhrases, AREA_LABEL, TIER_LABEL, type Phrase } from '@/lib/phraseBank'
@@ -23,12 +23,19 @@ import { X } from 'lucide-react'
 // grade and WIDA level suggest. Sentences are offered least-used-first
 // in this class, with the count shown. The preview at the bottom is the
 // draft; the teacher edits it in the box afterwards.
+//
+// Layout: each part of the comment is a white card on the grey modal, in
+// the order the comment reads (opener, areas, behavior, next steps, closer).
+// A sticky rail on the left names the cards, shows how many sentences each
+// has ticked, and jumps to one.
 
 const AREAS = ['reading', 'phonics', 'writing', 'speaking', 'language']
 const TIERS: Tier[] = ['strong', 'on track', 'needs support']
 // Behavior has a fourth tier for behavior that is genuinely bad; the builder opens on it when the behavior grade is D or below.
 const BEHAVIOR_TIERS: Tier[] = ['strong', 'on track', 'needs support', 'serious concern']
 const INK = '#1e293b', MUTED = '#64748b', RULE = '#DFE4EB'
+/** The one sentence grid every card uses, so the columns line up down the page. */
+const GRID = { gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }
 
 export interface CommentBuilderProps {
   student: { id: string; name: string; pronoun: Pronoun | null; grade: number | null }
@@ -64,16 +71,16 @@ function Check({ k, text, count, checked, toggle }: { k: string; text: string; c
 }
 function TierButtons({ area, tier, pick, tiers = TIERS }: { area: string; tier: Tier; pick: (area: string, t: Tier) => void; tiers?: Tier[] }) {
   return (
-    <span className="inline-flex gap-1">
-      {tiers.map(t => <button key={t} type="button" onClick={() => pick(area, t)} className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
+    <span className="inline-flex gap-0.5 rounded-md border p-0.5 bg-white" role="group" aria-label="Tier" style={{ borderColor: RULE }}>
+      {tiers.map(t => <button key={t} type="button" onClick={() => pick(area, t)} aria-pressed={tier === t} className={`px-2 py-0.5 rounded-[4px] text-[10.5px] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
     </span>
   )
 }
-function Section({ title, aside, children }: { title: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode }) {
+function Section({ id, title, aside, children }: { id: string; title: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="m-0 flex items-baseline justify-between gap-3 flex-wrap text-[13px] font-semibold" style={{ color: INK }}><span>{title}</span>{aside}</h3>
-      {children}
+    <section id={`cb-${id}`} data-jump={id} className="rounded-xl bg-white border scroll-mt-3 flex flex-col" style={{ borderColor: RULE }}>
+      <h3 className="m-0 flex items-center justify-between gap-3 flex-wrap px-4 py-2.5 text-[13px] font-semibold" style={{ color: INK, borderBottom: `1px solid ${RULE}` }}><span>{title}</span>{aside}</h3>
+      <div className="px-4 py-3 flex flex-col gap-2.5">{children}</div>
     </section>
   )
 }
@@ -95,6 +102,20 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   // American by default (the bank is written that way); British converts each sentence as it fills.
   const [spelling, setSpelling] = useState<Spelling>(() => readSpelling())
   const pickSpelling = (s: Spelling) => { setSpelling(s); saveSpelling(s) }
+  // The scrolling body and which card is at the top of it, for the rail.
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const [active, setActive] = useState('opener')
+  const onBodyScroll = () => {
+    const body = bodyRef.current
+    if (!body) return
+    let cur = 'opener'
+    const cards = Array.from(body.querySelectorAll<HTMLElement>('section[data-jump]'))
+    cards.forEach(el => { if (el.offsetTop <= body.scrollTop + 80) cur = el.dataset.jump || cur })
+    // At the very bottom the last card counts even when it is too short to reach the top.
+    if (body.scrollTop + body.clientHeight >= body.scrollHeight - 4 && cards.length) cur = cards[cards.length - 1].dataset.jump || cur
+    setActive(cur)
+  }
+  const jumpTo = (id: string) => { setActive(id); document.getElementById(`cb-${id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }) }
 
   useEffect(() => { let on = true; loadPhraseBank().then(r => { if (!on) return; setRows(r.rows); setError(r.error); setLoading(false) }); return () => { on = false } }, [])
   useEffect(() => { let on = true; loadTaughtSources(classKey.cls, classKey.grade, classKey.semester).then(s => { if (!on) return; setSources(s); setPicks(s.picks) }); return () => { on = false } }, [classKey.cls, classKey.grade, classKey.semester])
@@ -152,6 +173,14 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   const words = wordCount(draft)
   const steps = nextStepCount(draft)
   const ticked = Object.values(checked).filter(Boolean).length
+  /** The rail: one entry per card, in reading order, with how much of each is ticked. */
+  const jumps: { id: string; label: string; count: number }[] = [
+    { id: 'opener', label: 'Opener', count: selection.opener ? 1 : 0 },
+    ...order.map(a => ({ id: a, label: AREA_LABEL[a], count: selection.areas.find(x => x.area === a)?.sentences.length || 0 })),
+    { id: 'behavior', label: 'Behavior', count: selection.behavior.length },
+    { id: 'steps', label: 'Next steps', count: selection.nextSteps.length + selection.home.length },
+    { id: 'closer', label: 'Closer', count: selection.closer ? 1 : 0 },
+  ]
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(27,24,18,0.45)' }} onClick={onClose}>
@@ -175,12 +204,24 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5 text-[12.5px]">
+        <div ref={bodyRef} onScroll={onBodyScroll} className="relative flex-1 overflow-y-auto px-5 py-4 flex items-start gap-5 text-[12.5px]">
+          {!loading && !error && (
+            <nav aria-label="Parts of the comment" className="hidden md:flex w-[150px] shrink-0 sticky top-0 flex-col gap-0.5 text-[11.5px]">
+              {jumps.map(j => (
+                <button key={j.id} type="button" onClick={() => jumpTo(j.id)} aria-current={active === j.id ? 'true' : undefined}
+                  className={`flex items-center justify-between gap-2 px-2 py-1 rounded-md text-left ${active === j.id ? 'bg-white font-semibold shadow-sm' : 'hover:bg-white/70'}`} style={{ color: active === j.id ? INK : MUTED }}>
+                  <span className="truncate">{j.label}</span>
+                  {j.count > 0 && <span className="shrink-0 min-w-[18px] text-center rounded-full px-1 text-[10px] tabular-nums bg-ink text-paper">{j.count}</span>}
+                </button>
+              ))}
+            </nav>
+          )}
+          <div className="flex-1 min-w-0 flex flex-col gap-4">
           {loading && <p className="m-0" style={{ color: MUTED }}>Loading the bank…</p>}
           {error && <p className="m-0 text-warn">{error}</p>}
           {!loading && !error && (<>
-            <Section title="Opener">
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+            <Section id="opener" title="Opener">
+              <div className="grid gap-1.5" style={GRID}>
                 {openers.map(p => (
                   <label key={p.id} className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: opener === p.id ? INK : RULE }}>
                     <input type="radio" name="opener" checked={opener === p.id} onChange={() => setOpener(p.id)} className="mt-[3px]" />
@@ -201,9 +242,9 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               const on = families.filter(f => taught.families.has(f))
               const off = families.filter(f => !taught.families.has(f))
               return (
-                <Section key={a} title={<>{AREA_LABEL[a]}{scores[a] != null && <span className="font-display font-medium"> {percentToLetter(scores[a] as number)}</span>}{scores[a] == null && <span className="font-normal" style={{ color: MUTED }}> · not graded</span>}</>} aside={<TierButtons area={a} tier={tierOf(a)} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
-                    <span style={{ color: MUTED }}>Taught:</span>
+                <Section key={a} id={a} title={<>{AREA_LABEL[a]}{scores[a] != null && <span className="font-display font-medium"> {percentToLetter(scores[a] as number)}</span>}{scores[a] == null && <span className="font-normal" style={{ color: MUTED }}> · not graded</span>}</>} aside={<TierButtons area={a} tier={tierOf(a)} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] rounded-md px-2.5 py-1.5" style={{ background: '#f8f9fb' }}>
+                    <span className="font-medium" style={{ color: MUTED }}>Taught this semester</span>
                     {on.map(f => (
                       <button key={f} type="button" onClick={() => tickSkill(f)} title={`${f} · ${taught.source[f] === 'plans' ? 'from the lesson plans' : taught.source[f] === 'assessed' ? 'assessed this semester' : taught.source[f] === 'standards' ? 'from the Standards page' : 'you ticked it'} · click to untick`}
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ink text-paper">{SKILLS[f]?.name || f}<span className="opacity-70">×</span></button>
@@ -216,7 +257,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                       </select>
                     )}
                   </div>
-                  <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                  <div className="grid gap-1.5" style={GRID}>
                     {visible.map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(textOf(p))} count={counts[p.id]} />)}
                     {all.length === 0 && <p className="m-0" style={{ color: MUTED }}>Nothing in the bank for this yet.</p>}
                   </div>
@@ -229,7 +270,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               )
             })}
 
-            <Section title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" tiers={BEHAVIOR_TIERS} tier={tierOf('behavior')} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
+            <Section id="behavior" title={<>Behavior{behaviorGrade && <span className="font-display font-medium"> {behaviorGrade}</span>}</>} aside={<TierButtons area="behavior" tiers={BEHAVIOR_TIERS} tier={tierOf('behavior')} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
               {(() => {
                 const tier = tierOf('behavior')
                 // The positive change-over-time lines belong to every tier but serious concern, which has its own.
@@ -240,7 +281,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                     {cats.map(cat => (
                       <div key={cat}>
                         <div className="text-[10.5px] font-medium mb-1" style={{ color: MUTED }}>{cat}</div>
-                        <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+                        <div className="grid gap-1.5" style={GRID}>
                           {list.filter(p => (p.category || 'Other') === cat).map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(textOf(p))} count={counts[p.id]} />)}
                         </div>
                       </div>
@@ -250,11 +291,11 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               })()}
             </Section>
 
-            <Section title={<>Next steps · <select value={ladderArea} onChange={e => setStepArea(e.target.value)} className="font-semibold bg-transparent border-0 underline underline-offset-2 cursor-pointer" aria-label="Area for next steps">{AREAS.map(a => <option key={a} value={a}>{AREA_LABEL[a]}</option>)}</select></>}
-              aside={<span className="inline-flex gap-1">{BANDS.map(b => <button key={b} type="button" onClick={() => setBandPick(b)} className={`px-1.5 py-0.5 rounded text-[10.5px] font-medium ${band === b ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={band === b ? undefined : { color: MUTED }}>{b}</button>)}</span>}>
-              <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
+            <Section id="steps" title={<>Next steps · <select value={ladderArea} onChange={e => setStepArea(e.target.value)} className="font-semibold bg-transparent border-0 underline underline-offset-2 cursor-pointer" aria-label="Area for next steps">{AREAS.map(a => <option key={a} value={a}>{AREA_LABEL[a]}</option>)}</select></>}
+              aside={<span className="inline-flex gap-0.5 rounded-md border p-0.5 bg-white" role="group" aria-label="Band" style={{ borderColor: RULE }}>{BANDS.map(b => <button key={b} type="button" onClick={() => setBandPick(b)} aria-pressed={band === b} className={`px-2 py-0.5 rounded-[4px] text-[10.5px] font-medium ${band === b ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={band === b ? undefined : { color: MUTED }}>{b}</button>)}</span>}>
+              <div className="grid gap-2" style={GRID}>
                 {ladder.map(p => (
-                  <div key={p.id} className="flex flex-col gap-1.5 rounded-md border px-2.5 py-2 bg-white" style={{ borderColor: RULE }}>
+                  <div key={p.id} className="flex flex-col gap-1.5 rounded-md border px-2.5 py-2" style={{ borderColor: RULE, background: '#f8f9fb' }}>
                     <span className="text-[10.5px] font-semibold" style={{ color: MUTED }}>{p.rung}</span>
                     <Check checked={checked} toggle={toggle} k={`${p.id}:c`} text={fill(p.text)} />
                     {p.home1 && <Check checked={checked} toggle={toggle} k={`${p.id}:1`} text={fill(homeSentence(p.home1))} />}
@@ -266,8 +307,8 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               {!bandPick && <p className="m-0 text-[10.5px]" style={{ color: MUTED }}>Band suggested from grade{wida ? ' and WIDA level' : ''}; tap another to change it.</p>}
             </Section>
 
-            <Section title="Closer">
-              <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))' }}>
+            <Section id="closer" title="Closer">
+              <div className="grid gap-1.5" style={GRID}>
                 {closers.map(p => (
                   <label key={p.id} className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: closer === p.id ? INK : RULE }}>
                     <input type="radio" name="closer" checked={closer === p.id} onChange={() => setCloser(p.id)} className="mt-[3px]" />
@@ -279,6 +320,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               </div>
             </Section>
           </>)}
+          </div>
         </div>
 
         <div className="px-5 py-3 bg-white flex flex-col gap-2.5" style={{ borderTop: `1px solid ${RULE}` }}>
