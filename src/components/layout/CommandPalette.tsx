@@ -8,7 +8,7 @@ import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES } from '@/lib/routes'
 import { getDisplayName } from '@/lib/utils'
 import { Search, User, ArrowRight, Moon, Sun, Globe, Megaphone, Plus, ClipboardCheck, CalendarDays, FileText, BookOpen, Sparkles } from 'lucide-react'
 import { GUIDE_SECTIONS, ADMIN_SECTIONS } from '@/content/guide'
-import { releasedEntries } from '@/content/whats-new'
+import { useWhatsNew } from '@/components/guide/useWhatsNew'
 
 // ─── Command palette ─────────────────────────────────────────────
 // ⌘K from anywhere. Type a student's name to jump to them (⌘↩ opens their
@@ -28,6 +28,7 @@ const CLASS_DOT: Record<string, string> = {
 
 export default function CommandPalette() {
   const { currentTeacher, language, setLanguage, theme, setTheme } = useApp()
+  const { released } = useWhatsNew()
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
@@ -95,11 +96,11 @@ export default function CommandPalette() {
         { key: `g-${sec.id}`, kind: 'help' as const, label: `Guide · ${sec.title}`, hint: sec.purpose, icon: BookOpen, run: () => go(`/guide#${sec.id}`) },
         ...sec.tasks.map(t => ({ key: `g-${sec.id}-${t.title}`, kind: 'help' as const, label: t.title, hint: `Guide · ${sec.title}`, icon: BookOpen, run: () => go(`/guide#${sec.id}`) })),
       ]),
-      ...releasedEntries().map(e => ({ key: `n-${e.id}`, kind: 'help' as const, label: e.title, hint: 'What’s new', icon: Sparkles, run: () => go('/whats-new') })),
+      ...released.map(e => ({ key: `n-${e.id}`, kind: 'help' as const, label: e.title, hint: 'What’s new', icon: Sparkles, run: () => go('/whats-new') })),
     ]
     out.push(...actions.filter(a => matches(`${a.label} ${a.hint || ''}`)), ...studentHits, ...pages.filter(p => matches(p.label)), ...help.filter(h => matches(`${h.label} ${h.hint || ''}`)).slice(0, 6))
     return out
-  }, [q, students, currentTeacher, lang, theme, pathname])
+  }, [q, students, currentTeacher, lang, theme, pathname, released])
 
   useEffect(() => { setHi(0) }, [q])
   if (!open) return null

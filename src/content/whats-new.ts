@@ -4,8 +4,11 @@ import type { Tour } from '@/lib/tour'
 // One entry per change teachers can see. Entries are released in batches:
 // an entry with a date after today is held (admins see it marked
 // "scheduled" on the What's new page), so set the date to the Monday you
-// want the batch to appear. Written in "You can now…" voice. Each entry
-// names the guide section that explains it and, where it helps, a tour.
+// want the batch to appear. Admin can move a date or turn an entry off
+// from the What's new page without a deploy (src/lib/whatsNewOverrides.ts);
+// read entries through useWhatsNew, not this list, so those apply.
+// Written in "You can now…" voice. Each entry names the guide section
+// that explains it and, where it helps, a tour.
 
 export interface WhatsNewEntry {
   id: string
@@ -258,5 +261,3 @@ export const WHATS_NEW: WhatsNewEntry[] = [
 ]
 
 export const todayISO = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10) // KST
-export const releasedEntries = () => { const t = todayISO(); return WHATS_NEW.filter(e => e.date <= t).sort((a, b) => b.date.localeCompare(a.date)) }
-export const latestReleaseDate = () => releasedEntries()[0]?.date || ''
