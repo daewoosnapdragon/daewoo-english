@@ -498,12 +498,15 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     watchOut: ['A sign-in is recorded when a teacher picks their name and signs in, not when a page is reloaded in a tab that was already signed in.', 'Admin runs supabase/migration-activity-log.sql once; until then the page says so and nothing is recorded.'],
   },
   {
-    id: 'admin-release', title: 'What’s new and this guide', updated: '2026-09-25',
-    purpose: 'How changes reach teachers.',
-    screen: ['Entries live in the code with a release date. An entry dated in the future is held; admins see it marked scheduled on the What’s new page.', 'Each teacher’s “Got it” is remembered, so the card only shows what they have not seen.', 'Every guide section shows when its text last changed; the Guide page lists the stalest first in the rail.'],
-    tasks: [{ title: 'Release a batch', steps: ['Ask for the entries to be dated the Monday you want.', 'Read them on the What’s new page before that day.'] }],
-    rules: ['No feature ships without its guide section updated in the same change.'],
-    watchOut: [],
+    id: 'admin-release', title: 'What’s new and this guide', updated: '2026-11-15',
+    purpose: 'How changes reach teachers, and how admin holds, moves or drops an announcement.',
+    screen: ['Entries live in the code with a release date. An entry dated in the future is held; admins see it marked scheduled on the What’s new page, and a Coming up box at the top lists each future batch with its entries.', 'Manage, top right of What’s new, shows a switch and a date on every entry: turn one off so nobody sees it, move it to another day, or Release today. A changed entry says what the code has, with Reset to put it back. Changes save at once and apply to everyone: the page, the popup, the dot under your name and ⌘K.', 'Each teacher’s “Got it” is remembered, so the card only shows what they have not seen.', 'Every guide section shows when its text last changed; the Guide page lists the stalest first in the rail.'],
+    tasks: [
+      { title: 'Release a batch', steps: ['Ask for the entries to be dated the Monday you want.', 'Read them on the What’s new page before that day; Coming up lists them.', 'To go early, click Release today on the batch; to wait, change its Move to date.'] },
+      { title: 'Hold back one entry', steps: ['Click Manage.', 'Turn the entry off, or give it a later date.', 'Reset puts it back on the date in the code.'] },
+    ],
+    rules: ['No feature ships without its guide section updated in the same change.', 'Turning an entry off hides it; the feature itself is unchanged.'],
+    watchOut: ['Moving a batch earlier than a teacher’s last “Got it” means that teacher gets no popup for it; it is still on the page.'],
   },
 ]
 
