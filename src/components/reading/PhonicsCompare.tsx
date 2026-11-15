@@ -30,9 +30,9 @@ import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, 
 // every class here, for leveling: where whole classes sit on the packet's
 // twenty sheets, and which students sit where against their class.
 //
-// Classes compared: a row per class, each sheet the share of
-// its tested students meeting the bar, the class's edge (first sheet under
-// 70%) outlined. Students: the heat map for every student in scope, grouped
+// Classes compared: a row per class, each sheet how many of its tested
+// students meet the bar (5/8), coloured by the share, the class's edge (first
+// sheet under 70%) outlined. Students: the heat map for every student in scope, grouped
 // by class or ranked by mastery position, the furthest sheet meeting the
 // bar. Cells tested by fewer than three students are greyed: too thin to
 // compare on. Those two are the first tab. Leveling: a strip per grade with
@@ -236,8 +236,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       {/* ─── Classes compared ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
       <p className="text-[11.5px] text-ink-3 mb-2">{lang === 'ko'
-        ? `각 칸: 그 시트를 점검한 학생 중 완성한 비율과, 점검한 학생 수. 테두리 칸은 그 반의 경계: ${EDGE_PCT}% 미만인 첫 시트입니다.`
-        : `Each cell: the share of the students checked on that sheet who have mastered it, and how many were checked. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}%.`}</p>
+        ? `각 칸: 그 시트를 점검한 학생 중 완성한(최근 점검 90% 이상) 학생 수. 5/8은 점검한 8명 중 5명. 색은 비율을 따릅니다. 테두리 칸은 그 반의 경계: 완성 ${EDGE_PCT}% 미만인 첫 시트입니다.`
+        : `Each cell: how many of the students checked on that sheet have mastered it (90% or more on their latest check), so 5/8 is five of the eight checked. Colour follows the share. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}% mastered.`}</p>
       <div className="border border-rule-2 rounded-md overflow-x-auto mb-8">
         <table className="w-full min-w-[980px] table-fixed text-[12px] tabular-nums border-collapse">
           <colgroup>
@@ -263,9 +263,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                   const edge = r.stats.edge === sk.id
                   return (
                     <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
-                      <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of the ${st.tested} checked have mastered it (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${st.thin && st.tested ? ' · too few to compare on' : ''}${edge ? ' · the class’s edge' : ''}`}
+                      <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of the ${st.tested} checked have mastered it, 90% or more on their latest check (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${st.thin && st.tested ? ' · too few to compare on' : ''}${edge ? ' · the class’s edge' : ''}`}
                         className={`w-full h-8 rounded-sm font-semibold flex flex-col items-center justify-center leading-none ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
-                        {st.pct == null ? <span className="text-[10.5px]">·</span> : <><span className="text-[11px]">{st.pct}%</span><span className="text-[8.5px] font-normal opacity-75 mt-[2px] whitespace-nowrap">{st.tested} {lang === 'ko' ? '명' : 'checked'}</span></>}
+                        {st.pct == null ? <span className="text-[10.5px]">·</span> : <><span className="text-[11px]">{st.meeting}/{st.tested}</span><span className="text-[8.5px] font-normal opacity-75 mt-[2px] whitespace-nowrap">{lang === 'ko' ? '완성' : 'mastered'}</span></>}
                       </div>
                     </td>
                   )
