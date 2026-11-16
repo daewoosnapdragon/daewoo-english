@@ -464,17 +464,18 @@ svg.class-flower.is-drawing circle { opacity: 0; animation: pen-dot 200ms var(--
   background: color-mix(in srgb, var(--c) 20%, rgb(var(--white))); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
 .flower-avatar svg.class-flower { --fc: color-mix(in srgb, var(--c) 90%, rgb(var(--ink))); }
 
-/* ─── Loading: ruled lines with a soft light passing across ─── */
-.ruled-wait { position: relative; opacity: 0; transition: opacity 200ms ease; }
-.ruled-wait.is-shown { opacity: 1; }
-.ruled-wait::before { content: ""; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px; background: rgb(var(--accent) / .35); }
-.ruled-wait-line { height: 34px; border-bottom: 1px solid rgb(var(--rule)); }
-.ruled-wait::after { content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(100deg, transparent 30%, rgb(var(--white) / .75) 50%, transparent 70%); background-size: 250% 100%; animation: ruled-sheen 1.6s ease-in-out infinite; }
-/* Quiet: keep the space; a grey word only if it takes longer than a second. */
-.quiet-wait { display: flex; align-items: center; justify-content: center; }
-.quiet-wait-text { font-family: var(--font-serif-stack); font-style: italic; font-size: calc(14px * var(--ts)); color: rgb(var(--ink-3)); opacity: 0; transition: opacity 300ms ease; }
-.quiet-wait-text.is-shown { opacity: 1; }
+/* ─── Loading: three ink dots rising in turn ─── */
+.ink-wait { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; opacity: 0; transition: opacity 200ms ease; }
+.ink-wait.is-shown { opacity: 1; }
+.ink-dots { display: inline-flex; gap: 8px; }
+.ink-dots i { width: 7px; height: 7px; border-radius: 9999px; background: rgb(var(--ink-2)); animation: ink-dot 1.2s ease-in-out infinite; }
+.ink-dots i:nth-child(2) { animation-delay: .15s; }
+.ink-dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes ink-dot { 0%, 80%, 100% { opacity: .2; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+.ink-wait-text { font-family: var(--font-serif-stack); font-style: italic; font-size: calc(14px * var(--ts)); color: rgb(var(--ink-3)); opacity: 0; transition: opacity 300ms ease; }
+.ink-wait.is-late .ink-wait-text { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .ink-dots i { opacity: .6; } }
+
 /* A page that keeps its content on screen while the next lot loads. */
 .is-refreshing > *:not(:first-child) { opacity: .5; pointer-events: none; transition: opacity 200ms ease 150ms; }
 @keyframes ruled-sheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }

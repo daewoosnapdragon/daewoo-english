@@ -4,30 +4,25 @@ import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
 
 // ─── Loading ─────────────────────────────────────────────────────
-// Two kinds, chosen by what is about to appear:
-//   lines  — for lists and tables: ruled lines in the shape of the rows to
-//            come, with a soft light passing across. Nothing for 250 ms.
-//   quiet  — for everything else (calendars, report cards, charts, forms):
-//            the space is kept and nothing shows; only a load that takes
-//            longer than a second gets a small grey “Loading…”.
-// Neither animates toward a finish, so a quick load never looks cut off.
+// Three small ink dots rising in turn, in the middle of the space the
+// content will take. They loop rather than finish, so a quick load never
+// looks cut off. Nothing shows for the first 250 ms; a load longer than a
+// second adds a small grey “Loading…”. `kind` is kept for older call
+// sites: quiet places simply wait a little longer before the dots appear.
 
 export default function Loading({ rows = 5, kind = 'lines', label, className = '' }: { rows?: number; kind?: 'lines' | 'quiet'; label?: string; className?: string }) {
   const { language } = useApp()
-  const [shown, setShown] = useState(false)
-  useEffect(() => { const t = setTimeout(() => setShown(true), kind === 'quiet' ? 1000 : 250); return () => clearTimeout(t) }, [kind])
+  const [stage, setStage] = useState<0 | 1 | 2>(0)
+  useEffect(() => {
+    const a = setTimeout(() => setStage(s => Math.max(s, 1) as 1 | 2), kind === 'quiet' ? 400 : 250)
+    const b = setTimeout(() => setStage(2), 1000)
+    return () => { clearTimeout(a); clearTimeout(b) }
+  }, [kind])
   const text = label || (language === 'ko' ? '불러오는 중' : 'Loading')
-  if (kind === 'quiet') {
-    return (
-      <div role="status" aria-live="polite" className={`quiet-wait ${className}`} style={{ minHeight: rows * 34 }}>
-        <span className={`quiet-wait-text${shown ? ' is-shown' : ''}`}>{text}…</span>
-      </div>
-    )
-  }
   return (
-    <div role="status" aria-live="polite" className={`ruled-wait${shown ? ' is-shown' : ''} ${className}`}>
-      {Array.from({ length: rows }, (_, i) => <div key={i} className="ruled-wait-line" />)}
-      <span className="sr-only">{text}</span>
+    <div role="status" aria-live="polite" className={`ink-wait${stage > 0 ? ' is-shown' : ''}${stage > 1 ? ' is-late' : ''} ${className}`} style={{ minHeight: Math.min(rows * 34, 200) }}>
+      <span className="ink-dots" aria-hidden="true"><i /><i /><i /></span>
+      <span className="ink-wait-text">{text}…</span>
     </div>
   )
 }
