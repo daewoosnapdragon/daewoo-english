@@ -15,6 +15,7 @@ import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 import { FlowerAvatar, flowerForClass } from '@/components/brand/ClassFlower'
 import DrawnCheck from '@/components/brand/DrawnCheck'
 import { termProgress, termMonths, daysUntil } from '@/lib/term'
+import { TEXT_SIZES, type TextSize, currentTextSize, setTextSize, onDisplayChange } from '@/lib/display'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centered beneath it, a thin context bar under
@@ -126,16 +127,9 @@ function UserMenu() {
   const router = useRouter()
   const { unseen } = useWhatsNew()
   // Text size: Standard, Larger, Largest. Every font size follows it (globals.css --ts).
-  const SIZES = ['standard', 'larger', 'largest'] as const
-  const [textSize, setTextSize] = useState<typeof SIZES[number]>('standard')
-  useEffect(() => { const t = document.documentElement.dataset.text; if (t === 'larger' || t === 'largest') setTextSize(t) }, [])
-  const nextTextSize = () => {
-    const next = SIZES[(SIZES.indexOf(textSize) + 1) % SIZES.length]
-    setTextSize(next)
-    if (next === 'standard') delete document.documentElement.dataset.text; else document.documentElement.dataset.text = next
-    try { localStorage.setItem('daewoo_text', next) } catch {}
-    window.dispatchEvent(new Event('resize'))
-  }
+  const [textSize, setSize] = useState<TextSize>('standard')
+  useEffect(() => { setSize(currentTextSize()); return onDisplayChange(() => setSize(currentTextSize())) }, [])
+  const nextTextSize = () => setTextSize(TEXT_SIZES[(TEXT_SIZES.indexOf(textSize) + 1) % TEXT_SIZES.length])
   const sizeLabel = language === 'ko' ? { standard: '보통', larger: '크게', largest: '아주 크게' }[textSize] : { standard: 'Standard', larger: 'Larger', largest: 'Largest' }[textSize]
   if (!currentTeacher) return null
   const signOut = () => { logActivity('logout'); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }

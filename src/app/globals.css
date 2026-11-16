@@ -35,6 +35,9 @@
   --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
   --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
   --wet: 107 58 51;          /* fresh ink: unsaved words */
+  /* The two faces in use. Classic by default; html[data-font] swaps both. */
+  --font-serif: var(--font-classic-serif);
+  --font-sans: var(--font-classic-sans);
   --font-serif-stack: var(--font-serif), 'Iowan Old Style', Georgia, var(--font-kr), serif;
   --font-sans-stack: var(--font-sans), var(--font-kr), system-ui, -apple-system, sans-serif;
   /* Kept for older components that read the old variables. */
@@ -536,3 +539,11 @@ html.dark .stamp { mix-blend-mode: screen; }
 
 html[data-text="larger"] { --ts: 1.18; }
 html[data-text="largest"] { --ts: 1.3; }
+
+/* Typeface, chosen in Settings → Display. Each one replaces both the heading
+   serif and the body sans, so the whole app reads in a single face. The
+   attribute selector outranks the :root defaults above. */
+html[data-font="clean"] { --font-serif: var(--font-clean); --font-sans: var(--font-clean); }
+html[data-font="readable"] { --font-serif: var(--font-readable); --font-sans: var(--font-readable); }
+html[data-font="system"] { --font-serif: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; }
+html[data-font] h1, html[data-font] h2, html[data-font] .font-display { letter-spacing: -0.005em; }

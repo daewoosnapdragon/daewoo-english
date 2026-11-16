@@ -11,9 +11,10 @@ import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
 import { DEFAULT_LADDER, loadLadderSettings, saveLadderSettings, type LadderSettings } from '@/lib/behaviorLadder'
 import OfficeJobsSection from './OfficeJobsSection'
 import OvertimeSection from './OvertimeSection'
+import { FONTS, TEXT_SIZES, type FontChoice, type TextSize, currentFont, currentTextSize, setFont, setTextSize, onDisplayChange } from '@/lib/display'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
-import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore, X } from 'lucide-react'
+import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore, X, Type, Check } from 'lucide-react'
 
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
@@ -21,6 +22,7 @@ export default function SettingsView() {
   const isRoleAdmin = currentTeacher?.role === 'admin'
 
   const sections: [string, string][] = [
+    ['display', language === 'ko' ? '화면 글꼴' : 'Display'],
     ['teachers', language === 'ko' ? '교사' : 'Teachers'], ['semesters', language === 'ko' ? '학기' : 'Semesters'], ['schedule', language === 'ko' ? '수업 없는 요일' : 'Days with no class'], ['office', language === 'ko' ? '사무실 청소' : 'Office jobs'],
     ['benchmarks', language === 'ko' ? '프로그램 기준' : 'Program benchmarks'], ['weights', language === 'ko' ? '평가 가중치' : 'Assessment weights'],
     ['ladder', language === 'ko' ? '행동 단계' : 'Behavior ladder'],
@@ -38,6 +40,7 @@ export default function SettingsView() {
           {sections.map(([id, l]) => <a key={id} href={`#set-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`set-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className="px-2 py-1 rounded text-ink-2 hover:text-ink hover:bg-paper-2">{l}</a>)}
         </nav>
         <div className="min-w-0 max-w-4xl">
+          <DisplaySection />
           <TeacherSection />
           <SemesterSection />
           <ScheduleRulesSection />
@@ -48,6 +51,74 @@ export default function SettingsView() {
           {isRoleAdmin && <OvertimeSection />}
           {isAdmin && <ClassManagementSection />}
           <SchoolInfoSection />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Display: typeface and text size ─────────────────────────────
+// Saved in this browser only, so each teacher picks what is easiest for them
+// to read without changing it for anyone else.
+const FONT_INFO: Record<FontChoice, { en: string; ko: string; noteEn: string; noteKo: string; family: string }> = {
+  classic: { en: 'Classic', ko: '기본', noteEn: 'Serif headings with a sans body. The original look.', noteKo: '제목은 명조, 본문은 고딕. 원래 모양입니다.', family: 'var(--font-classic-sans), var(--font-kr), sans-serif' },
+  clean: { en: 'Clean', ko: '깔끔하게', noteEn: 'Inter everywhere. Plain, even, familiar.', noteKo: '모든 글자를 Inter로. 단정하고 익숙합니다.', family: 'var(--font-clean), var(--font-kr), sans-serif' },
+  readable: { en: 'Easy to read', ko: '읽기 쉽게', noteEn: 'Atkinson Hyperlegible, made so letters like I, l and 1 never look alike.', noteKo: 'Atkinson Hyperlegible. I, l, 1처럼 비슷한 글자를 쉽게 구별합니다.', family: 'var(--font-readable), var(--font-kr), sans-serif' },
+  system: { en: 'This device', ko: '기기 기본', noteEn: 'The font your computer already uses for everything else.', noteKo: '컴퓨터에서 평소 쓰는 글꼴입니다.', family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, var(--font-kr), sans-serif" },
+}
+
+function DisplaySection() {
+  const { language } = useApp()
+  const ko = language === 'ko'
+  const [font, setFontState] = useState<FontChoice>('classic')
+  const [size, setSizeState] = useState<TextSize>('standard')
+  useEffect(() => {
+    const sync = () => { setFontState(currentFont()); setSizeState(currentTextSize()) }
+    sync()
+    return onDisplayChange(sync)
+  }, [])
+  const sizeLabel: Record<TextSize, string> = ko ? { standard: '보통', larger: '크게', largest: '아주 크게' } : { standard: 'Standard', larger: 'Larger', largest: 'Largest' }
+
+  return (
+    <div id="set-display" className="mb-10 scroll-mt-[140px]">
+      <div className="flex items-center gap-2 mb-4">
+        <Type size={18} className="text-ink-3" />
+        <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '화면 글꼴' : 'Display'}</h3>
+      </div>
+      <div className="border-t border-rule-2 pt-5">
+        <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-4">
+          {ko ? '이 브라우저에만 저장됩니다. 다른 선생님의 화면은 바뀌지 않습니다.' : 'Saved in this browser only. Nobody else’s screen changes.'}
+        </p>
+        <p className="eyebrow mb-2">{ko ? '글꼴' : 'Font'}</p>
+        <div role="radiogroup" aria-label={ko ? '글꼴' : 'Font'} className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {FONTS.map(f => {
+            const info = FONT_INFO[f]
+            const on = font === f
+            return (
+              <button key={f} role="radio" aria-checked={on} onClick={() => setFont(f)}
+                className={`text-left p-4 rounded border transition-colors ${on ? 'border-accent bg-accent-light/40' : 'border-rule-2 bg-surface hover:border-ink-3'}`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-ink text-[length:calc(13px*var(--ts))]">{ko ? info.ko : info.en}</span>
+                  {on && <Check size={14} className="text-accent ml-auto" />}
+                </div>
+                <div style={{ fontFamily: info.family }} className="text-ink text-[length:calc(17px*var(--ts))] leading-snug mb-1.5">
+                  {f === 'classic' && <span style={{ fontFamily: "var(--font-classic-serif), Georgia, var(--font-kr), serif" }} className="block text-[length:calc(19px*var(--ts))]">Minji read 112 words</span>}
+                  {f !== 'classic' && <span className="block text-[length:calc(19px*var(--ts))]">Minji read 112 words</span>}
+                  <span className="block text-[length:calc(13.5px*var(--ts))] text-ink-2">Il1 O0 rn m · 민지 · 3.8 · Proficient</span>
+                </div>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? info.noteKo : info.noteEn}</p>
+              </button>
+            )
+          })}
+        </div>
+        <p className="eyebrow mb-2">{ko ? '글자 크기' : 'Text size'}</p>
+        <div role="radiogroup" aria-label={ko ? '글자 크기' : 'Text size'} className="inline-flex border border-rule-2 rounded overflow-hidden">
+          {TEXT_SIZES.map((t, i) => (
+            <button key={t} role="radio" aria-checked={size === t} onClick={() => setTextSize(t)}
+              className={`px-4 py-2 text-[length:calc(13px*var(--ts))] ${i > 0 ? 'border-l border-rule-2' : ''} ${size === t ? 'bg-ink text-paper font-semibold' : 'bg-surface text-ink-2 hover:bg-paper-2'}`}>
+              {sizeLabel[t]}
+            </button>
+          ))}
         </div>
       </div>
     </div>
