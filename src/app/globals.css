@@ -414,17 +414,19 @@ html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
 }
 
-/* ─── Page entrance: set in order ───
-   The page's top-level blocks arrive one after another, 40 ms apart, like
-   type being set. Overlays (anything fixed) are left alone. */
-@keyframes set-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
-.page-set > * > *:not(.fixed) { animation: set-in 230ms var(--ease) both; }
-.page-set > * > *:nth-child(2) { animation-delay: 40ms; }
-.page-set > * > *:nth-child(3) { animation-delay: 80ms; }
-.page-set > * > *:nth-child(4) { animation-delay: 120ms; }
-.page-set > * > *:nth-child(5) { animation-delay: 160ms; }
-.page-set > * > *:nth-child(6) { animation-delay: 200ms; }
-.page-set > * > *:nth-child(n+7) { animation-delay: 240ms; }
+/* ─── Page changes ───
+   With View Transitions the old page stays until the new one is ready, then
+   they cross-fade in 200 ms; the header is its own layer and does not fade.
+   Without them, the new page fades in once. Nothing moves in pieces. */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 200ms; animation-timing-function: var(--ease); }
+::view-transition-group(masthead) { animation-duration: 200ms; }
+::view-transition-old(masthead), ::view-transition-new(masthead) { animation: none; }
+::view-transition-old(masthead) { display: none; }
+header.masthead-bar { view-transition-name: masthead; }
+@keyframes page-fade { from { opacity: 0; } to { opacity: 1; } }
+.page-fade { animation: page-fade 180ms ease-out both; }
+html[data-vt] .page-fade { animation: none; }
+.stats-in { animation: page-fade 200ms ease-out both; }
 
 /* ─── Masthead: the underline that stretches to the next page ─── */
 .nav-slider { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: rgb(var(--accent)); border-radius: 1px; pointer-events: none; opacity: 0; }
