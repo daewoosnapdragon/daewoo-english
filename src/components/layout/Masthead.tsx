@@ -181,18 +181,55 @@ function UserMenu() {
 // Clicking a link stretches the oxblood underline from where it is toward
 // the new page; if the page takes a moment, it spans the whole row and
 // breathes until the page arrives, then settles under the new link.
+// The row never scrolls: it shows as many links as fit, in order, and the
+// rest go into More at the end.
 function NavLinks({ active, signals, label, className = '' }: { active: string; signals: Signals; label: (id: string) => string; className?: string }) {
   const { language } = useApp()
   const navRef = useRef<HTMLElement>(null)
+  const measureRef = useRef<HTMLDivElement>(null)
   const sliderRef = useRef<HTMLSpanElement>(null)
+  const moreRef = useRef<HTMLButtonElement>(null)
   const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({})
   const pending = useRef<string | null>(null)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const [visible, setVisible] = useState(NAV_ORDER.length)
+  const [menuOpen, setMenuOpen] = useState(false)
   const reduce = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const hiddenIds = NAV_ORDER.slice(visible)
+
+  // How many links fit: measured from an invisible copy of the row.
+  const fit = useCallback(() => {
+    const nav = navRef.current, m = measureRef.current
+    if (!nav || !m) return
+    const items = Array.from(m.children) as HTMLElement[]
+    const more = items.pop()!.offsetWidth
+    const widths = items.map(el => el.offsetWidth)
+    const avail = nav.clientWidth
+    if (widths.reduce((a, b) => a + b, 0) <= avail) { setVisible(NAV_ORDER.length); return }
+    let used = more, k = 0
+    while (k < widths.length && used + widths[k] <= avail) { used += widths[k]; k++ }
+    setVisible(Math.max(1, k))
+  }, [])
+  useLayoutEffect(() => { fit() }, [fit, language, signals.cases, signals.flagged, signals.attendanceIncomplete, signals.attendanceDone])
+  useEffect(() => {
+    const nav = navRef.current
+    if (!nav) return
+    const ro = new ResizeObserver(() => fit())
+    ro.observe(nav)
+    document.fonts?.ready.then(() => { fit(); requestAnimationFrame(() => window.dispatchEvent(new Event('resize'))) })
+    return () => ro.disconnect()
+  }, [fit])
+  useEffect(() => { setMenuOpen(false) }, [active])
 
   const edges = (id: string): [number, number] | null => {
-    const a = linkRefs.current[id]
-    return a ? [a.offsetLeft + 12, a.offsetLeft + a.offsetWidth - 12] : null
+    const hidden = NAV_ORDER.indexOf(id) >= visible
+    const a = hidden ? moreRef.current : linkRefs.current[id]
+    const nav = navRef.current
+    if (!a || !nav) return null
+    // Measured against the nav itself: the More button sits inside its own wrapper.
+    const r = a.getBoundingClientRect(), n = nav.getBoundingClientRect()
+    const left = r.left - n.left + nav.scrollLeft
+    return [left + 12, left + r.width - 12]
   }
   const place = useCallback((l: number, r: number, ms = 0, easing = 'cubic-bezier(.2,.7,.2,1)') => {
     const s = sliderRef.current
@@ -208,21 +245,21 @@ function NavLinks({ active, signals, label, className = '' }: { active: string; 
     const s = sliderRef.current
     s?.classList.remove('is-waiting')
     const e = edges(active)
-    if (!e) { s?.classList.remove('is-placed'); return }
+    if (!e || !NAV_ORDER.includes(active)) { s?.classList.remove('is-placed'); return }
     place(e[0], e[1], animate ? 280 : 0)
-  }, [active, place])
+  }, [active, place, visible])
 
   useLayoutEffect(() => { settle(pending.current != null); pending.current = null }, [active, settle])
   useEffect(() => {
     const again = () => settle(false)
     window.addEventListener('resize', again)
-    document.fonts?.ready.then(again)
     return () => window.removeEventListener('resize', again)
   }, [settle])
 
   const go = (id: string, e: React.MouseEvent) => {
+    setMenuOpen(false)
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || id === active) return
-    const o = edges(active), n = edges(id)
+    const o = NAV_ORDER.includes(active) ? edges(active) : null, n = edges(id)
     if (!n) return
     pending.current = id
     timers.current.forEach(clearTimeout); timers.current = []
@@ -230,31 +267,65 @@ function NavLinks({ active, signals, label, className = '' }: { active: string; 
     else place(n[0], n[1], 0)
     timers.current.push(setTimeout(() => {
       if (pending.current !== id || !navRef.current) return
-      place(4, navRef.current.scrollWidth - 4, 320)
+      place(4, navRef.current.clientWidth - 4, 320)
       sliderRef.current?.classList.add('is-waiting')
     }, 190))
     // If the page never comes (an error, a cancelled click), put the line back.
     timers.current.push(setTimeout(() => { if (pending.current === id) { pending.current = null; settle(true) } }, 10000))
   }
 
+  const linkClass = (on: boolean) => `relative flex flex-none items-center gap-1.5 px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const marks = (id: string) => {
+    const badge = id === 'dashboard' ? (signals.cases || signals.flagged) : 0
+    const dot = id === 'attendance' && signals.attendanceIncomplete
+    const done = id === 'attendance' && signals.attendanceDone
+    return (
+      <>
+        {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {language === 'ko' ? '건 확인 필요' : 'need a look'}</span></span> : null}
+        {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}><span className="sr-only">{language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}</span></span> : null}
+        {done ? <span title={language === 'ko' ? '오늘 출석 완료' : 'All marked today'} className="inline-flex"><DrawnCheck size={12} /><span className="sr-only">{language === 'ko' ? '오늘 출석 완료' : 'All marked today'}</span></span> : null}
+      </>
+    )
+  }
+  const hiddenNeedsLook = hiddenIds.some(id => (id === 'dashboard' && (signals.cases || signals.flagged)) || (id === 'attendance' && signals.attendanceIncomplete))
+  const moreLabel = language === 'ko' ? '더보기' : 'More'
+
   return (
-    <nav ref={navRef} className={`relative flex justify-center overflow-x-auto ${className}`} aria-label="Main">
-      {NAV_ORDER.map(id => {
-        const on = active === id
-        const badge = id === 'dashboard' ? (signals.cases || signals.flagged) : 0
-        const dot = id === 'attendance' && signals.attendanceIncomplete
-        const done = id === 'attendance' && signals.attendanceDone
-        return (
-          <Link key={id} href={VIEW_PATHS[id]} ref={el => { linkRefs.current[id] = el }} onClick={e => go(id, e)} aria-current={on ? 'page' : undefined}
-            className={`relative flex items-center gap-1.5 px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
-            {label(id)}
-            {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {language === 'ko' ? '건 확인 필요' : 'need a look'}</span></span> : null}
-            {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}><span className="sr-only">{language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}</span></span> : null}
-            {done ? <span title={language === 'ko' ? '오늘 출석 완료' : 'All marked today'} className="inline-flex"><DrawnCheck size={12} /><span className="sr-only">{language === 'ko' ? '오늘 출석 완료' : 'All marked today'}</span></span> : null}
-          </Link>
-        )
-      })}
+    <nav ref={navRef} className={`relative flex justify-center min-w-0 ${className}`} aria-label="Main">
+      {NAV_ORDER.slice(0, visible).map(id => (
+        <Link key={id} href={VIEW_PATHS[id]} ref={el => { linkRefs.current[id] = el }} onClick={e => go(id, e)} aria-current={active === id ? 'page' : undefined} className={linkClass(active === id)}>
+          {label(id)}{marks(id)}
+        </Link>
+      ))}
+      {hiddenIds.length > 0 && (
+        <div className="relative flex-none">
+          <button ref={moreRef} type="button" onClick={() => setMenuOpen(o => !o)} aria-expanded={menuOpen} aria-haspopup="menu" className={linkClass(hiddenIds.includes(active))}>
+            {moreLabel}
+            {hiddenNeedsLook && <span className="w-1.5 h-1.5 rounded-full bg-warn" />}
+            <ChevronDown size={13} className="text-ink-3" />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+              <div role="menu" className="absolute right-0 top-full mt-1 z-50 min-w-[190px] bg-surface border border-rule-2 rounded shadow-lg py-1"
+                onKeyDown={e => { if (e.key === 'Escape') setMenuOpen(false) }}>
+                {hiddenIds.map(id => (
+                  <Link key={id} role="menuitem" href={VIEW_PATHS[id]} onClick={e => go(id, e)} aria-current={active === id ? 'page' : undefined}
+                    className={`flex items-center gap-2 px-3 py-2 text-[13px] ${active === id ? 'text-ink font-semibold bg-paper-2' : 'text-ink-2 hover:bg-paper-2 hover:text-ink'}`}>
+                    {label(id)}{marks(id)}
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
       <span ref={sliderRef} className="nav-slider" aria-hidden="true" />
+      {/* An invisible copy of the row, to measure what fits. */}
+      <div ref={measureRef} aria-hidden="true" className="absolute left-0 top-0 h-0 w-0 overflow-hidden invisible flex">
+        {NAV_ORDER.map(id => <span key={id} className={linkClass(false)}>{label(id)}{marks(id)}</span>)}
+        <span className={linkClass(false)}>{moreLabel}<span className="w-1.5 h-1.5" /><ChevronDown size={13} /></span>
+      </div>
     </nav>
   )
 }

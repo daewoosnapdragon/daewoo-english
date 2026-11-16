@@ -63,8 +63,8 @@ const config: Config = {
         'level-snapdragon': v('snapdragon'),
       },
       fontFamily: {
-        display: ['var(--font-serif)', 'var(--font-kr-serif)', 'Iowan Old Style', 'Georgia', 'serif'],
-        serif: ['var(--font-serif)', 'var(--font-kr-serif)', 'Iowan Old Style', 'Georgia', 'serif'],
+        display: ['var(--font-serif)', 'Iowan Old Style', 'Georgia', 'var(--font-kr-serif)', 'serif'],
+        serif: ['var(--font-serif)', 'Iowan Old Style', 'Georgia', 'var(--font-kr-serif)', 'serif'],
         sans: ['var(--font-sans)', 'var(--font-kr)', 'system-ui', 'sans-serif'],
         body: ['var(--font-sans)', 'var(--font-kr)', 'system-ui', 'sans-serif'],
       },
