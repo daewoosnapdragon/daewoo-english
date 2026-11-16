@@ -148,7 +148,16 @@ function LevelingView() {
     showToast('Level test deleted')
   }
 
-  if (loading) return <Loading rows={5} />
+  // The page's heading is there at once; only the list waits.
+  if (loading) return (
+    <div>
+      <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
+        <h2 className="font-display text-[length:calc(26px*var(--ts))] font-semibold tracking-tight text-navy">Leveling</h2>
+        <p className="text-text-secondary text-sm mt-1">Level tests, teacher ratings, and class placement decisions</p>
+      </div>
+      <div className="px-10 py-6"><Loading rows={5} /></div>
+    </div>
+  )
 
   // Its own page rather than a section under the test list. Everything on it is
   // cross-grade, so it belongs neither to a single test nor at the bottom of a
@@ -168,7 +177,7 @@ function LevelingView() {
   )
 
   if (!selectedTest) return (
-    <div className="animate-fade-in">
+    <div>
       <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
         <h2 className="font-display text-[length:calc(26px*var(--ts))] font-semibold tracking-tight text-navy">Leveling</h2>
         <p className="text-text-secondary text-sm mt-1">Level tests, teacher ratings, and class placement decisions</p>

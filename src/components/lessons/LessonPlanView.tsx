@@ -1,6 +1,5 @@
 'use client'
 
-import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
@@ -868,19 +867,12 @@ ${pages.join('\n')}
     return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' })
   }
 
-  if (loading && !loadedOnce.current) return (
-    <div>
-      <div className="bg-surface border-b border-border px-8 py-5">
-        <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
-        <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
-      </div>
-      <Loading kind="quiet" rows={5} />
-    </div>
-  )
-
-
+  // The whole page is drawn at once: the header and pickers as they are, the
+  // month's calendar as a faint outline until its plans arrive, then it inks in.
+  // A later switch of grade or class keeps the month on screen, faded.
+  const loadState = loading ? (loadedOnce.current ? ' is-refreshing' : ' is-first-load') : ''
   return (
-    <div className={loading ? 'is-refreshing' : undefined} aria-busy={loading || undefined}>
+    <div className={`loadable${loadState}`} aria-busy={loading || undefined}>
       <div className="bg-surface border-b border-border px-8 py-5">
         <div className="flex items-center justify-between">
           <div>
@@ -890,7 +882,7 @@ ${pages.join('\n')}
           <div className="flex items-center gap-2">
             <div className="relative">
               <div className="flex">
-                <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
+                <button onClick={() => handlePrint()} disabled={loading} className="disabled:opacity-60 inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
                 <button onClick={() => setShowPrintOptions(!showPrintOptions)} className="px-2 py-2 rounded-r-lg text-white bg-navy hover:bg-navy-dark border-l border-white/20"><ChevronDown size={14} /></button>
               </div>
               {showPrintOptions && (
@@ -933,7 +925,7 @@ ${pages.join('\n')}
               )}
             </div>
             {canEdit && (
-              <button onClick={saveAll} disabled={saving}
+              <button onClick={saveAll} disabled={saving || loading}
                 className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 {saving ? 'Saving...' : 'Save Month'}

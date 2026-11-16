@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { useApp } from '@/lib/context'
@@ -61,7 +62,7 @@ export default function MapView() {
   const cellOf = (key: string) => { const [cls, g] = key.split('|'); return { cls, grade: Number(g) } }
   const activeKey = placing || copying || (open ? (() => { const pl = masters.find(x => x.id === open); return pl ? rowKey(pl.english_class, pl.grade) : null })() : null)
 
-  if (p.loading) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+  if (p.loading) return <Loading rows={5} />
   if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{p.missing === 'catalogue' ? 'Run supabase/migration-curriculum-catalogue.sql first.' : 'The placements tables are missing. Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
 
   const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Sp', fall: ko ? '가을' : 'F', year: ko ? '한 해' : 'Yr' }

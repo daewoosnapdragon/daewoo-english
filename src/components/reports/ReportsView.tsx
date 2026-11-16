@@ -196,7 +196,7 @@ export default function ReportsView() {
   // You "own" your own class — only then (or as admin) can you edit its comments/grades.
   const isOwnClass = isTeacher && currentTeacher?.english_class === selectedClass
   const canEdit = isAdmin || isOwnClass
-  const { students } = useStudents({ grade: selectedGrade, english_class: selectedClass })
+  const { students, loading: loadingStudents } = useStudents({ grade: selectedGrade, english_class: selectedClass })
   const selectedSemester = allSemesters.find((s: any) => s.id === selectedSemesterId)
 
   // Follow the active semester. Accounts that cannot switch are pulled back to
@@ -237,7 +237,7 @@ export default function ReportsView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}{!canEdit ? ` · ${lang === 'ko' ? '읽기 전용' : 'read-only'}` : ''}</p>
+          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}{!canEdit ? ` · ${lang === 'ko' ? '읽기 전용' : 'read-only'}` : ''}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{t.reports.title}</h1>
         </div>
       </div>
@@ -279,7 +279,7 @@ export default function ReportsView() {
           </div>
         )}
       </div>
-      <div>
+      {loadingStudents ? <Loading rows={5} /> : <div>
         {mode === 'individual' && !isOverview && selectedSemesterId && selectedSemester && (
           <IndividualReport key={selectedStudentId} studentId={selectedStudentId!} semesterId={selectedSemesterId} semester={selectedSemester} students={students} allSemesters={allSemesters} lang={lang} selectedClass={selectedClass} canEdit={canEdit} currentDoc={currentDoc} onGoToProgress={() => setMode('progress')} onSelectStudent={(id: string) => setSelectedStudentId(id)} />
         )}
@@ -322,7 +322,7 @@ export default function ReportsView() {
         {mode === 'print' && !selectedSemesterId && (
           <p className="py-10 text-center text-ink-3 text-[length:calc(13px*var(--ts))]">Select a semester to print report cards.</p>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

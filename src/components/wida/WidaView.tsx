@@ -140,7 +140,7 @@ export default function WidaView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{cls} · {ko ? `${gr}학년` : `Grade ${gr}`} · {students.length} {ko ? '명' : 'students'}{students.length ? ` · ${setCount} ${ko ? '명 완료' : 'fully leveled'}` : ''}</p>
+          <p className="eyebrow eyebrow-accent mb-1.5">{cls} · {ko ? `${gr}학년` : `Grade ${gr}`}{loadingStudents ? '' : ` · ${students.length} ${ko ? '명' : 'students'}`}{!loadingStudents && students.length ? ` · ${setCount} ${ko ? '명 완료' : 'fully leveled'}` : ''}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">WIDA</h1>
         </div>
         {tab === 'levels' && !assessing && (

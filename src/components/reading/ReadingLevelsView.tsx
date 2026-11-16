@@ -127,7 +127,7 @@ export default function ReadingLevelsView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}</p>
+          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
         </div>
         <button data-guide="reading.add" onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}

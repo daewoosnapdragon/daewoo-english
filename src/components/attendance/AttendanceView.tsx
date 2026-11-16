@@ -519,7 +519,7 @@ export default function AttendanceView() {
       {/* Header */}
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}</p>
+          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{t.nav.attendance}</h1>
         </div>
         <div className="flex items-center gap-2">

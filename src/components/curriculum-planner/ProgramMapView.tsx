@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -101,7 +102,7 @@ export default function ProgramMapView() {
   const teacherName = (teacherId: string | null) => teachers.find(t => t.id === teacherId)?.name.split(' ')[0] || ''
   const schoolHoliday = (() => { for (const g of GRADES) { const nm = holidayFor.get(g)?.names.get(wk); if (nm) return nm } return '' })()
 
-  if (p.loading) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+  if (p.loading) return <Loading rows={5} />
   if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '아직 준비되지 않았습니다.' : 'Class plans are not set up yet.'}</p>
 
   const levels = PLACED_ENGLISH_CLASSES.map(cls => ({ cls, rows: rows.filter(r => r.cls === cls) })).filter(l => l.rows.length && (only === null || only === l.cls))

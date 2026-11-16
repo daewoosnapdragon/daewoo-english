@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
@@ -96,7 +97,7 @@ export default function SuppliesView() {
         ))}
       </div>
 
-      {s.loading ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : s.missing ? null : (
+      {s.loading ? <Loading rows={5} /> : s.missing ? null : (
         <>
           {tab === 'stock' && <StockSection {...props} />}
           {tab === 'requests' && <RequestsSection {...props} />}

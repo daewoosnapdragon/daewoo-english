@@ -41,9 +41,12 @@ interface Signals { attendanceIncomplete: boolean; attendanceDone: boolean; flag
 function useNavSignals(pathname: string | null): Signals {
   const { currentTeacher } = useApp()
   const [s, setS] = useState<Signals>({ attendanceIncomplete: false, attendanceDone: false, flagged: 0, reminder: false, cases: 0, overdue: 0 })
+  const checkRef = useRef<() => void>(() => {})
+  const lastCheck = useRef(Date.now())
   useEffect(() => {
     if (!currentTeacher) return
     let cancelled = false
+    lastCheck.current = 0
     const check = async () => {
       const isAdmin = currentTeacher.role === 'admin'
       const cls = currentTeacher.english_class
@@ -75,12 +78,19 @@ function useNavSignals(pathname: string | null): Signals {
       const afterHalfThree = day >= 1 && day <= 5 && minutes >= 15 * 60 + 30
       setS({ attendanceIncomplete: incomplete, attendanceDone: done, flagged: flaggedRes.count || 0, reminder: incomplete && afterHalfThree, cases: caseRows.length, overdue })
     }
-    check()
-    const id = setInterval(check, 60_000)
-    window.addEventListener('daewoo:attendance-saved', check)
-    window.addEventListener('daewoo:ladder-changed', check)
-    return () => { cancelled = true; clearInterval(id); window.removeEventListener('daewoo:attendance-saved', check); window.removeEventListener('daewoo:ladder-changed', check) }
-  }, [currentTeacher, pathname])
+    checkRef.current = () => { lastCheck.current = Date.now(); check() }
+    checkRef.current()
+    const id = setInterval(() => checkRef.current(), 60_000)
+    const now = () => checkRef.current()
+    window.addEventListener('daewoo:attendance-saved', now)
+    window.addEventListener('daewoo:ladder-changed', now)
+    return () => { cancelled = true; clearInterval(id); window.removeEventListener('daewoo:attendance-saved', now); window.removeEventListener('daewoo:ladder-changed', now) }
+  }, [currentTeacher])
+  // Changing page checks again only if the last check is more than 45 s old,
+  // so a click does not send five requests the header already has answers to.
+  useEffect(() => {
+    if (Date.now() - lastCheck.current > 45_000) checkRef.current()
+  }, [pathname])
   return s
 }
 

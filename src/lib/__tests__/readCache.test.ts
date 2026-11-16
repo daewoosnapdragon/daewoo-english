@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { cachedFetch, _reset, onStale, prefetchPage, OPENING_MS } from '../readCache'
+import { cachedFetch, _reset, onStale, prefetchPage, favouritePages, warmUp, OPENING_MS } from '../readCache'
 
 const API = 'https://x.supabase.co/rest/v1/'
 let clock = 0
@@ -70,6 +70,16 @@ describe('remembered reads', () => {
     expect(calls).toEqual(['GET comments'])
     path = '/reports'; calls.length = 0
     await get('comments'); expect(calls).toEqual([])
+  })
+
+  it('warms the most-opened pages first', async () => {
+    // Each address change is one visit: reports ×3, attendance ×2, reading ×1, dashboard ×1.
+    for (const p of ['/reports', '/attendance', '/reports', '/attendance', '/reports', '/reading', '/dashboard']) { path = p; await get(p.slice(1)) }
+    expect(favouritePages(2)).toEqual(['/reports', '/attendance'])
+    clock += 60_000; calls.length = 0
+    vi.useFakeTimers(); warmUp({ apikey: 'k' }, 2, 10); vi.runAllTimers(); vi.useRealTimers()
+    await new Promise(r => setTimeout(r, 0))
+    expect(calls).toEqual(['GET reports', 'GET attendance'])
   })
 
   it('leaves non-REST requests alone', async () => {
