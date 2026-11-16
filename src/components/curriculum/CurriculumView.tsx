@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import StandardsHeatMap from './StandardsHeatMap'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
@@ -500,7 +501,7 @@ function ClusterTracker() {
       </div>
 
       {/* Main table */}
-      {loading ? <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> :
+      {loading ? <Loading rows={5} /> :
       <div className="space-y-5">
         {grouped.map(([domKey, standards]) => {
           const domInfo = CCSS_DOMAINS.find(d => d.key === domKey)

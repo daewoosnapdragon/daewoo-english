@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -107,7 +108,7 @@ export default function ActivityView() {
         </div>
       )}
 
-      {loading ? <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-ink-3 mx-auto" /></div>
+      {loading ? <Loading rows={5} />
       : byDay.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{missing ? '' : (ko ? '이 기간에 기록이 없습니다.' : 'Nothing recorded in this window.')}</p>
       : byDay.map(g => (
         <div key={g.day} className="mb-6">

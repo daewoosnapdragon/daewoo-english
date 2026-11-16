@@ -9,6 +9,14 @@ import { translations } from '@/i18n/translations'
 import { canManageSemesters } from '@/lib/utils'
 import ConfirmDialog, { DialogRequest } from '@/components/ui/ConfirmDialog'
 
+export interface ToastOptions {
+  /** 'error' shows the message in oxblood and keeps it up longer. Guessed from the wording when left out. */
+  tone?: 'error' | 'info'
+  /** One action on the slip, such as Undo. */
+  action?: { label: string; onClick: () => void }
+}
+export interface ToastMessage extends ToastOptions { id: number; message: string }
+
 export interface NavigationTarget {
   view: string
   preSelectedStudent?: string
@@ -39,8 +47,8 @@ interface AppContextType {
   theme: 'light' | 'dark'
   setTheme: (theme: 'light' | 'dark') => void
   t: typeof translations.en | typeof translations.ko
-  showToast: (message: string) => void
-  toast: string | null
+  showToast: (message: string, opts?: ToastOptions) => void
+  toast: ToastMessage | null
   navigateTo: (target: NavigationTarget) => void
   pendingNavigation: NavigationTarget | null
   clearNavigation: () => void
@@ -65,9 +73,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try { const saved = localStorage.getItem('daewoo_lang'); if (saved === 'ko' || saved === 'en') setLanguageState(saved) } catch {}
   }, [])
+  // The page's language follows the switch, so Korean is read and set as Korean.
+  useEffect(() => { document.documentElement.lang = language === 'ko' ? 'ko' : 'en' }, [language])
   const [semesters, setSemesters] = useState<Semester[]>([])
   const [semestersLoading, setSemestersLoading] = useState(true)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastMessage | null>(null)
+  const toastSeq = useRef(0)
   const [theme, setThemeState] = useState<'light' | 'dark'>('light')
   const [pendingNavigation, setPendingNavigation] = useState<NavigationTarget | null>(null)
 
@@ -177,10 +188,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const t = language === 'ko' ? translations.ko : translations.en
 
-  const showToast = useCallback((message: string) => {
-    setToast(message)
-    const duration = message.toLowerCase().startsWith('error') ? 5000 : 3000
-    setTimeout(() => setToast(null), duration)
+  // The Toast component owns how long a slip stays up; this only hands it the message.
+  const showToast = useCallback((message: string, opts: ToastOptions = {}) => {
+    const tone = opts.tone || (/^(error|could not|couldn['’]t|failed|cannot|can['’]t)\b/i.test(message.trim()) ? 'error' : 'info')
+    toastSeq.current += 1
+    setToast({ id: toastSeq.current, message, tone, action: opts.action })
   }, [])
 
   return (

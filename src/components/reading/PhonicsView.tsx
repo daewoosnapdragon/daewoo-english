@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
@@ -153,7 +154,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
         </div>
       </div>
 
-      {loading || loadingChecks ? <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+      {loading || loadingChecks ? <Loading rows={5} />
       : students.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '이 반에 학생이 없습니다.' : 'No students in this class.'}</p>
       : mode === 'heatmap' ? (
         <HeatMap students={students} latestByStudent={latestByStudent} trendByStudent={trendByStudent} lang={lang}

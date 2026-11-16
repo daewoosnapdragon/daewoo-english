@@ -31,7 +31,8 @@
   --ev-good: #2E6B3A; --ev-accent: #8A2A2B; --ev-info: #2F5C8A; --ev-warn: #9A6A12; --ev-teal: #4E948A; --ev-other: #857D6E;
   --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
   --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
-  --font-serif-stack: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  --wet: 107 58 51;          /* fresh ink: unsaved words */
+  --font-serif-stack: var(--font-serif), var(--font-kr-serif), 'Iowan Old Style', Georgia, serif;
   --font-sans-stack: var(--font-sans), var(--font-kr), system-ui, -apple-system, sans-serif;
   /* Kept for older components that read the old variables. */
   --font-display: var(--font-serif-stack);
@@ -56,6 +57,7 @@ html.dark {
   --warn: 216 174 78;   --warn-soft: 58 47 20;
   --bad: 224 122 114;   --bad-soft: 62 34 32;
   --info: 127 166 214;  --info-soft: 31 44 59;
+  --wet: 232 180 168;
   --ev-good: #6FAF78; --ev-accent: #D9736F; --ev-info: #7FA6D6; --ev-warn: #D8AE4E; --ev-teal: #6FB8AD; --ev-other: #8E8574;
 }
 
@@ -397,3 +399,108 @@ html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FB
 .bg-accent.text-navy, .bg-accent.text-navy-dark { color: rgb(var(--white)) !important; }
 html.dark .bg-gold.text-navy, html.dark .bg-gold.text-navy-dark, html.dark .bg-gold.text-navy-deep, html.dark .bg-gold.text-text-primary,
 html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb(var(--paper)) !important; }
+
+/* ═══════════════════════════════════════════════════
+   INK & PAPER — the finishing touches
+   One easing curve and three speeds for everything that moves.
+   ═══════════════════════════════════════════════════ */
+:root { --ease: cubic-bezier(.2, .7, .2, 1); }
+
+/* People who ask for less motion get the final frame at once. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; transition-delay: 0s !important; scroll-behavior: auto !important; }
+}
+
+/* ─── Page entrance: set in order ───
+   The page's top-level blocks arrive one after another, 40 ms apart, like
+   type being set. Overlays (anything fixed) are left alone. */
+@keyframes set-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.page-set > * > *:not(.fixed) { animation: set-in 230ms var(--ease) both; }
+.page-set > * > *:nth-child(2) { animation-delay: 40ms; }
+.page-set > * > *:nth-child(3) { animation-delay: 80ms; }
+.page-set > * > *:nth-child(4) { animation-delay: 120ms; }
+.page-set > * > *:nth-child(5) { animation-delay: 160ms; }
+.page-set > * > *:nth-child(6) { animation-delay: 200ms; }
+.page-set > * > *:nth-child(n+7) { animation-delay: 240ms; }
+
+/* ─── Masthead: the underline that stretches to the next page ─── */
+.nav-slider { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: rgb(var(--accent)); border-radius: 1px; pointer-events: none; opacity: 0; }
+.nav-slider.is-placed { opacity: 1; }
+.nav-slider.is-waiting { animation: nav-breath 1.1s ease-in-out infinite; }
+@keyframes nav-breath { 50% { opacity: .35; } }
+
+/* ─── The term line under the context bar ─── */
+.term-line { position: relative; height: 3px; background: rgb(var(--paper-3)); }
+.term-line .term-fill { position: absolute; inset: 0 auto 0 0; background: rgb(var(--ink)); animation: term-grow 900ms var(--ease) both; }
+.term-line .term-cut { position: absolute; top: -4px; bottom: 0; width: 2px; margin-left: -1px; background: rgb(var(--accent)); }
+@keyframes term-grow { from { width: 0; } }
+
+/* ─── Class flowers ─── */
+svg.class-flower { display: block; flex: none; overflow: hidden; fill: none; stroke: var(--fc, color-mix(in srgb, var(--c) 85%, rgb(var(--ink)))); stroke-linecap: round; stroke-linejoin: round; }
+svg.class-flower circle { fill: var(--fc, color-mix(in srgb, var(--c) 85%, rgb(var(--ink)))); stroke: none; }
+svg.class-flower.is-drawing path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-draw var(--t) linear var(--d) forwards; }
+svg.class-flower.is-drawing circle { opacity: 0; animation: pen-dot 200ms var(--d) forwards; }
+@keyframes pen-draw { to { stroke-dashoffset: 0; } }
+@keyframes pen-dot { to { opacity: 1; } }
+.flower-avatar { display: inline-flex; flex: none; align-items: center; justify-content: center; border-radius: 9999px; overflow: hidden;
+  background: color-mix(in srgb, var(--c) 20%, rgb(var(--white))); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
+.flower-avatar svg.class-flower { --fc: color-mix(in srgb, var(--c) 90%, rgb(var(--ink))); }
+
+/* ─── Loading: ruled lines and the flower drawing itself ─── */
+.ruled-wait { position: relative; opacity: 0; transition: opacity 200ms ease; }
+.ruled-wait.is-shown { opacity: 1; }
+.ruled-wait::before { content: ""; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px; background: rgb(var(--accent) / .35); }
+.ruled-wait-line { height: 34px; border-bottom: 1px solid rgb(var(--rule)); }
+.ruled-wait-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.ruled-wait-flower { display: block; animation: flower-cycle var(--cycle, 3.3s) linear both; }
+@keyframes flower-cycle { 0%, 86% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ─── A check that draws itself ─── */
+svg.drawn-check { display: inline-block; flex: none; fill: none; stroke: rgb(var(--good)); stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+svg.drawn-check path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen-draw 450ms var(--ease) 80ms forwards; }
+
+/* ─── Ink that dries ─── */
+.ink-dries { transition: color 600ms ease; }
+.ink-dries.is-wet { color: rgb(var(--wet)) !important; transition-duration: 140ms; }
+
+/* ─── Stamp: crisp, oxblood, at an angle ─── */
+.stamp { display: inline-flex; flex-direction: column; align-items: center; color: rgb(var(--accent)); border: 2px solid currentColor; outline: 1px solid currentColor; outline-offset: 2px;
+  border-radius: 4px; transform: rotate(-8deg); line-height: 1.1; white-space: nowrap; mix-blend-mode: multiply; }
+html.dark .stamp { mix-blend-mode: screen; }
+.stamp-md { padding: 5px 13px 4px; }
+.stamp-md .stamp-big { font-size: 17px; font-weight: 700; letter-spacing: .18em; }
+.stamp-md .stamp-small { font-size: 10px; font-weight: 600; letter-spacing: .1em; margin-top: 2px; }
+.stamp-sm { padding: 2px 7px 2px; border-width: 1.5px; outline-offset: 1.5px; transform: rotate(-6deg); }
+.stamp-sm .stamp-big { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; }
+.stamp-sm .stamp-small { font-size: 8px; font-weight: 600; letter-spacing: .08em; }
+.stamp [lang="ko"] { letter-spacing: .02em; }
+.stamp-land { animation: stamp-land 340ms cubic-bezier(.3, 0, .3, 1) both; }
+@keyframes stamp-land { 0% { opacity: 0; transform: rotate(-8deg) scale(1.6); } 55% { opacity: 1; transform: rotate(-8deg) scale(.95); } 100% { opacity: 1; transform: rotate(-8deg) scale(1); } }
+.stamp-sm.stamp-land { animation-name: stamp-land-sm; }
+@keyframes stamp-land-sm { 0% { opacity: 0; transform: rotate(-6deg) scale(1.6); } 55% { opacity: 1; transform: rotate(-6deg) scale(.95); } 100% { opacity: 1; transform: rotate(-6deg) scale(1); } }
+
+/* ─── Toast: a slip of real paper ───
+   The photograph is a border image: the torn top keeps its shape whatever
+   the message length, and the paper stays paper in dark mode too. */
+.paper-slip { width: min(360px, calc(100vw - 32px)); border-style: solid; border-width: 18px 6px 6px 6px;
+  border-image: url('/brand/paper-slip.webp') 40 12 12 12 fill / 18px 6px 6px 6px stretch;
+  padding: 8px 14px 8px; color: #2B251B; filter: drop-shadow(0 1px 1px rgba(60, 44, 20, .22)) drop-shadow(0 8px 14px rgba(60, 44, 20, .2)); }
+html.dark .paper-slip { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6)) drop-shadow(0 8px 16px rgba(0, 0, 0, .55)); }
+.paper-slip .slip-msg { font-family: var(--font-serif-stack); font-size: 16px; line-height: 1.35; }
+.paper-slip.is-error .slip-msg { color: #8A2A2B; }
+.paper-slip .slip-action { color: #8A2A2B; font-weight: 600; font-size: 13px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.paper-slip .slip-drain { height: 1px; background: rgba(43, 37, 27, .4); margin-top: 8px; transform-origin: left; animation: slip-drain linear forwards; }
+@keyframes slip-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes slip-in { from { transform: translateY(140%) rotate(-3deg); } to { transform: translateY(0) rotate(-0.8deg); } }
+@keyframes slip-out { from { transform: translateY(0) rotate(-0.8deg); opacity: 1; } to { transform: translateY(140%) rotate(-3deg); opacity: 0; } }
+.slip-in { animation: slip-in 520ms cubic-bezier(.2, .85, .25, 1) both; }
+.slip-out { animation: slip-out 260ms ease-in both; }
+
+/* ─── Wordmark: the ink soaks in ─── */
+@keyframes ink-soak { from { opacity: 0; filter: blur(10px); letter-spacing: .14em; color: rgb(var(--wet)); } 55% { opacity: 1; } to { opacity: 1; filter: blur(0); letter-spacing: -0.01em; color: rgb(var(--ink)); } }
+.wordmark-pending { opacity: 0; }
+.wordmark-soak { animation: ink-soak 1150ms var(--ease) both; }
+.wordmark-sub { animation: set-in 450ms var(--ease) 800ms both; }
+
+/* Overlays never print. */
+@media print { .paper-slip, .fixed.inset-0 { display: none !important; } }

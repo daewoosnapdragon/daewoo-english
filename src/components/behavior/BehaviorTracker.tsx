@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
@@ -271,7 +272,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
       {showAddForm && <AddBehaviorForm studentId={studentId} studentName={studentName} lang={lang} onClose={() => setShowAddForm(false)} onSaved={afterSave} />}
 
       {loading ? (
-        <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+        <Loading rows={4} />
       ) : logs.length === 0 ? (
         <div className="py-8 text-center text-text-tertiary text-[13px]">{lang === 'ko' ? '아직 기록이 없습니다.' : 'No behavior logs yet.'}</div>
       ) : (

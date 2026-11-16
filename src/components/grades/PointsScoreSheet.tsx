@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
@@ -192,7 +193,7 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
   const doneCount = students.filter(s => scores[s.id] != null || flags[s.id]).length
   const fmt = (v: number) => Number.isInteger(v) ? String(v) : v.toFixed(1).replace(/\.0$/, '')
 
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+  if (loading) return <Loading rows={4} />
 
   return (
     <div className="p-4">

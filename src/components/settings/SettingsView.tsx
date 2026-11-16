@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useScheduleRules, saveScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
@@ -158,7 +159,7 @@ function TeacherSection() {
 
       <div className="border border-rule-2 rounded-md overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+          <Loading rows={4} />
         ) : (
           <table className="w-full text-[13px]">
             <thead>
@@ -493,7 +494,7 @@ function SemesterSection() {
 
       <div className="border border-rule-2 rounded-md overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+          <Loading rows={4} />
         ) : visibleSemesters.length === 0 ? (
           <div className="p-8 text-center text-text-tertiary text-sm">
             {semesters.length === 0 ? 'No semesters created yet.'
@@ -681,7 +682,7 @@ function ProgramBenchmarksSection() {
 
   const gradeData = CLASSES.map((cls) => getBenchmark(selectedGrade, cls)).filter(Boolean)
 
-  if (loading) return <div className="mb-8 p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
 
   return (
     <div id="set-benchmarks" className="mb-10 scroll-mt-[140px]">
@@ -822,7 +823,7 @@ function ClassManagementSection() {
     showToast(`Class "${cls}" deleted and students deactivated`)
   }
 
-  if (loading) return <div className="mb-8 p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
 
   return (
     <div id="set-classes" className="mb-10 scroll-mt-[140px]">
@@ -1094,7 +1095,7 @@ function SchoolInfoSection() {
     setSaving(false)
   }
 
-  if (loading) return <div className="p-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
   if (!settings) return null
 
   return (

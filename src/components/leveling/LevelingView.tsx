@@ -1,5 +1,7 @@
 'use client'
 
+import Stamp from '@/components/brand/Stamp'
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -146,7 +148,7 @@ function LevelingView() {
     showToast('Level test deleted')
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   // Its own page rather than a section under the test list. Everything on it is
   // cross-grade, so it belongs neither to a single test nor at the bottom of a
@@ -572,7 +574,7 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
     logActivity('scored', `${levelTest.name} · scores · ${activeTab} · ${cs.length} students`, { key: `lt:${levelTest.id}:${activeTab}` })
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const available = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
   const classCounts: Record<string, { total: number; done: number }> = {}
@@ -910,7 +912,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
     }
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const available = isAdmin ? ENGLISH_CLASSES : (teacherClass ? [teacherClass] : ENGLISH_CLASSES)
   const classCounts: Record<string, { total: number; done: number }> = {}
@@ -1177,7 +1179,7 @@ function G1ResultsWrapper({ levelTest }: { levelTest: LevelTest }) {
     })()
   }, [levelTest.id])
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   return <G1ResultsView students={students} scores={scores} levelTest={levelTest} anecdotals={anecdotals} />
 }
@@ -1480,7 +1482,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
     return res
   }, [rows, filterClass, filterPassage, sortBy, showBorderline])
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   return (
     <div className="px-10 py-6">
@@ -1826,6 +1828,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     logActivity('saved', `${levelTest.name} · placements · ${savedCount} students`, { key: `place:${levelTest.id}` })
   }
 
+  const [justFinalized, setJustFinalized] = useState(false)
   const handleFinalize = async () => {
     if (!await confirmDialog({ title: 'Finalise placements?', message: 'This updates every student\'s class assignment and merges your moves with other teachers\' saved moves.', confirmLabel: 'Finalise' })) return
     setSaving(true)
@@ -1860,10 +1863,10 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
     setPlacements(finalMap)
     setSaving(false)
     logActivity('saved', `${levelTest.name} finalized · ${updated} students moved to new classes`)
-    showToast(errors ? `Finalized with ${errors} error(s). ${updated} student(s) moved.` : `Placements finalized! ${updated} student(s) moved.`); onFinalize()
+    showToast(errors ? `Finalized with ${errors} error(s). ${updated} student(s) moved.` : `Placements finalized! ${updated} student(s) moved.`); setJustFinalized(true); onFinalize()
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const counts: Record<string, number> = {}; ENGLISH_CLASSES.forEach(c => { counts[c] = 0 }); Object.values(placements).forEach(c => { counts[c] = (counts[c] || 0) + 1 })
 
@@ -1883,6 +1886,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
           {isLeadTeacher && <button onClick={resetToCurrentClasses} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-amber-50 hover:text-amber-700">Reset to Current Classes</button>}
           <button onClick={refreshFromDB} disabled={refreshing} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-green-50 hover:text-green-700 disabled:opacity-40" title="Pull latest placements from other teachers">{refreshing ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />} Refresh</button>
           <button onClick={handleSave} disabled={saving || dirtyCount === 0} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save{dirtyCount > 0 ? ` (${dirtyCount})` : ''}</button>
+          {levelTest.status === 'finalized' && <span className="self-center ml-2"><Stamp kind="finalized" size="sm" land={justFinalized} /></span>}
           {isLeadTeacher && levelTest.status !== 'finalized' && <button onClick={handleFinalize} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[12px] font-medium bg-green-600 text-white hover:bg-green-700"><Lock size={14} /> Finalize</button>}
         </div>
       </div>

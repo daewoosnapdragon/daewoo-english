@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
@@ -373,7 +374,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     `w-7 h-7 rounded-full border text-[11px] font-bold flex items-center justify-center transition-colors ${
       tone === 'right' ? 'bg-good border-good text-white' : tone === 'wrong' ? 'bg-bad border-bad text-white' : tone === 'key' ? 'bg-good-soft border-good text-good' : on ? 'bg-ink border-ink text-paper' : 'border-rule-2 text-ink-2 hover:border-ink-3'}`
 
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+  if (loading) return <Loading rows={4} />
 
   const printItem = printingQ != null ? rubricItems.find(it => it.num === printingQ) : undefined
 

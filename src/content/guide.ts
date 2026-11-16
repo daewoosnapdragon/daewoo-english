@@ -85,10 +85,12 @@ export const QUICK_START: { title: string; steps: string[] } = {
 
 export const GUIDE_SECTIONS: GuideSection[] = [
   {
-    id: 'dashboard', title: 'Dashboard', updated: '2026-10-27',
+    id: 'dashboard', title: 'Dashboard', updated: '2026-11-16',
     purpose: 'The page that opens to “now”: what is due, what is unmarked, and what needs a look, with the month and the week’s agenda beside it.',
     screen: [
       'The header greets you with today’s date and the active semester. Two buttons jump to marking attendance and entering grades.',
+      'Under the date in the top bar, “Week 12 of 18” and a thin line that fills across the semester. The oxblood mark on it is when report card grades are due. The Attendance link gets a small check once every class you teach is marked for today.',
+      'Your avatar at the top right is your class flower. While a page or a list is loading, the same flower draws itself on ruled lines; a page that loads quickly shows nothing at all.',
       'The stats strip: attendance still unmarked today, ungraded assessments, days to the midterm cutoff, days until report card grades are due. Each one is a link.',
       'The notice board sits under the header on every page. Teachers post notices; you dismiss your own copy. Urgent ones are shaded red until read.',
       'The month calendar with the agenda beside it. Events come from the school calendar; five colors mark the kinds. Admins add events here.',
@@ -141,13 +143,13 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     watchOut: ['A 0 on a rubric is a real zero, not “not assessed”. Leave the criterion unmarked if you have not seen it.', 'Half points are allowed on written items when scoring, not on the key.', 'Deleting a rubric from the library does not change any assessment already scored with it.', 'Clear on a student (or Clear all) removes the saved score for good, not just the marks on screen.'],
   },
   {
-    id: 'attendance', title: 'Attendance', updated: '2026-09-29',
+    id: 'attendance', title: 'Attendance', updated: '2026-11-16',
     purpose: 'Today’s attendance in a few taps, the month at a glance, and printing for the office.',
     screen: [
       'Day and Month at the top. Day is where you mark; Month is the record.',
       'Grade and class chips, a date picker, and Today to jump back.',
       'One row per student with Present, Absent, and Tardy, and a note field.',
-      'Save attendance at the top right. Print selected weeks opens a chooser.',
+      'Save attendance at the top right. Print selected weeks opens a chooser. Once the day is saved with every student marked, a check and “All marked” appear beside the date.',
       'The Attendance link in the top bar shows a dot until today is saved, and a reminder appears at 3:30 if it is not.',
     ],
     tasks: [
@@ -234,7 +236,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     watchOut: ['Targets are per class and grade; check you are on the right one before editing.', 'The sheets you ticked are remembered for the next student; glance at the chips before you start another child.'],
   },
   {
-    id: 'reports', title: 'Reports', updated: '2026-11-16',
+    id: 'reports', title: 'Reports', updated: '2026-11-23',
     purpose: 'Report cards and progress reports from the grades already entered, reviewed and approved before printing.',
     screen: [
       'Tabs: Report card, Progress report, Comments, Class summary, Review & approve, Print. The page opens on the document being written now: the progress report until three weeks after the midterm cutoff, the report card after that.',
@@ -244,7 +246,8 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       '“Hide the class comparison for this student”, next to Skip comment on a progress report, drops the bars and class averages from that student’s table.',
       'A picker for the whole class or one student.',
       'On a report card, a fact sheet sits to the left of the comment box: each area’s letter with the change since the progress report and since last semester, attendance, reading level now and at the first check of the semester, WIDA level, how many behavior notes, then “What the app noticed” (the weakest and strongest areas, the last rubric piece criterion by criterion, the most-missed standard, the latest reading and behavior notes) then “Rubrics this semester” (every rubric-scored piece, newest first, with each criterion’s level; tap one to read what the rubric says for the level the student got), and “What parents already read”: this semester’s progress-report comment in full, then every earlier report card and progress-report comment, newest first, each with Show all. It is for your eyes; nothing on it is inserted or printed. Absences count this semester only, with holidays and field trips taken out. The change since the progress report is what that report printed (every print of a progress report, single or batch, keeps the grades it showed); before any print it is rebuilt from the assessments dated up to the midterm, and the note under the table says which.',
-      'The comment saves itself a second after you stop typing (the line under the box says Saved and the time). There is no Save button and no Skip: every student gets a report card comment.',
+      'The comment saves itself a second after you stop typing (the line under the box says Saved and the time, with a check). Words not saved yet show in a slightly red ink and turn black once they are saved. There is no Save button and no Skip: every student gets a report card comment.',
+      'An approved report card carries an oxblood APPROVED stamp, on the card and in the Status column of Review & approve.',
       'Pronoun, above the box: he, she or they, set once per student and remembered on the roster (also on the student page and the add-student form). The phrase bank fills its sentences with it; until it is set the sentences keep {his} and the hint line says so.',
       'Called, next to it: the name used in comments. The app suggests it from the roster entry, the English name in brackets or the given name after the family name (Kim Bo Min (Sophia) → Sophia; Kim Bo Min → Bo Min). Press Enter to keep it or type another; it is saved once and remembered, also on the student page.',
       'Build a comment, under the box, opens one screen to tick what applies: an opener, each area on the tier its letter points to (switchable), behavior on the behavior grade (a fourth tier, serious concern, opens for a D or E: plain statements of what happens, its effect and what must change, with no softening), next steps for the weakest area on the suggested band with the home activities, and a closer. Under each area, Taught lists the skills the class has covered, worked out from the lesson plans (the units they link and those units’ objectives), the Standards page and any standards tagged on assessments; a chip can be unticked and + add a skill adds one, and the ticks are remembered for the class and semester. The sentences for those skills come first; the rest sit behind Show more. Nothing is ever hidden, only folded, and a class with nothing marked yet sees everything. Sentences are offered least-used-first in your class with the count shown. The draft at the bottom assembles as you tick, in reading order: opener, strongest area, the other areas, behavior, next steps, closer. Put in the box, or Replace / Add to the end when there is already text, then edit it for your own voice. It is a first draft, not the comment. Pronoun, top right of the builder, sets the student’s pronoun without leaving it. Sentences with blanks for numbers the fact sheet has (words per minute now and in September, reading level then and now, days absent, the last rubric’s ideas and organization scores) arrive filled; other blanks stay for you. In a paragraph the second and third sentences use the pronoun instead of the name. Spelling, top right of the builder, switches between American (the bank’s own, matching the curriculum) and British; it converts the listed words as sentences fill and is remembered on this computer.',

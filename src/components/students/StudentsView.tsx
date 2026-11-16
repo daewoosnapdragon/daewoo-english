@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
@@ -317,7 +318,7 @@ export default function StudentsView() {
 
         <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
           {loading ? (
-            <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
+            <Loading rows={5} />
           ) : sorted.length === 0 ? (
             <div className="p-12 text-center"><User size={32} className="text-text-tertiary mx-auto mb-2" /><p className="text-text-secondary text-sm">{search ? 'No students match.' : 'No students found.'}</p></div>
           ) : (
@@ -957,7 +958,7 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
     })()
   }, [studentId, activeSemesterId])
 
-  if (loading) return <div className="py-8 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-[12px]">Loading grades...</p></div>
+  if (loading) return <Loading rows={4} label="Loading grades" />
 
   return (
     <div className="space-y-5">
@@ -1246,7 +1247,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
     showToast?.('Updated')
   }
 
-  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
 
   // Classify reading levels based on accuracy
   const classifyLevel = (accuracy: number | null): { label: string; color: string; description: string } => {
@@ -1520,7 +1521,7 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
     })()
   }, [studentId])
 
-  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
 
   const counts = { present: 0, absent: 0, tardy: 0, field_trip: 0 }
   records.forEach((r: any) => { if (counts[r.status as keyof typeof counts] !== undefined) counts[r.status as keyof typeof counts]++ })
@@ -1662,7 +1663,7 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
     })()
   }, [studentId])
 
-  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
 
   if (standardsData.length === 0) {
     return (
@@ -1843,7 +1844,7 @@ export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: strin
     showToast('Custom scaffold added')
   }
 
-  if (loading) return <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={4} />
 
   // Determine primary WIDA level for suggestions
   const widaVals = Object.values(widaLevels).filter(v => v > 0)

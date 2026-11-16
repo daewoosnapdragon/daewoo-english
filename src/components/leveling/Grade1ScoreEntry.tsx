@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -1375,9 +1376,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   }, [students, scores])
 
   if (loading) return (
-    <div className="p-12 text-center">
-      <Loader2 size={24} className="animate-spin text-navy mx-auto" />
-    </div>
+    <Loading rows={5} />
   )
 
   return (

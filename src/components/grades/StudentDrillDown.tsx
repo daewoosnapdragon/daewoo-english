@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -332,7 +333,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
           {allAssessments.length === 0 && <p className="text-[12px] text-text-tertiary mt-2">{ko ? '이 반에 아직 평가가 없습니다.' : 'No assessments yet for this class.'}</p>}
         </div>
       ) : loadingMine ? (
-        <div className="bg-surface border border-border rounded-xl p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+        <Loading rows={5} />
       ) : (
         <div className="space-y-4 min-w-0">
           {/* Header */}

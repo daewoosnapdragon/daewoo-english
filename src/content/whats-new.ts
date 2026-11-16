@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'ink-and-paper', date: '2026-11-23', title: 'Your class flower, and a finished look',
+    body: 'Each class now has its flower, drawn from line drawings of a lily, camellia, daisy, sunflower, marigold and snapdragon. Yours sits in your avatar at the top right, and it draws itself on ruled lines while a page loads. When you change page, the oxblood underline stretches to the new page and the page sets in line by line. A thin line under the date shows how far through the term we are, with a mark where report card grades are due. Report card comments you have not saved yet sit in fresh red ink and dry to black once saved. Approved report cards and finalized level tests get a stamp, messages arrive on a slip of paper, and a check draws itself once attendance is all marked. Korean headings are set in a serif in 한국어 mode, and if your computer is set to reduce motion, all of this stays still.',
+    path: '/dashboard', guide: 'dashboard',
+  },
+  {
     id: 'phonics-partly', date: '2026-11-16', title: 'Phonics: a partly-right mark, and Mastered is simply 90%',
     body: 'You can now tap a word a third time for partly right, in amber, when a student is nearly there: one sound off, or right only after a long struggle. It counts as half a word, so a sheet can read 17½/20, and the pencil works on a partly as on an error. Mastered is now 90% or more on the sheet, full stop: the “automatic” checkbox is still under the words as a teaching note but no longer changes the score, so the Mastered / Proficient+ switch on the comparison is gone and the bands are Beginning, Developing, Mastered. On Classes compared each cell now reads as a percentage with the number of students checked under it.',
     path: '/reading?tab=phonics', guide: 'reading',

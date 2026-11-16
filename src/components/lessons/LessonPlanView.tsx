@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
@@ -870,7 +871,7 @@ ${pages.join('\n')}
         <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
         <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
       </div>
-      <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+      <Loading rows={5} />
     </div>
   )
 

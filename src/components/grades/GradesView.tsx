@@ -1,5 +1,7 @@
 'use client'
 
+import EmptyState from '@/components/shared/EmptyState'
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
@@ -407,13 +409,13 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
 
       <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden">
         {loadingStudents || !listReady ? (
-          <div className="p-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" /><p className="text-text-tertiary text-sm">Loading...</p></div>
+          <Loading rows={5} />
         ) : !a ? (
-          <div className="p-12 text-center">
-            <h3 className="font-display text-lg font-semibold text-navy mb-1">{assessments.length === 0 ? (ko ? '평가를 먼저 생성하세요' : 'Create your first assessment') : (ko ? '평가를 선택하세요' : 'Select an assessment above')}</h3>
-            <p className="text-text-tertiary text-sm max-w-md mx-auto">{assessments.length === 0 ? (ko ? '"새 평가" 버튼을 클릭하여 시작하세요.' : 'Click "New assessment" to get started. Name it, pick how it is scored, then score it on the sheet.') : ''}</p>
-            {assessments.length === 0 && <button onClick={onCreateAssessment} className="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark transition-all"><Plus size={15} /> {createLabel}</button>}
-          </div>
+          assessments.length === 0
+            ? <EmptyState title={ko ? '이번 학기 채점한 평가가 없습니다' : 'Nothing scored yet this semester'}
+                description={ko ? '간단한 퀴즈로 시작해 보세요. 답안지에서 입력하는 대로 채점됩니다.' : 'Start with a quick quiz. Name it, pick how it is scored, and the sheet scores it as you type.'}
+                action={{ label: createLabel, onClick: onCreateAssessment }} />
+            : <EmptyState compact title={ko ? '평가를 선택하세요' : 'Pick an assessment above'} description={ko ? '위에서 평가를 고르면 채점 화면이 열립니다.' : 'Choose one of the assessments above to open its sheet.'} />
         ) : (
           <>
             <div className="px-4 py-3 border-b border-rule-2 flex items-center justify-between gap-3 flex-wrap">
@@ -547,7 +549,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
     logActivity('scored', `${assessment.name} · sections · ${selectedClass} · Grade ${selectedGrade} · ${entered} students`, { key: assessment.id })
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   return (
     <>
@@ -802,7 +804,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
         )})}
       </div>
 
-      {loading ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div> : domainAssessments.length === 0 ? (
+      {loading ? <Loading rows={5} /> : domainAssessments.length === 0 ? (
         <div className="p-12 text-center text-text-tertiary">No assessments in {DOMAIN_LABELS[selectedDomain][lang]}</div>
       ) : (
         <div>
@@ -958,10 +960,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 
   if (loading) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-12 text-center">
-        <Loader2 size={24} className="animate-spin text-navy mx-auto mb-2" />
-        <p className="text-text-tertiary text-sm">Loading...</p>
-      </div>
+      <div className="bg-surface border border-border rounded-xl p-4"><Loading rows={5} /></div>
     )
   }
 

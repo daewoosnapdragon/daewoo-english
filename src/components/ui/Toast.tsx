@@ -1,87 +1,49 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useApp } from '@/lib/context'
-import { AlertCircle, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useApp, type ToastMessage } from '@/lib/context'
 
-const DURATION = 4000
-const ERROR_DURATION = 6000
+// ─── Toast ───────────────────────────────────────────────────────
+// A slip of real paper (public/brand/paper-slip.webp) that slides up at a
+// slight angle. A pencil line under the message runs down the time left;
+// click the slip to put it away. An action (Undo) keeps it up longer.
+
+const DURATION = 4000, ERROR_DURATION = 6500, ACTION_DURATION = 8000
 
 export default function Toast() {
   const { toast } = useApp()
-  const [visible, setVisible] = useState(false)
+  const [shown, setShown] = useState<ToastMessage | null>(null)
   const [leaving, setLeaving] = useState(false)
-  const [displayText, setDisplayText] = useState<string | null>(null)
-  const lastToastRef = useRef<string | null>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    // The context nulls `toast` on its own timer, which is shorter than the
-    // dismiss timer below. Reset the dedupe marker so an identical message
-    // (two autosaves in a row) shows again, and — critically — do NOT tear
-    // down the dismiss timer here: this effect re-runs on that null, and
-    // clearing the timer on the way through is what used to leave every
-    // autosave toast sitting on screen until it was clicked.
-    if (!toast) { lastToastRef.current = null; return }
-    if (toast === lastToastRef.current) return
-    lastToastRef.current = toast
-
-    // Clear any existing dismiss timer
-    if (timerRef.current) clearTimeout(timerRef.current)
-
-    setDisplayText(toast)
-    setLeaving(false)
-    setVisible(true)
-
-    const isError = toast.toLowerCase().startsWith('error')
-    const duration = isError ? ERROR_DURATION : DURATION
-
-    timerRef.current = setTimeout(() => {
-      setLeaving(true)
-      setTimeout(() => { setVisible(false); setLeaving(false) }, 250)
-    }, duration)
-  }, [toast])
-
-  // Only on unmount — see above.
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
-
-  const dismiss = () => {
-    if (timerRef.current) clearTimeout(timerRef.current)
+  const hide = () => {
+    if (timer.current) clearTimeout(timer.current)
     setLeaving(true)
-    setTimeout(() => { setVisible(false); setLeaving(false) }, 250)
+    timer.current = setTimeout(() => { setShown(null); setLeaving(false) }, 260)
   }
 
-  if (!visible || !displayText) return null
+  useEffect(() => {
+    if (!toast) return
+    if (timer.current) clearTimeout(timer.current)
+    setShown(toast); setLeaving(false)
+    const ms = toast.action ? ACTION_DURATION : toast.tone === 'error' ? ERROR_DURATION : DURATION
+    timer.current = setTimeout(hide, ms)
+  }, [toast])
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
 
-  const isError = displayText.toLowerCase().startsWith('error')
-  const duration = isError ? ERROR_DURATION : DURATION
-
+  if (!shown) return null
+  const ms = shown.action ? ACTION_DURATION : shown.tone === 'error' ? ERROR_DURATION : DURATION
   return (
-    <div
-      onClick={dismiss}
-      className={`fixed bottom-6 right-6 z-[1000] cursor-pointer ${leaving ? 'animate-toast-out' : 'animate-toast-in'}`}
-    >
-      <div className={`${isError ? 'bg-red-600' : 'bg-navy-dark'} text-white rounded-xl shadow-lg overflow-hidden min-w-[280px] max-w-[420px]`}>
-        <div className="flex items-center gap-3 px-4 py-3">
-          <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isError ? 'bg-red-500' : 'bg-green-500/20'}`}>
-            {isError ? <AlertCircle size={14} /> : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="20 6 9 17 4 12" className="animate-check-draw" />
-              </svg>
-            )}
-          </div>
-          <span className="text-[13px] font-medium flex-1 leading-snug">{displayText}</span>
-          <button onClick={(e) => { e.stopPropagation(); dismiss() }} className="flex-shrink-0 opacity-50 hover:opacity-100 transition-opacity p-0.5">
-            <X size={14} />
-          </button>
+    <div className="fixed bottom-5 right-5 z-[1000] no-print" style={{ marginRight: 'env(safe-area-inset-right, 0px)', marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div key={shown.id} onClick={hide} role={shown.tone === 'error' ? 'alert' : 'status'} aria-live={shown.tone === 'error' ? 'assertive' : 'polite'}
+        className={`paper-slip cursor-pointer ${shown.tone === 'error' ? 'is-error' : ''} ${leaving ? 'slip-out' : 'slip-in'}`}>
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="slip-msg">{shown.message}</span>
+          {shown.action && (
+            <button type="button" className="slip-action flex-none" onClick={e => { e.stopPropagation(); shown.action!.onClick(); hide() }}>{shown.action.label}</button>
+          )}
         </div>
-        {/* Progress bar */}
-        <div className="h-[2px] bg-white/10">
-          <div
-            className="h-full bg-white/30 origin-left"
-            style={{ animation: `toast-progress ${duration}ms linear forwards` }}
-          />
-        </div>
+        <div className="slip-drain" style={{ animationDuration: `${ms}ms` }} />
       </div>
     </div>
   )

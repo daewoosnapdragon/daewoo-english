@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
@@ -12,6 +12,9 @@ import { isSchoolDayOff } from '@/lib/calendarDays'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet, Clock } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
+import { FlowerAvatar, flowerForClass } from '@/components/brand/ClassFlower'
+import DrawnCheck from '@/components/brand/DrawnCheck'
+import { termProgress } from '@/lib/term'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centered beneath it, a thin context bar under
@@ -28,7 +31,7 @@ const EN_LABELS: Record<string, string> = {
   students: 'Students', readingLevels: 'Reading', reports: 'Reports', leveling: 'Level Tests', curriculum: 'Standards', wida: 'WIDA', planner: 'Curriculum',
 }
 
-interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: boolean; cases: number; overdue: number }
+interface Signals { attendanceIncomplete: boolean; attendanceDone: boolean; flagged: number; reminder: boolean; cases: number; overdue: number }
 
 /**
  * The two things the nav has to know: is today's attendance done, and (admin)
@@ -37,7 +40,7 @@ interface Signals { attendanceIncomplete: boolean; flagged: number; reminder: bo
  */
 function useNavSignals(pathname: string | null): Signals {
   const { currentTeacher } = useApp()
-  const [s, setS] = useState<Signals>({ attendanceIncomplete: false, flagged: 0, reminder: false, cases: 0, overdue: 0 })
+  const [s, setS] = useState<Signals>({ attendanceIncomplete: false, attendanceDone: false, flagged: 0, reminder: false, cases: 0, overdue: 0 })
   useEffect(() => {
     if (!currentTeacher) return
     let cancelled = false
@@ -67,9 +70,10 @@ function useNavSignals(pathname: string | null): Signals {
       const dayOff = await isSchoolDayOff(today)
       if (cancelled) return
       const incomplete = !dayOff && !!(studentCount && (!attCount || attCount < studentCount))
+      const done = !dayOff && !!studentCount && !!attCount && attCount >= studentCount
       const day = kst.getDay(), minutes = kst.getHours() * 60 + kst.getMinutes()
       const afterHalfThree = day >= 1 && day <= 5 && minutes >= 15 * 60 + 30
-      setS({ attendanceIncomplete: incomplete, flagged: flaggedRes.count || 0, reminder: incomplete && afterHalfThree, cases: caseRows.length, overdue })
+      setS({ attendanceIncomplete: incomplete, attendanceDone: done, flagged: flaggedRes.count || 0, reminder: incomplete && afterHalfThree, cases: caseRows.length, overdue })
     }
     check()
     const id = setInterval(check, 60_000)
@@ -117,10 +121,8 @@ function UserMenu() {
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)} aria-expanded={open}
-        className="flex items-center gap-2 h-8 pl-1 pr-2 rounded border border-transparent hover:border-rule-2 text-[13px]">
-        <span className={`w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${CLASS_DOT[currentTeacher.english_class] || 'bg-ink'}`}>
-          {currentTeacher.name.charAt(0)}
-        </span>
+        className="flex items-center gap-2 h-9 pl-0.5 pr-2 rounded border border-transparent hover:border-rule-2 text-[13px]">
+        <FlowerAvatar name={flowerForClass(currentTeacher.english_class)} size={30} />
         <span className="font-medium text-ink">{currentTeacher.name}</span>
         {unseen.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-accent" title="Something new" />}
         <span className="text-ink-3 hidden md:inline">· {currentTeacher.role === 'admin' ? 'Admin' : currentTeacher.english_class}</span>
@@ -175,6 +177,88 @@ function UserMenu() {
   )
 }
 
+// ─── Nav links and the underline that stretches to the next page ─────
+// Clicking a link stretches the oxblood underline from where it is toward
+// the new page; if the page takes a moment, it spans the whole row and
+// breathes until the page arrives, then settles under the new link.
+function NavLinks({ active, signals, label, className = '' }: { active: string; signals: Signals; label: (id: string) => string; className?: string }) {
+  const { language } = useApp()
+  const navRef = useRef<HTMLElement>(null)
+  const sliderRef = useRef<HTMLSpanElement>(null)
+  const linkRefs = useRef<Record<string, HTMLAnchorElement | null>>({})
+  const pending = useRef<string | null>(null)
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const reduce = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  const edges = (id: string): [number, number] | null => {
+    const a = linkRefs.current[id]
+    return a ? [a.offsetLeft + 12, a.offsetLeft + a.offsetWidth - 12] : null
+  }
+  const place = useCallback((l: number, r: number, ms = 0, easing = 'cubic-bezier(.2,.7,.2,1)') => {
+    const s = sliderRef.current
+    if (!s) return
+    s.getAnimations().forEach(a => a.cancel())
+    const from = { transform: getComputedStyle(s).transform, width: getComputedStyle(s).width }
+    s.style.width = `${r - l}px`; s.style.transform = `translateX(${l}px)`
+    s.classList.add('is-placed')
+    if (ms && !reduce() && from.width !== '0px') s.animate([from, { transform: `translateX(${l}px)`, width: `${r - l}px` }], { duration: ms, easing })
+  }, [])
+  const settle = useCallback((animate: boolean) => {
+    timers.current.forEach(clearTimeout); timers.current = []
+    const s = sliderRef.current
+    s?.classList.remove('is-waiting')
+    const e = edges(active)
+    if (!e) { s?.classList.remove('is-placed'); return }
+    place(e[0], e[1], animate ? 280 : 0)
+  }, [active, place])
+
+  useLayoutEffect(() => { settle(pending.current != null); pending.current = null }, [active, settle])
+  useEffect(() => {
+    const again = () => settle(false)
+    window.addEventListener('resize', again)
+    document.fonts?.ready.then(again)
+    return () => window.removeEventListener('resize', again)
+  }, [settle])
+
+  const go = (id: string, e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0 || id === active) return
+    const o = edges(active), n = edges(id)
+    if (!n) return
+    pending.current = id
+    timers.current.forEach(clearTimeout); timers.current = []
+    if (o) place(Math.min(o[0], n[0]), Math.max(o[1], n[1]), 170, 'cubic-bezier(.3,0,.2,1)')
+    else place(n[0], n[1], 0)
+    timers.current.push(setTimeout(() => {
+      if (pending.current !== id || !navRef.current) return
+      place(4, navRef.current.scrollWidth - 4, 320)
+      sliderRef.current?.classList.add('is-waiting')
+    }, 190))
+    // If the page never comes (an error, a cancelled click), put the line back.
+    timers.current.push(setTimeout(() => { if (pending.current === id) { pending.current = null; settle(true) } }, 10000))
+  }
+
+  return (
+    <nav ref={navRef} className={`relative flex justify-center overflow-x-auto ${className}`} aria-label="Main">
+      {NAV_ORDER.map(id => {
+        const on = active === id
+        const badge = id === 'dashboard' ? (signals.cases || signals.flagged) : 0
+        const dot = id === 'attendance' && signals.attendanceIncomplete
+        const done = id === 'attendance' && signals.attendanceDone
+        return (
+          <Link key={id} href={VIEW_PATHS[id]} ref={el => { linkRefs.current[id] = el }} onClick={e => go(id, e)} aria-current={on ? 'page' : undefined}
+            className={`relative flex items-center gap-1.5 px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
+            {label(id)}
+            {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {language === 'ko' ? '건 확인 필요' : 'need a look'}</span></span> : null}
+            {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}><span className="sr-only">{language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}</span></span> : null}
+            {done ? <span title={language === 'ko' ? '오늘 출석 완료' : 'All marked today'} className="inline-flex"><DrawnCheck size={12} /><span className="sr-only">{language === 'ko' ? '오늘 출석 완료' : 'All marked today'}</span></span> : null}
+          </Link>
+        )
+      })}
+      <span ref={sliderRef} className="nav-slider" aria-hidden="true" />
+    </nav>
+  )
+}
+
 // ─── The bar ─────────────────────────────────────────────────────────
 export default function Masthead() {
   const { t, language, currentTeacher, activeSemester } = useApp()
@@ -199,25 +283,20 @@ export default function Masthead() {
   if (!currentTeacher) return null
 
   const label = (id: string) => language === 'ko' ? ((t.nav as any)[id] || id) : (EN_LABELS[id] || id)
+  // Where we are in the term: a solid line under the context bar.
+  const todayKey = now ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` : null
+  const term = activeSemester && todayKey ? termProgress(activeSemester.start_date, activeSemester.end_date, todayKey, activeSemester.report_card_cutoff_date || activeSemester.grades_due_date) : null
+  const termLine = term ? (
+    <div className="term-line" role="progressbar" aria-label={language === 'ko' ? '학기 진행' : 'How far through the term'} aria-valuemin={1} aria-valuemax={term.weeks} aria-valuenow={term.week}
+      title={language === 'ko' ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`}>
+      <span className="term-fill" style={{ width: `${(term.frac * 100).toFixed(2)}%` }} />
+      {term.cutoff != null && <span className="term-cut" style={{ left: `${(term.cutoff * 100).toFixed(2)}%` }} title={language === 'ko' ? '성적표 마감' : 'Report cards due'} />}
+    </div>
+  ) : null
   const dateStr = now
     ? now.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })
       + ' · ' + now.toLocaleTimeString(language === 'ko' ? 'ko-KR' : 'en-US', { hour: 'numeric', minute: '2-digit' }) + ' KST'
     : ''
-
-  const links = (h: string) => NAV_ORDER.map(id => {
-    const on = active === id
-    const badge = id === 'dashboard' ? (signals.cases || signals.flagged) : 0
-    const dot = id === 'attendance' && signals.attendanceIncomplete
-    return (
-      <Link key={id} href={VIEW_PATHS[id]}
-        className={`relative flex items-center gap-1.5 px-3 ${h} text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
-        {label(id)}
-        {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}</span> : null}
-        {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"} /> : null}
-        {on && <span className="absolute left-3 right-3 bottom-0 h-[2px] bg-accent" />}
-      </Link>
-    )
-  })
 
   const reminder = (
     <>
@@ -251,9 +330,10 @@ export default function Masthead() {
       <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
         <div className="mx-auto max-w-[1440px] px-6 grid grid-cols-[auto_1fr_auto] items-center gap-4">
           <Link href="/dashboard" className="font-display text-[18px] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
-          <nav className="flex justify-center overflow-x-auto" aria-label="Main">{links('h-10')}</nav>
+          <NavLinks active={active} signals={signals} label={label} />
           <div className="flex items-center gap-2"><UserMenu />{toggle}</div>
         </div>
+        {termLine}
         {reminder}
       </header>
     )
@@ -271,7 +351,7 @@ export default function Masthead() {
           <div className="justify-self-end flex items-center gap-2"><UserMenu />{toggle}</div>
         </div>
         {/* Row 2: links, centered */}
-        <nav className="flex justify-center border-t border-rule overflow-x-auto" aria-label="Main">{links('h-10')}</nav>
+        <NavLinks active={active} signals={signals} label={label} className="border-t border-rule" />
       </div>
       {/* Row 3: context */}
       <div className="bg-paper-2 border-t border-rule">
@@ -282,8 +362,10 @@ export default function Masthead() {
             <span className="font-semibold text-ink">{currentTeacher.role === 'admin' ? 'Admin' : currentTeacher.english_class}</span>
           </span>
           <span className="tabular-nums">{dateStr}</span>
+          {term && <span className="font-display italic text-[13px] text-ink">{language === 'ko' ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`}</span>}
         </div>
       </div>
+      {termLine}
       {reminder}
     </header>
   )

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { Loader2 } from 'lucide-react'
 import { WIDA_DOMAINS } from '@/lib/wida'
 
@@ -18,7 +19,7 @@ interface Props {
 
 export default function WidaTimeline({ students, historyData, currentLevels, loading, lang }: Props) {
   const ko = lang === 'ko'
-  if (loading) return <div className="py-12 text-center"><Loader2 size={18} className="animate-spin text-ink-3 mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const months = new Set<string>()
   const byStudentMonth: Record<string, Record<string, Record<string, number>>> = {}

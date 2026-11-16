@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -1945,7 +1946,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     showToast(`Cleared oral scores for ${name}`)
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
   if (!config) return <div className="p-12 text-center text-text-tertiary">No oral test configuration for Grade {grade}.</div>
 
   const student = classStudents[selectedIdx]

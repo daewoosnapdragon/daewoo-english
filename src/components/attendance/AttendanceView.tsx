@@ -1,5 +1,7 @@
 'use client'
 
+import DrawnCheck from '@/components/brand/DrawnCheck'
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useScheduleRules } from '@/lib/scheduleRules'
 import { loadDayStatus, fillAwayDays, type DayStatus } from '@/lib/calendarDays'
@@ -582,7 +584,11 @@ export default function AttendanceView() {
         <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
           <div>
             {isToday && <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '오늘' : 'Today'}</p>}
-            <h2 className="font-display text-[26px] leading-none text-ink">{dateHeading}</h2>
+            <h2 className="font-display text-[26px] leading-none text-ink inline-flex items-center gap-3 flex-wrap">{dateHeading}
+              {!isNoClassDay && !loading && !loadingStudents && !hasChanges && !saving && students.length > 0 && marked === students.length && (
+                <span className="inline-flex items-center gap-1.5 font-sans text-[12.5px] font-medium text-good" role="status"><DrawnCheck size={14} />{lang === 'ko' ? '모두 출석 체크됨' : 'All marked'}</span>
+              )}
+            </h2>
             {isNoClassDay
               ? <p className="text-[12.5px] text-warn mt-1.5">{isWeekend ? (lang === 'ko' ? '주말에는 수업이 없습니다' : 'No classes on weekends') : dayStatus.off ? (lang === 'ko' ? `휴일 (${dayStatus.off}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Day off (${dayStatus.off}): everyone was marked absent automatically. Change anyone who came to class.`) : <>{lang === 'ko' ? `${selectedGrade}학년은 ${weekdayName}에 영어 수업이 없습니다` : `Grade ${selectedGrade} has no English on ${weekdayName}s`} · {lang === 'ko' ? '화살표로 다음 수업일로 이동' : 'use the arrows to skip to the next class day'}</>}</p>
               : dayStatus.trip ? <p className="text-[12.5px] text-info mt-1.5">{lang === 'ko' ? `현장학습 (${dayStatus.trip}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Field trip (${dayStatus.trip}): everyone was marked absent automatically. Change anyone who came to class.`}</p>
@@ -617,7 +623,7 @@ export default function AttendanceView() {
         )}
 
         {loadingStudents || loading ? (
-          <div className="border-t border-rule-2">{[...Array(6)].map((_, i) => <div key={i} className="py-3 border-b border-rule flex items-center gap-4"><div className="skeleton h-3 w-6" /><div className="skeleton h-3 w-40" /><div className="skeleton h-7 w-28 ml-auto rounded" /></div>)}</div>
+          <div className="border-t border-rule-2"><Loading rows={6} /></div>
         ) : students.length === 0 ? (
           <EmptyState icon={UserCheck} title="No students in this class" description="Select a different grade or class to view students" />
         ) : (
@@ -698,7 +704,7 @@ export default function AttendanceView() {
           )}
           <div className="border border-rule-2 rounded-md overflow-hidden">
             <div className="grid grid-cols-5 bg-paper-2 border-b border-rule-2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => <div key={d} className="px-3 py-1.5 eyebrow font-semibold">{d}</div>)}</div>
-            {monthLoading ? <div className="p-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+            {monthLoading ? <Loading rows={5} />
             : classGrades.length === 0 ? <div className="p-12 text-center text-ink-3 text-[13px]">No students in {selectedClass}.</div>
             : calWeeks.map((week, wi) => (
               <div key={wi} className="grid grid-cols-5 border-t first:border-t-0 border-rule">

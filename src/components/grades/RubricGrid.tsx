@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { supabase } from '@/lib/supabase'
@@ -61,7 +62,7 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
   const tone = (v: number) => v === 0 ? 'bg-ink-3 text-paper' : v === 1 ? 'bg-bad text-white' : v === 2 ? 'bg-warn text-white' : v === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'
   const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1)
 
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+  if (loading) return <Loading rows={4} />
 
   return (
     <div className="p-4">

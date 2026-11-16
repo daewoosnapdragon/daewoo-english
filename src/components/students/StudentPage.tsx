@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { goesByFrom } from '@/lib/phrases'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
@@ -162,7 +163,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   }
 
   if (missing) return <div className="px-8 py-16 text-center"><p className="font-display text-[26px] text-ink">{lang === 'ko' ? '학생을 찾을 수 없습니다' : 'No such student'}</p><Link href="/students" className="text-accent underline text-[13px]">{lang === 'ko' ? '학생 명단으로' : 'Back to students'}</Link></div>
-  if (!student) return <div className="p-16 flex justify-center"><Loader2 size={20} className="animate-spin text-ink-3" /></div>
+  if (!student) return <Loading rows={5} />
 
   // Behavior first: it is what teachers open a student for most often.
   const sections: [string, string][] = [

@@ -1,5 +1,7 @@
 'use client'
 
+import DrawnCheck from '@/components/brand/DrawnCheck'
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -92,8 +94,9 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
     return c
   }, [records])
 
+  const [justSaved, setJustSaved] = useState(false)
   const save = async () => {
-    if (saving || students.length === 0) return
+    if (saving || justSaved || students.length === 0) return
     setSaving(true)
     const entries = students.map(s => ({ student_id: s.id, date: today, status: records[s.id]?.status || 'present', note: records[s.id]?.note || '', recorded_by: currentTeacher?.id || null }))
     const { error } = await supabase.from('attendance').upsert(entries, { onConflict: 'student_id,date' })
@@ -102,7 +105,9 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
     showToast(lang === 'ko' ? `${grade}학년 ${cls} 출석 저장됨` : `Saved attendance for Grade ${grade} · ${cls}`)
     logActivity('saved', `Attendance · ${cls} · Grade ${grade} · ${today} · ${entries.length} students (from the dashboard)`, { key: `attendance|${cls}|${grade}|${today}` })
     window.dispatchEvent(new Event(ATTENDANCE_SAVED_EVENT))
-    onClose()
+    // A moment to see the check, then the drawer closes.
+    setJustSaved(true)
+    setTimeout(onClose, 700)
   }
 
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -116,6 +121,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
           <div>
             <p className="eyebrow eyebrow-accent">{lang === 'ko' ? '출석' : 'Attendance'} · {dateLabel}</p>
             <h2 className="font-display text-[26px] leading-none text-ink mt-1">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`} <span className="text-ink-3">· {cls}</span></h2>
+            {justSaved && <p className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-good" role="status"><DrawnCheck size={14} />{lang === 'ko' ? '모두 출석 체크됨' : 'All marked'}</p>}
             {isAdmin && (
               <select id="drawer-class" value={cls} onChange={e => setCls(e.target.value as EnglishClass)} className="mt-2 h-7 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink">
                 {ALL_ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(c => <option key={c} value={c}>{c}</option>)}
@@ -127,7 +133,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
 
         <div ref={listRef} className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="p-8 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+            <Loading rows={4} />
           ) : students.length === 0 ? (
             <p className="p-6 text-[13px] text-ink-3">{lang === 'ko' ? '이 학년·반에 학생이 없습니다.' : `No Grade ${grade} students in ${cls}.`}</p>
           ) : (

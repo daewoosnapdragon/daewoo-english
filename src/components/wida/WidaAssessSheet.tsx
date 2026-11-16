@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -129,7 +130,7 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
   const fully = students.filter(s => doneCount(s.id) === 4).length
   const overall = student ? (() => { const v = WIDA_DOMAINS.map(d => levels[student.id]?.[d]).filter((x): x is number => !!x); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null })() : null
 
-  if (loading) return <div className="p-10 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+  if (loading) return <Loading rows={4} />
   if (!student) return <div className="p-10 text-center text-[13px] text-ink-3">{ko ? '학생이 없습니다.' : 'No students in this class.'}</div>
 
   return (

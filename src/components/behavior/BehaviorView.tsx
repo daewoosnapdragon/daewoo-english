@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
@@ -141,7 +142,7 @@ export default function BehaviorView() {
             <button onClick={() => setCaseState('all')} className={chip(caseState === 'all')}>{ko ? '전체' : 'All'}</button>
           </div>
         </div>
-        {loading ? <div className="py-8 text-center"><Loader2 size={18} className="animate-spin text-ink-3 mx-auto" /></div>
+        {loading ? <Loading rows={4} />
         : visibleCases.length === 0 ? <p className="text-[13px] text-ink-3 py-4">{ko ? '해당하는 사례가 없습니다.' : 'No cases here.'}</p>
         : (
           <div className="divide-y divide-rule border-t border-b border-rule">

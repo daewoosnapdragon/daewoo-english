@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
@@ -330,7 +331,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
     return Object.entries(byDomain).sort((a, b) => a[0].localeCompare(b[0]))
   }, [sittings])
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const pct = (m: number, t: number) => t > 0 ? Math.round((m / t) * 100) : 0
   const tone = (m: number, t: number) => {
@@ -405,7 +406,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
         </div>
       )}
 
-      {selected && loadingStudent && <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>}
+      {selected && loadingStudent && <Loading rows={5} />}
 
       {selected && !loadingStudent && sittings.length === 0 && (
         <div className="text-center py-16 text-text-tertiary text-[13px]">

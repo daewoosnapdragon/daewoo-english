@@ -1,5 +1,8 @@
 'use client'
 
+import Stamp from '@/components/brand/Stamp'
+import DrawnCheck from '@/components/brand/DrawnCheck'
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { itemsForDomain } from '@/lib/domainSplit'
 import { syncSemesterGrades } from '@/lib/semesterGrades'
@@ -828,7 +831,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
   // ─── Render ─────────────────────────────────────────────────────────
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
   if (!data) return <div className="py-12 text-center text-text-tertiary">Could not load report data.</div>
 
   const d = data, s = d.student
@@ -842,11 +845,13 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {reviewStatus && (
-            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium ${reviewStatus.admin_approved ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-text-tertiary'}`}>
-              {reviewStatus.admin_approved ? <CheckCircle2 size={11} /> : <Circle size={11} />} {reviewStatus.admin_approved ? 'Admin approved' : 'Awaiting admin approval'}
+          {reviewStatus && (reviewStatus.admin_approved
+            ? <span className="mr-2"><Stamp kind="approved" size="sm" /></span>
+            : (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-gray-100 text-text-tertiary">
+              <Circle size={11} /> Awaiting admin approval
             </span>
-          )}
+          ))}
           <span className="text-[11.5px] text-ink-3 tabular-nums">{writtenCount} of {students.length} written{semester?.comments_due_date ? ` · Comments due ${new Date(semester.comments_due_date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -1101,7 +1106,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               <textarea id="rc-comment" ref={boxRef} value={comment} onChange={(e: any) => { setComment(e.target.value); scheduleSave({ comment: e.target.value }) }} rows={12}
                 disabled={commentSkipped || !canEdit}
                 placeholder={!canEdit ? "Read-only — only this class's teacher can edit the comment." : (commentSkipped ? 'Skipped — untick above to write a comment.' : "Write this student's report card comment…")}
-                className={`w-full px-5 py-4 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-y leading-[1.7] min-h-[300px] ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8] text-[#1e293b]'}`} />
+                className={`ink-dries${(saveState === 'unsaved' || saveState === 'saving') && canEdit && !commentSkipped ? ' is-wet' : ''} w-full px-5 py-4 border border-[#C8CED8] rounded-xl text-[15px] outline-none focus:border-navy resize-y leading-[1.7] min-h-[300px] ${(commentSkipped || !canEdit) ? 'bg-[#f5f5f5] text-text-tertiary cursor-not-allowed' : 'bg-[#fafaf8] text-[#1e293b]'}`} />
               {hints.length > 0 && (
                 <p className="print:hidden mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11.5px] text-[#64748b] tabular-nums">
                   {hints.map((h, i) => <span key={i}>{h.text}</span>)}
@@ -1111,7 +1116,8 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="print:hidden flex items-center justify-between gap-4 flex-wrap mt-3">
                   <div className="flex items-center gap-4 flex-wrap">
                   <button type="button" onClick={() => setBuilderOpen(true)} className="text-[12px] font-semibold text-accent underline underline-offset-[3px] hover:text-accent-hover py-1">Build a comment</button>
-                  <span className={`text-[11.5px] ${saveState === 'error' ? 'text-warn' : 'text-[#64748b]'}`}>
+                  <span className={`inline-flex items-center gap-1.5 text-[11.5px] ${saveState === 'error' ? 'text-warn' : 'text-[#64748b]'}`} aria-live="polite">
+                    {saveState === 'saved' && savedAt ? <DrawnCheck key={savedAt} size={12} /> : null}
                     {saveState === 'saving' ? 'Saving…'
                       : saveState === 'unsaved' ? 'Typing…'
                       : saveState === 'error' ? `Could not save${saveError ? `: ${saveError}` : ''}. Your text is still here; it will try again when you type.`
@@ -1870,7 +1876,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
     setData((prev: any) => ({ ...prev, hideComparison: next }))
   }
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
   if (!data) return <div className="py-12 text-center text-text-tertiary">Could not load report data.</div>
 
   const d = data, s = d.student
@@ -2277,7 +2283,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
     logActivity('saved', `${docLabel} comments · ${selectedClass} · Grade ${selectedGrade} · ${dirtyIds.map(id => students.find((s: any) => s.id === id)?.english_name).filter(Boolean).join(', ').slice(0, 120)}`, { key: `comments:${docType}:${selectedClass}:${selectedGrade}` })
   }
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   return (
     <div className="space-y-4">
@@ -2353,6 +2359,8 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
   const [grades, setGrades] = useState<Record<string, { domains: Record<string, number | null>; overall: number | null; letter: string }>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+  // Cards approved in this sitting: their stamp comes down once.
+  const [justApproved, setJustApproved] = useState<Set<string>>(new Set())
   const [expanded, setExpanded] = useState<string | null>(null)
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({})
 
@@ -2407,6 +2415,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       showToast(error.message?.includes('404') || error.code === '42P01' ? 'Report card reviews table not set up yet. Run the SQL migration.' : `Error: ${error.message}`)
     } else {
       setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
+      setJustApproved(prev => { const n = new Set(prev); if (newVal) n.add(studentId); else n.delete(studentId); return n })
       logActivity('edited', `Report card ${newVal ? 'approved' : 'approval removed'} · ${students.find((s: any) => s.id === studentId)?.english_name || ''} · ${selectedClass} · Grade ${selectedGrade}`)
       showToast(newVal ? 'Approved' : 'Approval removed')
     }
@@ -2428,6 +2437,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       const { error } = await supabase.from('report_card_reviews').upsert(row, { onConflict: 'student_id,semester_id' }).select().single()
       if (!error) {
         setReviews(prev => ({ ...prev, [s.id]: { ...prev[s.id], ...row } }))
+        setJustApproved(prev => new Set(prev).add(s.id))
       } else errors++
     }
     setSaving(null)
@@ -2495,7 +2505,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
     w.document.close(); w.print()
   }
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const adminCount = students.filter(s => reviews[s.id]?.admin_approved).length
   const flaggedCount = students.filter(s => reviews[s.id]?.reviewer_note && !reviews[s.id]?.reviewer_note_ack).length
@@ -2586,7 +2596,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                 </div>
                 <div className="flex justify-center">
                   {ready ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-green-600"><CheckCircle2 size={13} /> Ready</span>
+                    <Stamp kind="approved" size="sm" date={r?.admin_approved_at} land={justApproved.has(student.id)} />
                   ) : (
                     <span className="inline-flex items-center gap-1 text-[11px] text-amber-600"><Circle size={13} /> Pending</span>
                   )}
@@ -2868,7 +2878,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
     pw.document.close(); pw.print()
   }
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const classAvgs: Record<string, number> = {}
   DOMAINS.forEach((d) => {
@@ -3034,7 +3044,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
     load()
   }
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   if (students.length === 0) {
     return <div className="bg-surface border border-border rounded-xl p-12 text-center text-text-tertiary">No students in this class.</div>

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -595,7 +596,7 @@ export function BatchAssignEnglishClass({ onDone }: { onDone: () => void }) {
   }
 
   const cnt = students.filter(s => assignments[s.id] && assignments[s.id] !== s.english_class).length
-  if (loading) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
   if (!students.length) return <div className="py-12 text-center"><CheckCircle2 size={32} className="mx-auto text-green-500 mb-3" /><p className="text-[14px] font-medium text-navy">All students have names</p><button onClick={onDone} className="mt-4 px-5 py-2 rounded-lg text-[12px] font-medium bg-navy text-white">Close</button></div>
 
   return (

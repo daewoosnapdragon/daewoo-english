@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { PLACED_ENGLISH_CLASSES, type Student } from '@/types'
 import { useStudents } from '@/hooks/useData'
@@ -192,7 +193,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   const seg = (on: boolean) => `px-3 h-8 rounded text-[12.5px] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const openStudent = open ? students.find(s => s.id === open.sid) : null
 
-  if (loading || loadingChecks) return <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+  if (loading || loadingChecks) return <Loading rows={5} />
   if (students.length === 0) return <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '학생이 없습니다.' : 'No students.'}</p>
 
   return (

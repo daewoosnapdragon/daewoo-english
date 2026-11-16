@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -11,7 +11,6 @@ import NoticeBoard from '@/components/layout/NoticeBoard'
 import CommandPalette from '@/components/layout/CommandPalette'
 import Spotlight from '@/components/guide/Spotlight'
 import Toast from '@/components/ui/Toast'
-import { Loader2 } from 'lucide-react'
 
 /**
  * Everything signed-in screens share: the loading state, the login gate, the
@@ -35,12 +34,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     document.title = currentTeacher ? `${PAGE_TITLES[view] || 'Dashboard'} · Daewoo English` : 'Daewoo English'
   }, [view, currentTeacher])
 
-  if (teachersLoading || semestersLoading) {
+  // The first load of a session: the wordmark soaks in like ink, and the app
+  // waits for it to finish. Later reloads in the same session skip it.
+  const [intro, setIntro] = useState<'pending' | 'soak' | 'done'>('pending')
+  useEffect(() => {
+    let first = false
+    try { first = !sessionStorage.getItem('daewoo_inked'); sessionStorage.setItem('daewoo_inked', '1') } catch {}
+    if (!first || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setIntro('done'); return }
+    setIntro('soak')
+    const t = setTimeout(() => setIntro('done'), 1300)
+    return () => clearTimeout(t)
+  }, [])
+
+  if (teachersLoading || semestersLoading || intro !== 'done') {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="min-h-screen bg-paper flex items-center justify-center" role="status" aria-label="Loading Daewoo English">
         <div className="text-center">
-          <p className="font-display text-[28px] text-ink mb-3">Daewoo English</p>
-          <Loader2 size={20} className="animate-spin text-accent mx-auto" />
+          <p className={`font-display text-[44px] leading-none text-ink ${intro === 'pending' ? 'wordmark-pending' : intro === 'soak' ? 'wordmark-soak' : ''}`}>Daewoo English</p>
+          <p className={`eyebrow eyebrow-accent mt-4 ${intro === 'soak' ? 'wordmark-sub' : intro === 'pending' ? 'wordmark-pending' : ''}`}>Daewoo Elementary · English Program</p>
         </div>
       </div>
     )
@@ -60,7 +71,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Masthead />
       <NoticeBoard />
       <main className="mx-auto max-w-[1440px]">
-        <div key={pathname} className="animate-page-enter">
+        <div key={pathname} className="page-set">
           {children}
         </div>
       </main>

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
@@ -199,7 +200,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
         <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
       </div>
 
-      {loading ? <div className="flex-1 flex items-center justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div> : (
+      {loading ? <Loading rows={5} /> : (
         <div className="flex-1 min-h-0 grid grid-cols-[210px_minmax(0,1fr)_230px]">
           {/* Students */}
           <div className="border-r border-rule-2 bg-paper-2 overflow-y-auto">

@@ -1,4 +1,5 @@
 'use client'
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -2615,7 +2616,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
   // ─── Render ─────────────────────────────────────────────────
 
   if (!config) return <div className="p-12 text-center text-text-tertiary">No written test configuration for Grade {grade}.</div>
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   // Group questions by section
   const sections = config.questions.reduce<Record<string, QuestionDef[]>>((acc, q) => {

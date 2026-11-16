@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import Link from 'next/link'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
@@ -242,7 +243,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
     })()
   }, [students])
 
-  if (loading || loadingRecords) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading || loadingRecords) return <Loading rows={5} />
 
   // Use DB benchmarks if available, fall back to hardcoded
   const bench = dbBench
@@ -587,7 +588,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
           )}
         </div>
       )}
-      {loading && <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>}
+      {loading && <Loading rows={5} />}
 
       {/* Edit Reading Record Modal */}
       {editRecord && <EditReadingModal record={editRecord} onClose={() => setEditRecord(null)} onSave={handleUpdateRecord} />}
@@ -788,7 +789,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
     })()
   }, [students, selectedClass, grade])
 
-  if (loading || loadingRecords) return <div className="py-12 text-center"><Loader2 size={24} className="animate-spin text-navy mx-auto" /></div>
+  if (loading || loadingRecords) return <Loading rows={5} />
 
   const addSubgroup = async (band: string) => {
     if (!newGroupName.trim()) return
@@ -1457,7 +1458,7 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
     })()
   }, [studentIds.join(',')])
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   if (data.length === 0) return (
     <div className="py-12 text-center text-text-tertiary text-[13px]">
@@ -1674,7 +1675,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     return true
   })
 
-  if (loading) return <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   const levelColor = (level: string | null) => {
     if (!level) return 'bg-gray-100 text-gray-500'
@@ -1895,7 +1896,7 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
     })()
   }, [students])
 
-  if (loading || loadingData) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading || loadingData) return <Loading rows={5} />
   if (points.length < 2) return <div className="p-12 text-center text-text-tertiary text-[13px]">Need at least 2 students with both CWPM and grade data.</div>
 
   const W = 500, H = 340, PAD = 50
@@ -2051,7 +2052,7 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
     }
   }
 
-  if (loading) return <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={5} />
 
   return (
     <div className="px-10 py-6 space-y-4">

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -1469,7 +1470,7 @@ export function AssignScaffolds() {
             </button>
           </div>
           {classLoading ? (
-            <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+            <Loading rows={5} />
           ) : scaffoldGroups.length === 0 ? (
             <div className="bg-surface border border-border rounded-xl p-12 text-center">
               <p className="text-text-tertiary text-[13px]">No scaffolds assigned to students in this class yet.</p>
@@ -1600,7 +1601,7 @@ export function AssignScaffolds() {
               <p className="text-text-tertiary text-[13px]">Select a student to view and assign scaffolds</p>
             </div>
           ) : loading ? (
-            <div className="py-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+            <Loading rows={5} />
           ) : (
             <div className="space-y-4">
               {/* Student header with WIDA levels */}

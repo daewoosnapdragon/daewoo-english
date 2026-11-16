@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
@@ -247,7 +248,7 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
       </div>
 
       {loading || rows == null
-        ? <div className="p-12 text-center"><Loader2 size={20} className="animate-spin text-navy mx-auto" /></div>
+        ? <Loading rows={5} />
         : view === 'placement' ? <Placement test={test} rows={rows} />
           : view === 'questions' ? <Questions test={test} rows={rows} paper={paper} />
           : <Skills test={test} rows={rows} paper={paper} />}

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
@@ -151,7 +152,7 @@ export default function WidaView() {
         )}
       </div>
       {assessing ? (
-        loadingStudents ? <div className="py-12 text-center"><Loader2 size={18} className="animate-spin text-ink-3 mx-auto" /></div>
+        loadingStudents ? <Loading rows={5} />
           : <WidaAssessSheet key={`${cls}-${gr}`} students={students} grade={gr} startStudentId={selected} onExit={() => { setAssessing(false); loadLevels() }} onSaved={loadLevels} />
       ) : (<>
       <div className="flex border-b border-rule-2 mb-4">
@@ -181,7 +182,7 @@ export default function WidaView() {
                 ))}
               </div>
             )}
-            {loadingStudents || loadingLevels ? <div className="py-12 text-center"><Loader2 size={18} className="animate-spin text-ink-3 mx-auto" /></div>
+            {loadingStudents || loadingLevels ? <Loading rows={5} />
               : !students.length ? <div className="border border-rule-2 rounded-lg p-8 text-center text-[13px] text-ink-3">{ko ? '이 반에 학생이 없습니다.' : `No students in ${cls} Grade ${gr}.`}</div> : (
               <div className="border border-rule-2 rounded-lg overflow-hidden">
                 <table className="w-full text-[12.5px] tabular-nums">

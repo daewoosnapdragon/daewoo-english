@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
@@ -131,7 +132,7 @@ export default function StandardsHeatMap() {
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-bad-soft border border-bad/30" />{lang === 'ko' ? '미달' : 'Below'}</span>
         <span className="text-ink-3">{lang === 'ko' ? '· 셀을 클릭하면 근거가 보입니다' : '· click a cell for the questions behind it'}</span>
       </div>
-      {loading || loadingStudents ? <div className="py-12 flex justify-center"><Loader2 size={18} className="animate-spin text-ink-3" /></div>
+      {loading || loadingStudents ? <Loading rows={5} />
       : codes.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '이번 학기에 기준이 태그된 평가가 없습니다. 정답 키나 루브릭에 기준을 태그하면 여기에 표시됩니다.' : 'No standards-tagged assessments for this class this semester. Tag a standard on an answer key range or a rubric criterion and it appears here.'}</p>
       : (
         <div className="overflow-x-auto border border-rule-2 rounded-md">
