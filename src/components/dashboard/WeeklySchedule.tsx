@@ -15,16 +15,17 @@ interface Period {
   slots: Record<string, { label: string; note?: string }>
 }
 
-// Parse "1:20" or "12:30" to 24h { h, m }
-function parseTime(t: string, isPM: boolean): { h: number; m: number } {
+// Parse "1:20" or "12:30" to 24h { h, m }. School hours run 9 to 5, so
+// 1-8 are always afternoon and 9-12 are as written. This applies to start
+// times too: reading "1:20" as 1:20 AM made that period look current all morning.
+export function parseTime(t: string): { h: number; m: number } {
   const [hStr, mStr] = t.split(':')
   let h = parseInt(hStr)
-  // Times 1-8 are PM (school hours), 9-11 are AM
-  if (h <= 8 && isPM) h += 12
+  if (h <= 8) h += 12
   return { h, m: parseInt(mStr) }
 }
 
-const SCHEDULE: Period[] = (() => {
+export const SCHEDULE: Period[] = (() => {
   const raw: [string, string, string, string, string, string][] = [
     ['9:10-11:30', 'prep', '', '', '', ''],
     ['11:40-12:20', '', 'lunch', 'g5', 'lunch', 'g4|release 12:15'],
@@ -37,8 +38,8 @@ const SCHEDULE: Period[] = (() => {
 
   return raw.map(([timeRange, mon, tue, wed, thu, fri]) => {
     const [startStr, endStr] = timeRange.split('-')
-    const start = parseTime(startStr, false)
-    const end = parseTime(endStr, true)
+    const start = parseTime(startStr)
+    const end = parseTime(endStr)
 
     function parseSlot(val: string): { label: string; note?: string } {
       if (!val || val === '') return { label: 'Prep' }

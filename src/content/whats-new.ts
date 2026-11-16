@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'font-choice', date: '2026-11-17', title: 'Settings: pick the font that is easiest for you to read',
+    body: 'You can now change the app’s font in Settings → Display. Classic is the look you know; Clean uses Inter everywhere; Easy to read uses Atkinson Hyperlegible, made so that I, l and 1 or O and 0 never look alike; This device uses your computer’s own font. Each choice shows a sample before you pick it. Text size sits beside it too. Both are saved in your browser only, so nobody else’s screen changes. The weekly schedule on the Dashboard also no longer marks an afternoon class as Now in the morning.',
+    path: '/settings#set-display',
+  },
+  {
     id: 'ink-and-paper', date: '2026-11-23', title: 'Your class flower, and a finished look',
     body: 'Each class now has its flower, drawn from line drawings of a lily, camellia, daisy, sunflower, marigold and snapdragon. When you log in, yours draws itself as a short welcome; it also sits in your avatar at the top right, and it draws itself on a page with nothing on it yet. While something loads you see three small ink dots. Changing page is immediate. A page you have opened before (in the last ten minutes) draws whole at once and quietly updates if anything changed, resting the pointer on a menu link starts loading that page before you click, and a few seconds after you open the app the pages you use most are loaded quietly in the background. While a page loads, its heading and controls are already there and only the part that is waiting shows the ink dots (Lesson Plans shows the month as a faint outline that fills in). A thin line under the date shows how far through the term we are, with a mark where report card grades are due. Report card comments you have not saved yet sit in fresh red ink and dry to black once saved. Approved report cards and finalized level tests get a stamp, messages arrive on a small, quieter card, and a check draws itself once attendance is all marked. Text is a little larger, and Text size in the menu under your name makes it larger still, for a projector. If your computer is set to reduce motion, all of this stays still.',
     path: '/dashboard', guide: 'dashboard',
