@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { termProgress } from '../term'
+import { termProgress, termMonths, daysUntil } from '../term'
 
 describe('termProgress', () => {
   it('counts the week of the term and how far through it is', () => {
@@ -23,5 +23,24 @@ describe('termProgress', () => {
   })
   it('has no cutoff mark without a cutoff date', () => {
     expect(termProgress('2026-08-24', '2026-12-31', '2026-11-16')!.cutoff).toBeNull()
+  })
+})
+
+describe('termMonths', () => {
+  it('lists the first of each month inside the term', () => {
+    const m = termMonths('2026-08-24', '2026-12-31')
+    expect(m.map(x => x.label)).toEqual(['Sep', 'Oct', 'Nov', 'Dec'])
+    expect(m[0].frac).toBeGreaterThan(0)
+    expect(m[3].frac).toBeLessThan(1)
+  })
+  it('counts a term that starts on the first', () => {
+    expect(termMonths('2026-03-01', '2026-04-30').map(x => x.label)).toEqual(['Mar', 'Apr'])
+  })
+})
+
+describe('daysUntil', () => {
+  it('counts whole days', () => {
+    expect(daysUntil('2026-12-24', '2026-11-16')).toBe(38)
+    expect(daysUntil('2026-11-10', '2026-11-16')).toBe(-6)
   })
 })
