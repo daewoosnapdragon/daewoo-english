@@ -2,7 +2,8 @@
 
 import { takeWelcome } from '@/lib/welcome'
 import Welcome from '@/components/brand/Welcome'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { markOpening, onStale, prefetchPage } from '@/lib/readCache'
 import { usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -24,21 +25,77 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const view = viewForPath(pathname)
 
+  // The first load of a session: the wordmark soaks in like ink, and the app
+  // waits for it to finish. Later reloads in the same session skip it.
+  const [intro, setIntro] = useState<'pending' | 'soak' | 'done'>('pending')
+  useEffect(() => {
+    let first = false
+    try { first = !sessionStorage.getItem('daewoo_inked'); sessionStorage.setItem('daewoo_inked', '1') } catch {}
+    if (!first || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setIntro('done'); return }
+    setIntro('soak')
+    const t = setTimeout(() => setIntro('done'), 1300)
+    return () => clearTimeout(t)
+  }, [])
+
+  const ready = !!currentTeacher && !teachersLoading && !semestersLoading && intro === 'done'
+  const pageShownAt = useRef(0)
+  useEffect(() => { pageShownAt.current = performance.now() }, [pathname])
+
+  // A page opened again draws from remembered answers (lib/readCache). If the
+  // database turns out to have something newer, the page is drawn again with
+  // it, quietly, unless the teacher has already started typing in it.
+  const [redraw, setRedraw] = useState(0)
+  const quietUntil = useRef(0)
+  useEffect(() => {
+    onStale(path => {
+      if (path !== window.location.pathname) return
+      const a = document.activeElement
+      if (a && a.closest('main') && a.matches('input, textarea, select, [contenteditable="true"]')) return
+      quietUntil.current = performance.now() + 800
+      setRedraw(n => n + 1)
+    })
+    return () => onStale(null)
+  }, [])
+  useEffect(() => { setRedraw(0) }, [pathname])
+
+  // Resting on a link fetches what that page read last time, so a click on it
+  // draws at once. A press marks the start of a page opening.
+  useEffect(() => {
+    if (!ready) return
+    const auth = { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '', authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}` }
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const target = (e: Event) => {
+      const a = (e.target as Element | null)?.closest?.('a[href^="/"]') as HTMLAnchorElement | null
+      return a ? new URL(a.href).pathname : null
+    }
+    const over = (e: Event) => { const p = target(e); if (timer) clearTimeout(timer); if (p) timer = setTimeout(() => prefetchPage(p, auth), 80) }
+    const now = (e: Event) => { const p = target(e); if (p) { prefetchPage(p, auth); if (e.type === 'click') markOpening() } }
+    document.addEventListener('pointerover', over)
+    document.addEventListener('focusin', over)
+    document.addEventListener('pointerdown', now)
+    document.addEventListener('click', now)
+    return () => { if (timer) clearTimeout(timer); document.removeEventListener('pointerover', over); document.removeEventListener('focusin', over); document.removeEventListener('pointerdown', now); document.removeEventListener('click', now) }
+  }, [ready])
+
   // Content that replaces a loader fades in instead of popping: whenever the
   // ink dots leave the page, whatever took their place eases in over 160 ms.
+  // Not while the page itself is still fading in, or while it is being
+  // redrawn with newer answers: those should not blink.
   useEffect(() => {
     const root = document.querySelector('main')
-    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (!ready || !root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const isLoader = (n: Node) => n instanceof Element && (n.classList.contains('ink-wait') || !!n.querySelector('.ink-wait'))
     const mo = new MutationObserver(records => {
       for (const r of records) {
+        const t = performance.now()
+        if (t - pageShownAt.current < 200 || t < quietUntil.current) return
         if (!Array.from(r.removedNodes).some(isLoader)) continue
         r.addedNodes.forEach(n => { if (n instanceof HTMLElement && !isLoader(n)) n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' }) })
       }
     })
     mo.observe(root, { childList: true, subtree: true })
     return () => mo.disconnect()
-  }, [currentTeacher])
+  }, [ready])
 
   // A deep link's extras (which student, which filter) stay readable by the
   // target view for a moment after the route changes, then are cleared.
@@ -56,18 +113,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [welcome, setWelcome] = useState(false)
   useEffect(() => { if (currentTeacher && takeWelcome()) setWelcome(true) }, [currentTeacher])
   const endWelcome = useCallback(() => setWelcome(false), [])
-
-  // The first load of a session: the wordmark soaks in like ink, and the app
-  // waits for it to finish. Later reloads in the same session skip it.
-  const [intro, setIntro] = useState<'pending' | 'soak' | 'done'>('pending')
-  useEffect(() => {
-    let first = false
-    try { first = !sessionStorage.getItem('daewoo_inked'); sessionStorage.setItem('daewoo_inked', '1') } catch {}
-    if (!first || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setIntro('done'); return }
-    setIntro('soak')
-    const t = setTimeout(() => setIntro('done'), 1300)
-    return () => clearTimeout(t)
-  }, [])
 
   if (teachersLoading || semestersLoading || intro !== 'done') {
     return (
@@ -94,7 +139,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Masthead />
       <NoticeBoard />
       <main className="mx-auto max-w-[1440px]">
-        <div key={pathname} data-page={pathname} className="page-fade">
+        <div key={`${pathname}#${redraw}`} data-page={pathname} className={redraw ? undefined : 'page-fade'}>
           {children}
         </div>
       </main>
