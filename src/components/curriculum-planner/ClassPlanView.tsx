@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
@@ -109,7 +110,7 @@ export default function ClassPlanView() {
   const [copying, setCopying] = useState(false)
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
 
-  if (p.loading) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+  if (p.loading) return <Loading rows={5} />
   if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '아직 준비되지 않았습니다.' : 'Class plans are not set up yet.'}</p>
 
   const viewLabel = (v: View) => v === 'year' ? (ko ? '한 해' : 'Whole year') : (ko ? TERM_LABEL[v].ko : TERM_LABEL[v].en)

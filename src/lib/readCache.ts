@@ -38,20 +38,35 @@ let currentPath = () => (typeof window === 'undefined' ? '' : window.location.pa
 let inBrowser = () => typeof window !== 'undefined'
 
 // Which reads each page made last time, so they can be fetched ahead of a click.
-const RECIPE_KEY = 'daewoo_reads'
+// Kept per teacher, so a shared computer warms each teacher's own pages.
+// Only addresses are stored (which table, which filters), never answers.
+let recipeKey = 'daewoo_reads'
 const RECIPE_MAX = 40
 type Recipe = { u: string; m: string; h: Record<string, string> }
-let recipes: Record<string, Recipe[]> | null = null
+type Book = { pages: Record<string, Recipe[]>; visits: Record<string, number> }
+let recipes: Book | null = null
 
-function loadRecipes(): Record<string, Recipe[]> {
+function loadRecipes(): Book {
   if (recipes) return recipes
-  try { recipes = JSON.parse(localStorage.getItem(RECIPE_KEY) || '{}') || {} } catch { recipes = {} }
+  try {
+    const raw = JSON.parse(localStorage.getItem(recipeKey) || '{}') || {}
+    recipes = raw.pages ? raw : { pages: {}, visits: {} }
+  } catch { recipes = { pages: {}, visits: {} } }
   return recipes!
 }
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 function saveRecipes() {
   if (saveTimer) return
-  saveTimer = setTimeout(() => { saveTimer = null; try { localStorage.setItem(RECIPE_KEY, JSON.stringify(recipes)) } catch { /* private mode */ } }, 1000)
+  const key = recipeKey
+  saveTimer = setTimeout(() => { saveTimer = null; try { localStorage.setItem(key, JSON.stringify(recipes)) } catch { /* private mode */ } }, 1000)
+}
+
+/** Whose pages are being recorded (the logged-in teacher). */
+export function setReader(id: string | null) {
+  const key = id ? `daewoo_reads:${id}` : 'daewoo_reads'
+  if (key === recipeKey) return
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; try { localStorage.setItem(recipeKey, JSON.stringify(recipes)) } catch {} }
+  recipeKey = key; recipes = null
 }
 
 function headerObject(h: HeadersInit | undefined): Record<string, string> {
@@ -94,7 +109,10 @@ function remember(key: ReadKey, e: Entry) {
 
 function noteNavigation() {
   const path = currentPath()
-  if (path !== lastPath) { lastPath = path; openUntil = now() + OPENING_MS }
+  if (path !== lastPath) {
+    lastPath = path; openUntil = now() + OPENING_MS
+    if (path) { const v = loadRecipes().visits; v[path] = (v[path] || 0) + 1; saveRecipes() }
+  }
   return path
 }
 
@@ -148,7 +166,7 @@ async function passThrough(key: ReadKey, input: RequestInfo | URL, init: Request
 
 function record(path: string, url: string, method: string, h: Record<string, string>) {
   if (!path) return
-  const all = loadRecipes()
+  const all = loadRecipes().pages
   const list = all[path] || (all[path] = [])
   if (list.some(r => r.u === url && r.m === method)) return
   const shape: Record<string, string> = {}
@@ -162,7 +180,7 @@ function record(path: string, url: string, method: string, h: Record<string, str
 export function prefetchPage(path: string, auth: Record<string, string>) {
   if (!inBrowser() || path === currentPath()) return
   noteNavigation()
-  for (const r of loadRecipes()[path] || []) {
+  for (const r of loadRecipes().pages[path] || []) {
     const h = { ...r.h, ...auth }
     const key = keyOf(r.m, r.u, headerObject(h))
     const hit = cache.get(key)
@@ -171,9 +189,20 @@ export function prefetchPage(path: string, auth: Record<string, string>) {
   }
 }
 
+/** The teacher's most-opened pages (other than this one), most first. */
+export function favouritePages(n: number): string[] {
+  const { visits, pages } = loadRecipes()
+  return Object.keys(pages).filter(p => p !== currentPath() && p !== '/').sort((a, b) => (visits[b] || 0) - (visits[a] || 0)).slice(0, n)
+}
+
+/** Fetch ahead the teacher's most-opened pages, one after another, gently. */
+export function warmUp(auth: Record<string, string>, n = 5, gap = 250) {
+  favouritePages(n).forEach((p, i) => setTimeout(() => prefetchPage(p, auth), i * gap))
+}
+
 // ─── For tests ───
 export function _reset(opts: { fetch?: typeof fetch; now?: () => number; path?: () => string } = {}) {
-  cache.clear(); inflight.clear(); generation = 0; lastPath = null; openUntil = 0; staleListener = null; recipes = {}
+  cache.clear(); inflight.clear(); generation = 0; lastPath = null; openUntil = 0; staleListener = null; recipes = { pages: {}, visits: {} }; recipeKey = 'daewoo_reads'
   baseFetch = opts.fetch || ((input, init) => fetch(input, init))
   now = opts.now || (() => Date.now())
   currentPath = opts.path || (() => (typeof window === 'undefined' ? '' : window.location.pathname))

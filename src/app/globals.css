@@ -473,7 +473,11 @@ svg.class-flower.is-drawing circle { opacity: 0; animation: pen-dot 200ms var(--
 @media (prefers-reduced-motion: reduce) { .ink-dots i { opacity: .6; } }
 
 /* A page that keeps its content on screen while the next lot loads. */
-.is-refreshing > *:not(:first-child) { opacity: .5; pointer-events: none; transition: opacity 200ms ease 150ms; }
+/* A page whose header is drawn at once and whose body waits: the body is a
+   faint outline on the first load, faded while refreshing, and inks in. */
+.loadable > *:not(:first-child) { transition: opacity 220ms ease; }
+.loadable.is-first-load > *:not(:first-child) { opacity: .28; pointer-events: none; transition: none; }
+.loadable.is-refreshing > *:not(:first-child) { opacity: .5; pointer-events: none; transition: opacity 200ms ease 150ms; }
 @keyframes ruled-sheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 
 /* ─── A check that draws itself ─── */

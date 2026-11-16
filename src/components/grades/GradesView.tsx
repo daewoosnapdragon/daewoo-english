@@ -236,7 +236,7 @@ export default function GradesView() {
           <div>
             <h2 className="font-display text-[length:calc(30px*var(--ts))] leading-none text-ink">{t.grades.title}</h2>
             <p className="text-text-secondary text-sm mt-1">
-              Grade {selectedGrade} · {selectedClass} · {students.length} students
+              Grade {selectedGrade} · {selectedClass}{loadingStudents ? '' : ` · ${students.length} students`}
               {selectedAssessment && subView === 'entry' && ` · ${selectedAssessment.name} (/${selectedAssessment.max_score})`}
             </p>
           </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { getKSTDateString } from '@/lib/utils'
@@ -70,7 +71,7 @@ export default function AdminMonth({ staff, settings, month, setMonth, onOpen }:
         <span className="text-ink-3"> · {ko ? `시간당 ${fmtWon(settings.rate, true)}` : `${fmtWon(settings.rate)} an hour`}</span>
       </p>
 
-      {m.loading ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : (
+      {m.loading ? <Loading rows={5} /> : (
         <div className="overflow-x-auto">
           <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>

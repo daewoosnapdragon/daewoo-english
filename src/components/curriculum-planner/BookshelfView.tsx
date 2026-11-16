@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -96,7 +97,7 @@ export default function BookshelfView() {
         </p>
       )}
 
-      {c.loading ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : c.missing ? null : (
+      {c.loading ? <Loading rows={5} /> : c.missing ? null : (
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
           {/* ── The shelf ── */}
           <aside>

@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
@@ -93,7 +94,7 @@ export default function BudgetView() {
       <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mb-5">{ko ? '비품 페이지에 입력한 영수증이 여기에 합산됩니다. ' : 'Every receipt entered on the Supplies page lands here. '}<Link href="/supplies#receipts" className="text-accent hover:underline">{ko ? '영수증 입력' : 'Enter a receipt'}</Link>{semester?.start_date ? ` · ${fmtDay(semester.start_date, ko)}${semester.end_date ? ` – ${fmtDay(semester.end_date, ko)}` : ''}` : ''}</p>
 
       {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-supplies.sql을 먼저 실행하세요.' : 'The supplies tables are missing or out of date. Admin runs supabase/migration-supplies.sql once.'}</p>}
-      {loading ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : missing ? null : (
+      {loading ? <Loading rows={5} /> : missing ? null : (
         <>
           <section className="mb-8">
             <div className="flex items-baseline justify-between gap-3 border-b border-rule-2 pb-2 mb-1">

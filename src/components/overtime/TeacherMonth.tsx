@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { getKSTDateString } from '@/lib/utils'
@@ -174,7 +175,7 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
           </div>
 
           {m.loading ? (
-            <p className="px-4 py-6 text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+            <Loading rows={5} />
           ) : (
             <>
               {weeks.length === 0 && <p className="px-14 py-5 text-[length:calc(13px*var(--ts))] text-ink-3">{ko ? '이 달은 아직 시작되지 않았습니다.' : 'This month hasn’t started yet.'}</p>}

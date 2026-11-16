@@ -3,7 +3,7 @@
 import { takeWelcome } from '@/lib/welcome'
 import Welcome from '@/components/brand/Welcome'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { markOpening, onStale, prefetchPage } from '@/lib/readCache'
+import { markOpening, onStale, prefetchPage, setReader, warmUp } from '@/lib/readCache'
 import { usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -57,6 +57,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return () => onStale(null)
   }, [])
   useEffect(() => { setRedraw(0) }, [pathname])
+
+  // Each teacher's pages are recorded under their own name. Set while
+  // rendering, before the page below makes its first request.
+  setReader(currentTeacher?.id || null)
+
+  // A couple of seconds after the app opens, the teacher's most-used pages are
+  // fetched quietly in the background, so the first visit to each is already
+  // instant. Again when the tab comes back after ten minutes or more.
+  useEffect(() => {
+    if (!ready) return
+    const auth = { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '', authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}` }
+    let last = 0
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const warm = () => {
+      if (document.hidden || Date.now() - last < 9 * 60_000) return
+      last = Date.now()
+      const go = () => warmUp(auth, 5)
+      const idle = (window as any).requestIdleCallback as ((cb: () => void, o?: { timeout: number }) => number) | undefined
+      if (idle) idle(go, { timeout: 3000 }); else go()
+    }
+    timer = setTimeout(warm, 2500)
+    const onVisible = () => { if (!document.hidden) warm() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { if (timer) clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible) }
+  }, [ready])
 
   // Resting on a link fetches what that page read last time, so a click on it
   // draws at once. A press marks the start of a page opening.

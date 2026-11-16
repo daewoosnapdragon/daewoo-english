@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
@@ -41,7 +42,7 @@ export default function OvertimeView() {
             : (ko ? '아직 준비되지 않았습니다.' : 'Not set up yet.')}</p>
         </div>
       ) : !loaded || probe.loading || (isAdmin && teachersLoading) ? (
-        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+        <Loading rows={5} />
       ) : isAdmin ? (
         open
           ? <TeacherMonth key={open.id} teacher={open} settings={settings} asAdmin initialMonth={month} onBack={() => setOpen(null)} />

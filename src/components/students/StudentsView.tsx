@@ -2091,7 +2091,7 @@ export function StudentGroupsTab({ studentId, studentName }: { studentId: string
     })()
   }, [studentId])
 
-  if (loading) return <div className="flex justify-center py-8"><Loader2 size={16} className="animate-spin text-navy" /></div>
+  if (loading) return <Loading rows={3} />
 
   const typeColors: Record<string, string> = { reading: 'bg-blue-100 text-blue-700', writing: 'bg-amber-100 text-amber-700', skill: 'bg-green-100 text-green-700', custom: 'bg-purple-100 text-purple-700', fluency: 'bg-blue-100 text-blue-700', litCircle: 'bg-purple-100 text-purple-700', partner: 'bg-purple-100 text-purple-700' }
   const typeLabels: Record<string, string> = { reading: 'Reading', writing: 'Writing', skill: 'Skill', custom: 'Custom', fluency: 'Reading', litCircle: 'Custom', partner: 'Custom' }
@@ -2186,7 +2186,7 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
     showToast('Goal removed')
   }
 
-  if (loading) return <div className="py-6 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div>
+  if (loading) return <Loading rows={3} />
 
   const metricLabels: Record<string, string> = { cwpm: 'CWPM', grade_pct: 'Grade %', writing: 'Writing', custom: 'Custom' }
   const statusColors: Record<string, string> = { active: 'bg-blue-100 text-blue-700', achieved: 'bg-green-100 text-green-700', revised: 'bg-amber-100 text-amber-700', dropped: 'bg-gray-100 text-gray-500' }

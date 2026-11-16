@@ -1,5 +1,6 @@
 'use client'
 
+import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
@@ -102,7 +103,7 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
               <button onClick={() => setOpen(false)} className="p-0.5 rounded hover:bg-surface-alt"><X size={14} className="text-text-tertiary" /></button>
             </div>
           </div>
-          {loading ? <div className="py-4 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div> :
+          {loading ? <Loading rows={2} /> :
           data && (
             <div className="space-y-2">
               <div className="flex items-center justify-between text-[length:calc(11px*var(--ts))]">
