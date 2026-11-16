@@ -6,9 +6,10 @@ import ClassFlower, { flowerForClass } from './ClassFlower'
 
 // ─── Loading ─────────────────────────────────────────────────────
 // Ruled lines, with the signed-in teacher's class flower drawing itself in
-// one pen line on top of them. Nothing shows for the first 150 ms, so a
-// fast load never flashes a loader. With reduced motion the flower is
-// simply there.
+// one pen line on top of them. The whole flower is always there in faint
+// ink underneath, so a load that ends mid-stroke still shows a finished
+// flower, never half of one. Nothing shows for the first 250 ms, so a fast
+// load never flashes a loader. With reduced motion the flower is simply there.
 
 const DRAW = 2200, HOLD = 650, FADE = 420
 
@@ -30,7 +31,7 @@ export default function Loading({ rows = 5, label, className = '' }: { rows?: nu
   const reduce = useReducedMotion()
   const [shown, setShown] = useState(false)
   const [cycle, setCycle] = useState(0)
-  useEffect(() => { const t = setTimeout(() => setShown(true), 150); return () => clearTimeout(t) }, [])
+  useEffect(() => { const t = setTimeout(() => setShown(true), 250); return () => clearTimeout(t) }, [])
   useEffect(() => {
     if (!shown || reduce) return
     const t = setTimeout(() => setCycle(c => c + 1), DRAW + HOLD + FADE)
@@ -43,8 +44,9 @@ export default function Loading({ rows = 5, label, className = '' }: { rows?: nu
       {Array.from({ length: rows }, (_, i) => <div key={i} className="ruled-wait-line" />)}
       <div className="ruled-wait-center">
         {shown && (
-          <span key={cycle} className="ruled-wait-flower" style={{ ['--cycle' as any]: `${DRAW + HOLD + FADE}ms` }}>
-            <ClassFlower name={name} size={size} line={1.2} draw={!reduce} duration={DRAW} />
+          <span className="ruled-wait-flower" style={{ ['--cycle' as any]: `${DRAW + HOLD + FADE}ms` }}>
+            <ClassFlower name={name} size={size} line={1.2} className="flower-base" />
+            {!reduce && <span key={cycle} className="flower-pen"><ClassFlower name={name} size={size} line={1.2} draw duration={DRAW} /></span>}
           </span>
         )}
       </div>

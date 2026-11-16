@@ -32,7 +32,7 @@
   --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
   --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
   --wet: 107 58 51;          /* fresh ink: unsaved words */
-  --font-serif-stack: var(--font-serif), var(--font-kr-serif), 'Iowan Old Style', Georgia, serif;
+  --font-serif-stack: var(--font-serif), 'Iowan Old Style', Georgia, var(--font-kr-serif), serif;
   --font-sans-stack: var(--font-sans), var(--font-kr), system-ui, -apple-system, sans-serif;
   /* Kept for older components that read the old variables. */
   --font-display: var(--font-serif-stack);
@@ -452,7 +452,9 @@ svg.class-flower.is-drawing circle { opacity: 0; animation: pen-dot 200ms var(--
 .ruled-wait::before { content: ""; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px; background: rgb(var(--accent) / .35); }
 .ruled-wait-line { height: 34px; border-bottom: 1px solid rgb(var(--rule)); }
 .ruled-wait-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.ruled-wait-flower { display: block; animation: flower-cycle var(--cycle, 3.3s) linear both; }
+.ruled-wait-flower { position: relative; display: block; }
+.ruled-wait-flower .flower-base { opacity: .2; }
+.ruled-wait-flower .flower-pen { position: absolute; inset: 0; animation: flower-cycle var(--cycle, 3.3s) linear both; }
 @keyframes flower-cycle { 0%, 86% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ─── A check that draws itself ─── */
@@ -479,22 +481,21 @@ html.dark .stamp { mix-blend-mode: screen; }
 .stamp-sm.stamp-land { animation-name: stamp-land-sm; }
 @keyframes stamp-land-sm { 0% { opacity: 0; transform: rotate(-6deg) scale(1.6); } 55% { opacity: 1; transform: rotate(-6deg) scale(.95); } 100% { opacity: 1; transform: rotate(-6deg) scale(1); } }
 
-/* ─── Toast: a slip of real paper ───
-   The photograph is a border image: the torn top keeps its shape whatever
-   the message length, and the paper stays paper in dark mode too. */
-.paper-slip { width: min(360px, calc(100vw - 32px)); border-style: solid; border-width: 18px 6px 6px 6px;
-  border-image: url('/brand/paper-slip.webp') 40 12 12 12 fill / 18px 6px 6px 6px stretch;
-  padding: 8px 14px 8px; color: #2B251B; filter: drop-shadow(0 1px 1px rgba(60, 44, 20, .22)) drop-shadow(0 8px 14px rgba(60, 44, 20, .2)); }
-html.dark .paper-slip { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6)) drop-shadow(0 8px 16px rgba(0, 0, 0, .55)); }
-.paper-slip .slip-msg { font-family: var(--font-serif-stack); font-size: 16px; line-height: 1.35; }
-.paper-slip.is-error .slip-msg { color: #8A2A2B; }
-.paper-slip .slip-action { color: #8A2A2B; font-weight: 600; font-size: 13px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.paper-slip .slip-drain { height: 1px; background: rgba(43, 37, 27, .4); margin-top: 8px; transform-origin: left; animation: slip-drain linear forwards; }
-@keyframes slip-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-@keyframes slip-in { from { transform: translateY(140%) rotate(-3deg); } to { transform: translateY(0) rotate(-0.8deg); } }
-@keyframes slip-out { from { transform: translateY(0) rotate(-0.8deg); opacity: 1; } to { transform: translateY(140%) rotate(-3deg); opacity: 0; } }
-.slip-in { animation: slip-in 520ms cubic-bezier(.2, .85, .25, 1) both; }
-.slip-out { animation: slip-out 260ms ease-in both; }
+/* ─── Toast: a small ink card ───
+   Ink on paper in light mode and the reverse in dark, so it reads as one
+   object above the page. A hairline under it runs down the time left. */
+.toast-card { width: max-content; min-width: 240px; max-width: min(420px, calc(100vw - 32px)); background: rgb(var(--ink)); color: rgb(var(--paper));
+  border-radius: 6px; box-shadow: 0 10px 28px rgb(0 0 0 / .22), 0 1px 2px rgb(0 0 0 / .2); overflow: hidden; }
+.toast-card .toast-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px 10px 12px; font-size: 13.5px; font-weight: 500; line-height: 1.4; }
+.toast-card svg.drawn-check { stroke: rgb(var(--good-soft)); }
+.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.toast-card .toast-action { flex: none; margin-left: 6px; color: rgb(var(--accent-soft)); font-weight: 600; font-size: 13px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.toast-card .toast-time { height: 2px; background: rgb(var(--paper) / .28); transform-origin: left; animation: toast-time linear forwards; }
+@keyframes toast-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(4px); } }
+.toast-in { animation: toast-in 220ms var(--ease) both; }
+.toast-out { animation: toast-out 160ms ease-in both; }
 
 /* ─── Wordmark: the ink soaks in ─── */
 @keyframes ink-soak { from { opacity: 0; filter: blur(10px); letter-spacing: .14em; color: rgb(var(--wet)); } 55% { opacity: 1; } to { opacity: 1; filter: blur(0); letter-spacing: -0.01em; color: rgb(var(--ink)); } }
@@ -503,4 +504,4 @@ html.dark .paper-slip { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .6)) drop-sh
 .wordmark-sub { animation: set-in 450ms var(--ease) 800ms both; }
 
 /* Overlays never print. */
-@media print { .paper-slip, .fixed.inset-0 { display: none !important; } }
+@media print { .toast-card, .fixed.inset-0 { display: none !important; } }
