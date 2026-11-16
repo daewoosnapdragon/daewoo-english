@@ -198,14 +198,19 @@ function UserMenu() {
 // and a band opens underneath with the months and what the marks mean.
 function TermLine({ term, months, today, cutoffDate, ko }: { term: ReturnType<typeof termProgress> & {}; months: { label: string; frac: number }[]; today: string; cutoffDate: string | null; ko: boolean }) {
   const [open, setOpen] = useState(false)
+  // Opens only when the pointer rests on the line, not when it crosses it on the way to the tabs.
+  const restTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rest = () => { if (restTimer.current) clearTimeout(restTimer.current); restTimer.current = setTimeout(() => setOpen(true), 500) }
+  const leave = () => { if (restTimer.current) clearTimeout(restTimer.current); setOpen(false) }
+  useEffect(() => () => { if (restTimer.current) clearTimeout(restTimer.current) }, [])
   const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   const left = cutoffDate ? daysUntil(cutoffDate, today) : null
   const pct = (f: number) => `${(f * 100).toFixed(2)}%`
   const weekText = ko ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`
   return (
-    <div className={`term-wrap${open ? ' is-open' : ''}`} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+    <div className={`term-wrap${open ? ' is-open' : ''}`} onMouseLeave={leave}>
       <div className="term-line" tabIndex={0} role="button" aria-expanded={open} aria-label={`${weekText}${cutoffDate ? ` · ${ko ? '성적표 마감' : 'Report cards due'} ${fmt(cutoffDate)}` : ''}`}
-        onClick={() => setOpen(o => !o)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}>
+        onMouseEnter={rest} onClick={() => setOpen(o => !o)} onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setOpen(true) }} onBlur={leave}>
         <span className="term-fill" style={{ width: pct(term.frac) }} />
         {term.cutoff != null && <span className="term-cut" style={{ left: pct(term.cutoff) }} />}
       </div>
@@ -442,7 +447,7 @@ export default function Masthead() {
 
   if (collapsed) {
     return (
-      <header className="masthead-bar sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
+      <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
         <div className="mx-auto max-w-[1440px] px-6 grid grid-cols-[auto_1fr_auto] items-center gap-4">
           <Link href="/dashboard" className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
           <NavLinks active={active} signals={signals} label={label} />
@@ -455,7 +460,7 @@ export default function Masthead() {
   }
 
   return (
-    <header className="masthead-bar sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
+    <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
       <div className="mx-auto max-w-[1440px] px-6">
         {/* Row 1: find · brand · user */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center pt-3 pb-2">

@@ -6,15 +6,15 @@ import { useApp } from '@/lib/context'
 // ─── Loading ─────────────────────────────────────────────────────
 // Three small ink dots rising in turn, in the middle of the space the
 // content will take. They loop rather than finish, so a quick load never
-// looks cut off. Nothing shows for the first 250 ms; a load longer than a
-// second adds a small grey “Loading…”. `kind` is kept for older call
-// sites: quiet places simply wait a little longer before the dots appear.
+// looks cut off. Nothing shows for the first 400 ms, so a quick load never
+// flashes them; a load longer than a second adds a small grey “Loading…”.
+// `kind` is kept for older call sites.
 
 export default function Loading({ rows = 5, kind = 'lines', label, className = '' }: { rows?: number; kind?: 'lines' | 'quiet'; label?: string; className?: string }) {
   const { language } = useApp()
   const [stage, setStage] = useState<0 | 1 | 2>(0)
   useEffect(() => {
-    const a = setTimeout(() => setStage(s => Math.max(s, 1) as 1 | 2), kind === 'quiet' ? 400 : 250)
+    const a = setTimeout(() => setStage(s => Math.max(s, 1) as 1 | 2), 400)
     const b = setTimeout(() => setStage(2), 1000)
     return () => { clearTimeout(a); clearTimeout(b) }
   }, [kind])

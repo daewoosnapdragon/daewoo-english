@@ -1,10 +1,9 @@
 'use client'
 
-import { canTransition, transitionTo } from '@/lib/pageTransition'
 import { takeWelcome } from '@/lib/welcome'
 import Welcome from '@/components/brand/Welcome'
 import { useCallback, useEffect, useState } from 'react'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { viewForPath, PAGE_TITLES } from '@/lib/routes'
@@ -23,25 +22,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { currentTeacher, semestersLoading, pendingNavigation, clearNavigation, language } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const pathname = usePathname()
-  const router = useRouter()
   const view = viewForPath(pathname)
 
-  // Every internal link goes through the page transition: the page stays
-  // until the next one is ready, then they cross-fade. Next's Link sees the
-  // click was handled and does not navigate a second time.
+  // Content that replaces a loader fades in instead of popping: whenever the
+  // ink dots leave the page, whatever took their place eases in over 160 ms.
   useEffect(() => {
-    const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !canTransition()) return
-      const a = (e.target as Element | null)?.closest?.('a')
-      if (!a || !a.href || (a.target && a.target !== '_self') || a.hasAttribute('download')) return
-      const url = new URL(a.href, window.location.href)
-      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return
-      e.preventDefault()
-      transitionTo(router, url.pathname + url.search + url.hash)
-    }
-    document.addEventListener('click', onClick, true)
-    return () => document.removeEventListener('click', onClick, true)
-  }, [router])
+    const root = document.querySelector('main')
+    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const isLoader = (n: Node) => n instanceof Element && (n.classList.contains('ink-wait') || !!n.querySelector('.ink-wait'))
+    const mo = new MutationObserver(records => {
+      for (const r of records) {
+        if (!Array.from(r.removedNodes).some(isLoader)) continue
+        r.addedNodes.forEach(n => { if (n instanceof HTMLElement && !isLoader(n)) n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' }) })
+      }
+    })
+    mo.observe(root, { childList: true, subtree: true })
+    return () => mo.disconnect()
+  }, [currentTeacher])
 
   // A deep link's extras (which student, which filter) stay readable by the
   // target view for a moment after the route changes, then are cleared.
