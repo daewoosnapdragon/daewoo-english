@@ -432,11 +432,26 @@ html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb
 .nav-slider.is-waiting { animation: nav-breath 1.1s ease-in-out infinite; }
 @keyframes nav-breath { 50% { opacity: .35; } }
 
-/* ─── The term line under the context bar ─── */
-.term-line { position: relative; height: 3px; background: rgb(var(--paper-3)); }
+/* ─── The term line under the header ───
+   Hover, tap or focus it and a band opens underneath with the months, the
+   week, and what the oxblood notch is. */
+.term-wrap { position: relative; }
+.term-line { position: relative; height: 3px; background: rgb(var(--paper-3)); cursor: pointer; outline: none; transition: height 150ms var(--ease); }
+.term-line::before { content: ""; position: absolute; left: 0; right: 0; top: -4px; bottom: -6px; }
+.term-wrap.is-open .term-line { height: 5px; }
+.term-line:focus-visible { box-shadow: 0 0 0 2px rgb(var(--accent) / .5); }
 .term-line .term-fill { position: absolute; inset: 0 auto 0 0; background: rgb(var(--ink)); animation: term-grow 900ms var(--ease) both; }
 .term-line .term-cut { position: absolute; top: -4px; bottom: 0; width: 2px; margin-left: -1px; background: rgb(var(--accent)); }
 @keyframes term-grow { from { width: 0; } }
+.term-band { position: absolute; left: 0; right: 0; top: 100%; z-index: 45; background: rgb(var(--paper-2)); border-bottom: 1px solid rgb(var(--rule-2));
+  box-shadow: 0 8px 18px rgb(var(--ink) / .08); padding: 4px 0 7px; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 160ms ease, transform 160ms var(--ease); }
+.term-wrap.is-open .term-band { opacity: 1; transform: none; }
+.term-months { position: relative; height: 16px; }
+.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(10.5px * var(--ts)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--ink-3)); line-height: 16px; }
+.term-facts { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 3px 16px 0; font-size: calc(12px * var(--ts)); color: rgb(var(--ink-2)); }
+.term-facts b { font-weight: 600; color: rgb(var(--ink)); }
+.term-due { display: inline-flex; align-items: center; gap: 6px; }
+.term-due i { width: 7px; height: 7px; border-radius: 9999px; background: rgb(var(--accent)); }
 
 /* ─── Class flowers ─── */
 svg.class-flower { display: block; flex: none; overflow: hidden; fill: none; stroke: var(--fc, color-mix(in srgb, var(--c) 85%, rgb(var(--ink)))); stroke-linecap: round; stroke-linejoin: round; }
@@ -503,6 +518,11 @@ html.dark .stamp { mix-blend-mode: screen; }
 @keyframes toast-out { to { opacity: 0; transform: translateY(4px); } }
 .toast-in { animation: toast-in 220ms var(--ease) both; }
 .toast-out { animation: toast-out 160ms ease-in both; }
+
+/* ─── Welcome, right after logging in ─── */
+.welcome { position: fixed; inset: 0; z-index: 200; background: rgb(var(--paper)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; cursor: pointer; transition: opacity 250ms ease; }
+.welcome.is-leaving { opacity: 0; pointer-events: none; }
+.welcome-line { font-size: calc(30px * var(--ts)); color: rgb(var(--ink)); animation: set-in 400ms var(--ease) 350ms both; }
 
 /* ─── Wordmark: the ink soaks in ─── */
 @keyframes ink-soak { from { opacity: 0; filter: blur(10px); letter-spacing: .14em; color: rgb(var(--wet)); } 55% { opacity: 1; } to { opacity: 1; filter: blur(0); letter-spacing: -0.01em; color: rgb(var(--ink)); } }

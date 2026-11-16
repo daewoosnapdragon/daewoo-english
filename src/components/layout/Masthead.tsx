@@ -14,7 +14,7 @@ import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 import { FlowerAvatar, flowerForClass } from '@/components/brand/ClassFlower'
 import DrawnCheck from '@/components/brand/DrawnCheck'
-import { termProgress } from '@/lib/term'
+import { termProgress, termMonths, daysUntil } from '@/lib/term'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centered beneath it, a thin context bar under
@@ -188,6 +188,38 @@ function UserMenu() {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+// ─── The term line ───────────────────────────────────────────────
+// A solid line under the header that fills across the semester, with an
+// oxblood notch where report card grades are due. Hover, tap or focus it
+// and a band opens underneath with the months and what the marks mean.
+function TermLine({ term, months, today, cutoffDate, ko }: { term: ReturnType<typeof termProgress> & {}; months: { label: string; frac: number }[]; today: string; cutoffDate: string | null; ko: boolean }) {
+  const [open, setOpen] = useState(false)
+  const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+  const left = cutoffDate ? daysUntil(cutoffDate, today) : null
+  const pct = (f: number) => `${(f * 100).toFixed(2)}%`
+  const weekText = ko ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`
+  return (
+    <div className={`term-wrap${open ? ' is-open' : ''}`} onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <div className="term-line" tabIndex={0} role="button" aria-expanded={open} aria-label={`${weekText}${cutoffDate ? ` · ${ko ? '성적표 마감' : 'Report cards due'} ${fmt(cutoffDate)}` : ''}`}
+        onClick={() => setOpen(o => !o)} onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}>
+        <span className="term-fill" style={{ width: pct(term.frac) }} />
+        {term.cutoff != null && <span className="term-cut" style={{ left: pct(term.cutoff) }} />}
+      </div>
+      <div className="term-band" aria-hidden={!open}>
+        <div className="term-months">
+          {months.map(m => <span key={m.label} style={{ left: pct(m.frac) }}>{ko ? `${new Date(`${m.label} 1, 2000`).getMonth() + 1}월` : m.label}</span>)}
+        </div>
+        <div className="term-facts">
+          <span><b>{weekText}</b> · {fmt(today)}</span>
+          {cutoffDate && left != null && (
+            <span className="term-due"><i />{ko ? '성적표 마감' : 'Report cards due'} {fmt(cutoffDate)}{left > 0 ? (ko ? ` · ${left}일 남음` : ` · in ${left} day${left === 1 ? '' : 's'}`) : left === 0 ? (ko ? ' · 오늘' : ' · today') : ''}</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -372,12 +404,9 @@ export default function Masthead() {
   // Where we are in the term: a solid line under the context bar.
   const todayKey = now ? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` : null
   const term = activeSemester && todayKey ? termProgress(activeSemester.start_date, activeSemester.end_date, todayKey, activeSemester.report_card_cutoff_date || activeSemester.grades_due_date) : null
-  const termLine = term ? (
-    <div className="term-line" role="progressbar" aria-label={language === 'ko' ? '학기 진행' : 'How far through the term'} aria-valuemin={1} aria-valuemax={term.weeks} aria-valuenow={term.week}
-      title={language === 'ko' ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`}>
-      <span className="term-fill" style={{ width: `${(term.frac * 100).toFixed(2)}%` }} />
-      {term.cutoff != null && <span className="term-cut" style={{ left: `${(term.cutoff * 100).toFixed(2)}%` }} title={language === 'ko' ? '성적표 마감' : 'Report cards due'} />}
-    </div>
+  const cutoffDate = activeSemester ? (activeSemester.report_card_cutoff_date || activeSemester.grades_due_date) : null
+  const termLine = term && activeSemester && todayKey ? (
+    <TermLine term={term} months={termMonths(activeSemester.start_date, activeSemester.end_date)} today={todayKey} cutoffDate={cutoffDate} ko={language === 'ko'} />
   ) : null
   const dateStr = now
     ? now.toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'short', day: 'numeric', month: 'short' })

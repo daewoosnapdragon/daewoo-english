@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { takeWelcome } from '@/lib/welcome'
+import Welcome from '@/components/brand/Welcome'
+import { useCallback, useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
@@ -17,7 +19,7 @@ import Toast from '@/components/ui/Toast'
  * masthead, the page title, and the toast. Each route renders its view inside.
  */
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { currentTeacher, semestersLoading, pendingNavigation, clearNavigation } = useApp()
+  const { currentTeacher, semestersLoading, pendingNavigation, clearNavigation, language } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const pathname = usePathname()
   const view = viewForPath(pathname)
@@ -33,6 +35,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     document.title = currentTeacher ? `${PAGE_TITLES[view] || 'Dashboard'} · Daewoo English` : 'Daewoo English'
   }, [view, currentTeacher])
+
+  // Right after logging in, a short welcome plays over the page while it loads.
+  const [welcome, setWelcome] = useState(false)
+  useEffect(() => { if (currentTeacher && takeWelcome()) setWelcome(true) }, [currentTeacher])
+  const endWelcome = useCallback(() => setWelcome(false), [])
 
   // The first load of a session: the wordmark soaks in like ink, and the app
   // waits for it to finish. Later reloads in the same session skip it.
@@ -76,6 +83,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </main>
       <Toast />
+      {welcome && <Welcome name={currentTeacher.name} englishClass={currentTeacher.english_class} ko={language === 'ko'} onDone={endWelcome} />}
       <CommandPalette />
       <Spotlight />
     </div>
