@@ -75,7 +75,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
     logActivity('printed', 'Phonics groups', { path: '/reading' })
   }
 
-  const seg = (on: boolean) => `px-3 h-8 rounded text-[12.5px] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
 
   return (
     <div>
@@ -86,21 +86,21 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {classes.map(c => (
-            <button key={c} onClick={() => toggleClass(c)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium ${off.includes(c) ? 'bg-surface text-ink-3 border-rule-2 line-through' : 'bg-ink text-paper border-ink'}`}>
+            <button key={c} onClick={() => toggleClass(c)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${off.includes(c) ? 'bg-surface text-ink-3 border-rule-2 line-through' : 'bg-ink text-paper border-ink'}`}>
               <span className={`w-2 h-2 rounded-full ${CLASS_DOT[c] || 'bg-ink-3'}`} />{c}
             </button>
           ))}
         </div>
-        <button onClick={print} className="ml-auto inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink"><Printer size={11} /> {lang === 'ko' ? '그룹 인쇄' : 'Print groups'}</button>
+        <button onClick={print} className="ml-auto inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink"><Printer size={11} /> {lang === 'ko' ? '그룹 인쇄' : 'Print groups'}</button>
       </div>
-      <p className="text-[11.5px] text-ink-3 mb-4 max-w-[920px]">{lang === 'ko'
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-4 max-w-[920px]">{lang === 'ko'
         ? '반과 상관없이, 다음에 가르칠 시트로 묶었습니다: 위치 아래에 90% 미만인 시트가 있으면 그 시트, 없으면 위치 다음 시트. 노란 칩 = 아래 구멍, ? = 그 시트를 아직 점검하지 않음. 반 칩을 눌러 같은 시간에 수업하는 반만 남기세요.'
         : 'Students gathered by the sheet to teach next, whatever their class: the lowest sheet under their position still under 90%, or else the sheet after their position. Amber chip = a hole below their position; ? = never checked on that sheet. Turn class chips off to keep only classes that share a time slot.'}</p>
 
-      {byGrade.length === 0 && <p className="text-[13px] text-ink-3">{lang === 'ko' ? '선택한 반이 없습니다.' : 'No classes selected.'}</p>}
+      {byGrade.length === 0 && <p className="text-[length:calc(13px*var(--ts))] text-ink-3">{lang === 'ko' ? '선택한 반이 없습니다.' : 'No classes selected.'}</p>}
       {byGrade.map(({ grade, groups }) => (
         <div key={grade} className="mb-6">
-          <h3 className="text-[13px] font-semibold text-ink mb-2">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`}</h3>
+          <h3 className="text-[length:calc(13px*var(--ts))] font-semibold text-ink mb-2">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`}</h3>
           <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
             {groups.map(g => {
               const f = focus(g)
@@ -110,11 +110,11 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
               return (
                 <div key={g.key} className={`border rounded-md p-3 ${muted ? 'border-rule bg-paper-2/50' : 'border-rule-2 bg-surface'}`}>
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="text-[13px] font-semibold text-ink leading-tight">{title(g)}</p>
-                    <span className="text-[12px] font-semibold text-ink-2 tabular-nums">{g.studentIds.length}</span>
+                    <p className="text-[length:calc(13px*var(--ts))] font-semibold text-ink leading-tight">{title(g)}</p>
+                    <span className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 tabular-nums">{g.studentIds.length}</span>
                   </div>
-                  {by === 'family' && g.sheets.length > 0 && <p className="text-[11px] text-ink-3 mb-1">{g.sheets.map(id => phonicsSkill(id)?.short).join(' · ')}</p>}
-                  <p className="text-[10.5px] text-ink-3 mb-2">{Object.entries(mix).sort((a, b) => classRank(a[0]) - classRank(b[0])).map(([c, n]) => `${c} ${n}`).join(' · ')}</p>
+                  {by === 'family' && g.sheets.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mb-1">{g.sheets.map(id => phonicsSkill(id)?.short).join(' · ')}</p>}
+                  <p className="text-[length:calc(10.5px*var(--ts))] text-ink-3 mb-2">{Object.entries(mix).sort((a, b) => classRank(a[0]) - classRank(b[0])).map(([c, n]) => `${c} ${n}`).join(' · ')}</p>
                   <div className="flex flex-wrap gap-1 mb-2">
                     {g.studentIds.map(id => {
                       const s = studentById[id]; const n = nextToTeach(latestByStudent[id] || {})
@@ -122,14 +122,14 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
                       return (
                         <button key={id} onClick={() => onOpenStudent(s)}
                           title={`${s.english_name} · ${s.english_class}${n.sheet ? ` · next: ${phonicsSkill(n.sheet)?.label}` : ''}${hole ? ' · a hole below their position' : ''}${unsure ? ' · never checked on this sheet' : ''}`}
-                          className={`inline-flex items-center gap-1 px-1.5 h-6 rounded-full border text-[11.5px] ${hole ? 'bg-warn-soft border-warn/30 text-warn' : 'border-rule-2 text-ink hover:border-ink-3'}`}>
+                          className={`inline-flex items-center gap-1 px-1.5 h-6 rounded-full border text-[length:calc(11.5px*var(--ts))] ${hole ? 'bg-warn-soft border-warn/30 text-warn' : 'border-rule-2 text-ink hover:border-ink-3'}`}>
                           <span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{getDisplayName(s)}{unsure && <span className="text-ink-3">?</span>}
                         </button>
                       )
                     })}
                   </div>
-                  {f.patterns.length > 0 && <p className="text-[11px] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '어려움: ' : 'Trouble: '}</span>{f.patterns.map(([p, n]) => `${p}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>}
-                  {f.words.length > 0 && <p className="text-[11px] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '틀린 단어: ' : 'Missed: '}</span>{f.words.join(', ')}</p>}
+                  {f.patterns.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '어려움: ' : 'Trouble: '}</span>{f.patterns.map(([p, n]) => `${p}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>}
+                  {f.words.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '틀린 단어: ' : 'Missed: '}</span>{f.words.join(', ')}</p>}
                 </div>
               )
             })}

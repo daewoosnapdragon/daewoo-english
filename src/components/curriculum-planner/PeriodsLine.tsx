@@ -18,7 +18,7 @@ export default function PeriodsLine({ year }: { year: string }) {
   const f = termDates(semesters, year, 'fall'), s = termDates(semesters, year, 'spring')
   if (!year) return null
   return (
-    <p className="text-[11.5px] text-ink-3 leading-relaxed">
+    <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-relaxed">
       {ko ? '설정의 학기: ' : 'Grading periods in Settings for this year: '}
       {rows.length === 0 ? <span className="text-warn">{ko ? '없음. 설정 → 학기에서 학년도를 같은 형식으로 적으세요.' : `none. Add them in Settings → Semesters with the academic year written exactly "${year}".`}</span>
         : rows.map((r, i) => <span key={r.id}>{i ? ' · ' : ''}{ko ? r.name_ko || r.name : r.name} ({fmt(r.start_date, ko)} – {fmt(r.end_date, ko)}{!r.start_date || !r.end_date ? <span className="text-warn">{ko ? ', 날짜 없음' : ', dates missing'}</span> : ''})</span>)}

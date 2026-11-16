@@ -85,17 +85,17 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
       {printing && preview && <RubricPrintDialog rubric={{ name: preview.name, criteria: preview.criteria }} subtitle={lang === 'ko' ? `${grade}학년 · ${englishClass}` : `Grade ${grade} · ${englishClass}`} onClose={() => setPrinting(false)} />}
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] grid grid-rows-[auto_minmax(0,1fr)_auto]" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
-          <div><h3 className="font-display text-[22px] leading-none text-ink">{lang === 'ko' ? '루브릭 선택' : 'Choose a rubric'}</h3><p className="text-[12px] text-ink-3 mt-1">{lang === 'ko' ? `${grade}학년 · 0–4 척도` : `Grade ${grade} · each criterion 0–4`}</p></div>
+          <div><h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '루브릭 선택' : 'Choose a rubric'}</h3><p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? `${grade}학년 · 0–4 척도` : `Grade ${grade} · each criterion 0–4`}</p></div>
           <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={16} /></button>
         </div>
         <div className="grid grid-cols-[280px_minmax(0,1fr)] min-h-0">
-          <div className="border-r border-rule-2 overflow-y-auto p-3 space-y-4 text-[13px]">
+          <div className="border-r border-rule-2 overflow-y-auto p-3 space-y-4 text-[length:calc(13px*var(--ts))]">
             <div>
               <p className="eyebrow px-3 mb-1">{lang === 'ko' ? '템플릿' : 'Templates'}</p>
-              {templates.map(t => <button key={t.key} onClick={() => setSel({ kind: 'template', key: t.key })} className={row(sel?.kind === 'template' && sel.key === t.key)}><span><span className="block font-medium">{t.name}</span><span className={`block text-[11px] ${sel?.kind === 'template' && sel.key === t.key ? 'text-paper/70' : 'text-ink-3'}`}>{t.description}</span></span></button>)}
+              {templates.map(t => <button key={t.key} onClick={() => setSel({ kind: 'template', key: t.key })} className={row(sel?.kind === 'template' && sel.key === t.key)}><span><span className="block font-medium">{t.name}</span><span className={`block text-[length:calc(11px*var(--ts))] ${sel?.kind === 'template' && sel.key === t.key ? 'text-paper/70' : 'text-ink-3'}`}>{t.description}</span></span></button>)}
             </div>
             {loadError ? (
-              <div className="px-3 text-[12px] text-warn space-y-1">
+              <div className="px-3 text-[length:calc(12px*var(--ts))] text-warn space-y-1">
                 <p>{lang === 'ko' ? '저장된 루브릭을 불러올 수 없습니다.' : 'Saved rubrics could not be loaded.'}</p>
                 <p className="text-ink-3 break-words">{loadError}</p>
                 <p className="text-ink-3">{/schema cache|does not exist|relation/i.test(loadError) ? (lang === 'ko' ? 'migration-rubrics.sql을 실행했다면 Supabase SQL 편집기에서 NOTIFY pgrst, \'reload schema\'; 를 실행하거나 잠시 후 다시 시도하세요.' : "If migration-rubrics.sql has been run, the API may not have noticed yet: run NOTIFY pgrst, 'reload schema'; in the SQL Editor, or retry in a minute.") : ''}</p>
@@ -115,7 +115,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
                       return (
                         <div key={r.id} className="relative group">
                           <button onClick={() => setSel({ kind: 'saved', id: r.id })} className={row(on)}>
-                            <span className="min-w-0"><span className="block font-medium truncate">{r.name}</span><span className={`block text-[11px] ${on ? 'text-paper/70' : 'text-ink-3'}`}>{r.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · {r.english_class ? r.english_class : (lang === 'ko' ? '학교 전체' : 'school')}{r.created_by !== me && authorName(r) ? ` · ${authorName(r)}` : ''}</span></span>
+                            <span className="min-w-0"><span className="block font-medium truncate">{r.name}</span><span className={`block text-[length:calc(11px*var(--ts))] ${on ? 'text-paper/70' : 'text-ink-3'}`}>{r.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · {r.english_class ? r.english_class : (lang === 'ko' ? '학교 전체' : 'school')}{r.created_by !== me && authorName(r) ? ` · ${authorName(r)}` : ''}</span></span>
                           </button>
                           {canDelete(r) && <button onClick={e => { e.stopPropagation(); remove(r) }} title={lang === 'ko' ? '목록에서 삭제 (점수 유지)' : 'Remove from the list (grades are kept)'} className={`absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 ${on ? 'text-paper/70 hover:text-paper' : 'text-ink-3 hover:text-bad'}`}><Trash2 size={12} /></button>}
                         </div>
@@ -129,19 +129,19 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
           </div>
           <div className="overflow-y-auto p-5">
             {!preview ? (
-              <p className="text-[13px] text-ink-3">{lang === 'ko' ? '왼쪽에서 템플릿이나 저장된 루브릭을 선택하세요.' : 'Pick a template or a saved rubric to preview it.'}</p>
+              <p className="text-[length:calc(13px*var(--ts))] text-ink-3">{lang === 'ko' ? '왼쪽에서 템플릿이나 저장된 루브릭을 선택하세요.' : 'Pick a template or a saved rubric to preview it.'}</p>
             ) : (
               <>
                 <div className="flex items-baseline justify-between gap-3 mb-3">
-                  <h4 className="font-display text-[22px] leading-none text-ink">{preview.name}</h4>
+                  <h4 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{preview.name}</h4>
                   <span className="eyebrow">{preview.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · {preview.criteria.length * 4} {lang === 'ko' ? '점' : 'points'}</span>
                 </div>
                 <div className="divide-y divide-rule">
                   {preview.criteria.map(c => (
                     <div key={c.key} className="py-2.5">
-                      <div className="flex items-baseline justify-between gap-2"><span className="text-[14px] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[11px] text-info">{c.standard}</span>}</div>
+                      <div className="flex items-baseline justify-between gap-2"><span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[length:calc(11px*var(--ts))] text-info">{c.standard}</span>}</div>
                       <div className="grid grid-cols-4 gap-2 mt-1.5">
-                        {c.levels.map((l, i) => <div key={i} className="text-[11.5px] text-ink-2 leading-snug"><span className="text-ink-3 font-semibold mr-1">{i + 1}</span>{l}</div>)}
+                        {c.levels.map((l, i) => <div key={i} className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-snug"><span className="text-ink-3 font-semibold mr-1">{i + 1}</span>{l}</div>)}
                       </div>
                     </div>
                   ))}
@@ -152,11 +152,11 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
         </div>
         <div className="px-5 py-3 border-t border-rule-2 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            {preview && <button onClick={() => setBuilding({ id: preview.rubric_id || undefined, name: preview.name, task: preview.task, band: preview.band, criteria: preview.criteria, english_class: sel?.kind === 'saved' ? (saved.find(x => x.id === sel.id)?.english_class ?? englishClass) : englishClass })} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={13} />{sel?.kind === 'saved' ? (lang === 'ko' ? '편집' : 'Edit') : (lang === 'ko' ? '수정해서 저장' : 'Customize and save')}</button>}
-            {preview && preview.criteria.length > 0 && <button onClick={() => setPrinting(true)} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '인쇄' : 'Print'}</button>}
-            {sel?.kind === 'saved' && (() => { const r = saved.find(x => x.id === sel.id); return r && canDelete(r) ? <button onClick={() => remove(r)} className="h-9 px-3 rounded text-[13px] text-ink-3 hover:text-bad">{lang === 'ko' ? '목록에서 삭제' : 'Remove from list'}</button> : null })()}
+            {preview && <button onClick={() => setBuilding({ id: preview.rubric_id || undefined, name: preview.name, task: preview.task, band: preview.band, criteria: preview.criteria, english_class: sel?.kind === 'saved' ? (saved.find(x => x.id === sel.id)?.english_class ?? englishClass) : englishClass })} className="h-9 px-3.5 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={13} />{sel?.kind === 'saved' ? (lang === 'ko' ? '편집' : 'Edit') : (lang === 'ko' ? '수정해서 저장' : 'Customize and save')}</button>}
+            {preview && preview.criteria.length > 0 && <button onClick={() => setPrinting(true)} className="h-9 px-3.5 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '인쇄' : 'Print'}</button>}
+            {sel?.kind === 'saved' && (() => { const r = saved.find(x => x.id === sel.id); return r && canDelete(r) ? <button onClick={() => remove(r)} className="h-9 px-3 rounded text-[length:calc(13px*var(--ts))] text-ink-3 hover:text-bad">{lang === 'ko' ? '목록에서 삭제' : 'Remove from list'}</button> : null })()}
           </div>
-          <button disabled={!preview || preview.criteria.length === 0} onClick={() => preview && onUse({ rubric_id: preview.rubric_id, name: preview.name, band: preview.band, criteria: preview.criteria })} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50">{lang === 'ko' ? '이 루브릭으로 채점' : 'Use this rubric'}</button>
+          <button disabled={!preview || preview.criteria.length === 0} onClick={() => preview && onUse({ rubric_id: preview.rubric_id, name: preview.name, band: preview.band, criteria: preview.criteria })} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50">{lang === 'ko' ? '이 루브릭으로 채점' : 'Use this rubric'}</button>
         </div>
       </div>
     </div>

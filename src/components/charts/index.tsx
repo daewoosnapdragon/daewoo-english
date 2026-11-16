@@ -50,7 +50,7 @@ export function LineChart({ points, compare, compareLabel, band, lines, yMax, he
     const vals = [...points.map(p => p.y), ...(compare || []).map(p => p.y), band?.high || 0, ...(lines || []).map(l => l.y), yMax || 0]
     return Math.max(10, Math.max(...vals) * 1.12)
   }, [points, compare, band, lines, yMax])
-  if (n === 0) return <p className="text-[12.5px] text-ink-3 py-6">{emptyText}</p>
+  if (n === 0) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-6">{emptyText}</p>
   const xs = (i: number) => P.left + (n === 1 ? cw / 2 : (i / (n - 1)) * cw)
   const ys = (v: number) => P.top + ch - (v / maxY) * ch
   const path = points.map((p, i) => `${i ? 'L' : 'M'} ${xs(i)} ${ys(p.y)}`).join(' ')
@@ -80,7 +80,7 @@ export function LineChart({ points, compare, compareLabel, band, lines, yMax, he
         <text x={xs(n - 1) + 8} y={ys(last.y) + 4} fontSize="12" fontWeight="600" fill="rgb(var(--ink))">{Math.round(last.y)}{unit}</text>
       </svg>
       {hover != null && points[hover] && (
-        <div className="absolute pointer-events-none bg-surface border border-rule-2 rounded shadow-lg px-2.5 py-1.5 text-[12px] text-ink" style={{ left: `${(xs(hover) / W) * 100}%`, top: 0, transform: 'translate(-50%, -100%)' }}>
+        <div className="absolute pointer-events-none bg-surface border border-rule-2 rounded shadow-lg px-2.5 py-1.5 text-[length:calc(12px*var(--ts))] text-ink" style={{ left: `${(xs(hover) / W) * 100}%`, top: 0, transform: 'translate(-50%, -100%)' }}>
           <span className="font-semibold tabular-nums">{Math.round(points[hover].y)}{unit}</span> · {fx(points[hover].x)}{points[hover].label ? ` · ${points[hover].label}` : ''}{points[hover].note ? <span className="block text-ink-3">{points[hover].note}</span> : null}
           {compare && compare[hover] && <span className="block text-ink-3">{compareLabel || 'compare'} {Math.round(compare[hover].y)}{unit}</span>}
         </div>
@@ -113,7 +113,7 @@ export function DotStrip({ values, highlightId, max = 100, threshold, unit = '' 
         {placed.map(p => <circle key={p.id} cx={p.x} cy={54 - p.row * 10} r={p.id === highlightId ? 6 : 4.5} fill={p.id === highlightId ? C.s2 : C.s1} stroke="var(--paper-hex, #F5F1E8)" strokeWidth="1.5" onMouseEnter={() => setHover(p.id)} />)}
         {hi && <text x={hi.x} y={hi.row ? 20 : 34} textAnchor="middle" fontSize="11" fontWeight="600" fill="rgb(var(--ink))">{hi.label} {Math.round(hi.value)}{unit}</text>}
       </svg>
-      {hoverPt && <div className="absolute pointer-events-none bg-surface border border-rule-2 rounded shadow-lg px-2.5 py-1 text-[12px] text-ink" style={{ left: `${(hoverPt.x / W) * 100}%`, top: 0, transform: 'translate(-50%, -100%)' }}>{hoverPt.label} · <span className="tabular-nums font-semibold">{Math.round(hoverPt.value)}{unit}</span></div>}
+      {hoverPt && <div className="absolute pointer-events-none bg-surface border border-rule-2 rounded shadow-lg px-2.5 py-1 text-[length:calc(12px*var(--ts))] text-ink" style={{ left: `${(hoverPt.x / W) * 100}%`, top: 0, transform: 'translate(-50%, -100%)' }}>{hoverPt.label} · <span className="tabular-nums font-semibold">{Math.round(hoverPt.value)}{unit}</span></div>}
     </div>
   )
 }
@@ -125,16 +125,16 @@ export function Bars({ rows, aLabel, bLabel, max = 100, unit = '%' }: { rows: Ba
   return (
     <div className="grid gap-2" style={font}>
       {rows.map(r => (
-        <div key={r.label} className="grid grid-cols-[120px_minmax(0,1fr)_44px] gap-3 items-center text-[12.5px]">
-          <span className="text-ink truncate" title={r.label}>{r.label}{r.sub && <span className="block text-[10.5px] text-ink-3">{r.sub}</span>}</span>
+        <div key={r.label} className="grid grid-cols-[120px_minmax(0,1fr)_44px] gap-3 items-center text-[length:calc(12.5px*var(--ts))]">
+          <span className="text-ink truncate" title={r.label}>{r.label}{r.sub && <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3">{r.sub}</span>}</span>
           <span className="grid gap-[3px]">
             <span className="h-2 rounded-sm" style={{ background: C.track }}><span className="block h-full rounded-sm" style={{ width: `${r.a != null ? Math.min(100, (r.a / max) * 100) : 0}%`, background: r.tone === 'bad' ? C.bad : r.tone === 'warn' ? C.warn : r.tone === 'good' ? C.good : C.s1 }} /></span>
             {paired && <span className="h-2 rounded-sm" style={{ background: C.track }}><span className="block h-full rounded-sm" style={{ width: `${r.b != null ? Math.min(100, (r.b / max) * 100) : 0}%`, background: C.mute }} /></span>}
           </span>
-          <span className="text-right tabular-nums text-ink">{r.a != null ? `${Math.round(r.a)}${unit}` : '—'}{paired && <span className="block text-[10.5px] text-ink-3">{r.b != null ? `${Math.round(r.b)}${unit}` : '—'}</span>}</span>
+          <span className="text-right tabular-nums text-ink">{r.a != null ? `${Math.round(r.a)}${unit}` : '—'}{paired && <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3">{r.b != null ? `${Math.round(r.b)}${unit}` : '—'}</span>}</span>
         </div>
       ))}
-      {paired && (aLabel || bLabel) && <div className="flex gap-4 text-[11px] text-ink-3 mt-1"><span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: C.s1 }} />{aLabel}</span><span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: C.mute }} />{bLabel}</span></div>}
+      {paired && (aLabel || bLabel) && <div className="flex gap-4 text-[length:calc(11px*var(--ts))] text-ink-3 mt-1"><span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: C.s1 }} />{aLabel}</span><span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: C.mute }} />{bLabel}</span></div>}
     </div>
   )
 }

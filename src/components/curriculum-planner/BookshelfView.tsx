@@ -18,14 +18,14 @@ import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, E
 // curriculum planner (docs/curriculum-planner-plan.md): placements, pacing
 // and the boards come next and read from these tables.
 
-const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
-const inp = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink w-full'
-const area = 'w-full p-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink leading-snug'
-const btn = 'h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
-const btnP = 'h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5 whitespace-nowrap'
-const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
-const chip = 'inline-flex items-center h-5 px-1.5 rounded text-[10.5px] font-semibold'
-const lbl = 'block text-[11px] text-ink-3 mb-1'
+const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
+const inp = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink w-full'
+const area = 'w-full p-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink leading-snug'
+const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
+const btnP = 'h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5 whitespace-nowrap'
+const btnS = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const chip = 'inline-flex items-center h-5 px-1.5 rounded text-[length:calc(10.5px*var(--ts))] font-semibold'
+const lbl = 'block text-[length:calc(11px*var(--ts))] text-ink-3 mb-1'
 const KST = 'Asia/Seoul'
 const fmtWhen = (iso: string, ko: boolean) => new Date(iso).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: KST, month: 'short', day: 'numeric' })
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
@@ -80,28 +80,28 @@ export default function BookshelfView() {
   return (
     <div className="animate-fade-in">
       <div className="flex items-center justify-between gap-6 flex-wrap mb-4">
-        <p className="text-[12.5px] text-ink-2">{ko ? '프로그램이 쓰는 책과 그 단원, 차시.' : 'Every book the program uses, with its units and lessons. Series and books are edited here; where they are taught is set on the map.'}</p>
+        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '프로그램이 쓰는 책과 그 단원, 차시.' : 'Every book the program uses, with its units and lessons. Series and books are edited here; where they are taught is set on the map.'}</p>
         <div className="flex gap-2">
           {canManage && <button onClick={() => setAdding(a => !a)} className={btn}><Plus size={13} />{ko ? '책 추가' : 'Add a book'}</button>}
           <button onClick={c.reload} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
         </div>
       </div>
 
-      {c.missing && <p className="mb-4 text-[12.5px] text-warn">{ko ? 'supabase/migration-curriculum-catalogue.sql을 먼저 실행하세요.' : 'The catalogue tables are missing. Admin runs supabase/migration-curriculum-catalogue.sql once.'}</p>}
+      {c.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-curriculum-catalogue.sql을 먼저 실행하세요.' : 'The catalogue tables are missing. Admin runs supabase/migration-curriculum-catalogue.sql once.'}</p>}
 
       {!c.loading && !c.missing && (
-        <p className="text-[13px] text-ink-2 mb-5 leading-relaxed">
+        <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-5 leading-relaxed">
           {ko ? `사용 중인 책 ${inUse}권` : `${inUse} ${inUse === 1 ? 'book' : 'books'} in use`}{retired ? ` · ${retired} ${ko ? '사용 안 함' : 'retired'}` : ''}
           {' · '}{countLine(totals, ko)}
         </p>
       )}
 
-      {c.loading ? <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : c.missing ? null : (
+      {c.loading ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : c.missing ? null : (
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-8 items-start">
           {/* ── The shelf ── */}
           <aside>
             {adding && canManage && <AddBookForm c={c} ko={ko} fail={fail} onDone={(id) => { setAdding(false); if (id) pick(id); c.reload() }} onCancel={() => setAdding(false)} />}
-            {groups.length === 0 && !adding && <p className="text-[12.5px] text-ink-3">{ko ? '아직 책이 없습니다.' : canManage ? 'No books yet. Add the first one, then paste its contents.' : 'No books yet.'}</p>}
+            {groups.length === 0 && !adding && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '아직 책이 없습니다.' : canManage ? 'No books yet. Add the first one, then paste its contents.' : 'No books yet.'}</p>}
             {groups.map(g => (
               <section key={g.strand} className="mb-5">
                 <p className="eyebrow mb-2">{ko ? STRAND_LABEL[g.strand].ko : STRAND_LABEL[g.strand].en}</p>
@@ -114,10 +114,10 @@ export default function BookshelfView() {
                         const on = selected === b.id
                         return (
                           <button key={b.id} onClick={() => pick(on ? null : b.id)} className={`text-left rounded border px-3 py-2 flex items-center gap-3 ${on ? 'border-ink bg-paper-2' : 'border-rule hover:border-rule-2'} ${b.status === 'retired' ? 'opacity-60' : ''}`}>
-                            <span className="font-display text-[26px] leading-none min-w-9 text-center shrink-0" style={{ color: colorHex(s.color) }}>{levelShort(b.level_number) || '·'}</span>
+                            <span className="font-display text-[length:calc(26px*var(--ts))] leading-none min-w-9 text-center shrink-0" style={{ color: colorHex(s.color) }}>{levelShort(b.level_number) || '·'}</span>
                             <span className="min-w-0 flex-1">
-                              <span className="block text-[13px] text-ink truncate">{b.title && b.title !== `${s.name} ${b.level_number}`.trim() ? b.title : `${s.name} ${b.level_number}`.trim()}</span>
-                              <span className="block text-[11px] text-ink-3 truncate">{countLine(counts, ko)}</span>
+                              <span className="block text-[length:calc(13px*var(--ts))] text-ink truncate">{b.title && b.title !== `${s.name} ${b.level_number}`.trim() ? b.title : `${s.name} ${b.level_number}`.trim()}</span>
+                              <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 truncate">{countLine(counts, ko)}</span>
                             </span>
                             <StatusChip status={b.status} ko={ko} />
                           </button>
@@ -130,9 +130,9 @@ export default function BookshelfView() {
             ))}
             <div className="flex flex-col gap-2 mt-2">
               {c.books.some(b => b.status === 'retired') && (
-                <label className="inline-flex items-center gap-2 text-[12px] text-ink-2"><input type="checkbox" checked={showRetired} onChange={e => setShowRetired(e.target.checked)} />{ko ? '사용 안 하는 책 보기' : 'Show retired books'}</label>
+                <label className="inline-flex items-center gap-2 text-[length:calc(12px*var(--ts))] text-ink-2"><input type="checkbox" checked={showRetired} onChange={e => setShowRetired(e.target.checked)} />{ko ? '사용 안 하는 책 보기' : 'Show retired books'}</label>
               )}
-              <button onClick={() => setShowSkills(s => !s)} className="inline-flex items-center gap-1.5 text-[12px] text-ink-2 hover:text-ink text-left"><Tag size={12} />{ko ? `기능 태그 ${c.skills.length}개` : `${c.skills.length} skill tags`}{showSkills ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</button>
+              <button onClick={() => setShowSkills(s => !s)} className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2 hover:text-ink text-left"><Tag size={12} />{ko ? `기능 태그 ${c.skills.length}개` : `${c.skills.length} skill tags`}{showSkills ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</button>
               {showSkills && <SkillList c={c} ko={ko} canManage={canManage} fail={fail} />}
             </div>
           </aside>
@@ -144,8 +144,8 @@ export default function BookshelfView() {
             ) : (
               <div className="border border-dashed border-rule-2 rounded p-8 text-center">
                 <BookOpen size={22} className="mx-auto text-ink-3 mb-2" />
-                <p className="text-[13px] text-ink-2">{ko ? '왼쪽에서 책을 고르세요.' : 'Pick a book on the shelf to see its units and lessons.'}</p>
-                {canManage && <p className="text-[12px] text-ink-3 mt-1">{ko ? '책을 추가한 뒤 목차를 붙여넣으면 Claude가 쓴 단원과 차시가 들어옵니다.' : 'Add a book, then paste the lines Claude writes from its contents. Confirm them once you have looked.'}</p>}
+                <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{ko ? '왼쪽에서 책을 고르세요.' : 'Pick a book on the shelf to see its units and lessons.'}</p>
+                {canManage && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">{ko ? '책을 추가한 뒤 목차를 붙여넣으면 Claude가 쓴 단원과 차시가 들어옵니다.' : 'Add a book, then paste the lines Claude writes from its contents. Confirm them once you have looked.'}</p>}
               </div>
             )}
           </main>
@@ -187,9 +187,9 @@ function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: Curric
   return (
     <div className="flex items-center gap-2 mb-1.5 group">
       <span className="w-2.5 h-2.5 rounded-sm" style={{ background: colorHex(s.color) }} />
-      <span className="text-[12.5px] font-semibold text-ink">{s.name}</span>
-      {s.publisher && <span className="text-[11px] text-ink-3">{s.publisher}</span>}
-      {s.kind === 'anthology' && <span className="text-[10px] text-ink-3 border border-rule-2 rounded px-1">{ko ? '선집' : 'anthology'}</span>}
+      <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{s.name}</span>
+      {s.publisher && <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{s.publisher}</span>}
+      {s.kind === 'anthology' && <span className="text-[length:calc(10px*var(--ts))] text-ink-3 border border-rule-2 rounded px-1">{ko ? '선집' : 'anthology'}</span>}
       {canManage && <button onClick={() => { setD({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color, kind: s.kind }); setEditing(true) }} className="text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100" aria-label="Edit series"><Pencil size={10} /></button>}
     </div>
   )
@@ -231,7 +231,7 @@ function AddBookForm({ c, ko, fail, onDone, onCancel }: { c: C; ko: boolean; fai
   }
   return (
     <div className="border border-rule-2 rounded p-3 mb-4 flex flex-col gap-2">
-      <p className="text-[12.5px] font-semibold text-ink">{ko ? '책 추가' : 'Add a book'}</p>
+      <p className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{ko ? '책 추가' : 'Add a book'}</p>
       <div><span className={lbl}>{ko ? '시리즈' : 'Series'}</span>
         <select value={seriesId} onChange={e => setSeriesId(e.target.value)} className={`${sel} w-full`}>
           {c.series.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -277,24 +277,24 @@ function SkillList({ c, ko, canManage, fail }: { c: C; ko: boolean; canManage: b
     if (!fail(await deleteSkill(k.code))) c.reload()
   }
   return (
-    <div className="border border-rule rounded p-2 text-[12px]">
+    <div className="border border-rule rounded p-2 text-[length:calc(12px*var(--ts))]">
       {STRANDS.map(strand => {
         const ks = c.skills.filter(k => k.strand === strand)
         if (!ks.length) return null
         return (
           <div key={strand} className="mb-2">
-            <p className="text-[10.5px] uppercase tracking-wide text-ink-3 mb-1">{ko ? STRAND_LABEL[strand].ko : STRAND_LABEL[strand].en}</p>
+            <p className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3 mb-1">{ko ? STRAND_LABEL[strand].ko : STRAND_LABEL[strand].en}</p>
             <div className="flex flex-wrap gap-1">
               {ks.map(k => editing === k.code ? (
                 <span key={k.code} className="inline-flex items-center gap-1">
-                  <input value={draft.label} onChange={e => setDraft({ ...draft, label: e.target.value })} className="h-6 px-1.5 bg-surface border border-rule-2 rounded text-[11.5px] w-32" />
-                  <select value={draft.strand} onChange={e => setDraft({ ...draft, strand: e.target.value as Strand })} className="h-6 px-1 bg-surface border border-rule-2 rounded text-[11px]">{STRANDS.map(s => <option key={s} value={s}>{STRAND_LABEL[s].en}</option>)}</select>
+                  <input value={draft.label} onChange={e => setDraft({ ...draft, label: e.target.value })} className="h-6 px-1.5 bg-surface border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))] w-32" />
+                  <select value={draft.strand} onChange={e => setDraft({ ...draft, strand: e.target.value as Strand })} className="h-6 px-1 bg-surface border border-rule-2 rounded text-[length:calc(11px*var(--ts))]">{STRANDS.map(s => <option key={s} value={s}>{STRAND_LABEL[s].en}</option>)}</select>
                   <button onClick={() => save(k.code)} className="text-good"><Check size={13} /></button>
                   <button onClick={() => setEditing(null)} className="text-ink-3"><X size={13} /></button>
                 </span>
               ) : (
                 <span key={k.code} className="inline-flex items-center gap-1 h-6 px-1.5 rounded bg-info-soft text-info">
-                  {k.label}<span className="text-[10px] opacity-70">{used[k.code] || 0}</span>
+                  {k.label}<span className="text-[length:calc(10px*var(--ts))] opacity-70">{used[k.code] || 0}</span>
                   {canManage && <><button onClick={() => { setEditing(k.code); setDraft({ label: k.label, strand: k.strand }) }} className="opacity-60 hover:opacity-100"><Pencil size={10} /></button><button onClick={() => remove(k)} className="opacity-60 hover:opacity-100"><X size={10} /></button></>}
                 </span>
               ))}
@@ -302,7 +302,7 @@ function SkillList({ c, ko, canManage, fail }: { c: C; ko: boolean; canManage: b
           </div>
         )
       })}
-      <p className="text-[11px] text-ink-3">{ko ? '새 태그는 단원이나 차시에 쓰일 때 자동으로 추가됩니다.' : 'New tags are added when a unit or lesson uses them. The number is how many places use each one.'}</p>
+      <p className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '새 태그는 단원이나 차시에 쓰일 때 자동으로 추가됩니다.' : 'New tags are added when a unit or lesson uses them. The number is how many places use each one.'}</p>
     </div>
   )
 }
@@ -345,7 +345,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
     <div>
       {/* Head */}
       <div className="flex items-start gap-4 mb-4">
-        <span className="font-display text-[44px] leading-none min-w-14 text-center shrink-0" style={{ color: colorHex(series?.color || 'slate') }}>{levelShort(book.level_number) || '·'}</span>
+        <span className="font-display text-[length:calc(44px*var(--ts))] leading-none min-w-14 text-center shrink-0" style={{ color: colorHex(series?.color || 'slate') }}>{levelShort(book.level_number) || '·'}</span>
         <div className="min-w-0 flex-1">
           {editing ? (
             <div className="grid grid-cols-2 gap-2 max-w-xl">
@@ -360,14 +360,14 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
           ) : (
             <>
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="font-display text-[24px] leading-tight text-ink">{label}</h2>
+                <h2 className="font-display text-[length:calc(24px*var(--ts))] leading-tight text-ink">{label}</h2>
                 <StatusChip status={book.status} ko={ko} />
               </div>
-              <p className="text-[12.5px] text-ink-2 mt-1">
+              <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">
                 {series ? (ko ? STRAND_LABEL[series.strand].ko : STRAND_LABEL[series.strand].en) : ''}{series?.publisher ? ` · ${series.publisher}` : ''} · {countLine(counts, ko)}
                 {book.drive_folder_url && <> · <a href={book.drive_folder_url} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1">{ko ? 'Drive 폴더' : 'Drive folder'}<ExternalLink size={11} /></a></>}
               </p>
-              {book.notes && <p className="text-[12px] text-ink-3 mt-1 whitespace-pre-line">{book.notes}</p>}
+              {book.notes && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1 whitespace-pre-line">{book.notes}</p>}
             </>
           )}
         </div>
@@ -383,7 +383,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
       {/* Draft box */}
       {canManage && (
         <div className="mb-5">
-          <button onClick={() => setShowDraft(s => !s)} className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-2 hover:text-ink mb-2">
+          <button onClick={() => setShowDraft(s => !s)} className="inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink mb-2">
             <Sparkles size={13} />{ko ? '목차에서 단원과 차시 만들기' : 'Draft units and lessons from the contents'}{showDraft ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
           {showDraft && <DraftBox book={book} label={label} strand={strand} units={units} lastOrder={lastOrder} c={c} ko={ko} fail={fail} onSaved={() => { setShowDraft(false); c.reload() }} />}
@@ -400,7 +400,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
         </div>
       </div>
       {addingUnit && <UnitForm initial={null} ko={ko} onCancel={() => setAddingUnit(false)} onSave={async (ud) => { const r = await saveUnit(null, book.id, ud, { after: lastOrder, label, strand, known: c.skills }); if (!fail(r.error)) { setAddingUnit(false); c.reload() } }} />}
-      {units.length === 0 && !addingUnit && <p className="text-[12.5px] text-ink-3">{ko ? '아직 단원이 없습니다.' : canManage ? 'No units yet. Paste the lines Claude writes from the contents above, or add a unit by hand.' : 'Not indexed yet.'}</p>}
+      {units.length === 0 && !addingUnit && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '아직 단원이 없습니다.' : canManage ? 'No units yet. Paste the lines Claude writes from the contents above, or add a unit by hand.' : 'Not indexed yet.'}</p>}
       <div className="flex flex-col gap-2">
         {units.map((u, i) => (
           <UnitCard key={u.id} unit={u} index={i} total={units.length} siblings={units} bookLabel={label} strand={strand} c={c} ko={ko} me={me} canManage={canManage} nameOf={nameOf} fail={fail} open={!!open[u.id]} onToggle={() => toggle(u.id)} />
@@ -436,21 +436,21 @@ function DraftBox({ book, label, strand, units, lastOrder, c, ko, fail, onSaved 
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       <div className="border border-rule-2 rounded p-4">
         <p className="eyebrow mb-1.5">{ko ? '1. Claude에게 줄 지시문' : '1. What to tell Claude'}</p>
-        <p className="text-[12.5px] text-ink-2 mb-2 leading-relaxed">{ko ? '목차와 교사용 지도서의 목표 페이지(사진이나 글)를 Claude에 넣고 이 지시문을 붙여넣으세요. 기능 태그 목록이 들어 있어 같은 말로 써 줍니다.' : 'Give Claude the table of contents and the teacher’s guide objective pages (photos or text) with this prompt. It carries the skill tags, so Claude uses the same words and they match.'}</p>
-        <label className="flex items-center gap-2 text-[12px] text-ink-2 mb-2">{ko ? 'CCSS 학년' : 'CCSS grade'}<input value={grade} onChange={e => setGrade(e.target.value)} className={`${inp} max-w-[220px]`} /></label>
-        <textarea readOnly value={prompt} className="w-full h-32 p-2 bg-paper-2 border border-rule rounded text-[11.5px] text-ink-2 leading-snug resize-none" />
+        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mb-2 leading-relaxed">{ko ? '목차와 교사용 지도서의 목표 페이지(사진이나 글)를 Claude에 넣고 이 지시문을 붙여넣으세요. 기능 태그 목록이 들어 있어 같은 말로 써 줍니다.' : 'Give Claude the table of contents and the teacher’s guide objective pages (photos or text) with this prompt. It carries the skill tags, so Claude uses the same words and they match.'}</p>
+        <label className="flex items-center gap-2 text-[length:calc(12px*var(--ts))] text-ink-2 mb-2">{ko ? 'CCSS 학년' : 'CCSS grade'}<input value={grade} onChange={e => setGrade(e.target.value)} className={`${inp} max-w-[220px]`} /></label>
+        <textarea readOnly value={prompt} className="w-full h-32 p-2 bg-paper-2 border border-rule rounded text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-snug resize-none" />
         <button onClick={copy} className={`${btn} mt-2`}>{copied ? <Check size={13} /> : <Copy size={13} />}{copied ? (ko ? '복사됨' : 'Copied') : (ko ? '지시문 복사' : 'Copy the prompt')}</button>
       </div>
       <div className="border border-rule-2 rounded p-4">
         <p className="eyebrow mb-1.5">{ko ? '2. Claude가 쓴 줄 붙여넣기' : '2. Paste the lines Claude writes'}</p>
-        <textarea value={text} onChange={e => { setText(e.target.value); setParsed(null) }} rows={7} className={`${area} font-mono text-[11.5px]`} placeholder={'Unit 1 · Short vowels | weeks: 3 | skills: short a, short e | ccss: RF.1.2c\n- Lesson 1 · Short a words | Students will blend and read CVC words with short a. | ccss: RF.1.3b | skills: short a'} />
+        <textarea value={text} onChange={e => { setText(e.target.value); setParsed(null) }} rows={7} className={`${area} font-mono text-[length:calc(11.5px*var(--ts))]`} placeholder={'Unit 1 · Short vowels | weeks: 3 | skills: short a, short e | ccss: RF.1.2c\n- Lesson 1 · Short a words | Students will blend and read CVC words with short a. | ccss: RF.1.3b | skills: short a'} />
         <div className="flex gap-2 mt-2 flex-wrap">
           <button onClick={read} disabled={!text.trim()} className={btn}>{ko ? '줄 읽기' : 'Read the lines'}</button>
           {parsed && <button onClick={() => save(false)} disabled={saving} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}{units.length ? (ko ? '뒤에 추가' : 'Add after the existing units') : (ko ? '제안으로 저장' : 'Save as suggested')}</button>}
           {parsed && units.length > 0 && nothingConfirmed && <button onClick={() => save(true)} disabled={saving} className={btn}>{ko ? '기존 단원 바꾸기' : 'Replace the existing units'}</button>}
         </div>
         {parsed && (
-          <div className="mt-3 text-[12px] text-ink-2">
+          <div className="mt-3 text-[length:calc(12px*var(--ts))] text-ink-2">
             <p className="mb-1">{ko ? `단원 ${parsed.length}개, 차시 ${parsed.reduce((a, u) => a + u.lessons.length, 0)}개` : `${parsed.length} units, ${parsed.reduce((a, u) => a + u.lessons.length, 0)} lessons`}{fresh.length ? <> · {ko ? '새 태그' : 'new tags'}: {fresh.join(', ')}</> : ''}</p>
             <ol className="list-decimal pl-5 flex flex-col gap-0.5">
               {parsed.map((u, i) => <li key={i}><span className="text-ink">{u.title}</span> <span className="text-ink-3">· {num(u.default_weeks)} wk · {u.lessons.length} {u.lessons.length === 1 ? 'lesson' : 'lessons'}</span>{u.lessons.some(l => !l.objective) && <span className="text-warn"> · {ko ? '목표 없는 차시 있음' : 'some lessons have no objective'}</span>}</li>)}
@@ -523,11 +523,11 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
           ) : (
             <>
               <div className="flex items-center gap-2 flex-wrap">
-                <button onClick={onToggle} className="text-[13.5px] font-semibold text-ink text-left">{unit.title}</button>
-                <span className="text-[11.5px] text-ink-3">{num(unit.default_weeks)} {ko ? '주' : unit.default_weeks === 1 ? 'week' : 'weeks'} · {lessons.length} {ko ? '차시' : lessons.length === 1 ? 'lesson' : 'lessons'}{lessons.length ? ` · ${confirmedLessons} ${ko ? '확인' : 'confirmed'}` : ''}</span>
+                <button onClick={onToggle} className="text-[length:calc(13.5px*var(--ts))] font-semibold text-ink text-left">{unit.title}</button>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{num(unit.default_weeks)} {ko ? '주' : unit.default_weeks === 1 ? 'week' : 'weeks'} · {lessons.length} {ko ? '차시' : lessons.length === 1 ? 'lesson' : 'lessons'}{lessons.length ? ` · ${confirmedLessons} ${ko ? '확인' : 'confirmed'}` : ''}</span>
                 <SourceChip confirmed_at={unit.confirmed_at} confirmed_by={unit.confirmed_by} source={unit.source} ko={ko} nameOf={nameOf} />
               </div>
-              {unit.summary && <p className="text-[12.5px] text-ink-2 mt-0.5">{unit.summary}</p>}
+              {unit.summary && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5">{unit.summary}</p>}
               <div className="mt-1"><Tags tags={unit.skill_tags} codes={unit.ccss_codes} /></div>
             </>
           )}
@@ -545,7 +545,7 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
       {open && (
         <div className="border-t border-rule px-3 py-2 pl-9">
           <ObjectiveBank unitId={unit.id} label={label} c={c} ko={ko} canManage={canManage} fail={fail} />
-          {lessons.length === 0 && !addingLesson && <p className="text-[12px] text-ink-3 mb-1">{ko ? '차시 없음' : 'No lessons in this unit yet.'}</p>}
+          {lessons.length === 0 && !addingLesson && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mb-1">{ko ? '차시 없음' : 'No lessons in this unit yet.'}</p>}
           <div className="flex flex-col">
             {lessons.map((l, i) => <LessonRow key={l.id} lesson={l} index={i} total={lessons.length} siblings={lessons} unitLabel={label} strand={strand} c={c} ko={ko} me={me} canManage={canManage} nameOf={nameOf} fail={fail} />)}
           </div>
@@ -585,7 +585,7 @@ function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: stri
   if (!rows.length && !canManage) return null
   const editor = (
     <div className="flex items-center gap-2 py-1">
-      <span className="text-[12.5px] italic text-ink-3 shrink-0">Students will</span>
+      <span className="text-[length:calc(12.5px*var(--ts))] italic text-ink-3 shrink-0">Students will</span>
       <input autoFocus value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditId(null) }} className={inp} placeholder={ko ? '예: retell the story in order' : 'retell the story in order'} />
       <button onClick={save} disabled={busy || !draft.trim()} className={btnS}><Check size={11} />{ko ? '저장' : 'Save'}</button>
       <button onClick={() => setEditId(null)} className={btnS}><X size={11} /></button>
@@ -593,15 +593,15 @@ function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: stri
   )
   return (
     <div className="mb-3 pb-2 border-b border-rule">
-      <p className="text-[11px] uppercase tracking-wider font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
-      {rows.length === 0 && editId !== 'new' && <p className="text-[12px] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson Plans offers the lessons\' objectives until there are some.'}</p>}
+      <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+      {rows.length === 0 && editId !== 'new' && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson Plans offers the lessons\' objectives until there are some.'}</p>}
       <ul>
         {rows.map(o => editId === o.id ? <li key={o.id}>{editor}</li> : (
           <li key={o.id} className="group flex items-start gap-2 py-1">
             <div className="min-w-0 flex-1">
-              <p className="text-[12.5px] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</p>
+              <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</p>
               {(o.ccss_codes.length > 0 || o.wida.length > 0) && (
-                <div className="mt-0.5 flex flex-wrap items-center gap-1"><Tags tags={[]} codes={o.ccss_codes} />{o.wida.map(w => <span key={w} className="text-[10.5px] text-ink-3">{w}</span>)}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1"><Tags tags={[]} codes={o.ccss_codes} />{o.wida.map(w => <span key={w} className="text-[length:calc(10.5px*var(--ts))] text-ink-3">{w}</span>)}</div>
               )}
             </div>
             {canManage && (
@@ -638,17 +638,17 @@ function LessonRow({ lesson, index, total, siblings, unitLabel, strand, c, ko, m
   return (
     <div className="py-2 border-b border-rule last:border-b-0">
       <div className="flex items-start gap-2">
-        <span className="text-[11px] text-ink-3 w-5 pt-0.5 text-right shrink-0">{index + 1}</span>
+        <span className="text-[length:calc(11px*var(--ts))] text-ink-3 w-5 pt-0.5 text-right shrink-0">{index + 1}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-medium text-ink">{lesson.title}</span>
+            <span className="text-[length:calc(13px*var(--ts))] font-medium text-ink">{lesson.title}</span>
             <SourceChip confirmed_at={lesson.confirmed_at} confirmed_by={lesson.confirmed_by} source={lesson.source} ko={ko} nameOf={nameOf} />
           </div>
-          {lesson.objective ? <p className="text-[12.5px] text-ink-2 mt-0.5">{lesson.objective}</p> : <p className="text-[12px] text-warn mt-0.5">{ko ? '학습 목표 없음' : 'No "students will" line yet.'}</p>}
-          {lesson.notes && <p className="text-[12px] text-ink-3 mt-0.5">{lesson.notes}</p>}
+          {lesson.objective ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5">{lesson.objective}</p> : <p className="text-[length:calc(12px*var(--ts))] text-warn mt-0.5">{ko ? '학습 목표 없음' : 'No "students will" line yet.'}</p>}
+          {lesson.notes && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-0.5">{lesson.notes}</p>}
           <div className="mt-1 flex items-center gap-2 flex-wrap">
             <Tags tags={lesson.skill_tags} codes={lesson.ccss_codes} />
-            <button onClick={() => setShowRes(s => !s)} className="text-[11px] text-ink-3 hover:text-ink">{resources.length ? `${resources.length} ${ko ? '자료' : resources.length === 1 ? 'file' : 'files'}` : (ko ? '자료 추가' : 'Add a file')}</button>
+            <button onClick={() => setShowRes(s => !s)} className="text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink">{resources.length ? `${resources.length} ${ko ? '자료' : resources.length === 1 ? 'file' : 'files'}` : (ko ? '자료 추가' : 'Add a file')}</button>
           </div>
           {showRes && <Resources target={{ lesson_id: lesson.id }} items={resources} label={label} c={c} ko={ko} me={me} fail={fail} />}
         </div>
@@ -686,9 +686,9 @@ function Resources({ target, items, label, c, ko, me, fail, unitFolder }: { targ
     <div className="mt-2">
       {(items.length > 0 || unitFolder) && (
         <div className="flex flex-col gap-1 mb-1">
-          {unitFolder && <a href={unitFolder} target="_blank" rel="noreferrer" className="text-[12px] text-accent inline-flex items-center gap-1 w-fit"><ExternalLink size={11} />{ko ? '단원 Drive 폴더' : 'Unit folder in Drive'}</a>}
+          {unitFolder && <a href={unitFolder} target="_blank" rel="noreferrer" className="text-[length:calc(12px*var(--ts))] text-accent inline-flex items-center gap-1 w-fit"><ExternalLink size={11} />{ko ? '단원 Drive 폴더' : 'Unit folder in Drive'}</a>}
           {items.map(r => (
-            <div key={r.id} className="flex items-center gap-2 text-[12px]">
+            <div key={r.id} className="flex items-center gap-2 text-[length:calc(12px*var(--ts))]">
               <span className={`${chip} bg-paper-3 text-ink-2 uppercase w-14 justify-center`}>{r.kind}</span>
               {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="text-ink hover:text-accent truncate">{r.name}</a> : <span className="text-ink truncate">{r.name}</span>}
               {r.copies_hint ? <span className="text-ink-3">× {r.copies_hint}</span> : null}
@@ -706,7 +706,7 @@ function Resources({ target, items, label, c, ko, me, fail, unitFolder }: { targ
           <div className="sm:col-span-4 flex gap-2"><button onClick={save} disabled={saving || !d.name.trim()} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '추가' : 'Add'}</button><button onClick={() => setAdding(false)} className={btn}>{ko ? '취소' : 'Cancel'}</button></div>
         </div>
       ) : (
-        <button onClick={() => setAdding(true)} className="text-[11.5px] text-ink-3 hover:text-ink inline-flex items-center gap-1"><Plus size={11} />{ko ? 'Drive 링크 추가' : 'Add a Drive link'}</button>
+        <button onClick={() => setAdding(true)} className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink inline-flex items-center gap-1"><Plus size={11} />{ko ? 'Drive 링크 추가' : 'Add a Drive link'}</button>
       )}
     </div>
   )

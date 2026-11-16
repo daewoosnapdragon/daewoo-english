@@ -136,7 +136,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
       }))
   }
 
-  const seg = (on: boolean) => `px-3 h-8 rounded text-[12.5px] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const lastDates = useMemo(() => Object.fromEntries(students.map(s => [s.id, summarizeStudent(latestByStudent[s.id] || {}).lastDate])) as Record<string, string | null>, [students, latestByStudent])
 
   return (
@@ -147,15 +147,15 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
           <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); guardedSwitch(() => { setMode('student'); setEditing(null) }) }} className={seg(mode === 'student')}>{lang === 'ko' ? '학생 진전' : 'Student progress'}</button>
           <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); setMode('assess') }} className={seg(mode === 'assess')}>{lang === 'ko' ? '학생 점검' : 'Check a student'}</button>
         </div>
-        <span className="text-[12px] text-ink-3">{lang === 'ko' ? '해독만 평가합니다. 뜻은 묻지 않습니다. 성적에 들어가지 않습니다.' : 'Decoding only, meaning never asked, nothing graded.'}</span>
+        <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '해독만 평가합니다. 뜻은 묻지 않습니다. 성적에 들어가지 않습니다.' : 'Decoding only, meaning never asked, nothing graded.'}</span>
         <div className="ml-auto flex items-center gap-3">
-          <button onClick={exportCsv} className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink"><Download size={11} /> CSV</button>
-          <button onClick={printSheets} className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink" title={lang === 'ko' ? '학생용 단어 시트 인쇄' : 'Print the twenty sheets in large type, one a page, for the student to read from'}><Printer size={11} /> {lang === 'ko' ? '단어 시트' : 'Word sheets'}</button>
+          <button onClick={exportCsv} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink"><Download size={11} /> CSV</button>
+          <button onClick={printSheets} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink" title={lang === 'ko' ? '학생용 단어 시트 인쇄' : 'Print the twenty sheets in large type, one a page, for the student to read from'}><Printer size={11} /> {lang === 'ko' ? '단어 시트' : 'Word sheets'}</button>
         </div>
       </div>
 
       {loading || loadingChecks ? <Loading rows={5} />
-      : students.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '이 반에 학생이 없습니다.' : 'No students in this class.'}</p>
+      : students.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-8">{lang === 'ko' ? '이 반에 학생이 없습니다.' : 'No students in this class.'}</p>
       : mode === 'heatmap' ? (
         <HeatMap students={students} latestByStudent={latestByStudent} trendByStudent={trendByStudent} lang={lang}
           onCell={(sid, skill) => setOpen({ sid, skill })} onCheck={(sid) => startCheck(sid)} onStudent={showStudent} />
@@ -166,11 +166,11 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
             <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
               <div>
                 <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '시도별 진전' : 'Progress across attempts'}</p>
-                <h2 className="font-display text-[28px] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[18px]">{student.korean_name}</span></h2>
+                <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
               </div>
               <div className="flex items-center gap-2">
-                <Link href={`/students/${student.id}`} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ExternalLink size={12} /> {lang === 'ko' ? '학생 페이지' : 'Student page'}</Link>
-                <button onClick={() => startCheck(student.id)} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5"><ClipboardCheck size={13} /> {lang === 'ko' ? '점검하기' : 'Check now'}</button>
+                <Link href={`/students/${student.id}`} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ExternalLink size={12} /> {lang === 'ko' ? '학생 페이지' : 'Student page'}</Link>
+                <button onClick={() => startCheck(student.id)} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5"><ClipboardCheck size={13} /> {lang === 'ko' ? '점검하기' : 'Check now'}</button>
               </div>
             </div>
             <StudentProgressGrid student={student} checks={byStudent[student.id] || []} lang={lang} onCell={(skill, checkId) => setOpen({ sid: student.id, skill, checkId })} />
@@ -220,8 +220,8 @@ function RosterRail({ students, currentId, lang, lastDates, onPick }: {
           return (
             <li key={s.id}>
               <button onClick={() => !own && onPick(s.id)} className={`w-full text-left px-3 py-1.5 ${own ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/60'}`}>
-                <span className={`block text-[12.5px] truncate ${own ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
-                <span className="block text-[10.5px] text-ink-3 truncate">{s.korean_name}{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
+                <span className={`block text-[length:calc(12.5px*var(--ts))] truncate ${own ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
+                <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3 truncate">{s.korean_name}{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
               </button>
             </li>
           )
@@ -245,7 +245,7 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
 
   return (
     <div>
-      <div className="flex gap-4 text-[11.5px] text-ink-2 mb-3 flex-wrap">
+      <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-2 mb-3 flex-wrap">
         {BANDS.map(b => (
           <span key={b} className="inline-flex items-center gap-1.5" title={PHONICS_BAND_LABELS[b].means}>
             <span className={`w-3 h-3 rounded-sm ${BAND_TONE[b]} ${b !== 'mastered' ? 'border border-rule-2' : ''}`} />
@@ -255,12 +255,12 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-paper-2 border border-rule" />{lang === 'ko' ? '미점검' : 'Not checked'}</span>
         <span className="text-ink-3">{lang === 'ko' ? '· 셀은 가장 최근 점검의 정확도(%)이고 화살표는 이전 시도 대비 변화입니다. 클릭하면 단어별로 보입니다. 이름을 클릭하면 시도별 진전이 보입니다.' : '· a cell is the latest check’s accuracy, the arrow its change since the attempt before; click it for the words, click a name for progress'}</span>
       </div>
-      {!anyData && <p className="text-[13px] text-ink-3 mb-3">{lang === 'ko' ? '아직 이 반에는 파닉스 점검이 없습니다. 학생 옆의 점검 버튼으로 시작하세요.' : 'No phonics checks for this class yet. Use the check button beside a student to start.'}</p>}
+      {!anyData && <p className="text-[length:calc(13px*var(--ts))] text-ink-3 mb-3">{lang === 'ko' ? '아직 이 반에는 파닉스 점검이 없습니다. 학생 옆의 점검 버튼으로 시작하세요.' : 'No phonics checks for this class yet. Use the check button beside a student to start.'}</p>}
       {/* Fills the page width with no scrolling: the twenty sheet columns
           share what is left after the name and working-on columns, and the
           sheet names run vertically so a column can be narrow. */}
       <div className="border border-rule-2 rounded-md overflow-hidden">
-        <table className="w-full table-fixed text-[12px] tabular-nums border-collapse">
+        <table className="w-full table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: 168 }} />
             {PHONICS_SKILLS.map(s => <col key={s.id} />)}
@@ -278,8 +278,8 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
               {PHONICS_SKILLS.map((s, i) => (
                 <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[104px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${s.label}\n${s.covers}`}>
                   <div className="flex flex-col items-center justify-end gap-1 h-full">
-                    <span className="text-[10.5px] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
-                    <span className={`text-[10px] leading-none ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ' '}</span>
+                    <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
+                    <span className={`text-[length:calc(10px*var(--ts))] leading-none ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ' '}</span>
                   </div>
                 </th>
               ))}
@@ -294,7 +294,7 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
                 <tr key={s.id}>
                   <td className="px-3 py-1 border-r border-rule-2 overflow-hidden">
                     <button onClick={() => onStudent(s.id)} className="block w-full text-left truncate hover:underline" title={lang === 'ko' ? '시도별 진전 보기' : `Progress for ${s.english_name}`}>
-                      <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span>
+                      <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
                     </button>
                   </td>
                   {PHONICS_SKILLS.map((sk, i) => {
@@ -305,17 +305,17 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
                       <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                         <button onClick={() => l && onCell(s.id, sk.id)} disabled={!l}
                           title={l ? `${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}${d != null ? ` · ${d >= 0 ? '+' : ''}${d} since the attempt before` : ''}${l.score.unread ? ` · ${l.score.unread} ${lang === 'ko' ? '미읽음' : 'not read'}` : ''}` : `${sk.label}: ${lang === 'ko' ? '미점검' : 'not checked'}`}
-                          className={`w-full h-7 rounded-sm text-[10.5px] font-semibold inline-flex items-center justify-center gap-px ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
+                          className={`w-full h-7 rounded-sm text-[length:calc(10.5px*var(--ts))] font-semibold inline-flex items-center justify-center gap-px ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
                           {l ? l.score.pct : '·'}{d != null && d > 0 && <ArrowUp size={9} strokeWidth={3} />}{d != null && d < 0 && <ArrowDown size={9} strokeWidth={3} />}
                         </button>
                       </td>
                     )
                   })}
-                  <td className="px-3 py-1 border-l border-rule-2 text-[11px] leading-tight overflow-hidden">
+                  <td className="px-3 py-1 border-l border-rule-2 text-[length:calc(11px*var(--ts))] leading-tight overflow-hidden">
                     {sum.tested === 0 ? <span className="text-ink-3">—</span>
                       : sum.frontier ? <span className="block text-ink truncate" title={phonicsSkill(sum.frontier)?.label}>{phonicsSkill(sum.frontier)?.label}</span>
                       : <span className="block text-good truncate">{lang === 'ko' ? '모두 완성' : 'All mastered'}</span>}
-                    {sum.lastDate && <span className="block text-[10px] text-ink-3">{fmtShort(sum.lastDate, lang)}</span>}
+                    {sum.lastDate && <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{fmtShort(sum.lastDate, lang)}</span>}
                   </td>
                   <td className="py-1 text-center"><button onClick={() => onCheck(s.id)} title={lang === 'ko' ? '이 학생 점검' : `Check ${s.english_name}`} aria-label={`Check ${s.english_name}`} className="w-7 h-7 inline-flex items-center justify-center rounded border border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3"><ClipboardCheck size={13} /></button></td>
                 </tr>
@@ -396,7 +396,7 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
 
   const recheckable = notYetSecure(latest)
   const untested = PHONICS_SKILL_IDS.filter(id => !latest[id])
-  const quick = 'h-7 px-2.5 rounded-full border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink hover:border-ink-3 disabled:opacity-40'
+  const quick = 'h-7 px-2.5 rounded-full border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3 disabled:opacity-40'
 
   return (
     <div className="grid grid-cols-[210px_1fr] gap-6 items-start">
@@ -407,10 +407,10 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
         <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
           <div>
             <p className="eyebrow eyebrow-accent mb-1">{editing ? (lang === 'ko' ? `${editing.date} 점검 수정 중` : `Editing the check from ${editing.date}`) : (lang === 'ko' ? '파닉스 점검' : 'Phonics quick check')}</p>
-            <h2 className="font-display text-[28px] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[18px]">{student.korean_name}</span></h2>
+            <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
           </div>
           <div className="flex items-center gap-2">
-            <label className="grid gap-0.5"><span className="eyebrow">{lang === 'ko' ? '날짜' : 'Date'}</span><input type="date" value={date} onChange={e => touch(() => setDate(e.target.value))} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[13px] text-ink" /></label>
+            <label className="grid gap-0.5"><span className="eyebrow">{lang === 'ko' ? '날짜' : 'Date'}</span><input type="date" value={date} onChange={e => touch(() => setDate(e.target.value))} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink" /></label>
             <div className="inline-flex border border-rule-2 rounded overflow-hidden ml-2">
               <button onClick={onPrev} disabled={idx <= 0} className="h-8 w-8 flex items-center justify-center text-ink-2 hover:bg-paper-2 disabled:opacity-30" aria-label="Previous student"><ChevronLeft size={15} /></button>
               <button onClick={onNext} disabled={idx >= students.length - 1} className="h-8 w-8 flex items-center justify-center text-ink-2 hover:bg-paper-2 border-l border-rule-2 disabled:opacity-30" aria-label="Next student"><ChevronRight size={15} /></button>
@@ -423,20 +423,20 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
           <div className="mb-4 border border-rule-2 rounded-md bg-paper-2/50 px-4 py-3">
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <p className="eyebrow">{lang === 'ko' ? '지금까지' : 'So far'}</p>
-              {(() => { const sum = summarizeStudent(latest); return <p className="text-[12px] text-ink-2">{sum.frontier ? <>{lang === 'ko' ? '현재 과제: ' : 'Working on: '}<b className="text-ink">{phonicsSkill(sum.frontier)?.label}</b></> : (lang === 'ko' ? '점검한 시트 모두 완성' : 'Every checked sheet mastered')}</p> })()}
+              {(() => { const sum = summarizeStudent(latest); return <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{sum.frontier ? <>{lang === 'ko' ? '현재 과제: ' : 'Working on: '}<b className="text-ink">{phonicsSkill(sum.frontier)?.label}</b></> : (lang === 'ko' ? '점검한 시트 모두 완성' : 'Every checked sheet mastered')}</p> })()}
             </div>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {orderSkills(Object.keys(latest)).map(id => { const l = latest[id]; const b = phonicsBand(l.score); return (
-                <span key={id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[11.5px] tabular-nums ${BAND_CHIP[b]}`} title={`${phonicsSkill(id)?.label} · ${PHONICS_BAND_LABELS[b].en} · ${fmtShort(l.date, lang)}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
+                <span key={id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] tabular-nums ${BAND_CHIP[b]}`} title={`${phonicsSkill(id)?.label} · ${PHONICS_BAND_LABELS[b].en} · ${fmtShort(l.date, lang)}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
               ) })}
             </div>
-            <div className="flex items-center gap-3 mt-2 text-[11.5px]">
+            <div className="flex items-center gap-3 mt-2 text-[length:calc(11.5px*var(--ts))]">
               <button onClick={onProgress} className="text-accent hover:underline">{lang === 'ko' ? '시도별 진전 보기 →' : 'Progress across attempts →'}</button>
               <details className="min-w-0">
                 <summary className="text-ink-3 cursor-pointer hover:text-ink">{history.length} {lang === 'ko' ? '회 점검' : history.length === 1 ? 'check' : 'checks'}</summary>
                 <ul className="mt-1.5 divide-y divide-rule">
                   {history.map(c => (
-                    <li key={c.id} className="py-1.5 flex items-center gap-3 text-[12px]">
+                    <li key={c.id} className="py-1.5 flex items-center gap-3 text-[length:calc(12px*var(--ts))]">
                       <span className="text-ink-2 w-20 shrink-0">{fmtShort(c.date, lang)}</span>
                       <span className="flex-1 min-w-0 text-ink-3 truncate">{scoreCheck(c).map(s => `${phonicsSkill(s.skill)?.short} ${scoreText(s)}`).join(' · ')}</span>
                       <button onClick={() => onEdit(c)} className="text-ink-3 hover:text-ink" title={lang === 'ko' ? '수정' : 'Edit'}><Pencil size={12} /></button>
@@ -459,19 +459,19 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
               <button onClick={() => setSkills(recheckable)} disabled={recheckable.length === 0} className={quick}>{lang === 'ko' ? '아직 미완성' : 'Not yet mastered'} ({recheckable.length})</button>
               <button onClick={() => setSkills(untested)} disabled={untested.length === 0} className={quick}>{lang === 'ko' ? '미점검' : 'Not checked yet'} ({untested.length})</button>
             </>}
-            {editing && <span className="text-[11.5px] text-ink-3">{lang === 'ko' ? '수정 중에는 시트 목록이 고정됩니다.' : 'The sheets of a saved check are fixed while editing.'}</span>}
+            {editing && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko' ? '수정 중에는 시트 목록이 고정됩니다.' : 'The sheets of a saved check are fixed while editing.'}</span>}
           </div>
           <div className="space-y-1.5">
             {PHONICS_GROUPS.map(g => (
               <div key={g.id} className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] text-ink-3 w-[96px] shrink-0">{lang === 'ko' ? g.label_ko : g.label}</span>
+                <span className="text-[length:calc(11px*var(--ts))] text-ink-3 w-[96px] shrink-0">{lang === 'ko' ? g.label_ko : g.label}</span>
                 {skillsInGroup(g.id).map(s => {
                   const on = skills.includes(s.id)
                   const l = latest[s.id]
                   const b = l ? phonicsBand(l.score) : null
                   return (
                     <button key={s.id} onClick={() => !editing && toggleSkill(s.id)} disabled={!!editing} title={`${s.label}\n${s.covers}${l ? `\n${lang === 'ko' ? '최근' : 'Last'}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[b!].en} · ${fmtShort(l.date, lang)}` : ''}`}
-                      className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium disabled:cursor-default ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
+                      className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium disabled:cursor-default ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
                       {s.short}
                       {b && <span className={`w-2 h-2 rounded-full ${BAND_DOT[b]}`} />}
                     </button>
@@ -484,7 +484,7 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
 
         {/* Word grids */}
         {skills.length === 0 ? (
-          <p className="text-[13px] text-ink-3 py-6 border-t border-rule-2">{lang === 'ko' ? '위에서 시트를 고르면 단어가 여기에 나타납니다.' : 'Pick the sheets above and their words appear here.'}</p>
+          <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6 border-t border-rule-2">{lang === 'ko' ? '위에서 시트를 고르면 단어가 여기에 나타납니다.' : 'Pick the sheets above and their words appear here.'}</p>
         ) : (
           <div className="space-y-5" data-guide="reading.phonics.words">
             {skills.map(id => (
@@ -495,16 +495,16 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
         )}
 
         <label className="block mt-5"><span className="eyebrow">{lang === 'ko' ? '메모' : 'Notes'}</span>
-          <textarea value={notes} onChange={e => touch(() => setNotes(e.target.value))} rows={2} placeholder={lang === 'ko' ? '들은 것: 어떤 소리를 혼동하는지, 어디서 멈췄는지…' : 'Anything the ticks do not capture: which sounds are confused, where they stopped, how they attacked a word…'} className="mt-1 w-full px-3 py-2 bg-surface border border-rule-2 rounded text-[13px] text-ink" />
+          <textarea value={notes} onChange={e => touch(() => setNotes(e.target.value))} rows={2} placeholder={lang === 'ko' ? '들은 것: 어떤 소리를 혼동하는지, 어디서 멈췄는지…' : 'Anything the ticks do not capture: which sounds are confused, where they stopped, how they attacked a word…'} className="mt-1 w-full px-3 py-2 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink" />
         </label>
 
         {/* Save bar */}
         <div className="sticky bottom-0 mt-5 -mx-2 px-2 py-3 bg-paper/95 backdrop-blur border-t border-rule-2 flex items-center gap-3 flex-wrap">
-          <span className="text-[12.5px] text-ink-2 tabular-nums">{skills.length} {lang === 'ko' ? '시트' : skills.length === 1 ? 'sheet' : 'sheets'} · <b className="text-ink">{halfText(totals.correct, totals.partial)}</b> / {totals.total} {lang === 'ko' ? '정답' : 'correct'}{totals.total - marked > 0 && <span className="text-ink-3"> · {totals.total - marked} {lang === 'ko' ? '미읽음' : 'not read'}</span>}</span>
+          <span className="text-[length:calc(12.5px*var(--ts))] text-ink-2 tabular-nums">{skills.length} {lang === 'ko' ? '시트' : skills.length === 1 ? 'sheet' : 'sheets'} · <b className="text-ink">{halfText(totals.correct, totals.partial)}</b> / {totals.total} {lang === 'ko' ? '정답' : 'correct'}{totals.total - marked > 0 && <span className="text-ink-3"> · {totals.total - marked} {lang === 'ko' ? '미읽음' : 'not read'}</span>}</span>
           <div className="ml-auto flex items-center gap-2">
-            {editing && <button onClick={onCancelEdit} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{lang === 'ko' ? '수정 취소' : 'Cancel edit'}</button>}
-            <button onClick={() => save(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5" data-guide="reading.phonics.save">{saving && <Loader2 size={13} className="animate-spin" />}{editing ? (lang === 'ko' ? '수정 저장' : 'Save changes') : (lang === 'ko' ? '저장' : 'Save check')}</button>
-            {!editing && idx < students.length - 1 && <button onClick={() => save(true)} disabled={saving} className="h-9 px-4 rounded border border-ink text-[13px] font-semibold text-ink hover:bg-paper-2 disabled:opacity-60">{lang === 'ko' ? '저장 후 다음 학생' : 'Save and next student'}</button>}
+            {editing && <button onClick={onCancelEdit} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '수정 취소' : 'Cancel edit'}</button>}
+            <button onClick={() => save(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5" data-guide="reading.phonics.save">{saving && <Loader2 size={13} className="animate-spin" />}{editing ? (lang === 'ko' ? '수정 저장' : 'Save changes') : (lang === 'ko' ? '저장' : 'Save check')}</button>
+            {!editing && idx < students.length - 1 && <button onClick={() => save(true)} disabled={saving} className="h-9 px-4 rounded border border-ink text-[length:calc(13px*var(--ts))] font-semibold text-ink hover:bg-paper-2 disabled:opacity-60">{lang === 'ko' ? '저장 후 다음 학생' : 'Save and next student'}</button>}
           </div>
         </div>
       </section>
@@ -528,16 +528,16 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
   const run = longestErrorRun(sk.words, marks)
   const pct = accuracyPct(correct, partial, sk.words.length)
   const band = correct + partial + errors > 0 ? phonicsBand({ pct }) : null
-  const small = 'h-6 px-2 rounded border border-rule-2 text-[11px] text-ink-2 hover:text-ink hover:border-ink-3'
-  const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[11px] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const small = 'h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3'
+  const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11px*var(--ts))] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   return (
     <div className="border border-rule-2 rounded-md bg-surface">
       <div className="px-4 py-2.5 border-b border-rule flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h3 className="text-[14px] font-semibold text-ink">{lang === 'ko' ? sk.label_ko : sk.label} <span className="font-normal text-ink-3 text-[12px]">· {sk.covers}</span></h3>
-          <p className="text-[12.5px] text-ink-2 mt-0.5"><span className="eyebrow mr-1.5">{lang === 'ko' ? '말하기' : 'Say'}</span>“{lang === 'ko' ? '이 단어들을 읽어 보세요. 모르겠으면 소리 내어 합쳐 보세요.' : 'Read these words for me. If you are not sure, sound it out.'}”</p>
+          <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{lang === 'ko' ? sk.label_ko : sk.label} <span className="font-normal text-ink-3 text-[length:calc(12px*var(--ts))]">· {sk.covers}</span></h3>
+          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5"><span className="eyebrow mr-1.5">{lang === 'ko' ? '말하기' : 'Say'}</span>“{lang === 'ko' ? '이 단어들을 읽어 보세요. 모르겠으면 소리 내어 합쳐 보세요.' : 'Read these words for me. If you are not sure, sound it out.'}”</p>
         </div>
-        <span className={`text-[13px] font-semibold tabular-nums ${band ? BAND_TEXT[band] : 'text-ink-3'}`}>{halfText(correct, partial)} / {sk.words.length}{band && <span className="font-normal text-[11.5px] ml-1.5">{PHONICS_BAND_LABELS[band][lang]}</span>}</span>
+        <span className={`text-[length:calc(13px*var(--ts))] font-semibold tabular-nums ${band ? BAND_TEXT[band] : 'text-ink-3'}`}>{halfText(correct, partial)} / {sk.words.length}{band && <span className="font-normal text-[length:calc(11.5px*var(--ts))] ml-1.5">{PHONICS_BAND_LABELS[band][lang]}</span>}</span>
       </div>
       <div className="px-4 py-3 grid grid-cols-4 gap-2">
         {sk.words.map(w => {
@@ -546,9 +546,9 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
             <div key={w} className="relative">
               <button onClick={() => onTap(w)} style={{ touchAction: 'manipulation' }}
                 title={m ? MARK_LABEL[m][lang] : undefined}
-                className={`w-full px-3 py-2.5 rounded border-2 font-serif text-[21px] leading-none select-none ${m ? MARK_TILE[m] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
+                className={`w-full px-3 py-2.5 rounded border-2 font-serif text-[length:calc(21px*var(--ts))] leading-none select-none ${m ? MARK_TILE[m] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
                 {w}
-                {isMiss(m) && heard[w] && <span className="block font-sans text-[11px] italic mt-1 opacity-80 truncate">“{heard[w]}”</span>}
+                {isMiss(m) && heard[w] && <span className="block font-sans text-[length:calc(11px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard[w]}”</span>}
               </button>
               {m && <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white pointer-events-none ${MARK_SOLID[m]}`}>{m === 'correct' ? <Check size={10} strokeWidth={3} /> : m === 'partial' ? <Minus size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</span>}
               {isMiss(m) && (
@@ -559,7 +559,7 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
           )
         })}
       </div>
-      <div className="px-4 py-2 border-t border-rule flex items-center gap-3 flex-wrap text-[11.5px] text-ink-3 tabular-nums">
+      <div className="px-4 py-2 border-t border-rule flex items-center gap-3 flex-wrap text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">
         <span><b className="text-good">{correct}</b> {lang === 'ko' ? '정답' : 'correct'} · <b className="text-warn">{partial}</b> {lang === 'ko' ? '부분 정답' : 'partly'} · <b className="text-bad">{errors}</b> {lang === 'ko' ? '오답' : errors === 1 ? 'error' : 'errors'} · {unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>
         <span className="text-ink-3">{lang === 'ko' ? '한 번 탭 정답, 두 번 오답, 세 번 부분 정답, 네 번 지우기.' : 'Tap once correct, twice error, three times partly, again to clear.'}</span>
         {run >= 5 && <span className="text-warn font-medium">{lang === 'ko' ? '연속 5개 오답: 이 시트는 여기서 멈추세요.' : 'Five errors in a row: stop this sheet here.'}</span>}
@@ -570,13 +570,13 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
         </span>
       </div>
       <details className="px-4 py-2 border-t border-rule" open={observations.length > 0}>
-        <summary className="text-[11.5px] text-ink-2 cursor-pointer hover:text-ink">{lang === 'ko' ? '해독 방식과 어려운 패턴' : 'How they decoded, and what gave trouble'}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
+        <summary className="text-[length:calc(11.5px*var(--ts))] text-ink-2 cursor-pointer hover:text-ink">{lang === 'ko' ? '해독 방식과 어려운 패턴' : 'How they decoded, and what gave trouble'}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
         <div className="mt-2 space-y-2">
           <div className="flex flex-wrap gap-1.5">
             {DECODING_OBSERVATIONS.map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] text-ink-3 mr-1">{lang === 'ko' ? '어려운 패턴:' : 'Trouble with:'}</span>
+            <span className="text-[length:calc(11px*var(--ts))] text-ink-3 mr-1">{lang === 'ko' ? '어려운 패턴:' : 'Trouble with:'}</span>
             {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}
           </div>
         </div>

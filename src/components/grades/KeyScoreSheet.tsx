@@ -371,7 +371,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
 
   const doneCount = students.filter(s => isComplete(s.id)).length
   const bubble = (on: boolean, tone: 'right' | 'wrong' | 'key' | 'plain') =>
-    `w-7 h-7 rounded-full border text-[11px] font-bold flex items-center justify-center transition-colors ${
+    `w-7 h-7 rounded-full border text-[length:calc(11px*var(--ts))] font-bold flex items-center justify-center transition-colors ${
       tone === 'right' ? 'bg-good border-good text-white' : tone === 'wrong' ? 'bg-bad border-bad text-white' : tone === 'key' ? 'bg-good-soft border-good text-good' : on ? 'bg-ink border-ink text-paper' : 'border-rule-2 text-ink-2 hover:border-ink-3'}`
 
   if (loading) return <Loading rows={4} />
@@ -389,25 +389,25 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
       )}
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <span className="text-[13px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
+          <span className="text-[length:calc(13px*var(--ts))] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
           <div data-guide="grades.views" className="inline-flex border border-rule-2 rounded overflow-hidden">
-            <button onClick={() => setView('sheet')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 ${view === 'sheet' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><ListChecks size={13} />{lang === 'ko' ? '답안지' : 'Answer sheet'}</button>
-            <button onClick={() => setView('grid')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'grid' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><LayoutGrid size={13} />{lang === 'ko' ? '반 전체' : 'Class grid'}</button>
-            <button onClick={() => setView('analysis')} className={`h-8 px-3 text-[12.5px] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'analysis' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><BarChart3 size={13} />{lang === 'ko' ? '분석' : 'Analysis'}</button>
+            <button onClick={() => setView('sheet')} className={`h-8 px-3 text-[length:calc(12.5px*var(--ts))] font-medium inline-flex items-center gap-1.5 ${view === 'sheet' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><ListChecks size={13} />{lang === 'ko' ? '답안지' : 'Answer sheet'}</button>
+            <button onClick={() => setView('grid')} className={`h-8 px-3 text-[length:calc(12.5px*var(--ts))] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'grid' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><LayoutGrid size={13} />{lang === 'ko' ? '반 전체' : 'Class grid'}</button>
+            <button onClick={() => setView('analysis')} className={`h-8 px-3 text-[length:calc(12.5px*var(--ts))] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'analysis' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><BarChart3 size={13} />{lang === 'ko' ? '분석' : 'Analysis'}</button>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+          {dirty.size > 0 && <span className="text-[length:calc(12px*var(--ts))] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
           {rubricItems.length > 0 && (
             <div className="relative">
-              <button onClick={openPrint} title={lang === 'ko' ? '이 시험지의 루브릭을 빈 양식으로, 학생별로, 또는 채점 결과와 함께 인쇄' : 'Print a rubric from this paper: blank, one per student, or with the marked levels'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '루브릭 인쇄' : 'Print rubric'}</button>
+              <button onClick={openPrint} title={lang === 'ko' ? '이 시험지의 루브릭을 빈 양식으로, 학생별로, 또는 채점 결과와 함께 인쇄' : 'Print a rubric from this paper: blank, one per student, or with the marked levels'} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '루브릭 인쇄' : 'Print rubric'}</button>
               {printMenu && rubricItems.length > 1 && (
                 <>
                   <div className="fixed inset-0 z-[90]" onClick={() => setPrintMenu(false)} />
                   <div className="absolute right-0 top-full mt-1 z-[95] min-w-[220px] bg-surface border border-rule-2 rounded shadow-lg py-1">
                     <p className="eyebrow px-3 py-1.5">{lang === 'ko' ? '어느 문항?' : 'Which question?'}</p>
                     {rubricItems.map(it => (
-                      <button key={it.num} onClick={() => { setPrintMenu(false); setPrintingQ(it.num) }} className="w-full text-left px-3 py-1.5 text-[12.5px] hover:bg-paper-2 text-ink">
+                      <button key={it.num} onClick={() => { setPrintMenu(false); setPrintingQ(it.num) }} className="w-full text-left px-3 py-1.5 text-[length:calc(12.5px*var(--ts))] hover:bg-paper-2 text-ink">
                         <span className="font-semibold tabular-nums">Q{it.num}</span> · {it.rubric!.name} <span className="text-ink-3">· {it.rubric!.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{it.max_points}</span>
                       </button>
                     ))}
@@ -416,10 +416,10 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
               )}
             </div>
           )}
-          <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 표시와 점수를 지웁니다' : 'Remove every mark and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5">
+          <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 표시와 점수를 지웁니다' : 'Remove every mark and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5">
             <Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}
           </button>
-          <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">
+          <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">
             {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}
           </button>
         </div>
@@ -435,12 +435,12 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
               const part = !done && answeredCount(s.id) > 0
               return (
                 <button key={s.id} onClick={() => goTo(i)}
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[12.5px] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[length:calc(12.5px*var(--ts))] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
                   <span className="truncate text-ink">{s.english_name}</span>
                   <span className="inline-flex items-center gap-1.5 shrink-0">
-                    {!fl && blanks(s.id) > 0 && <span title={lang === 'ko' ? `${blanks(s.id)}문항 무응답 · 오답 처리` : `${blanks(s.id)} blank · marked wrong`} className="tabular-nums text-[10.5px] font-semibold text-warn bg-warn-soft rounded px-1">{blanks(s.id)} —</span>}
-                    {routed && !fl && (done || part) && <span className="tabular-nums text-[10.5px] text-ink-3" title={`${domainLabel(here)}: ${partText(s.id, here)}`} style={{ color: domainColor(here) }}>{domainShort(here)} {partText(s.id, here)}</span>}
-                    <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>
+                    {!fl && blanks(s.id) > 0 && <span title={lang === 'ko' ? `${blanks(s.id)}문항 무응답 · 오답 처리` : `${blanks(s.id)} blank · marked wrong`} className="tabular-nums text-[length:calc(10.5px*var(--ts))] font-semibold text-warn bg-warn-soft rounded px-1">{blanks(s.id)} —</span>}
+                    {routed && !fl && (done || part) && <span className="tabular-nums text-[length:calc(10.5px*var(--ts))] text-ink-3" title={`${domainLabel(here)}: ${partText(s.id, here)}`} style={{ color: domainColor(here) }}>{domainShort(here)} {partText(s.id, here)}</span>}
+                    <span className={`tabular-nums text-[length:calc(11.5px*var(--ts))] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>
                       {fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done ? `${total(s.id)} ✓` : part ? `${total(s.id)} ~` : ''}
                     </span>
                   </span>
@@ -454,23 +454,23 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
             {active && (
               <>
                 <div className="flex items-baseline justify-between mb-3 gap-3 flex-wrap">
-                  <h3 className="font-display text-[22px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
+                  <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{active.english_name} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3 ml-1">{active.korean_name}</span></h3>
                   <div className="flex items-center gap-3 flex-wrap">
                     {routed && !flags[active.id] && (
-                      <span className="inline-flex items-center gap-2.5 text-[12px] tabular-nums" title={lang === 'ko' ? '영역별 점수 (각 영역 성적부에 들어가는 점수)' : 'Points per domain, as each gradebook will count them'}>
+                      <span className="inline-flex items-center gap-2.5 text-[length:calc(12px*var(--ts))] tabular-nums" title={lang === 'ko' ? '영역별 점수 (각 영역 성적부에 들어가는 점수)' : 'Points per domain, as each gradebook will count them'}>
                         {paperDomains.map(d => { const e = partsOf(active.id)[d] || 0, p = split[d] || 0; return (
                           <span key={d} className={d === here ? 'font-semibold' : 'text-ink-2'} style={{ color: domainColor(d) }}>{domainShort(d)} {e}/{p}<span className="opacity-70"> · {p ? Math.round((e / p) * 100) : 0}%</span></span>
                         ) })}
                       </span>
                     )}
-                    <span className="font-display text-[22px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : total(active.id)} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
-                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
-                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
-                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 표시와 점수를 지웁니다' : 'Remove every mark and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[11px] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
+                    <span className="font-display text-[length:calc(22px*var(--ts))] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : total(active.id)} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3">/ {assessment.max_score}</span></span>
+                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
+                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 표시와 점수를 지웁니다' : 'Remove every mark and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
                   </div>
                 </div>
                 {routed && (
-                  <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[11.5px] mb-2 px-2 py-1.5 rounded border border-rule bg-paper-2/60">
+                  <div className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[length:calc(11.5px*var(--ts))] mb-2 px-2 py-1.5 rounded border border-rule bg-paper-2/60">
                     {paperDomains.map(d => { const nums = map.filter(it => domOf(it) === d).map(it => it.num); return (
                       <span key={d} className="inline-flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: domainColor(d) }} />
@@ -483,7 +483,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                   </div>
                 )}
                 {(flags[active.id]?.absent || flags[active.id]?.exempt) ? (
-                  <p className="text-[13px] text-ink-3 py-6">{flags[active.id]?.absent ? (lang === 'ko' ? '결석 처리됨. 답을 표시하면 다시 채점됩니다.' : 'Marked absent for this assessment. Marking an answer clears it.') : (lang === 'ko' ? '면제 처리됨.' : 'Exempt from this assessment. Marking an answer clears it.')}</p>
+                  <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6">{flags[active.id]?.absent ? (lang === 'ko' ? '결석 처리됨. 답을 표시하면 다시 채점됩니다.' : 'Marked absent for this assessment. Marking an answer clears it.') : (lang === 'ko' ? '면제 처리됨.' : 'Exempt from this assessment. Marking an answer clears it.')}</p>
                 ) : (
                   <div className="divide-y divide-rule">
                     {map.map(it => {
@@ -498,26 +498,26 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                       const rowTone = isBlank || wasSkipped ? `${focused ? 'bg-warn-soft' : 'bg-warn-soft/50'} shadow-[inset_3px_0_0_rgb(var(--warn))]` : focused ? 'bg-paper-2' : ''
                       const awayStyle = away && !isBlank && !wasSkipped && !focused ? { backgroundColor: domainTint(dom, '0F') } : undefined
                       const band = run ? (
-                        <div className="flex items-center gap-2 pt-2.5 pb-1 -mx-2 px-2 text-[11px] font-semibold uppercase tracking-wider" style={{ color: domainColor(run.dom) }}>
+                        <div className="flex items-center gap-2 pt-2.5 pb-1 -mx-2 px-2 text-[length:calc(11px*var(--ts))] font-semibold uppercase tracking-wider" style={{ color: domainColor(run.dom) }}>
                           <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: domainColor(run.dom) }} />{runLabel(run)}
                           <span className="font-normal normal-case tracking-normal text-ink-3">{run.dom === here ? (lang === 'ko' ? '이 탭에 반영' : 'counts here') : (lang === 'ko' ? `${domainLabel(run.dom)} 탭에 반영` : `counts in ${domainLabel(run.dom)}`)}</span>
                         </div>
                       ) : null
                       const blankNote = isBlank
-                        ? <span className="text-[11px] font-semibold text-warn whitespace-nowrap">{lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'}</span>
-                        : wasSkipped ? <span className="text-[11px] text-warn whitespace-nowrap">{lang === 'ko' ? '건너뜀 · 비워 두면 오답 처리' : 'Skipped · counts as wrong if left blank'}</span> : null
+                        ? <span className="text-[length:calc(11px*var(--ts))] font-semibold text-warn whitespace-nowrap">{lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'}</span>
+                        : wasSkipped ? <span className="text-[length:calc(11px*var(--ts))] text-warn whitespace-nowrap">{lang === 'ko' ? '건너뜀 · 비워 두면 오답 처리' : 'Skipped · counts as wrong if left blank'}</span> : null
                       const blankBubble = <button onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setBlank(it.num) }} title={lang === 'ko' ? '무응답 (오답 처리)' : 'No answer (marked wrong)'} className={bubble(false, isBlank ? 'wrong' : 'plain')}>—</button>
                       return (
                         <div key={it.num} className={band ? 'border-t-0' : ''}>
                         {band}
                         <div onClick={() => setFocusedQ(it.num)} style={awayStyle}
                           className={`grid grid-cols-[34px_minmax(0,1fr)_auto] gap-3 items-center py-1.5 -mx-2 px-2 rounded ${rowTone} ${away ? 'opacity-80' : ''}`}>
-                          <span className={`text-[11px] tabular-nums ${isBlank || wasSkipped ? 'text-warn font-semibold' : 'text-ink-3'}`}>Q{it.num}</span>
+                          <span className={`text-[length:calc(11px*var(--ts))] tabular-nums ${isBlank || wasSkipped ? 'text-warn font-semibold' : 'text-ink-3'}`}>Q{it.num}</span>
                           {hasRubric(it) ? (
                             <div className="grid gap-2 py-1 min-w-0">
                               <span className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[11px] text-ink-3">{it.rubric!.name} · {r?.points ?? 0} / {it.max_points}</span>
-                                <button onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setBlank(it.num) }} title={lang === 'ko' ? '무응답 (모든 기준 0, 오답 처리)' : 'Nothing written (0 on every criterion, marked wrong)'} className={`h-5 px-1.5 rounded border text-[10.5px] font-bold ${isBlank ? 'bg-bad border-bad text-white' : 'border-rule-2 text-ink-3 hover:text-ink hover:border-ink-3'}`}>—</button>
+                                <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{it.rubric!.name} · {r?.points ?? 0} / {it.max_points}</span>
+                                <button onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setBlank(it.num) }} title={lang === 'ko' ? '무응답 (모든 기준 0, 오답 처리)' : 'Nothing written (0 on every criterion, marked wrong)'} className={`h-5 px-1.5 rounded border text-[length:calc(10.5px*var(--ts))] font-bold ${isBlank ? 'bg-bad border-bad text-white' : 'border-rule-2 text-ink-3 hover:text-ink hover:border-ink-3'}`}>—</button>
                                 {blankNote}
                               </span>
                               {it.rubric!.criteria.map((c, ci) => {
@@ -526,9 +526,9 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                                 return (
                                   <div key={c.key} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci) }} className={`rounded-md border px-2.5 py-2 -mx-1 ${cf ? 'bg-paper-3/60 border-rule-2' : 'border-transparent'}`}>
                                     <div className="flex items-baseline gap-2 mb-1.5">
-                                      <span className="text-[13px] font-semibold text-ink">{c.label}</span>
-                                      {c.standard && <span className="text-[11px] text-info">{c.standard}</span>}
-                                      {lv != null && <span className="ml-auto text-[11px] text-ink-3">{levelLabels[lv]}</span>}
+                                      <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{c.label}</span>
+                                      {c.standard && <span className="text-[length:calc(11px*var(--ts))] text-info">{c.standard}</span>}
+                                      {lv != null && <span className="ml-auto text-[length:calc(11px*var(--ts))] text-ink-3">{levelLabels[lv]}</span>}
                                     </div>
                                     <div className="grid grid-cols-[56px_repeat(4,minmax(0,1fr))] gap-1.5">
                                       {[0, 1, 2, 3, 4].map(n => {
@@ -536,9 +536,9 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                                         return (
                                           <button key={n} title={n === 0 ? zeroText : undefined} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci); setCritLevel(it.num, c.key, n) }}
                                             className={`text-left rounded border px-2 py-1.5 flex flex-col gap-0.5 min-w-0 ${n === 0 ? 'items-center justify-center' : ''} ${on ? levelTone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
-                                            <span className="flex items-baseline gap-1.5"><span className="font-display text-[17px] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[9.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[n]}</span>}</span>
-                                            {n === 0 ? <span className={`text-[9.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[0]}</span>
-                                              : <span className={`text-[11.5px] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
+                                            <span className="flex items-baseline gap-1.5"><span className="font-display text-[length:calc(17px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:max(10px,calc(9.5px*var(--ts)))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[n]}</span>}</span>
+                                            {n === 0 ? <span className={`text-[length:max(10px,calc(9.5px*var(--ts)))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[0]}</span>
+                                              : <span className={`text-[length:calc(11.5px*var(--ts))] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
                                           </button>
                                         )
                                       })}
@@ -558,8 +558,8 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                                 })}
                                 {blankBubble}
                               </div>
-                              {((r?.answer && r.answer !== it.answer_key) || isBlank) && <span className="text-[11px] text-ink-3">{lang === 'ko' ? '정답' : 'key'} {it.answer_key}</span>}
-                              {it.max_points !== 1 && <span className="text-[11px] text-ink-3">{it.max_points} pt</span>}
+                              {((r?.answer && r.answer !== it.answer_key) || isBlank) && <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{lang === 'ko' ? '정답' : 'key'} {it.answer_key}</span>}
+                              {it.max_points !== 1 && <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{it.max_points} pt</span>}
                               {blankNote}
                             </div>
                           ) : (
@@ -574,12 +574,12 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                               )}
                               {/* Half points (2.5 / 5) and anything over 8 go in here. */}
                               <input type="number" min={0} max={it.max_points} step={0.5} value={isBlank ? '' : r?.points ?? ''} onChange={e => setPoints(it.num, e.target.value === '' ? null : Number(e.target.value))} onFocus={() => setFocusedQ(it.num)} onClick={e => e.stopPropagation()}
-                                className="w-16 h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] tabular-nums text-center" placeholder="2.5" />
-                              <span className="text-[11px] text-ink-3">/ {it.max_points} · {it.type === 'rubric' ? (lang === 'ko' ? '루브릭' : 'rubric') : (lang === 'ko' ? '서술형' : 'written')}</span>
+                                className="w-16 h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] tabular-nums text-center" placeholder="2.5" />
+                              <span className="text-[length:calc(11px*var(--ts))] text-ink-3">/ {it.max_points} · {it.type === 'rubric' ? (lang === 'ko' ? '루브릭' : 'rubric') : (lang === 'ko' ? '서술형' : 'written')}</span>
                               {blankNote}
                             </div>
                           )}
-                          <span className="text-[10.5px] text-right whitespace-nowrap" style={{ color: routed ? domainColor(dom) : undefined }}>{routed ? <>{it.standard || (lang === 'ko' ? '태그 없음' : 'untagged')}<span className="opacity-70"> · {domainShort(dom)}</span></> : <span className="text-info">{it.standard || ''}</span>}</span>
+                          <span className="text-[length:calc(10.5px*var(--ts))] text-right whitespace-nowrap" style={{ color: routed ? domainColor(dom) : undefined }}>{routed ? <>{it.standard || (lang === 'ko' ? '태그 없음' : 'untagged')}<span className="opacity-70"> · {domainShort(dom)}</span></> : <span className="text-info">{it.standard || ''}</span>}</span>
                         </div>
                         </div>
                       )
@@ -587,15 +587,15 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                   </div>
                 )}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-rule">
-                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
-                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
+                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
+                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
                 </div>
               </>
             )}
           </div>
 
           {/* Rail */}
-          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[12px] overflow-y-auto max-h-[70vh]">
+          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[length:calc(12px*var(--ts))] overflow-y-auto max-h-[70vh]">
             <div>
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '가장 많이 틀린 문항' : 'Most missed so far'} · {analysis.papers}</p>
               {analysis.mostMissed.length === 0 ? <p className="text-ink-3">{lang === 'ko' ? '아직 채점된 답안이 없습니다.' : 'No papers marked yet.'}</p> : analysis.mostMissed.map(x => (
@@ -626,7 +626,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                   if (!rows.length) return null
                   return (
                     <div key={d} className={routed ? 'mb-1.5' : ''}>
-                      {routed && <p className="text-[10.5px] font-semibold uppercase tracking-wider mt-1" style={{ color: domainColor(d) }}>{domainLabel(d)}</p>}
+                      {routed && <p className="text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wider mt-1" style={{ color: domainColor(d) }}>{domainLabel(d)}</p>}
                       {rows.map(([code, v]) => (
                         <div key={code} className="grid grid-cols-[64px_1fr_40px] gap-2 items-center py-0.5">
                           <span className="truncate" style={{ color: routed ? domainColor(d) : undefined }}>{routed ? code : <span className="text-info">{code}</span>}</span>
@@ -650,13 +650,13 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
         <AssessmentAnalysis map={map} students={students} responses={responses} flags={flags} letters={letters} maxScore={assessment.max_score} englishClass={assessment.english_class} homeDomain={home} currentDomain={here} lang={lang} onOpenStudent={i => { if (i >= 0) { setActiveIdx(i); setView('sheet') } }} />
       ) : (
         <div className="border border-rule-2 rounded-lg overflow-auto max-h-[70vh]">
-          <table className="text-[12px] tabular-nums border-collapse min-w-full">
+          <table className="text-[length:calc(12px*var(--ts))] tabular-nums border-collapse min-w-full">
             <thead className="sticky top-0 bg-paper-2 z-10">
               {routed && (
                 <tr>
                   <th className="border-b border-rule" />
                   {runs.map((r, i) => (
-                    <th key={i} colSpan={r.items.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wider border-b border-rule text-center whitespace-nowrap" style={{ color: domainColor(r.dom), backgroundColor: domainTint(r.dom, r.dom === here ? '22' : '0F') }}>
+                    <th key={i} colSpan={r.items.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-2 py-1 text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wider border-b border-rule text-center whitespace-nowrap" style={{ color: domainColor(r.dom), backgroundColor: domainTint(r.dom, r.dom === here ? '22' : '0F') }}>
                       {runLabel(r)}{r.dom === here ? '' : ` · ${lang === 'ko' ? `${domainLabel(r.dom)} 탭` : `in ${domainLabel(r.dom)}`}`}
                     </th>
                   ))}
@@ -670,17 +670,17 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                     const avg = vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : null
                     return (
                       <th key={`${it.num}-${c.key}`} className="px-1 py-2 border-b border-rule-2 text-center min-w-[44px] cursor-help" onMouseEnter={e => showHover(e, it, c)} onMouseLeave={() => setHover(null)}>
-                        <span className="block text-[10.5px] text-ink-2 truncate max-w-[60px]">Q{it.num} · {c.label}</span>
-                        <span className={`block text-[10px] ${avg != null && avg < 2 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{avg != null ? avg.toFixed(1) : ''}</span>
+                        <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-2 truncate max-w-[60px]">Q{it.num} · {c.label}</span>
+                        <span className={`block text-[length:calc(10px*var(--ts))] ${avg != null && avg < 2 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{avg != null ? avg.toFixed(1) : ''}</span>
                       </th>) }); return (
                   <th key={it.num} className="px-1 py-2 border-b border-rule-2 text-center min-w-[34px] cursor-help" style={routed && domOf(it) !== here ? { backgroundColor: domainTint(domOf(it), '0F') } : undefined} onMouseEnter={e => showHover(e, it)} onMouseLeave={() => setHover(null)}>
-                    <span className="block text-[10.5px] text-ink-2">Q{it.num}</span>
-                    <span className={`block text-[10px] ${a.pct != null && a.pct < 0.6 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{a.pct == null ? '' : `${Math.round(a.pct * 100)}%`}</span>
+                    <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-2">Q{it.num}</span>
+                    <span className={`block text-[length:calc(10px*var(--ts))] ${a.pct != null && a.pct < 0.6 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{a.pct == null ? '' : `${Math.round(a.pct * 100)}%`}</span>
                   </th>) })}
                 {routed && paperDomains.map(d => (
                   <th key={d} className="px-2 py-2 border-b border-rule-2 text-right whitespace-nowrap" title={`${domainLabel(d)}: ${lang === 'ko' ? '이 영역에 반영되는 점수' : 'points that count in this domain'}`}>
-                    <span className={`block text-[10.5px] ${d === here ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }}>{domainShort(d)} /{split[d]}</span>
-                    <span className="block text-[10px] text-ink-3">{analysis.perDomain[d] != null ? `${Math.round(analysis.perDomain[d]!)}%` : ''}</span>
+                    <span className={`block text-[length:calc(10.5px*var(--ts))] ${d === here ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }}>{domainShort(d)} /{split[d]}</span>
+                    <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{analysis.perDomain[d] != null ? `${Math.round(analysis.perDomain[d]!)}%` : ''}</span>
                   </th>
                 ))}
                 <th className="px-3 py-2 border-b border-rule-2 text-right eyebrow font-semibold">{lang === 'ko' ? '총점' : 'Total'}</th>
@@ -697,18 +697,18 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                     ) : map.map(it => {
                       const r = responses[s.id]?.[it.num]
                       const tint = routed && domOf(it) !== here ? { backgroundColor: domainTint(domOf(it), '0F') } : undefined
-                      const blankCell = (key: string) => <td key={key} style={tint} className="py-1 text-center"><span title={lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'} className="inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold bg-warn-soft text-warn">—</span></td>
+                      const blankCell = (key: string) => <td key={key} style={tint} className="py-1 text-center"><span title={lang === 'ko' ? '무응답 · 오답 처리' : 'Blank · marked wrong'} className="inline-flex w-6 h-6 rounded items-center justify-center text-[length:calc(11px*var(--ts))] font-bold bg-warn-soft text-warn">—</span></td>
                       if (hasRubric(it)) return it.rubric!.criteria.map(c => {
                         if (r?.blank) return blankCell(`${it.num}-${c.key}`)
                         const lv = r?.levels?.[c.key]
                         if (lv == null) return <td key={`${it.num}-${c.key}`} style={tint} className="text-center text-ink-3 py-1.5">·</td>
-                        return <td key={`${it.num}-${c.key}`} style={tint} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{lv}</span></td>
+                        return <td key={`${it.num}-${c.key}`} style={tint} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[length:calc(11px*var(--ts))] font-bold ${lv === 0 ? 'bg-paper-3 text-ink-2' : lv === 1 ? 'bg-bad-soft text-bad' : lv === 2 ? 'bg-warn-soft text-warn' : lv === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{lv}</span></td>
                       })
                       if (r?.blank) return blankCell(String(it.num))
                       if (!r || (isChoiceItem(it) ? !r.answer : r.points == null)) return <td key={it.num} style={tint} className="text-center text-ink-3 py-1.5">·</td>
                       if (isChoiceItem(it)) {
                         const ok = r.answer === it.answer_key
-                        return <td key={it.num} style={tint} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-[11px] font-bold ${ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{r.answer}</span></td>
+                        return <td key={it.num} style={tint} className="py-1 text-center"><span className={`inline-flex w-6 h-6 rounded-full items-center justify-center text-[length:calc(11px*var(--ts))] font-bold ${ok ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{r.answer}</span></td>
                       }
                       const frac = it.max_points ? (r.points || 0) / it.max_points : 0
                       return <td key={it.num} style={tint} className={`py-1.5 text-center ${frac >= 1 ? 'text-good' : frac === 0 ? 'text-bad' : 'text-ink'}`}>{r.points}</td>
@@ -723,12 +723,12 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
             </tbody>
           </table>
           {(routed || map.some(hasRubric) || students.some(s => blanks(s.id) > 0)) && (
-            <div className="flex items-center gap-3 px-3 py-2 border-t border-rule-2 bg-paper-2/60 text-[11px] text-ink-3 flex-wrap">
+            <div className="flex items-center gap-3 px-3 py-2 border-t border-rule-2 bg-paper-2/60 text-[length:calc(11px*var(--ts))] text-ink-3 flex-wrap">
               {routed && paperDomains.map(d => <span key={d} className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: domainColor(d) }} /><span style={{ color: domainColor(d) }}>{domainLabel(d)}</span>{d === here ? (lang === 'ko' ? '(이 탭)' : '(this tab)') : ''}</span>)}
-              {students.some(s => blanks(s.id) > 0) && <span className="inline-flex items-center gap-1.5"><span className="inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold bg-warn-soft text-warn">—</span>{lang === 'ko' ? '무응답 · 오답 처리' : 'blank · marked wrong'}</span>}
+              {students.some(s => blanks(s.id) > 0) && <span className="inline-flex items-center gap-1.5"><span className="inline-flex w-5 h-5 rounded items-center justify-center text-[length:calc(10px*var(--ts))] font-bold bg-warn-soft text-warn">—</span>{lang === 'ko' ? '무응답 · 오답 처리' : 'blank · marked wrong'}</span>}
               {map.some(hasRubric) && <>
                 <span>{lang === 'ko' ? '루브릭 단계' : 'Rubric levels'}</span>
-                {[0, 1, 2, 3, 4].map(n => <span key={n} className="inline-flex items-center gap-1.5"><span className={`inline-flex w-5 h-5 rounded items-center justify-center text-[10px] font-bold ${n === 0 ? 'bg-paper-3 text-ink-2' : n === 1 ? 'bg-bad-soft text-bad' : n === 2 ? 'bg-warn-soft text-warn' : n === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{n}</span>{levelLabels[n]}</span>)}
+                {[0, 1, 2, 3, 4].map(n => <span key={n} className="inline-flex items-center gap-1.5"><span className={`inline-flex w-5 h-5 rounded items-center justify-center text-[length:calc(10px*var(--ts))] font-bold ${n === 0 ? 'bg-paper-3 text-ink-2' : n === 1 ? 'bg-bad-soft text-bad' : n === 2 ? 'bg-warn-soft text-warn' : n === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`}>{n}</span>{levelLabels[n]}</span>)}
               </>}
             </div>
           )}
@@ -747,19 +747,19 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
         const critVals = crit ? scored.map(s => responses[s.id]?.[it.num]?.levels?.[crit.key]).filter((v): v is number => v != null) : []
         const critAvg = critVals.length ? critVals.reduce((x, y) => x + y, 0) / critVals.length : null
         return (
-          <div className="fixed z-50 w-[340px] bg-surface border border-rule-2 rounded-md shadow-lg p-3.5 text-[12px] text-ink-2 pointer-events-none" style={{ left: hover.x, top: hover.y + 6, transform: 'translateX(-50%)' }}>
+          <div className="fixed z-50 w-[340px] bg-surface border border-rule-2 rounded-md shadow-lg p-3.5 text-[length:calc(12px*var(--ts))] text-ink-2 pointer-events-none" style={{ left: hover.x, top: hover.y + 6, transform: 'translateX(-50%)' }}>
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[14px] font-semibold text-ink">Q{it.num}{crit ? ` · ${crit.label}` : ''}</span>
+              <span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">Q{it.num}{crit ? ` · ${crit.label}` : ''}</span>
               <span className="text-ink-3">{crit ? `${it.rubric?.name || typeName} · 0–4` : `${typeName}${it.answer_key ? ` · ${lang === 'ko' ? '정답' : 'key'} ${it.answer_key}` : ''} · ${it.max_points} ${lang === 'ko' ? '점' : 'pt'}`}</span>
             </div>
             {std ? (
               <div className="mt-2 grid gap-0.5">
-                <span><span className="font-mono text-[11px] text-info bg-info-soft px-1.5 py-0.5 rounded mr-1.5">{std}</span><span className="font-medium text-ink">{plainName(std)}</span></span>
-                {stdRow?.text && <span className="text-[11.5px] text-ink-3 leading-snug">{stdRow.text}</span>}
+                <span><span className="font-mono text-[length:calc(11px*var(--ts))] text-info bg-info-soft px-1.5 py-0.5 rounded mr-1.5">{std}</span><span className="font-medium text-ink">{plainName(std)}</span></span>
+                {stdRow?.text && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-snug">{stdRow.text}</span>}
               </div>
             ) : <p className="mt-2 text-ink-3">{lang === 'ko' ? '기준 태그 없음' : 'No standard tagged'}</p>}
             {crit && (
-              <div className="mt-2 grid gap-0.5 text-[11.5px]">
+              <div className="mt-2 grid gap-0.5 text-[length:calc(11.5px*var(--ts))]">
                 {crit.levels.map((t, i) => <span key={i} className="leading-snug"><span className="font-semibold text-ink tabular-nums">{i + 1}</span> <span className="text-ink-3">{levelLabels[i + 1]}:</span> {t}</span>)}
               </div>
             )}
@@ -771,7 +771,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                   : <span>{lang === 'ko' ? '아직 채점 없음' : 'Nothing scored yet'}</span>}
               {distTotal > 0 && (
                 <span className="flex gap-1.5 ml-auto">
-                  {dist.map(d => <span key={d.L} className={`inline-flex items-center gap-0.5 tabular-nums ${d.L === it.answer_key ? 'text-good font-semibold' : d.n && d.n >= Math.max(2, distTotal * 0.3) ? 'text-bad font-semibold' : 'text-ink-3'}`}>{d.L}<span className="text-[10.5px]">{d.n}</span></span>)}
+                  {dist.map(d => <span key={d.L} className={`inline-flex items-center gap-0.5 tabular-nums ${d.L === it.answer_key ? 'text-good font-semibold' : d.n && d.n >= Math.max(2, distTotal * 0.3) ? 'text-bad font-semibold' : 'text-ink-3'}`}>{d.L}<span className="text-[length:calc(10.5px*var(--ts))]">{d.n}</span></span>)}
                 </span>
               )}
             </div>

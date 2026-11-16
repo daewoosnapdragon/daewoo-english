@@ -27,10 +27,10 @@ export default function SuppliesCard() {
   return (
     <div>
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-2">
-        <h3 className="font-display text-[18px] leading-none text-ink">{ko ? '비품' : 'Supplies'}</h3>
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">{ko ? '비품' : 'Supplies'}</h3>
         <Link href="/supplies" className="eyebrow hover:text-ink">{ko ? '열기' : 'Open'}</Link>
       </div>
-      <ul className="text-[12.5px] space-y-1">
+      <ul className="text-[length:calc(12.5px*var(--ts))] space-y-1">
         <li>
           {s.low.length
             ? <Link href="/supplies#stock" className="text-warn hover:underline inline-flex items-start gap-1.5"><AlertTriangle size={12} className="mt-[3px] shrink-0" /><span><span className="font-semibold">{s.low.length} {ko ? '개 부족' : 'low'}</span> · {s.low.slice(0, 4).map(i => i.name).join(', ')}{s.low.length > 4 ? ` +${s.low.length - 4}` : ''}</span></Link>
@@ -49,7 +49,7 @@ export default function SuppliesCard() {
         {canManage && s.full.due && <li className="text-warn">{ko ? '전체 조사 할 때' : 'Full count due'}{s.full.daysAgo != null ? ` · ${ko ? `${s.full.daysAgo}일 전` : `last ${s.full.daysAgo} days ago`}` : ''}</li>}
       </ul>
       {mine && (
-        <Link href="/supplies#count" className="mt-2 h-8 px-3 inline-flex items-center gap-1.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover">
+        <Link href="/supplies#count" className="mt-2 h-8 px-3 inline-flex items-center gap-1.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover">
           <ClipboardCheck size={13} />{w!.isToday ? (ko ? '오늘 간단 조사 하기' : 'Do the quick count today') : (ko ? '간단 조사 하기' : 'Do the quick count')}
         </Link>
       )}

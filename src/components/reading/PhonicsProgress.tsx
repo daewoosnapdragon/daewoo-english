@@ -28,21 +28,21 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
   const sum = summarizeStudent(latest)
 
   if (own.length === 0) {
-    return <p className="text-[13px] text-ink-3 py-6">{lang === 'ko' ? '아직 이 학생의 파닉스 점검이 없습니다.' : 'No phonics checks for this student yet.'}</p>
+    return <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6">{lang === 'ko' ? '아직 이 학생의 파닉스 점검이 없습니다.' : 'No phonics checks for this student yet.'}</p>
   }
 
-  const cell = compact ? 'h-6 text-[10.5px]' : 'h-7 text-[11px]'
+  const cell = compact ? 'h-6 text-[length:calc(10.5px*var(--ts))]' : 'h-7 text-[length:calc(11px*var(--ts))]'
 
   return (
     <div>
-      <div className="flex items-baseline gap-3 flex-wrap mb-2 text-[12px] text-ink-2">
+      <div className="flex items-baseline gap-3 flex-wrap mb-2 text-[length:calc(12px*var(--ts))] text-ink-2">
         <span>{own.length} {lang === 'ko' ? '회 점검' : own.length === 1 ? 'check' : 'checks'} · {fmtShort(own[0].date, lang)} – {fmtShort(own[own.length - 1].date, lang)}</span>
         <span>·</span>
         <span>{sum.frontier ? <>{lang === 'ko' ? '현재 과제: ' : 'Working on: '}<b className="text-ink">{phonicsSkill(sum.frontier)?.label}</b></> : <span className="text-good">{lang === 'ko' ? '점검한 시트 모두 숙달' : 'Every checked sheet proficient'}</span>}</span>
         <span className="ml-auto text-ink-3">{lang === 'ko' ? '셀을 클릭하면 그 시도의 단어가 보입니다' : 'click a cell for that attempt’s words'}</span>
       </div>
       <div className="border border-rule-2 rounded-md overflow-hidden">
-        <table className="w-full table-fixed text-[12px] tabular-nums border-collapse">
+        <table className="w-full table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: compact ? 150 : 190 }} />
             {own.map(c => <col key={c.id} />)}
@@ -53,8 +53,8 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
               <th className="text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2">{lang === 'ko' ? '시트' : 'Sheet'}</th>
               {own.map((c, i) => (
                 <th key={c.id} className={`px-0.5 py-2 border-b border-rule-2 text-center align-bottom ${i > 0 ? 'border-l border-rule' : ''}`} title={`${fmtShort(c.date, lang)} · ${c.skills.length} ${c.skills.length === 1 ? 'sheet' : 'sheets'}${c.notes ? `\n${c.notes}` : ''}`}>
-                  <span className="block text-[10.5px] font-semibold text-ink-2 whitespace-nowrap overflow-hidden text-ellipsis">{fmtShort(c.date, lang)}</span>
-                  <span className="block text-[10px] text-ink-3">{c.skills.length}</span>
+                  <span className="block text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap overflow-hidden text-ellipsis">{fmtShort(c.date, lang)}</span>
+                  <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{c.skills.length}</span>
                 </th>
               ))}
               <th className="px-2 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-right align-bottom">{lang === 'ko' ? '변화' : 'Change'}</th>
@@ -66,7 +66,7 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
               const delta = latestDelta(attempts[id])
               return (
                 <tr key={id}>
-                  <td className="px-3 py-1 border-r border-rule-2 overflow-hidden"><span className={`block truncate text-ink ${compact ? 'text-[11.5px]' : ''}`} title={sk.covers}>{lang === 'ko' ? sk.label_ko : sk.label}</span></td>
+                  <td className="px-3 py-1 border-r border-rule-2 overflow-hidden"><span className={`block truncate text-ink ${compact ? 'text-[length:calc(11.5px*var(--ts))]' : ''}`} title={sk.covers}>{lang === 'ko' ? sk.label_ko : sk.label}</span></td>
                   {own.map((c, i) => {
                     const s = c.skills.includes(id) ? scoreSkill(c, id) : null
                     const b = s ? phonicsBand(s) : null
@@ -90,7 +90,7 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
         </table>
       </div>
       {skills.length < PHONICS_SKILLS.length && (
-        <p className="text-[11px] text-ink-3 mt-1.5">{lang === 'ko' ? `미점검 시트 ${PHONICS_SKILLS.length - skills.length}개는 표시하지 않습니다.` : `${PHONICS_SKILLS.length - skills.length} sheets never checked are not shown.`}</p>
+        <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? `미점검 시트 ${PHONICS_SKILLS.length - skills.length}개는 표시하지 않습니다.` : `${PHONICS_SKILLS.length - skills.length} sheets never checked are not shown.`}</p>
       )}
     </div>
   )

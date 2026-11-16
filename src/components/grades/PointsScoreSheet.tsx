@@ -199,20 +199,20 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
     <div className="p-4">
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <span className="text-[13px] text-ink-2 tabular-nums">{doneCount} / {students.length} {ko ? '완료' : 'done'}</span>
-          <span className="text-[11.5px] text-ink-3">{ko ? '↩ / ⇥ / ↓ 다음 학생 · 7/10 = 비율 입력' : 'Enter, Tab or ↓ for the next student · 7/10 enters a fraction of the total'}</span>
+          <span className="text-[length:calc(13px*var(--ts))] text-ink-2 tabular-nums">{doneCount} / {students.length} {ko ? '완료' : 'done'}</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '↩ / ⇥ / ↓ 다음 학생 · 7/10 = 비율 입력' : 'Enter, Tab or ↓ for the next student · 7/10 enters a fraction of the total'}</span>
         </div>
         <div className="flex items-center gap-2">
-          {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {ko ? '명 미저장' : 'unsaved'}</span>}
-          <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={ko ? '반 전체의 점수를 지웁니다' : 'Remove every score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5"><Eraser size={13} />{ko ? '모두 지우기' : 'Clear all'}</button>
-          <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '모두 저장' : 'Save all'}</button>
+          {dirty.size > 0 && <span className="text-[length:calc(12px*var(--ts))] text-warn">{dirty.size} {ko ? '명 미저장' : 'unsaved'}</span>}
+          <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={ko ? '반 전체의 점수를 지웁니다' : 'Remove every score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5"><Eraser size={13} />{ko ? '모두 지우기' : 'Clear all'}</button>
+          <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '모두 저장' : 'Save all'}</button>
         </div>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_240px] border border-rule-2 rounded-lg overflow-hidden min-h-[420px]">
         {/* The list */}
         <div ref={listRef} className="overflow-y-auto max-h-[70vh]">
-          <div className="grid items-center px-4 h-8 text-[10.5px] uppercase tracking-wider text-ink-3 font-semibold bg-paper-2 border-b border-rule-2" style={{ gridTemplateColumns: `28px minmax(0,1fr) 104px 60px ${partDomains.map(() => '76px').join(' ')} 132px` }}>
+          <div className="grid items-center px-4 h-8 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold bg-paper-2 border-b border-rule-2" style={{ gridTemplateColumns: `28px minmax(0,1fr) 104px 60px ${partDomains.map(() => '76px').join(' ')} 132px` }}>
             <span>#</span><span>{ko ? '학생' : 'Student'}</span><span className="text-center">/{fmt(max)}</span><span className="text-right">%</span>
             {partDomains.map(d => <span key={d} className="text-center" style={{ color: domainColor(d) }} title={`${domainLabel(d)}: ${ko ? '이 영역 성적부에 반영되는 점수' : 'the points that count in this domain'}`}>{domainShort(d)} /{assessment.domain_split![d]}</span>)}
             <span />
@@ -225,11 +225,11 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
             const low = pct != null && pct < 60
             const over = sc != null && max > 0 && sc > max
             return (
-              <div key={s.id} className={`grid items-center px-4 h-10 border-b border-rule text-[13px] ${fl?.absent ? 'opacity-60' : ''} ${fl?.exempt ? 'bg-info-soft/40' : ''}`} style={{ gridTemplateColumns: `28px minmax(0,1fr) 104px 60px ${partDomains.map(() => '76px').join(' ')} 132px` }}>
+              <div key={s.id} className={`grid items-center px-4 h-10 border-b border-rule text-[length:calc(13px*var(--ts))] ${fl?.absent ? 'opacity-60' : ''} ${fl?.exempt ? 'bg-info-soft/40' : ''}`} style={{ gridTemplateColumns: `28px minmax(0,1fr) 104px 60px ${partDomains.map(() => '76px').join(' ')} 132px` }}>
                 <span className="text-ink-3 tabular-nums">{i + 1}</span>
-                <span className="min-w-0 truncate"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[12px]">{s.korean_name}</span></span>
+                <span className="min-w-0 truncate"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span></span>
                 <span className="flex justify-center">
-                  {fl?.absent ? <span className="text-[11px] font-bold text-warn">ABS</span> : fl?.exempt ? <span className="text-[11px] font-bold text-info">EXM</span> : (
+                  {fl?.absent ? <span className="text-[length:calc(11px*var(--ts))] font-bold text-warn">ABS</span> : fl?.exempt ? <span className="text-[length:calc(11px*var(--ts))] font-bold text-info">EXM</span> : (
                     <input data-row={i} type="text" inputMode="decimal" className={`score-input ${sc != null ? 'has-value' : ''} ${low || over ? 'error' : ''}`}
                       value={draft !== undefined ? draft : sc != null ? fmt(sc) : ''}
                       onChange={e => setDrafts(prev => ({ ...prev, [s.id]: e.target.value }))}
@@ -237,18 +237,18 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
                       onBlur={() => commit(s.id)} onKeyDown={e => onKey(e, i)} />
                   )}
                 </span>
-                <span className={`text-right tabular-nums text-[12px] ${fl ? 'text-ink-3' : low ? 'text-bad font-semibold' : over ? 'text-warn font-semibold' : pct != null ? 'text-ink' : 'text-ink-3'}`}>{fl || pct == null ? '—' : `${pct.toFixed(1)}%`}</span>
+                <span className={`text-right tabular-nums text-[length:calc(12px*var(--ts))] ${fl ? 'text-ink-3' : low ? 'text-bad font-semibold' : over ? 'text-warn font-semibold' : pct != null ? 'text-ink' : 'text-ink-3'}`}>{fl || pct == null ? '—' : `${pct.toFixed(1)}%`}</span>
                 {partDomains.map(d => {
                   // Saved per-domain points when the paper was marked item by item; otherwise a proportional estimate, marked ~.
                   const saved = parts[s.id]?.[d]
                   const possible = Number(assessment.domain_split![d] || 0)
                   const est = saved == null && sc != null && max > 0 ? Math.round(sc * (possible / max) * 10) / 10 : null
                   const v = saved != null ? Number(saved) : est
-                  return <span key={d} className={`text-center tabular-nums text-[12px] ${d === currentDomain ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }} title={saved == null && est != null ? (ko ? '문항별 채점이 없어 비례 추정' : 'Estimated in proportion: no item-by-item marks saved') : undefined}>{fl || v == null ? '—' : `${saved == null ? '~' : ''}${fmt(v)}/${fmt(possible)}`}</span>
+                  return <span key={d} className={`text-center tabular-nums text-[length:calc(12px*var(--ts))] ${d === currentDomain ? 'font-semibold' : ''}`} style={{ color: domainColor(d) }} title={saved == null && est != null ? (ko ? '문항별 채점이 없어 비례 추정' : 'Estimated in proportion: no item-by-item marks saved') : undefined}>{fl || v == null ? '—' : `${saved == null ? '~' : ''}${fmt(v)}/${fmt(possible)}`}</span>
                 })}
                 <span className="flex items-center justify-end gap-1">
-                  <button onClick={() => setFlag(s.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${fl?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
-                  <button onClick={() => setFlag(s.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${fl?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                  <button onClick={() => setFlag(s.id, 'absent')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${fl?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
+                  <button onClick={() => setFlag(s.id, 'exempt')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${fl?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
                   <button onClick={() => clearStudent(s.id)} disabled={saving || !hasAnything(s.id)} title={ko ? '이 학생의 점수를 지웁니다' : 'Remove the saved score for this student'} className="h-7 w-7 rounded border border-rule-2 text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center justify-center"><X size={12} /></button>
                 </span>
               </div>
@@ -257,7 +257,7 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
         </div>
 
         {/* Rail */}
-        <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[12px] overflow-y-auto">
+        <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[length:calc(12px*var(--ts))] overflow-y-auto">
           <div>
             <p className="eyebrow mb-1.5">{ko ? '반 현황' : 'The class so far'}</p>
             {stats.n === 0 ? <p className="text-ink-3">{ko ? '아직 점수가 없습니다.' : 'No scores yet.'}</p> : (
@@ -276,12 +276,12 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
                 {stats.bins.map((c, i) => {
                   const h = Math.max(...stats.bins, 1)
                   return <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5" title={`${i * 10}–${i === 9 ? 100 : i * 10 + 9}%: ${c}`}>
-                    {c > 0 && <span className="text-[9.5px] text-ink-3 tabular-nums leading-none">{c}</span>}
+                    {c > 0 && <span className="text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3 tabular-nums leading-none">{c}</span>}
                     <div className={`w-full rounded-sm ${i < 6 ? 'bg-bad/70' : i < 8 ? 'bg-warn/70' : 'bg-good/70'}`} style={{ height: `${(c / h) * 40 + (c ? 2 : 0)}px` }} />
                   </div>
                 })}
               </div>
-              <div className="flex justify-between text-[9.5px] text-ink-3 mt-0.5"><span>0%</span><span>60%</span><span>100%</span></div>
+              <div className="flex justify-between text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3 mt-0.5"><span>0%</span><span>60%</span><span>100%</span></div>
             </div>
           )}
           {partDomains.length > 0 && (

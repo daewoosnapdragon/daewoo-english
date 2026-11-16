@@ -65,21 +65,21 @@ function Check({ k, text, count, checked, toggle }: { k: string; text: string; c
     <label className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: checked[k] ? INK : RULE }}>
       <input type="checkbox" checked={!!checked[k]} onChange={() => toggle(k)} className="mt-[3px]" />
       <span className="flex-1 leading-[1.4]" style={{ color: INK }}>{text}</span>
-      {count != null && count > 0 && <span className="text-[10.5px] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {count}×</span>}
+      {count != null && count > 0 && <span className="text-[length:calc(10.5px*var(--ts))] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {count}×</span>}
     </label>
   )
 }
 function TierButtons({ area, tier, pick, tiers = TIERS }: { area: string; tier: Tier; pick: (area: string, t: Tier) => void; tiers?: Tier[] }) {
   return (
     <span className="inline-flex gap-0.5 rounded-md border p-0.5 bg-white" role="group" aria-label="Tier" style={{ borderColor: RULE }}>
-      {tiers.map(t => <button key={t} type="button" onClick={() => pick(area, t)} aria-pressed={tier === t} className={`px-2 py-0.5 rounded-[4px] text-[10.5px] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
+      {tiers.map(t => <button key={t} type="button" onClick={() => pick(area, t)} aria-pressed={tier === t} className={`px-2 py-0.5 rounded-[4px] text-[length:calc(10.5px*var(--ts))] font-medium ${tier === t ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={tier === t ? undefined : { color: MUTED }}>{TIER_LABEL[t]}</button>)}
     </span>
   )
 }
 function Section({ id, title, aside, children }: { id: string; title: React.ReactNode; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section id={`cb-${id}`} data-jump={id} className="rounded-xl bg-white border scroll-mt-3 flex flex-col" style={{ borderColor: RULE }}>
-      <h3 className="m-0 flex items-center justify-between gap-3 flex-wrap px-4 py-2.5 text-[13px] font-semibold" style={{ color: INK, borderBottom: `1px solid ${RULE}` }}><span>{title}</span>{aside}</h3>
+      <h3 className="m-0 flex items-center justify-between gap-3 flex-wrap px-4 py-2.5 text-[length:calc(13px*var(--ts))] font-semibold" style={{ color: INK, borderBottom: `1px solid ${RULE}` }}><span>{title}</span>{aside}</h3>
       <div className="px-4 py-3 flex flex-col gap-2.5">{children}</div>
     </section>
   )
@@ -188,15 +188,15 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
         className="w-full max-w-[1100px] max-h-[92vh] flex flex-col rounded-xl shadow-xl overflow-hidden" style={{ background: '#f8f9fb', color: INK }}>
         <div className="flex items-center justify-between gap-4 px-5 py-3 bg-white" style={{ borderBottom: `1px solid ${RULE}` }}>
           <div>
-            <h2 className="m-0 font-display text-[20px] leading-tight">Build a comment for {student.name}</h2>
-            <p className="m-0 text-[11.5px]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pick a pronoun first, so the sentences fill in.</span>}</p>
+            <h2 className="m-0 font-display text-[length:calc(20px*var(--ts))] leading-tight">Build a comment for {student.name}</h2>
+            <p className="m-0 text-[length:calc(11.5px*var(--ts))]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pick a pronoun first, so the sentences fill in.</span>}</p>
           </div>
           <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
-            <div className={`inline-flex items-center gap-1 text-[11px] ${student.pronoun ? '' : 'rounded-md px-1.5 py-0.5 bg-amber-50 border border-amber-200'}`} role="group" aria-label="Pronoun">
+            <div className={`inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))] ${student.pronoun ? '' : 'rounded-md px-1.5 py-0.5 bg-amber-50 border border-amber-200'}`} role="group" aria-label="Pronoun">
               <span style={{ color: student.pronoun ? MUTED : '#92400e' }}>Pronoun</span>
               {PRONOUNS.map(p => <button key={p} type="button" onClick={() => onSetPronoun(p)} aria-pressed={student.pronoun === p} className={`px-1.5 py-0.5 rounded ${student.pronoun === p ? 'bg-ink text-paper font-semibold' : 'hover:bg-[#f1f5f9]'}`} style={student.pronoun === p ? undefined : { color: MUTED }}>{p}</button>)}
             </div>
-            <div className="inline-flex items-center gap-1 text-[11px]" role="group" aria-label="Spelling">
+            <div className="inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))]" role="group" aria-label="Spelling">
               <span style={{ color: MUTED }}>Spelling</span>
               {(['us', 'uk'] as Spelling[]).map(s => <button key={s} type="button" onClick={() => pickSpelling(s)} aria-pressed={spelling === s} className={`px-1.5 py-0.5 rounded ${spelling === s ? 'bg-ink text-paper font-semibold' : 'hover:bg-[#f1f5f9]'}`} style={spelling === s ? undefined : { color: MUTED }}>{s === 'us' ? 'American' : 'British'}</button>)}
             </div>
@@ -204,14 +204,14 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
           </div>
         </div>
 
-        <div ref={bodyRef} onScroll={onBodyScroll} className="relative flex-1 overflow-y-auto px-5 py-4 flex items-start gap-5 text-[12.5px]">
+        <div ref={bodyRef} onScroll={onBodyScroll} className="relative flex-1 overflow-y-auto px-5 py-4 flex items-start gap-5 text-[length:calc(12.5px*var(--ts))]">
           {!loading && !error && (
-            <nav aria-label="Parts of the comment" className="hidden md:flex w-[150px] shrink-0 sticky top-0 flex-col gap-0.5 text-[11.5px]">
+            <nav aria-label="Parts of the comment" className="hidden md:flex w-[150px] shrink-0 sticky top-0 flex-col gap-0.5 text-[length:calc(11.5px*var(--ts))]">
               {jumps.map(j => (
                 <button key={j.id} type="button" onClick={() => jumpTo(j.id)} aria-current={active === j.id ? 'true' : undefined}
                   className={`flex items-center justify-between gap-2 px-2 py-1 rounded-md text-left ${active === j.id ? 'bg-white font-semibold shadow-sm' : 'hover:bg-white/70'}`} style={{ color: active === j.id ? INK : MUTED }}>
                   <span className="truncate">{j.label}</span>
-                  {j.count > 0 && <span className="shrink-0 min-w-[18px] text-center rounded-full px-1 text-[10px] tabular-nums bg-ink text-paper">{j.count}</span>}
+                  {j.count > 0 && <span className="shrink-0 min-w-[18px] text-center rounded-full px-1 text-[length:calc(10px*var(--ts))] tabular-nums bg-ink text-paper">{j.count}</span>}
                 </button>
               ))}
             </nav>
@@ -226,7 +226,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                   <label key={p.id} className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: opener === p.id ? INK : RULE }}>
                     <input type="radio" name="opener" checked={opener === p.id} onChange={() => setOpener(p.id)} className="mt-[3px]" />
                     <span className="flex-1 leading-[1.4]">{fill(p.text)}</span>
-                    {(counts[p.id] || 0) > 0 && <span className="text-[10.5px] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {counts[p.id]}×</span>}
+                    {(counts[p.id] || 0) > 0 && <span className="text-[length:calc(10.5px*var(--ts))] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {counts[p.id]}×</span>}
                   </label>
                 ))}
                 <label className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer" style={{ color: MUTED }}><input type="radio" name="opener" checked={opener === ''} onChange={() => setOpener('')} /> No opener</label>
@@ -243,7 +243,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
               const off = families.filter(f => !taught.families.has(f))
               return (
                 <Section key={a} id={a} title={<>{AREA_LABEL[a]}{scores[a] != null && <span className="font-display font-medium"> {percentToLetter(scores[a] as number)}</span>}{scores[a] == null && <span className="font-normal" style={{ color: MUTED }}> · not graded</span>}</>} aside={<TierButtons area={a} tier={tierOf(a)} pick={(ar, tr) => setTierPick(p => ({ ...p, [ar]: tr }))} />}>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] rounded-md px-2.5 py-1.5" style={{ background: '#f8f9fb' }}>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[length:calc(11px*var(--ts))] rounded-md px-2.5 py-1.5" style={{ background: '#f8f9fb' }}>
                     <span className="font-medium" style={{ color: MUTED }}>Taught this semester</span>
                     {on.map(f => (
                       <button key={f} type="button" onClick={() => tickSkill(f)} title={`${f} · ${taught.source[f] === 'plans' ? 'from the lesson plans' : taught.source[f] === 'assessed' ? 'assessed this semester' : taught.source[f] === 'standards' ? 'from the Standards page' : 'you ticked it'} · click to untick`}
@@ -251,7 +251,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                     ))}
                     {on.length === 0 && <span style={{ color: MUTED }}>nothing yet</span>}
                     {off.length > 0 && (
-                      <select value="" onChange={e => { if (e.target.value) tickSkill(e.target.value) }} aria-label={`Add a taught skill for ${AREA_LABEL[a]}`} className="px-1.5 py-0.5 rounded-full border bg-white text-[11px]" style={{ borderColor: RULE, color: MUTED }}>
+                      <select value="" onChange={e => { if (e.target.value) tickSkill(e.target.value) }} aria-label={`Add a taught skill for ${AREA_LABEL[a]}`} className="px-1.5 py-0.5 rounded-full border bg-white text-[length:calc(11px*var(--ts))]" style={{ borderColor: RULE, color: MUTED }}>
                         <option value="">+ add a skill</option>
                         {off.map(f => <option key={f} value={f}>{SKILLS[f]?.name || f}</option>)}
                       </select>
@@ -262,7 +262,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                     {all.length === 0 && <p className="m-0" style={{ color: MUTED }}>Nothing in the bank for this yet.</p>}
                   </div>
                   {folded.length > 0 && (
-                    <button type="button" onClick={() => setShowAll(s => ({ ...s, [a]: !s[a] }))} className="self-start text-[11px] underline underline-offset-2" style={{ color: MUTED }}>
+                    <button type="button" onClick={() => setShowAll(s => ({ ...s, [a]: !s[a] }))} className="self-start text-[length:calc(11px*var(--ts))] underline underline-offset-2" style={{ color: MUTED }}>
                       {showAll[a] ? 'Hide the skills not taught yet' : `Show ${folded.length} more for skills not taught yet`}
                     </button>
                   )}
@@ -280,7 +280,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                   <div className="flex flex-col gap-2.5">
                     {cats.map(cat => (
                       <div key={cat}>
-                        <div className="text-[10.5px] font-medium mb-1" style={{ color: MUTED }}>{cat}</div>
+                        <div className="text-[length:calc(10.5px*var(--ts))] font-medium mb-1" style={{ color: MUTED }}>{cat}</div>
                         <div className="grid gap-1.5" style={GRID}>
                           {list.filter(p => (p.category || 'Other') === cat).map(p => <Check checked={checked} toggle={toggle} key={p.id} k={p.id} text={fill(textOf(p))} count={counts[p.id]} />)}
                         </div>
@@ -292,11 +292,11 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
             </Section>
 
             <Section id="steps" title={<>Next steps · <select value={ladderArea} onChange={e => setStepArea(e.target.value)} className="font-semibold bg-transparent border-0 underline underline-offset-2 cursor-pointer" aria-label="Area for next steps">{AREAS.map(a => <option key={a} value={a}>{AREA_LABEL[a]}</option>)}</select></>}
-              aside={<span className="inline-flex gap-0.5 rounded-md border p-0.5 bg-white" role="group" aria-label="Band" style={{ borderColor: RULE }}>{BANDS.map(b => <button key={b} type="button" onClick={() => setBandPick(b)} aria-pressed={band === b} className={`px-2 py-0.5 rounded-[4px] text-[10.5px] font-medium ${band === b ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={band === b ? undefined : { color: MUTED }}>{b}</button>)}</span>}>
+              aside={<span className="inline-flex gap-0.5 rounded-md border p-0.5 bg-white" role="group" aria-label="Band" style={{ borderColor: RULE }}>{BANDS.map(b => <button key={b} type="button" onClick={() => setBandPick(b)} aria-pressed={band === b} className={`px-2 py-0.5 rounded-[4px] text-[length:calc(10.5px*var(--ts))] font-medium ${band === b ? 'bg-ink text-paper' : 'hover:bg-[#f1f5f9]'}`} style={band === b ? undefined : { color: MUTED }}>{b}</button>)}</span>}>
               <div className="grid gap-2" style={GRID}>
                 {ladder.map(p => (
                   <div key={p.id} className="flex flex-col gap-1.5 rounded-md border px-2.5 py-2" style={{ borderColor: RULE, background: '#f8f9fb' }}>
-                    <span className="text-[10.5px] font-semibold" style={{ color: MUTED }}>{p.rung}</span>
+                    <span className="text-[length:calc(10.5px*var(--ts))] font-semibold" style={{ color: MUTED }}>{p.rung}</span>
                     <Check checked={checked} toggle={toggle} k={`${p.id}:c`} text={fill(p.text)} />
                     {p.home1 && <Check checked={checked} toggle={toggle} k={`${p.id}:1`} text={fill(homeSentence(p.home1))} />}
                     {p.home2 && <Check checked={checked} toggle={toggle} k={`${p.id}:2`} text={fill(homeSentence(p.home2))} />}
@@ -304,7 +304,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                 ))}
                 {ladder.length === 0 && <p className="m-0" style={{ color: MUTED }}>No rungs for this band yet.</p>}
               </div>
-              {!bandPick && <p className="m-0 text-[10.5px]" style={{ color: MUTED }}>Band suggested from grade{wida ? ' and WIDA level' : ''}; tap another to change it.</p>}
+              {!bandPick && <p className="m-0 text-[length:calc(10.5px*var(--ts))]" style={{ color: MUTED }}>Band suggested from grade{wida ? ' and WIDA level' : ''}; tap another to change it.</p>}
             </Section>
 
             <Section id="closer" title="Closer">
@@ -313,7 +313,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
                   <label key={p.id} className="flex items-start gap-2 rounded-md border px-2.5 py-1.5 bg-white cursor-pointer" style={{ borderColor: closer === p.id ? INK : RULE }}>
                     <input type="radio" name="closer" checked={closer === p.id} onChange={() => setCloser(p.id)} className="mt-[3px]" />
                     <span className="flex-1 leading-[1.4]">{fill(p.text)}</span>
-                    {(counts[p.id] || 0) > 0 && <span className="text-[10.5px] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {counts[p.id]}×</span>}
+                    {(counts[p.id] || 0) > 0 && <span className="text-[length:calc(10.5px*var(--ts))] whitespace-nowrap pt-0.5" style={{ color: MUTED }}>used {counts[p.id]}×</span>}
                   </label>
                 ))}
                 <label className="flex items-center gap-2 px-2.5 py-1.5 cursor-pointer" style={{ color: MUTED }}><input type="radio" name="closer" checked={closer === ''} onChange={() => setCloser('')} /> No closer</label>
@@ -325,17 +325,17 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
 
         <div className="px-5 py-3 bg-white flex flex-col gap-2.5" style={{ borderTop: `1px solid ${RULE}` }}>
           <div className="flex items-baseline justify-between gap-4 flex-wrap">
-            <span className="text-[10px] tracking-[1.6px] uppercase font-semibold" style={{ color: MUTED }}>Draft</span>
-            <span className="text-[11.5px] tabular-nums" style={{ color: MUTED }}>{ticked} ticked · {words} words · aim for about 200{steps >= 4 ? ` · ${steps} things to work on; parents remember one or two` : ''}</span>
+            <span className="text-[length:calc(10px*var(--ts))] tracking-[1.6px] uppercase font-semibold" style={{ color: MUTED }}>Draft</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] tabular-nums" style={{ color: MUTED }}>{ticked} ticked · {words} words · aim for about 200{steps >= 4 ? ` · ${steps} things to work on; parents remember one or two` : ''}</span>
           </div>
-          <p className="m-0 max-h-[150px] overflow-y-auto whitespace-pre-wrap text-[13.5px] leading-[1.6] rounded-md px-3 py-2" style={{ background: '#fafaf8', border: `1px solid ${RULE}`, color: draft ? INK : MUTED }}>{draft || 'Tick sentences above and the draft appears here.'}</p>
+          <p className="m-0 max-h-[150px] overflow-y-auto whitespace-pre-wrap text-[length:calc(13.5px*var(--ts))] leading-[1.6] rounded-md px-3 py-2" style={{ background: '#fafaf8', border: `1px solid ${RULE}`, color: draft ? INK : MUTED }}>{draft || 'Tick sentences above and the draft appears here.'}</p>
           <div className="flex items-center justify-end gap-2 flex-wrap">
-            <button type="button" onClick={onClose} className="px-3 py-2 rounded-lg text-[12.5px] border hover:bg-[#f1f5f9]" style={{ borderColor: '#C4BBA6', color: '#475569' }}>Cancel</button>
+            <button type="button" onClick={onClose} className="px-3 py-2 rounded-lg text-[length:calc(12.5px*var(--ts))] border hover:bg-[#f1f5f9]" style={{ borderColor: '#C4BBA6', color: '#475569' }}>Cancel</button>
             {existingText.trim() ? (<>
-              <button type="button" disabled={!draft} onClick={() => onInsert(draft, 'append')} className="px-3 py-2 rounded-lg text-[12.5px] font-semibold border hover:bg-[#f1f5f9] disabled:opacity-40" style={{ borderColor: INK, color: INK }}>Add to the end</button>
-              <button type="button" disabled={!draft} onClick={() => onInsert(draft, 'replace')} className="px-4 py-2 rounded-lg text-[12.5px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">Replace the comment</button>
+              <button type="button" disabled={!draft} onClick={() => onInsert(draft, 'append')} className="px-3 py-2 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold border hover:bg-[#f1f5f9] disabled:opacity-40" style={{ borderColor: INK, color: INK }}>Add to the end</button>
+              <button type="button" disabled={!draft} onClick={() => onInsert(draft, 'replace')} className="px-4 py-2 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">Replace the comment</button>
             </>) : (
-              <button type="button" disabled={!draft} onClick={() => onInsert(draft, 'replace')} className="px-4 py-2 rounded-lg text-[12.5px] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">Put in the box</button>
+              <button type="button" disabled={!draft} onClick={() => onInsert(draft, 'replace')} className="px-4 py-2 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">Put in the box</button>
             )}
           </div>
         </div>

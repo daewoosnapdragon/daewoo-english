@@ -113,19 +113,19 @@ export default function StandardsHeatMap() {
     return [code, ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : null]
   })), [codes, students, grid])
   const rowAvg = (sid: string) => { const ps = codes.map(c => pct(grid[sid]?.[c])).filter((p): p is number => p != null); return ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : null }
-  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   const openCell = open ? grid[open.sid]?.[open.code] : null
   const openStudent = open ? students.find(s => s.id === open.sid) : null
 
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-4">
-        {isAdmin ? <div className="flex gap-1.5">{ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(c => <button key={c} onClick={() => setCls(c)} className={chip(cls === c)}>{c}</button>)}</div> : <span className="text-[13px] font-semibold text-ink">{cls}</span>}
+        {isAdmin ? <div className="flex gap-1.5">{ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(c => <button key={c} onClick={() => setCls(c)} className={chip(cls === c)}>{c}</button>)}</div> : <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{cls}</span>}
         <span className="w-px h-6 bg-rule" />
         <div className="flex gap-1.5">{GRADES.map(g => <button key={g} onClick={() => setGr(g)} className={chip(gr === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
         <span className="ml-auto eyebrow">{activeSemester ? (lang === 'ko' ? activeSemester.name_ko || activeSemester.name : activeSemester.name) : ''}</span>
       </div>
-      <div className="flex gap-4 text-[11.5px] text-ink-2 mb-3">
+      <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-2 mb-3">
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-good" />{lang === 'ko' ? '우수' : 'Above'} ≥{bands.above}</span>
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-good-soft border border-good/30" />{lang === 'ko' ? '도달' : 'On'} ≥{bands.on}</span>
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-warn-soft border border-warn/30" />{lang === 'ko' ? '근접' : 'Approaching'} ≥{bands.approaching}</span>
@@ -133,17 +133,17 @@ export default function StandardsHeatMap() {
         <span className="text-ink-3">{lang === 'ko' ? '· 셀을 클릭하면 근거가 보입니다' : '· click a cell for the questions behind it'}</span>
       </div>
       {loading || loadingStudents ? <Loading rows={5} />
-      : codes.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '이번 학기에 기준이 태그된 평가가 없습니다. 정답 키나 루브릭에 기준을 태그하면 여기에 표시됩니다.' : 'No standards-tagged assessments for this class this semester. Tag a standard on an answer key range or a rubric criterion and it appears here.'}</p>
+      : codes.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-8">{lang === 'ko' ? '이번 학기에 기준이 태그된 평가가 없습니다. 정답 키나 루브릭에 기준을 태그하면 여기에 표시됩니다.' : 'No standards-tagged assessments for this class this semester. Tag a standard on an answer key range or a rubric criterion and it appears here.'}</p>
       : (
         <div className="overflow-x-auto border border-rule-2 rounded-md">
-          <table className="text-[12px] tabular-nums border-collapse">
+          <table className="text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
             <thead>
               <tr className="bg-paper-2">
                 <th className="sticky left-0 z-10 bg-paper-2 text-left px-3 py-2 eyebrow font-semibold min-w-[170px] border-b border-r border-rule-2">{lang === 'ko' ? '학생' : 'Student'}</th>
                 {codes.map(code => (
                   <th key={code} className="px-1 py-2 border-b border-rule-2 min-w-[56px] align-bottom" title={`${plainName(code)}\n${skillOf(code)?.name || ''}`}>
-                    <span className="block text-[10.5px] font-mono text-info">{code}</span>
-                    <span className={`block text-[10px] mt-0.5 ${colAvg[code] != null && colAvg[code]! < bands.on ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[code] != null ? `${Math.round(colAvg[code]!)}%` : ''}</span>
+                    <span className="block text-[length:calc(10.5px*var(--ts))] font-mono text-info">{code}</span>
+                    <span className={`block text-[length:calc(10px*var(--ts))] mt-0.5 ${colAvg[code] != null && colAvg[code]! < bands.on ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[code] != null ? `${Math.round(colAvg[code]!)}%` : ''}</span>
                   </th>
                 ))}
                 <th className="px-2 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-right">{lang === 'ko' ? '평균' : 'Avg'}</th>
@@ -154,11 +154,11 @@ export default function StandardsHeatMap() {
                 const ra = rowAvg(s.id)
                 return (
                   <tr key={s.id}>
-                    <td className="sticky left-0 z-10 bg-surface px-3 py-1 border-r border-rule-2 whitespace-nowrap"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span></td>
+                    <td className="sticky left-0 z-10 bg-surface px-3 py-1 border-r border-rule-2 whitespace-nowrap"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span></td>
                     {codes.map(code => { const c = grid[s.id]?.[code]; const p = pct(c); return (
                       <td key={code} className="p-[3px]">
                         <button onClick={() => c && setOpen({ sid: s.id, code })} disabled={!c} title={c ? `${Math.round(p!)}% · ${c.evidence.length} ${c.evidence.length === 1 ? 'item' : 'items'}` : ''}
-                          className={`w-full h-7 rounded-sm text-[11px] font-semibold ${c ? tone(p) : 'bg-paper-2/60 text-transparent'}`}>{c ? Math.round(p!) : '·'}</button>
+                          className={`w-full h-7 rounded-sm text-[length:calc(11px*var(--ts))] font-semibold ${c ? tone(p) : 'bg-paper-2/60 text-transparent'}`}>{c ? Math.round(p!) : '·'}</button>
                       </td>) })}
                     <td className={`px-2 py-1 border-l border-rule-2 text-right font-semibold ${ra != null && ra < bands.on ? 'text-bad' : 'text-ink'}`}>{ra != null ? `${Math.round(ra)}%` : '—'}</td>
                   </tr>
@@ -172,12 +172,12 @@ export default function StandardsHeatMap() {
         <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={() => setOpen(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
-              <div><p className="eyebrow">{open.code} · {getDisplayName(openStudent)}</p><h3 className="font-display text-[20px] leading-tight text-ink mt-1">{plainName(open.code)}</h3><p className="text-[12.5px] text-ink-2 mt-1">{Math.round(pct(openCell)!)}% · {openCell.earned} / {openCell.possible} {lang === 'ko' ? '점' : 'points'}</p></div>
+              <div><p className="eyebrow">{open.code} · {getDisplayName(openStudent)}</p><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-tight text-ink mt-1">{plainName(open.code)}</h3><p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">{Math.round(pct(openCell)!)}% · {openCell.earned} / {openCell.possible} {lang === 'ko' ? '점' : 'points'}</p></div>
               <button onClick={() => setOpen(null)} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={15} /></button>
             </div>
             <div className="overflow-y-auto divide-y divide-rule">
               {openCell.evidence.map((e, i) => (
-                <div key={i} className="px-5 py-2 grid grid-cols-[1fr_auto] gap-3 text-[12.5px]">
+                <div key={i} className="px-5 py-2 grid grid-cols-[1fr_auto] gap-3 text-[length:calc(12.5px*var(--ts))]">
                   <span className="min-w-0"><span className="text-ink">{e.what}</span><span className="block text-ink-3 truncate">{e.assessment}</span></span>
                   <span className={`tabular-nums font-semibold ${e.possible && e.earned / e.possible >= bands.on / 100 ? 'text-good' : 'text-bad'}`}>{e.earned} / {e.possible}</span>
                 </div>

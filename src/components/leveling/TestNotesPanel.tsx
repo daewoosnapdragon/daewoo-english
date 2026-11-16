@@ -42,18 +42,18 @@ export default function TestNotesPanel({ groups, storageKey, title = 'Before you
 
   return (
     <details open={open} onToggle={toggle} className="mb-4 bg-amber-50/60 border border-amber-200 rounded-xl px-4 py-2.5">
-      <summary className="text-[11px] font-semibold text-amber-900 cursor-pointer flex items-center gap-1.5">
+      <summary className="text-[length:calc(11px*var(--ts))] font-semibold text-amber-900 cursor-pointer flex items-center gap-1.5">
         <Info size={12} /> {title} ({count})
       </summary>
       <div className="mt-2 space-y-2.5">
         {all.map((g, gi) => (
           <div key={gi}>
             {g.label && (
-              <p className="text-[9px] uppercase tracking-wider text-amber-700 font-semibold mb-1">{g.label}</p>
+              <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-amber-700 font-semibold mb-1">{g.label}</p>
             )}
             <ul className="space-y-1 pl-4 list-disc">
               {g.notes.map((n, i) => (
-                <li key={i} className="text-[10px] text-amber-800 leading-snug">{n}</li>
+                <li key={i} className="text-[length:calc(10px*var(--ts))] text-amber-800 leading-snug">{n}</li>
               ))}
             </ul>
           </div>

@@ -113,9 +113,9 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
   }
 
   if (loading) return null
-  if (missing) return isAdmin ? <div className="border border-warn/40 bg-warn-soft/40 rounded-lg px-4 py-3 text-[12.5px] text-ink-2">{ko ? '행동 단계 기능을 쓰려면 supabase/migration-behavior-ladder.sql을 실행하세요.' : 'The behavior ladder needs supabase/migration-behavior-ladder.sql to be run first.'}</div> : null
+  if (missing) return isAdmin ? <div className="border border-warn/40 bg-warn-soft/40 rounded-lg px-4 py-3 text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '행동 단계 기능을 쓰려면 supabase/migration-behavior-ladder.sql을 실행하세요.' : 'The behavior ladder needs supabase/migration-behavior-ladder.sql to be run first.'}</div> : null
   if (open.length === 0 && (!studentId || closed.length === 0)) {
-    return mode === 'admin' ? <div className="border border-rule-2 rounded-lg px-4 py-2.5 text-[12.5px] text-ink-3 flex items-center gap-2"><Check size={13} className="text-good" />{ko ? '행동 단계: 처리할 사례가 없습니다' : 'Behavior ladder: nothing needs your action'}</div> : null
+    return mode === 'admin' ? <div className="border border-rule-2 rounded-lg px-4 py-2.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 flex items-center gap-2"><Check size={13} className="text-good" />{ko ? '행동 단계: 처리할 사례가 없습니다' : 'Behavior ladder: nothing needs your action'}</div> : null
   }
 
   const folded = canFold && foldedIds != null && open.every(c => foldedIds.includes(c.id))
@@ -124,10 +124,10 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
 
   if (folded) {
     return (
-      <div className="border border-rule-2 rounded-lg px-4 py-2 text-[12.5px] text-ink-3 flex items-center gap-2">
+      <div className="border border-rule-2 rounded-lg px-4 py-2 text-[length:calc(12.5px*var(--ts))] text-ink-3 flex items-center gap-2">
         <AlertTriangle size={13} />
         <span>{ko ? `행동 단계 · ${open.length}건 진행 중` : `Behavior ladder · ${open.length} open`}</span>
-        <button onClick={unfold} className="ml-auto text-[11.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1"><ChevronRight size={12} />{ko ? '보기' : 'Show'}</button>
+        <button onClick={unfold} className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1"><ChevronRight size={12} />{ko ? '보기' : 'Show'}</button>
       </div>
     )
   }
@@ -141,10 +141,10 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
     <div className={`rounded-lg overflow-hidden border ${mode === 'admin' && open.length ? (anyOverdue ? 'border-bad shadow-[0_0_0_3px_rgb(var(--bad)/0.15)]' : 'border-bad/60') : 'border-rule-2'}`}>
       <div className={`px-5 py-3 flex items-center gap-2 border-b ${mode === 'admin' && open.length ? 'bg-bad-soft border-bad/30' : 'bg-paper-2 border-rule-2'}`}>
         <AlertTriangle size={16} className={mode === 'admin' && open.length ? 'text-bad' : 'text-ink-3'} />
-        <h3 className="font-display text-[18px] leading-none text-ink">{title}</h3>
-        {mode === 'admin' && open.length > 0 && <span className="text-[11px] text-ink-2 ml-2">{ko ? '읽었다고 표시하고 조치를 기록할 때까지 남아 있습니다' : 'Stays here until you mark it read and record the action'}</span>}
-        {canFold && <button onClick={fold} title={ko ? '새 사례가 열리면 다시 나타납니다' : 'Comes back on its own when a new case opens'} className="ml-auto h-7 px-2 rounded text-[11.5px] text-ink-2 hover:text-ink hover:bg-paper-3 inline-flex items-center gap-1"><X size={12} />{ko ? '접기' : 'Hide'}</button>}
-        {studentId && closed.length > 0 && <button onClick={() => setShowHistory(h => !h)} className="ml-auto text-[11.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1">{showHistory ? <ChevronDown size={12} /> : <ChevronRight size={12} />}{ko ? `지난 사례 ${closed.length}건` : `${closed.length} closed ${closed.length === 1 ? 'case' : 'cases'}`}</button>}
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">{title}</h3>
+        {mode === 'admin' && open.length > 0 && <span className="text-[length:calc(11px*var(--ts))] text-ink-2 ml-2">{ko ? '읽었다고 표시하고 조치를 기록할 때까지 남아 있습니다' : 'Stays here until you mark it read and record the action'}</span>}
+        {canFold && <button onClick={fold} title={ko ? '새 사례가 열리면 다시 나타납니다' : 'Comes back on its own when a new case opens'} className="ml-auto h-7 px-2 rounded text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:bg-paper-3 inline-flex items-center gap-1"><X size={12} />{ko ? '접기' : 'Hide'}</button>}
+        {studentId && closed.length > 0 && <button onClick={() => setShowHistory(h => !h)} className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1">{showHistory ? <ChevronDown size={12} /> : <ChevronRight size={12} />}{ko ? `지난 사례 ${closed.length}건` : `${closed.length} closed ${closed.length === 1 ? 'case' : 'cases'}`}</button>}
       </div>
       <div className="divide-y divide-rule">
         {[...open].sort((a, b) => Number(!!b.reminder_at) - Number(!!a.reminder_at)).map(c => {
@@ -156,32 +156,32 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
               <div className="flex items-start gap-3 flex-wrap">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <button onClick={() => setDetail(c)} className="text-[14px] font-semibold text-ink hover:underline">{c.students?.english_name}<span className="text-ink-3 font-normal text-[12px] ml-1.5">{c.students?.korean_name}</span></button>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
-                    {c.opened_reason === 'flag' && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '교사 표시' : 'flagged by teacher'}</span>}
-                    {overdue && <span className="text-[10px] px-1.5 py-0.5 rounded bg-bad text-white font-bold">{ko ? `${waiting}일 대기` : `waiting ${waiting} school days`}</span>}
-                    {c.reminder_at && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warn text-white font-bold">{ko ? '자동 알림' : 'reminder sent'}</span>}
+                    <button onClick={() => setDetail(c)} className="text-[length:calc(14px*var(--ts))] font-semibold text-ink hover:underline">{c.students?.english_name}<span className="text-ink-3 font-normal text-[length:calc(12px*var(--ts))] ml-1.5">{c.students?.korean_name}</span></button>
+                    <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class}</span>
+                    <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
+                    {c.opened_reason === 'flag' && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '교사 표시' : 'flagged by teacher'}</span>}
+                    {overdue && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-bad text-white font-bold">{ko ? `${waiting}일 대기` : `waiting ${waiting} school days`}</span>}
+                    {c.reminder_at && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn text-white font-bold">{ko ? '자동 알림' : 'reminder sent'}</span>}
                   </div>
-                  <p className="text-[12.5px] text-ink mt-0.5">{c.step_label}{c.step_label ? ' · ' : ''}{ko ? `기록 ${c.log_ids.length}건` : `${c.log_ids.length} ${c.log_ids.length === 1 ? 'note' : 'notes'}`} · {ko ? '열림' : 'opened'} {fmtDate(c.created_at, ko)}{!overdue && waiting > 0 ? ` · ${waiting} ${ko ? '일 전' : waiting === 1 ? 'school day ago' : 'school days ago'}` : ''}</p>
-                  {c.ask && <p className="text-[12.5px] text-ink-2 mt-1"><span className="font-semibold text-ink">{ko ? '교사 요청:' : 'Teacher asks:'}</span> {c.ask}</p>}
-                  {mode === 'teacher' && <p className={`text-[11.5px] mt-1 inline-flex items-center gap-1 ${s.tone === 'good' ? 'text-good' : s.tone === 'warn' ? 'text-warn' : 'text-bad'}`}>{s.tone === 'bad' ? <EyeOff size={11} /> : <Eye size={11} />}{s.label}</p>}
+                  <p className="text-[length:calc(12.5px*var(--ts))] text-ink mt-0.5">{c.step_label}{c.step_label ? ' · ' : ''}{ko ? `기록 ${c.log_ids.length}건` : `${c.log_ids.length} ${c.log_ids.length === 1 ? 'note' : 'notes'}`} · {ko ? '열림' : 'opened'} {fmtDate(c.created_at, ko)}{!overdue && waiting > 0 ? ` · ${waiting} ${ko ? '일 전' : waiting === 1 ? 'school day ago' : 'school days ago'}` : ''}</p>
+                  {c.ask && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1"><span className="font-semibold text-ink">{ko ? '교사 요청:' : 'Teacher asks:'}</span> {c.ask}</p>}
+                  {mode === 'teacher' && <p className={`text-[length:calc(11.5px*var(--ts))] mt-1 inline-flex items-center gap-1 ${s.tone === 'good' ? 'text-good' : s.tone === 'warn' ? 'text-warn' : 'text-bad'}`}>{s.tone === 'bad' ? <EyeOff size={11} /> : <Eye size={11} />}{s.label}</p>}
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <button onClick={() => setDetail(c)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{ko ? '기록 보기' : 'Open the notes'}</button>
-                  {isAdmin && c.status === 'open' && <button onClick={() => ack(c)} className="h-8 px-3 rounded border border-ink text-[12.5px] font-semibold text-ink hover:bg-paper-2">{ko ? '읽었습니다' : "I've read this"}</button>}
-                  {isAdmin && <button onClick={() => setDetail(c)} className="h-8 px-3 rounded bg-bad text-white text-[12.5px] font-semibold hover:opacity-90">{c.action_label || (ko ? '조치 기록' : 'Record action')}</button>}
+                  <button onClick={() => setDetail(c)} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink">{ko ? '기록 보기' : 'Open the notes'}</button>
+                  {isAdmin && c.status === 'open' && <button onClick={() => ack(c)} className="h-8 px-3 rounded border border-ink text-[length:calc(12.5px*var(--ts))] font-semibold text-ink hover:bg-paper-2">{ko ? '읽었습니다' : "I've read this"}</button>}
+                  {isAdmin && <button onClick={() => setDetail(c)} className="h-8 px-3 rounded bg-bad text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:opacity-90">{c.action_label || (ko ? '조치 기록' : 'Record action')}</button>}
                 </div>
               </div>
             </div>
           )
         })}
         {studentId && showHistory && closed.map(c => (
-          <div key={c.id} className="px-5 py-2.5 text-[12.5px] text-ink-2 flex items-center gap-2 flex-wrap bg-paper-2/40">
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-paper-3 text-ink-2 font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
+          <div key={c.id} className="px-5 py-2.5 text-[length:calc(12.5px*var(--ts))] text-ink-2 flex items-center gap-2 flex-wrap bg-paper-2/40">
+            <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-paper-3 text-ink-2 font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
             <span>{c.action_label} · {c.action_date ? fmtDate(c.action_date, ko) : '—'} · {nameOf(c.closed_by)}</span>
             {c.action_note && <span className="text-ink-3">· {c.action_note}</span>}
-            <button onClick={() => setDetail(c)} className="ml-auto text-[11.5px] text-ink-3 hover:text-ink">{ko ? '기록 보기' : 'notes'}</button>
+            <button onClick={() => setDetail(c)} className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '기록 보기' : 'notes'}</button>
           </div>
         ))}
       </div>
@@ -249,10 +249,10 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-2xl max-h-[88vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-rule-2 flex items-center gap-3">
           <div className="min-w-0 flex-1">
-            <h3 className="font-display text-[20px] leading-none text-ink">{c.students?.english_name} <span className="font-sans text-[12px] text-ink-3">{c.students?.korean_name} · {c.students?.english_class}</span></h3>
-            <p className="text-[12px] text-ink-2 mt-1">{ko ? `${c.step}단계` : `Step ${c.step}`} · {c.step_label} · {ko ? '열림' : 'opened'} {fmtDate(c.created_at, ko)} · {c.status === 'closed' ? (ko ? '종료' : 'closed') : seenLabel}</p>
+            <h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{c.students?.english_name} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3">{c.students?.korean_name} · {c.students?.english_class}</span></h3>
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-2 mt-1">{ko ? `${c.step}단계` : `Step ${c.step}`} · {c.step_label} · {ko ? '열림' : 'opened'} {fmtDate(c.created_at, ko)} · {c.status === 'closed' ? (ko ? '종료' : 'closed') : seenLabel}</p>
           </div>
-          <button onClick={print} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{ko ? '인쇄' : 'Print'}</button>
+          <button onClick={print} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{ko ? '인쇄' : 'Print'}</button>
           <button onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-paper-2"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-4 overflow-y-auto min-h-0">
@@ -261,32 +261,32 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
             <p className="eyebrow mb-1">{ko ? '교사가 관리자에게 요청하는 것' : 'What the teacher needs from admin'}</p>
             {canEditAsk ? (
               <div className="flex gap-2">
-                <input value={ask} onChange={e => setAsk(e.target.value)} placeholder={ko ? '예: 때리는 행동에 대해 어머니께 전화 부탁드립니다' : 'e.g. please call Mum about the hitting'} className="flex-1 h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px]" />
-                <button onClick={saveAsk} className="h-8 px-3 rounded bg-ink text-paper text-[12.5px] font-semibold">{ko ? '저장' : 'Save'}</button>
+                <input value={ask} onChange={e => setAsk(e.target.value)} placeholder={ko ? '예: 때리는 행동에 대해 어머니께 전화 부탁드립니다' : 'e.g. please call Mum about the hitting'} className="flex-1 h-8 px-2.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))]" />
+                <button onClick={saveAsk} className="h-8 px-3 rounded bg-ink text-paper text-[length:calc(12.5px*var(--ts))] font-semibold">{ko ? '저장' : 'Save'}</button>
               </div>
-            ) : <p className="text-[13px] text-ink">{c.ask || <span className="text-ink-3">{ko ? '없음' : 'Nothing added'}</span>}</p>}
+            ) : <p className="text-[length:calc(13px*var(--ts))] text-ink">{c.ask || <span className="text-ink-3">{ko ? '없음' : 'Nothing added'}</span>}</p>}
           </div>
           {/* The notes */}
           {!logs ? <div className="py-6 text-center"><Loader2 size={16} className="animate-spin text-ink-3 mx-auto" /></div> : (
             <div>
-              <div className="flex items-baseline justify-between mb-1.5"><p className="eyebrow">{ko ? `기록 ${logs.length}건` : `The ${logs.length} ${logs.length === 1 ? 'note' : 'notes'}`}</p><span className="text-[11px] text-ink-3">{ko ? `긍정 기록 ${positives}건 (전체)` : `${positives} positive ${positives === 1 ? 'note' : 'notes'} on file for balance`}</span></div>
+              <div className="flex items-baseline justify-between mb-1.5"><p className="eyebrow">{ko ? `기록 ${logs.length}건` : `The ${logs.length} ${logs.length === 1 ? 'note' : 'notes'}`}</p><span className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? `긍정 기록 ${positives}건 (전체)` : `${positives} positive ${positives === 1 ? 'note' : 'notes'} on file for balance`}</span></div>
               <div className="divide-y divide-rule border border-rule-2 rounded-md">
                 {logs.map(l => (
-                  <div key={l.id} className="px-3.5 py-2.5 text-[12.5px]">
+                  <div key={l.id} className="px-3.5 py-2.5 text-[length:calc(12.5px*var(--ts))]">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="tabular-nums text-ink-2">{fmtDate(l.date, ko)}{l.time ? ` · ${l.time}` : ''}</span>
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${TYPE_LABEL[l.type]?.cls || 'bg-paper-3 text-ink-2'}`}>{ko ? TYPE_LABEL[l.type]?.ko : TYPE_LABEL[l.type]?.en || l.type}</span>
-                      {l.is_flagged && <span className="text-[10px] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '표시됨' : 'flagged'}</span>}
-                      {(l.intensity || 1) > 1 && <span className="text-[10px] text-ink-3">{ko ? '강도' : 'intensity'} {l.intensity}</span>}
-                      <span className="ml-auto text-[11px] text-ink-3">{l.teachers?.name}</span>
+                      <span className={`text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${TYPE_LABEL[l.type]?.cls || 'bg-paper-3 text-ink-2'}`}>{ko ? TYPE_LABEL[l.type]?.ko : TYPE_LABEL[l.type]?.en || l.type}</span>
+                      {l.is_flagged && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '표시됨' : 'flagged'}</span>}
+                      {(l.intensity || 1) > 1 && <span className="text-[length:calc(10px*var(--ts))] text-ink-3">{ko ? '강도' : 'intensity'} {l.intensity}</span>}
+                      <span className="ml-auto text-[length:calc(11px*var(--ts))] text-ink-3">{l.teachers?.name}</span>
                     </div>
                     {l.note && <p className="text-ink mt-1">{l.note}</p>}
-                    {l.activity && <p className="text-[11.5px] text-ink-3 mt-0.5">{ko ? '활동' : 'During'}: {l.activity}</p>}
+                    {l.activity && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">{ko ? '활동' : 'During'}: {l.activity}</p>}
                     {((l.antecedents || []).length > 0 || (l.behaviors || []).length > 0 || (l.consequences || []).length > 0) && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
-                        {(l.antecedents || []).map((a, i) => <span key={`a${i}`} className="text-[10px] px-2 py-0.5 rounded-full bg-info-soft text-info">{a}</span>)}
-                        {(l.behaviors || []).map((b, i) => <span key={`b${i}`} className="text-[10px] px-2 py-0.5 rounded-full bg-bad-soft text-bad">{b}</span>)}
-                        {(l.consequences || []).map((x, i) => <span key={`c${i}`} className="text-[10px] px-2 py-0.5 rounded-full bg-good-soft text-good">{x}</span>)}
+                        {(l.antecedents || []).map((a, i) => <span key={`a${i}`} className="text-[length:calc(10px*var(--ts))] px-2 py-0.5 rounded-full bg-info-soft text-info">{a}</span>)}
+                        {(l.behaviors || []).map((b, i) => <span key={`b${i}`} className="text-[length:calc(10px*var(--ts))] px-2 py-0.5 rounded-full bg-bad-soft text-bad">{b}</span>)}
+                        {(l.consequences || []).map((x, i) => <span key={`c${i}`} className="text-[length:calc(10px*var(--ts))] px-2 py-0.5 rounded-full bg-good-soft text-good">{x}</span>)}
                       </div>
                     )}
                   </div>
@@ -297,7 +297,7 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
           )}
           {/* Closed record */}
           {c.status === 'closed' && (
-            <div className="rounded-md border border-good/40 bg-good-soft/40 px-3.5 py-2.5 text-[12.5px]">
+            <div className="rounded-md border border-good/40 bg-good-soft/40 px-3.5 py-2.5 text-[length:calc(12.5px*var(--ts))]">
               <span className="font-semibold text-ink">{c.action_label}</span> · {c.action_date ? fmtDate(c.action_date, ko) : '—'} · {nameOf(c.closed_by)}{c.action_note ? <span className="block text-ink-2 mt-0.5">{c.action_note}</span> : null}
             </div>
           )}
@@ -307,18 +307,18 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
           <div className="px-5 py-3 border-t border-rule-2 bg-paper-2/60">
             {!showAction ? (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[12px] text-ink-2 mr-auto">{c.status === 'open' ? (ko ? '먼저 읽었다고 표시한 뒤 조치를 기록하세요.' : 'Mark it read, then record the action when it is done.') : (ko ? `${nameOf(c.acknowledged_by)} 확인함${c.acknowledged_at ? ` · ${fmtWhen(c.acknowledged_at, ko)}` : ''} · 조치 기록 대기` : `Read by ${nameOf(c.acknowledged_by)}${c.acknowledged_at ? ` · ${fmtWhen(c.acknowledged_at, ko)}` : ''} · waiting for the action`)}</span>
-                {c.status === 'open' && <button onClick={ack} disabled={busy} className="h-8 px-3 rounded border border-ink text-[12.5px] font-semibold text-ink hover:bg-surface disabled:opacity-50">{ko ? '읽었습니다' : "I've read this"}</button>}
-                <button onClick={() => setShowAction(true)} className="h-8 px-3 rounded bg-bad text-white text-[12.5px] font-semibold hover:opacity-90">{c.action_label || (ko ? '조치 기록' : 'Record action')}</button>
+                <span className="text-[length:calc(12px*var(--ts))] text-ink-2 mr-auto">{c.status === 'open' ? (ko ? '먼저 읽었다고 표시한 뒤 조치를 기록하세요.' : 'Mark it read, then record the action when it is done.') : (ko ? `${nameOf(c.acknowledged_by)} 확인함${c.acknowledged_at ? ` · ${fmtWhen(c.acknowledged_at, ko)}` : ''} · 조치 기록 대기` : `Read by ${nameOf(c.acknowledged_by)}${c.acknowledged_at ? ` · ${fmtWhen(c.acknowledged_at, ko)}` : ''} · waiting for the action`)}</span>
+                {c.status === 'open' && <button onClick={ack} disabled={busy} className="h-8 px-3 rounded border border-ink text-[length:calc(12.5px*var(--ts))] font-semibold text-ink hover:bg-surface disabled:opacity-50">{ko ? '읽었습니다' : "I've read this"}</button>}
+                <button onClick={() => setShowAction(true)} className="h-8 px-3 rounded bg-bad text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:opacity-90">{c.action_label || (ko ? '조치 기록' : 'Record action')}</button>
               </div>
             ) : (
               <div className="grid gap-2">
-                <p className="text-[12px] text-ink-2">{ko ? `${c.action_label}: 날짜와 한 줄 메모를 남기면 학생 기록에 학부모 연락으로 저장되고 사례가 종료됩니다.` : `${c.action_label}: the date and a line about it go on the student's behavior log as a parent-contact entry, and the case closes.`}</p>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{ko ? `${c.action_label}: 날짜와 한 줄 메모를 남기면 학생 기록에 학부모 연락으로 저장되고 사례가 종료됩니다.` : `${c.action_label}: the date and a line about it go on the student's behavior log as a parent-contact entry, and the case closes.`}</p>
                 <div className="flex gap-2 flex-wrap">
-                  <input type="date" value={actionDate} onChange={e => setActionDate(e.target.value)} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px]" />
-                  <input value={actionNote} onChange={e => setActionNote(e.target.value)} placeholder={ko ? '누구와 통화했고 결과는?' : 'Who you spoke to and what was agreed'} className="flex-1 min-w-[220px] h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px]" />
-                  <button onClick={() => setShowAction(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2">{ko ? '취소' : 'Cancel'}</button>
-                  <button onClick={doClose} disabled={busy || !actionDate} className="h-8 px-3.5 rounded bg-bad text-white text-[12.5px] font-semibold disabled:opacity-50 inline-flex items-center gap-1.5">{busy && <Loader2 size={12} className="animate-spin" />}{ko ? '기록하고 종료' : 'Record and close'}</button>
+                  <input type="date" value={actionDate} onChange={e => setActionDate(e.target.value)} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))]" />
+                  <input value={actionNote} onChange={e => setActionNote(e.target.value)} placeholder={ko ? '누구와 통화했고 결과는?' : 'Who you spoke to and what was agreed'} className="flex-1 min-w-[220px] h-8 px-2.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))]" />
+                  <button onClick={() => setShowAction(false)} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '취소' : 'Cancel'}</button>
+                  <button onClick={doClose} disabled={busy || !actionDate} className="h-8 px-3.5 rounded bg-bad text-white text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-50 inline-flex items-center gap-1.5">{busy && <Loader2 size={12} className="animate-spin" />}{ko ? '기록하고 종료' : 'Record and close'}</button>
                 </div>
               </div>
             )}

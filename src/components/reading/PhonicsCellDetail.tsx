@@ -45,9 +45,9 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
           <div>
             <p className="eyebrow">{getDisplayName(student)} · {student.korean_name}</p>
-            <h3 className="font-display text-[22px] leading-tight text-ink mt-1">{lang === 'ko' ? sk.label_ko : sk.label}</h3>
-            <p className="text-[12.5px] text-ink-2 mt-1">
-              <span className={`inline-block px-2 py-0.5 rounded-full text-[10.5px] font-semibold mr-2 ${BAND_TONE[band]}`} title={PHONICS_BAND_LABELS[band].means}>{PHONICS_BAND_LABELS[band][lang]}</span>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-tight text-ink mt-1">{lang === 'ko' ? sk.label_ko : sk.label}</h3>
+            <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">
+              <span className={`inline-block px-2 py-0.5 rounded-full text-[length:calc(10.5px*var(--ts))] font-semibold mr-2 ${BAND_TONE[band]}`} title={PHONICS_BAND_LABELS[band].means}>{PHONICS_BAND_LABELS[band][lang]}</span>
               {scoreText(score)} · {score.pct}%{score.partial > 0 && <span className="text-ink-3"> · {score.partial} {lang === 'ko' ? '부분 정답' : 'partly'}</span>} · {fmtLong(showing.date, lang)}{score.unread > 0 && <span className="text-ink-3"> · {score.unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>}
             </p>
           </div>
@@ -59,7 +59,7 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '시도' : 'Attempts'} · {history.length}</p>
               <div className="flex flex-wrap gap-1.5">
                 {history.map(c => { const s = scoreSkill(c, skill)!; const b = phonicsBand(s); return (
-                  <button key={c.id} onClick={() => setShowingId(c.id)} className={`px-2 py-1 rounded border text-[11.5px] tabular-nums ${c.id === showing.id ? 'ring-2 ring-ink/40' : ''} ${BAND_CHIP[b]}`}>{fmtShort(c.date, lang)} · {scoreText(s)}</button>
+                  <button key={c.id} onClick={() => setShowingId(c.id)} className={`px-2 py-1 rounded border text-[length:calc(11.5px*var(--ts))] tabular-nums ${c.id === showing.id ? 'ring-2 ring-ink/40' : ''} ${BAND_CHIP[b]}`}>{fmtShort(c.date, lang)} · {scoreText(s)}</button>
                 ) })}
               </div>
             </div>
@@ -70,38 +70,38 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
               {[...sk.words, ...Object.keys(marks).filter(w => !sk.words.includes(w))].map(w => {
                 const m = marks[w]
                 return (
-                  <span key={w} title={m ? MARK_LABEL[m][lang] : undefined} className={`inline-flex flex-col items-center px-2.5 py-1 rounded border font-serif text-[15px] leading-tight ${m ? MARK_TILE[m] : 'bg-paper-2 border-rule text-ink-3'}`}>
+                  <span key={w} title={m ? MARK_LABEL[m][lang] : undefined} className={`inline-flex flex-col items-center px-2.5 py-1 rounded border font-serif text-[length:calc(15px*var(--ts))] leading-tight ${m ? MARK_TILE[m] : 'bg-paper-2 border-rule text-ink-3'}`}>
                     <span className="inline-flex items-center gap-1">{w}{markIcon(m, 11)}</span>
-                    {isMiss(m) && heard[w] && <span className="font-sans text-[10.5px] italic opacity-80">“{heard[w]}”</span>}
+                    {isMiss(m) && heard[w] && <span className="font-sans text-[length:calc(10.5px*var(--ts))] italic opacity-80">“{heard[w]}”</span>}
                   </span>
                 )
               })}
             </div>
           </div>
           {(how.length > 0 || trouble.length > 0) && (
-            <div className="text-[12.5px] text-ink-2 space-y-1">
+            <div className="text-[length:calc(12.5px*var(--ts))] text-ink-2 space-y-1">
               {how.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '해독 방식' : 'How they decoded'}</span>{how.map(d => lang === 'ko' ? d!.label_ko : d!.label).join(' · ')}</p>}
               {trouble.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '어려운 패턴' : 'Trouble with'}</span>{trouble.join(', ')}</p>}
             </div>
           )}
-          {showing.notes && <p className="text-[12.5px] text-ink-2 italic">“{showing.notes}”</p>}
+          {showing.notes && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 italic">“{showing.notes}”</p>}
 
           {/* Which words keep tripping the student, across every attempt. */}
           {history.length > 1 && words.length > 0 && (
             <div>
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '시도별 틀린 단어' : 'Missed words across attempts'}</p>
-              <table className="text-[12px] tabular-nums border-collapse">
+              <table className="text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
                 <thead>
                   <tr>
-                    <th className="text-left pr-3 pb-1 text-[10.5px] font-semibold text-ink-3">{lang === 'ko' ? '단어' : 'Word'}</th>
-                    {attemptsAsc.map(c => <th key={c.id} className={`px-1 pb-1 text-[10.5px] font-semibold whitespace-nowrap ${c.id === showing.id ? 'text-ink' : 'text-ink-3'}`}>{fmtShort(c.date, lang)}</th>)}
-                    <th className="pl-3 pb-1 text-[10.5px] font-semibold text-ink-3 text-right">{lang === 'ko' ? '틀림' : 'Missed'}</th>
+                    <th className="text-left pr-3 pb-1 text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-3">{lang === 'ko' ? '단어' : 'Word'}</th>
+                    {attemptsAsc.map(c => <th key={c.id} className={`px-1 pb-1 text-[length:calc(10.5px*var(--ts))] font-semibold whitespace-nowrap ${c.id === showing.id ? 'text-ink' : 'text-ink-3'}`}>{fmtShort(c.date, lang)}</th>)}
+                    <th className="pl-3 pb-1 text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-3 text-right">{lang === 'ko' ? '틀림' : 'Missed'}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {words.map(h => (
                     <tr key={h.word} className="border-t border-rule">
-                      <td className="pr-3 py-1 font-serif text-[14px] text-ink">{h.word}</td>
+                      <td className="pr-3 py-1 font-serif text-[length:calc(14px*var(--ts))] text-ink">{h.word}</td>
                       {h.marks.map((m, i) => (
                         <td key={i} className="px-1 py-1 text-center">
                           <span title={m ? MARK_LABEL[m][lang] : undefined} className={`inline-flex items-center justify-center w-5 h-5 rounded-sm ${m ? MARK_SOFT[m] : 'bg-paper-2 text-ink-3/50'}`}>
@@ -118,8 +118,8 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
           )}
         </div>
         <div className="px-5 py-3 border-t border-rule-2 flex items-center gap-2">
-          <button onClick={onRecheck} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover">{lang === 'ko' ? '이 시트 다시 점검' : 'Recheck this sheet'}</button>
-          <button onClick={() => onEdit(showing)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={12} /> {lang === 'ko' ? '이 시도 수정' : 'Edit this attempt'}</button>
+          <button onClick={onRecheck} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover">{lang === 'ko' ? '이 시트 다시 점검' : 'Recheck this sheet'}</button>
+          <button onClick={() => onEdit(showing)} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={12} /> {lang === 'ko' ? '이 시도 수정' : 'Edit this attempt'}</button>
         </div>
       </div>
     </div>

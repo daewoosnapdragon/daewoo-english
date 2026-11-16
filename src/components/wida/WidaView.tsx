@@ -132,7 +132,7 @@ export default function WidaView() {
     win.document.close(); win.print()
   }
 
-  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   const selectedStudent = students.find(s => s.id === selected) || null
   const fmt = (iso: string) => new Date(iso).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' })
 
@@ -141,13 +141,13 @@ export default function WidaView() {
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{cls} · {ko ? `${gr}학년` : `Grade ${gr}`} · {students.length} {ko ? '명' : 'students'}{students.length ? ` · ${setCount} ${ko ? '명 완료' : 'fully leveled'}` : ''}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">WIDA</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">WIDA</h1>
         </div>
         {tab === 'levels' && !assessing && (
           <div className="flex items-center gap-2">
-            <button data-guide="wida.assess" onClick={() => setAssessing(true)} disabled={!students.length} className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50"><ListChecks size={14} />{ko ? '반 전체 평가' : 'Assess the class'}</button>
-            <button onClick={printOnePager} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
-            <button onClick={saveSnapshot} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink"><Camera size={14} />{ko ? '스냅샷 저장' : 'Save snapshot'}</button>
+            <button data-guide="wida.assess" onClick={() => setAssessing(true)} disabled={!students.length} className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50"><ListChecks size={14} />{ko ? '반 전체 평가' : 'Assess the class'}</button>
+            <button onClick={printOnePager} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
+            <button onClick={saveSnapshot} className="inline-flex items-center gap-1.5 h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink"><Camera size={14} />{ko ? '스냅샷 저장' : 'Save snapshot'}</button>
           </div>
         )}
       </div>
@@ -157,14 +157,14 @@ export default function WidaView() {
       ) : (<>
       <div className="flex border-b border-rule-2 mb-4">
         {([['levels', ko ? '수준' : 'Levels'], ['progress', ko ? '변화' : 'Progress'], ['scaffolds', ko ? '스캐폴드' : 'Scaffolds'], ['guide', ko ? '안내' : 'Guide']] as [Tab, string][]).map(([id, l]) => (
-          <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-10 text-[13.5px] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{l}{tab === id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}</button>
+          <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-10 text-[length:calc(13.5px*var(--ts))] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{l}{tab === id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}</button>
         ))}
       </div>
       {tab !== 'guide' && tab !== 'scaffolds' && (
         <div className="flex items-center gap-3 flex-wrap mb-5">
           <div className="flex gap-1.5">{GRADES.map(g => <button key={g} onClick={() => setGr(g)} className={chip(gr === g)}>{ko ? `${g}학년` : `Gr ${g}`}</button>)}</div>
           <span className="w-px h-6 bg-rule" />
-          {classes.length > 1 ? <div className="flex gap-1.5">{classes.map(c => <button key={c} onClick={() => setCls(c)} className={chip(cls === c)}>{c}</button>)}</div> : <span className="text-[13px] font-semibold text-ink">{cls}</span>}
+          {classes.length > 1 ? <div className="flex gap-1.5">{classes.map(c => <button key={c} onClick={() => setCls(c)} className={chip(cls === c)}>{c}</button>)}</div> : <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{cls}</span>}
         </div>
       )}
 
@@ -172,7 +172,7 @@ export default function WidaView() {
         <div className="grid grid-cols-[minmax(0,1fr)_440px] gap-6 items-start">
           <div>
             {snapshots.length > 0 && (
-              <div className="flex items-center gap-2 flex-wrap mb-3 text-[12px]">
+              <div className="flex items-center gap-2 flex-wrap mb-3 text-[length:calc(12px*var(--ts))]">
                 <span className="text-ink-3">{ko ? '비교:' : 'Compare with:'}</span>
                 {snapshots.map(sn => (
                   <span key={sn.id} className={`inline-flex items-center rounded-full border ${compare?.id === sn.id ? 'bg-ink text-paper border-ink' : 'bg-surface border-rule-2 text-ink-2'}`}>
@@ -183,9 +183,9 @@ export default function WidaView() {
               </div>
             )}
             {loadingStudents || loadingLevels ? <Loading rows={5} />
-              : !students.length ? <div className="border border-rule-2 rounded-lg p-8 text-center text-[13px] text-ink-3">{ko ? '이 반에 학생이 없습니다.' : `No students in ${cls} Grade ${gr}.`}</div> : (
+              : !students.length ? <div className="border border-rule-2 rounded-lg p-8 text-center text-[length:calc(13px*var(--ts))] text-ink-3">{ko ? '이 반에 학생이 없습니다.' : `No students in ${cls} Grade ${gr}.`}</div> : (
               <div className="border border-rule-2 rounded-lg overflow-hidden">
-                <table className="w-full text-[12.5px] tabular-nums">
+                <table className="w-full text-[length:calc(12.5px*var(--ts))] tabular-nums">
                   <thead><tr className="bg-paper-2 border-b border-rule-2">
                     <th className="text-left px-4 py-2.5 eyebrow font-semibold">{ko ? '학생' : 'Student'}</th>
                     {WIDA_DOMAINS.map(d => <th key={d} className="text-center px-2 py-2.5 eyebrow font-semibold w-[104px]">{DOMAIN_LABEL[d][ko ? 1 : 0]}</th>)}
@@ -198,7 +198,7 @@ export default function WidaView() {
                       const o = overallOf(s.id)
                       return (
                         <tr key={s.id} className={`cursor-pointer ${on ? 'bg-paper-2' : 'hover:bg-paper-2/60'}`} onClick={() => { setSelected(s.id); setDomain(undefined) }}>
-                          <td className={`px-4 py-1.5 ${on ? 'border-l-2 border-accent' : 'border-l-2 border-transparent'}`}><span className="text-ink font-medium">{s.english_name}</span><span className="text-[11px] text-ink-3 ml-1.5">{s.korean_name}</span></td>
+                          <td className={`px-4 py-1.5 ${on ? 'border-l-2 border-accent' : 'border-l-2 border-transparent'}`}><span className="text-ink font-medium">{s.english_name}</span><span className="text-[length:calc(11px*var(--ts))] text-ink-3 ml-1.5">{s.korean_name}</span></td>
                           {WIDA_DOMAINS.map(d => {
                             const lv = levels[s.id]?.[d] || 0
                             const prev = compare?.data[s.id]?.[d] || 0
@@ -207,14 +207,14 @@ export default function WidaView() {
                               <td key={d} className="px-1.5 py-1 text-center">
                                 <button onClick={e => { e.stopPropagation(); setSelected(s.id); setDomain(d) }} title={ko ? `${DOMAIN_LABEL[d][1]} 질문에 답하기` : `Answer the ${DOMAIN_LABEL[d][0].toLowerCase()} can-do questions`}
                                   className={`w-full h-9 rounded border ${on && domain === d ? 'border-accent' : 'border-transparent'} ${lv ? LEVEL_TONE[Math.floor(lv)] : 'text-ink-3 hover:bg-paper-2'} hover:border-ink-3`}>
-                                  <span className="font-display text-[17px] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[9.5px] uppercase tracking-wider leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
-                                  {diff != null && diff !== 0 && <span className={`block text-[10px] font-bold leading-none ${diff > 0 ? 'text-good' : 'text-bad'}`}>{diff > 0 ? `+${diff}` : diff}</span>}
+                                  <span className="font-display text-[length:calc(17px*var(--ts))] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[length:max(10px,calc(9.5px*var(--ts)))] uppercase tracking-wider leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
+                                  {diff != null && diff !== 0 && <span className={`block text-[length:calc(10px*var(--ts))] font-bold leading-none ${diff > 0 ? 'text-good' : 'text-bad'}`}>{diff > 0 ? `+${diff}` : diff}</span>}
                                 </button>
                               </td>
                             )
                           })}
                           <td className="px-2 py-1.5 text-center font-semibold text-ink">{o != null ? o.toFixed(1) : <span className="text-ink-3">—</span>}</td>
-                          <td className="px-4 py-1.5 text-right text-[11.5px] text-ink-3">{updated[s.id] ? fmt(updated[s.id]) : ''}</td>
+                          <td className="px-4 py-1.5 text-right text-[length:calc(11.5px*var(--ts))] text-ink-3">{updated[s.id] ? fmt(updated[s.id]) : ''}</td>
                         </tr>
                       )
                     })}
@@ -222,22 +222,22 @@ export default function WidaView() {
                 </table>
               </div>
             )}
-            <p className="text-[11px] text-ink-3 mt-2">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')} · {ko ? '칸을 클릭하면 그 영역의 질문이 열립니다.' : 'Click a cell for one domain, or “Assess the class” to go student by student.'}</p>
+            <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-2">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')} · {ko ? '칸을 클릭하면 그 영역의 질문이 열립니다.' : 'Click a cell for one domain, or “Assess the class” to go student by student.'}</p>
           </div>
 
           <div className="border border-rule-2 rounded-lg p-5 sticky top-[120px]">
             {selectedStudent ? (
               <>
                 <div className="flex items-baseline justify-between gap-3 mb-4">
-                  <h2 className="font-display text-[24px] leading-none text-ink">{selectedStudent.english_name}<span className="font-sans text-[12.5px] text-ink-3 ml-2">{selectedStudent.korean_name}</span></h2>
-                  <a href={`/students/${selectedStudent.id}`} className="text-[12px] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '학생 페이지 →' : 'Student page →'}</a>
+                  <h2 className="font-display text-[length:calc(24px*var(--ts))] leading-none text-ink">{selectedStudent.english_name}<span className="font-sans text-[length:calc(12.5px*var(--ts))] text-ink-3 ml-2">{selectedStudent.korean_name}</span></h2>
+                  <a href={`/students/${selectedStudent.id}`} className="text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '학생 페이지 →' : 'Student page →'}</a>
                 </div>
                 <WidaSupport key={selectedStudent.id} studentId={selectedStudent.id} studentName={selectedStudent.english_name} grade={selectedStudent.grade} initialDomain={domain} onSaved={loadLevels} />
               </>
             ) : (
               <div className="py-10 text-center">
-                <p className="text-[14px] text-ink">{ko ? '왼쪽에서 학생을 고르세요.' : 'Pick a student on the left.'}</p>
-                <p className="text-[12.5px] text-ink-3 mt-1.5 max-w-[300px] mx-auto">{ko ? '영역 칸을 클릭하면 그 영역의 “할 수 있어요” 질문이 열리고, 체크한 내용으로 수준을 제안합니다.' : 'Click a domain cell to open its can-do checklist. Tick what the student does and a level is suggested. Scaffolds and history live here too.'}</p>
+                <p className="text-[length:calc(14px*var(--ts))] text-ink">{ko ? '왼쪽에서 학생을 고르세요.' : 'Pick a student on the left.'}</p>
+                <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-1.5 max-w-[300px] mx-auto">{ko ? '영역 칸을 클릭하면 그 영역의 “할 수 있어요” 질문이 열리고, 체크한 내용으로 수준을 제안합니다.' : 'Click a domain cell to open its can-do checklist. Tick what the student does and a level is suggested. Scaffolds and history live here too.'}</p>
               </div>
             )}
           </div>

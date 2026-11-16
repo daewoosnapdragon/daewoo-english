@@ -111,7 +111,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
   }
 
   const dateLabel = new Date(today + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-  const seg = (on: boolean, tone: string) => `w-9 h-8 text-[12px] font-bold border-l first:border-l-0 border-rule-2 ${on ? tone : 'text-ink-3 hover:bg-paper-2'}`
+  const seg = (on: boolean, tone: string) => `w-9 h-8 text-[length:calc(12px*var(--ts))] font-bold border-l first:border-l-0 border-rule-2 ${on ? tone : 'text-ink-3 hover:bg-paper-2'}`
 
   return (
     <div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true">
@@ -120,10 +120,10 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
         <div className="px-5 pt-4 pb-3 border-b border-rule-2 flex items-start justify-between gap-3">
           <div>
             <p className="eyebrow eyebrow-accent">{lang === 'ko' ? '출석' : 'Attendance'} · {dateLabel}</p>
-            <h2 className="font-display text-[26px] leading-none text-ink mt-1">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`} <span className="text-ink-3">· {cls}</span></h2>
-            {justSaved && <p className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-good" role="status"><DrawnCheck size={14} />{lang === 'ko' ? '모두 출석 체크됨' : 'All marked'}</p>}
+            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink mt-1">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`} <span className="text-ink-3">· {cls}</span></h2>
+            {justSaved && <p className="mt-2 inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] font-medium text-good" role="status"><DrawnCheck size={14} />{lang === 'ko' ? '모두 출석 체크됨' : 'All marked'}</p>}
             {isAdmin && (
-              <select id="drawer-class" value={cls} onChange={e => setCls(e.target.value as EnglishClass)} className="mt-2 h-7 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink">
+              <select id="drawer-class" value={cls} onChange={e => setCls(e.target.value as EnglishClass)} className="mt-2 h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12px*var(--ts))] text-ink">
                 {ALL_ENGLISH_CLASSES.filter(c => c !== 'Unplaced').map(c => <option key={c} value={c}>{c}</option>)}
               </select>
             )}
@@ -135,22 +135,22 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
           {loading ? (
             <Loading rows={4} />
           ) : students.length === 0 ? (
-            <p className="p-6 text-[13px] text-ink-3">{lang === 'ko' ? '이 학년·반에 학생이 없습니다.' : `No Grade ${grade} students in ${cls}.`}</p>
+            <p className="p-6 text-[length:calc(13px*var(--ts))] text-ink-3">{lang === 'ko' ? '이 학년·반에 학생이 없습니다.' : `No Grade ${grade} students in ${cls}.`}</p>
           ) : (
             <div className="divide-y divide-rule">
-              {day.off && <p className="px-5 py-2 text-[12px] text-warn bg-warn-soft">{lang === 'ko' ? `휴일 (${day.off}): 출석이 필요하지 않습니다.` : `Day off (${day.off}): no attendance expected today.`}</p>}
-              {day.trip && !day.off && <p className="px-5 py-2 text-[12px] text-info bg-info-soft">{lang === 'ko' ? `현장학습 (${day.trip}): 전원 결석으로 미리 표시됨.` : `Field trip (${day.trip}): everyone preset to absent with the trip as the reason.`}</p>}
-              {existingCount > 0 && <p className="px-5 py-2 text-[11.5px] text-ink-3 bg-paper-2">{lang === 'ko' ? `오늘 이미 ${existingCount}명 기록됨 · 수정 가능` : `${existingCount} already marked today · you can change them`}</p>}
+              {day.off && <p className="px-5 py-2 text-[length:calc(12px*var(--ts))] text-warn bg-warn-soft">{lang === 'ko' ? `휴일 (${day.off}): 출석이 필요하지 않습니다.` : `Day off (${day.off}): no attendance expected today.`}</p>}
+              {day.trip && !day.off && <p className="px-5 py-2 text-[length:calc(12px*var(--ts))] text-info bg-info-soft">{lang === 'ko' ? `현장학습 (${day.trip}): 전원 결석으로 미리 표시됨.` : `Field trip (${day.trip}): everyone preset to absent with the trip as the reason.`}</p>}
+              {existingCount > 0 && <p className="px-5 py-2 text-[length:calc(11.5px*var(--ts))] text-ink-3 bg-paper-2">{lang === 'ko' ? `오늘 이미 ${existingCount}명 기록됨 · 수정 가능` : `${existingCount} already marked today · you can change them`}</p>}
               {students.map((s, i) => {
                 const r = records[s.id] || { status: 'present' as Status, note: '' }
                 return (
                   <div key={s.id} onClick={() => setFocus(i)} className={`px-5 py-2 grid grid-cols-[1fr_auto] gap-3 items-center ${focus === i ? 'bg-paper-2' : ''}`}>
                     <div className="min-w-0">
-                      <p className="text-[14px] font-medium text-ink truncate">{getDisplayName(s)} <span className="text-ink-3 font-normal text-[12.5px] ml-1">{s.korean_name}</span></p>
+                      <p className="text-[length:calc(14px*var(--ts))] font-medium text-ink truncate">{getDisplayName(s)} <span className="text-ink-3 font-normal text-[length:calc(12.5px*var(--ts))] ml-1">{s.korean_name}</span></p>
                       {r.status !== 'present' && (
                         <input id={`note-${s.id}`} value={r.note} onChange={e => setNote(s.id, e.target.value)}
                           placeholder={lang === 'ko' ? '메모 (선택)' : 'Note (optional)'}
-                          className="mt-1 w-full h-7 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink placeholder:text-ink-3" />
+                          className="mt-1 w-full h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12px*var(--ts))] text-ink placeholder:text-ink-3" />
                       )}
                     </div>
                     <div className="inline-flex border border-rule-2 rounded overflow-hidden bg-surface">
@@ -166,12 +166,12 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
         </div>
 
         <div className="px-5 py-3 border-t border-rule-2 bg-paper-2 flex items-center gap-3">
-          <span className="text-[12px] text-ink-2 tabular-nums">
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-2 tabular-nums">
             <span className="text-good font-semibold">{counts.present}</span> P · <span className="text-bad font-semibold">{counts.absent}</span> A · <span className="text-warn font-semibold">{counts.tardy}</span> T
           </span>
-          <span className="text-[11px] text-ink-3 hidden sm:inline">P A T · ↑↓ · ⌘↩</span>
+          <span className="text-[length:calc(11px*var(--ts))] text-ink-3 hidden sm:inline">P A T · ↑↓ · ⌘↩</span>
           <button onClick={save} disabled={saving || loading || students.length === 0}
-            className="ml-auto h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-2">
+            className="ml-auto h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-2">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
             {lang === 'ko' ? `${students.length}명 저장` : `Save ${students.length}`}
           </button>

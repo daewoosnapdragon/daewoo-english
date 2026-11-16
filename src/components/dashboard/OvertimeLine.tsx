@@ -22,16 +22,16 @@ export default function OvertimeLine() {
   return (
     <div>
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-2">
-        <h3 className="font-display text-[18px] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h3>
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h3>
         <Link href="/overtime" className="eyebrow hover:text-ink">{ko ? '열기' : 'Open'}</Link>
       </div>
-      <p className="text-[12.5px] text-ink-2 flex items-center gap-2 flex-wrap">
+      <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 flex items-center gap-2 flex-wrap">
         <span className="tabular-nums">
           {t.count
             ? <>{isAdmin ? (ko ? '전체 교사 이번 달 ' : 'All teachers this month · ') : (ko ? '이번 달 ' : 'This month · ')}<span className="font-semibold text-ink">{fmtMinutes(t.minutes, ko)}</span> · {fmtWon(t.won, ko)}</>
             : <span className="text-ink-3">{isAdmin ? (ko ? '이번 달 기록 없음' : 'Nothing logged this month') : (ko ? '이번 달 기록 없음' : 'Nothing logged this month')}</span>}
         </span>
-        {!isAdmin && <Link href="/overtime#add" className="ml-auto h-7 px-2.5 rounded border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1"><Plus size={11} />{ko ? '추가' : 'Add'}</Link>}
+        {!isAdmin && <Link href="/overtime#add" className="ml-auto h-7 px-2.5 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1"><Plus size={11} />{ko ? '추가' : 'Add'}</Link>}
       </p>
     </div>
   )

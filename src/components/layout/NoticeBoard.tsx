@@ -120,7 +120,7 @@ export default function NoticeBoard() {
   if (loadError) {
     if (!isAdmin) return null
     return (
-      <div className="bg-warn-soft border-b border-rule text-[12px] text-warn px-6 py-1.5 no-print">
+      <div className="bg-warn-soft border-b border-rule text-[length:calc(12px*var(--ts))] text-warn px-6 py-1.5 no-print">
         Notice board unavailable: {loadError}. Run supabase/migration-notices.sql in the Supabase SQL Editor.
       </div>
     )
@@ -144,14 +144,14 @@ export default function NoticeBoard() {
           const author = authorOf(n)
           const initial = author ? author.name.charAt(0) : '!'
           return (
-            <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[13.5px] ${n.style === 'urgent' ? 'bg-bad-soft shadow-[inset_4px_0_0_rgb(var(--bad))]' : ''}`}>
-              <span className={`w-6 h-6 rounded-full text-white text-[11px] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
+            <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[length:calc(13.5px*var(--ts))] ${n.style === 'urgent' ? 'bg-bad-soft shadow-[inset_4px_0_0_rgb(var(--bad))]' : ''}`}>
+              <span className={`w-6 h-6 rounded-full text-white text-[length:calc(11px*var(--ts))] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
               <span className="text-ink min-w-0 whitespace-pre-wrap break-words">{n.body}</span>
-              <span className="flex items-center gap-3 text-[11.5px] text-ink-3 whitespace-nowrap">
+              <span className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-ink-3 whitespace-nowrap">
                 <span>{author?.name || (n.author_id ? (lang === 'ko' ? '알 수 없음' : 'Unknown') : (lang === 'ko' ? '자동 알림' : 'Automatic'))} · {whenLabel(n.created_at, lang)} · {audienceLabel(n)}{n.author_id === me ? ` · ${seenLabel(n)}` : ''}</span>
                 {canEdit && <button onClick={() => setEditing(n)} title={lang === 'ko' ? '수정' : 'Edit'} className="text-ink-3 hover:text-ink"><Pencil size={13} /></button>}
                 {canEdit && <button onClick={() => remove(n)} title={lang === 'ko' ? '모두에게서 삭제' : 'Remove for everyone'} className="text-ink-3 hover:text-bad"><Trash2 size={13} /></button>}
-                {n.author_id !== me && <button onClick={() => dismiss(n)} title={lang === 'ko' ? '닫기' : 'Dismiss'} className="text-ink-3 hover:text-ink text-[18px] leading-none">×</button>}
+                {n.author_id !== me && <button onClick={() => dismiss(n)} title={lang === 'ko' ? '닫기' : 'Dismiss'} className="text-ink-3 hover:text-ink text-[length:calc(18px*var(--ts))] leading-none">×</button>}
               </span>
             </div>
           )
@@ -159,7 +159,7 @@ export default function NoticeBoard() {
         {(composing || editing) ? (
           <Composer teachers={activeTeachers} existing={editing} onClose={() => { setComposing(false); setEditing(null) }} onSaved={() => { setComposing(false); setEditing(null); load() }} />
         ) : (
-          <button onClick={() => setComposing(true)} className="w-full flex items-center gap-3 px-6 py-1.5 text-[12.5px] text-ink-3 hover:text-ink hover:bg-paper-2 text-left">
+          <button onClick={() => setComposing(true)} className="w-full flex items-center gap-3 px-6 py-1.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink hover:bg-paper-2 text-left">
             <Megaphone size={14} className="ml-1.5" />{lang === 'ko' ? '다른 교사에게 공지 남기기…' : 'Post a notice for other teachers…'}
           </button>
         )}
@@ -204,7 +204,7 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
     onSaved()
   }
 
-  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   const label = 'eyebrow pt-1.5 whitespace-nowrap'
 
   return (
@@ -212,7 +212,7 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
       <textarea ref={ref} id="notice-body" value={body} onChange={e => setBody(e.target.value)} rows={2}
         onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') save(); if (e.key === 'Escape') onClose() }}
         placeholder={lang === 'ko' ? '예: 오늘 1학년은 3:00에 하교합니다.' : 'e.g. Release Grade 1 at 3:00 today, not 3:30.'}
-        className="w-full max-w-[860px] px-3 py-2 bg-surface border border-rule-2 rounded text-[14px] text-ink placeholder:text-ink-3 resize-y" />
+        className="w-full max-w-[860px] px-3 py-2 bg-surface border border-rule-2 rounded text-[length:calc(14px*var(--ts))] text-ink placeholder:text-ink-3 resize-y" />
       <div className="grid grid-cols-[90px_1fr] gap-x-4 gap-y-2 items-start max-w-[860px]">
         <span className={label}>{lang === 'ko' ? '공유 대상' : 'Share with'}</span>
         <div className="flex flex-wrap gap-1.5">
@@ -225,7 +225,7 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
           <button onClick={() => setUntil('week')} className={chip(until === 'week')}>{lang === 'ko' ? '이번 주까지' : 'End of this week'}</button>
           <button onClick={() => setUntil('remove')} className={chip(until === 'remove')}>{lang === 'ko' ? '삭제할 때까지' : 'Until I remove it'}</button>
           <button onClick={() => setUntil('date')} className={chip(until === 'date')}>{lang === 'ko' ? '날짜 선택' : 'Pick a date'}</button>
-          {until === 'date' && <input id="notice-date" type="date" value={date} min={today} onChange={e => setDate(e.target.value)} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink" />}
+          {until === 'date' && <input id="notice-date" type="date" value={date} min={today} onChange={e => setDate(e.target.value)} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12px*var(--ts))] text-ink" />}
         </div>
         <span className={label}>{lang === 'ko' ? '유형' : 'Style'}</span>
         <div className="flex flex-wrap gap-1.5">
@@ -234,11 +234,11 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
         </div>
       </div>
       <div className="flex items-center gap-2">
-        <button onClick={save} disabled={saving} className="h-8 px-3.5 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-60">
+        <button onClick={save} disabled={saving} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60">
           {existing ? (lang === 'ko' ? '저장' : 'Save') : everyone ? (lang === 'ko' ? '전체에 게시' : 'Post to everyone') : (lang === 'ko' ? `${picked.size}명에게 게시` : `Post to ${picked.size} ${picked.size === 1 ? 'teacher' : 'teachers'}`)}
         </button>
-        <button onClick={onClose} className="h-8 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
-        <span className="text-[11.5px] text-ink-3 ml-2">⌘↩ {lang === 'ko' ? '게시' : 'to post'}</span>
+        <button onClick={onClose} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
+        <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 ml-2">⌘↩ {lang === 'ko' ? '게시' : 'to post'}</span>
       </div>
     </div>
   )

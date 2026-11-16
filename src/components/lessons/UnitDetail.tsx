@@ -32,7 +32,7 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
   const wida = Array.from(new Set(unit.objectives.flatMap(o => o.wida)))
 
   return (
-    <div ref={box} className="relative mt-1 ml-1 text-[11.5px] text-text-tertiary">
+    <div ref={box} className="relative mt-1 ml-1 text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="inline-flex items-center gap-1.5 min-w-0">
           <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: book.color }} />
@@ -43,7 +43,7 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
           <label className="inline-flex items-center gap-1">
             <span>Lesson</span>
             <select value={lessonId || ''} onChange={e => onLesson(e.target.value || null)} title="Only you see this. It is not printed."
-              className="bg-transparent border-b border-border/60 outline-none focus:border-navy text-[11.5px] text-text-secondary max-w-[220px]">
+              className="bg-transparent border-b border-border/60 outline-none focus:border-navy text-[length:calc(11.5px*var(--ts))] text-text-secondary max-w-[220px]">
               <option value="">—</option>
               {unit.lessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
             </select>
@@ -60,7 +60,7 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
             const on = added(o.text)
             return (
               <button key={o.text} type="button" onClick={() => onAddObjective(o.text)} disabled={on} title={on ? 'On the Students will line' : 'Put this on the Students will line'}
-                className={`text-[11.5px] px-2 py-0.5 rounded-full border text-left max-w-[340px] truncate transition-colors ${on ? 'bg-navy text-white border-navy' : 'border-border text-text-secondary hover:border-navy hover:text-navy'}`}>
+                className={`text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full border text-left max-w-[340px] truncate transition-colors ${on ? 'bg-navy text-white border-navy' : 'border-border text-text-secondary hover:border-navy hover:text-navy'}`}>
                 {on && <Check size={10} className="inline mr-1 -mt-px" />}{o.text}
               </button>
             )
@@ -68,9 +68,9 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
         </div>
       )}
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-30 w-[440px] max-w-[90vw] max-h-[440px] overflow-y-auto bg-surface border border-border rounded-xl shadow-lg p-4 text-[12.5px] text-text-primary">
-          <p className="font-semibold text-[13.5px]">{unit.name}</p>
-          <p className="text-[11.5px] text-text-tertiary">{book.name}{unit.badge ? ` · ${unit.badge}` : ''} · {unit.lessons.length} lesson{unit.lessons.length === 1 ? '' : 's'}</p>
+        <div className="absolute left-0 top-full mt-1 z-30 w-[440px] max-w-[90vw] max-h-[440px] overflow-y-auto bg-surface border border-border rounded-xl shadow-lg p-4 text-[length:calc(12.5px*var(--ts))] text-text-primary">
+          <p className="font-semibold text-[length:calc(13.5px*var(--ts))]">{unit.name}</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{book.name}{unit.badge ? ` · ${unit.badge}` : ''} · {unit.lessons.length} lesson{unit.lessons.length === 1 ? '' : 's'}</p>
           {unit.summary && <p className="mt-2 text-text-secondary leading-snug whitespace-pre-line">{unit.summary}</p>}
           {unit.objectives.length > 0 && (
             <ul className="mt-3 space-y-1.5">
@@ -78,14 +78,14 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
                 <li key={o.text} className="flex items-start gap-2">
                   <p className="flex-1 text-text-secondary italic leading-snug"><span className="not-italic font-semibold text-navy">Students will</span> {o.text}</p>
                   <button type="button" onClick={() => onAddObjective(o.text)} disabled={added(o.text)}
-                    className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded border border-border text-navy enabled:hover:border-navy disabled:opacity-50">{added(o.text) ? 'Added' : 'Add'}</button>
+                    className="shrink-0 text-[length:calc(11px*var(--ts))] font-semibold px-2 py-0.5 rounded border border-border text-navy enabled:hover:border-navy disabled:opacity-50">{added(o.text) ? 'Added' : 'Add'}</button>
                 </li>
               ))}
             </ul>
           )}
           {unit.lessons.length > 0 && (
             <>
-              <p className="mt-3 text-[11px] uppercase tracking-wider font-semibold text-text-tertiary">Lessons</p>
+              <p className="mt-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-text-tertiary">Lessons</p>
               <ol className="mt-1 space-y-0.5">
                 {unit.lessons.map((l, i) => <li key={l.id} className={l.id === lessonId ? 'font-semibold text-navy' : ''}>{i + 1}. {l.title}</li>)}
               </ol>
@@ -93,8 +93,8 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
           )}
           {(codes.length > 0 || wida.length > 0) && (
             <div className="mt-3 flex flex-wrap gap-1">
-              {codes.map(c => { const s = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[10.5px] px-1.5 py-0.5 rounded border border-border text-text-secondary cursor-help">{s.code}{s.plain ? ` · ${s.plain}` : ''}</span> })}
-              {wida.map(w => <span key={w} title="WIDA 2020 language expectation" className="text-[10.5px] px-1.5 py-0.5 rounded border border-border text-text-tertiary">{w}</span>)}
+              {codes.map(c => { const s = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded border border-border text-text-secondary cursor-help">{s.code}{s.plain ? ` · ${s.plain}` : ''}</span> })}
+              {wida.map(w => <span key={w} title="WIDA 2020 language expectation" className="text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded border border-border text-text-tertiary">{w}</span>)}
             </div>
           )}
           {unit.files.length > 0 && (

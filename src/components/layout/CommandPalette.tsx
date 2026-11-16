@@ -117,20 +117,20 @@ export default function CommandPalette() {
               if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)) }
               if (e.key === 'Enter' && items[hi]) items[hi].run(e.metaKey || e.ctrlKey)
             }}
-            className="flex-1 h-full bg-transparent text-[15px] text-ink placeholder:text-ink-3 outline-none" />
-          <span className="text-[11px] text-ink-3">esc</span>
+            className="flex-1 h-full bg-transparent text-[length:calc(15px*var(--ts))] text-ink placeholder:text-ink-3 outline-none" />
+          <span className="text-[length:calc(11px*var(--ts))] text-ink-3">esc</span>
         </div>
         <div className="max-h-[60vh] overflow-y-auto py-1">
-          {items.length === 0 && <p className="px-4 py-6 text-[13px] text-ink-3">{lang === 'ko' ? '일치하는 항목이 없습니다.' : 'Nothing matches.'}</p>}
+          {items.length === 0 && <p className="px-4 py-6 text-[length:calc(13px*var(--ts))] text-ink-3">{lang === 'ko' ? '일치하는 항목이 없습니다.' : 'Nothing matches.'}</p>}
           {items.map((it, i) => {
             const Icon = it.icon
             return (
               <button key={it.key} onMouseEnter={() => setHi(i)} onClick={e => it.run(e.metaKey || e.ctrlKey)}
                 className={`w-full flex items-center gap-3 px-4 py-2 text-left ${hi === i ? 'bg-paper-2' : ''}`}>
                 {it.dot ? <span className={`w-2.5 h-2.5 rounded-full ${it.dot}`} /> : <Icon size={14} className="text-ink-3" />}
-                <span className="text-[14px] text-ink">{it.label}</span>
-                {it.hint && <span className="text-[12px] text-ink-3 truncate">{it.hint}</span>}
-                <span className="ml-auto text-[11px] text-ink-3 whitespace-nowrap">{it.kind === 'student' ? (hi === i ? (lang === 'ko' ? '↩ 열기 · ⌘↩ 행동 기록' : '↩ open · ⌘↩ behavior log') : '') : it.kind === 'page' ? (lang === 'ko' ? '페이지' : 'page') : ''}</span>
+                <span className="text-[length:calc(14px*var(--ts))] text-ink">{it.label}</span>
+                {it.hint && <span className="text-[length:calc(12px*var(--ts))] text-ink-3 truncate">{it.hint}</span>}
+                <span className="ml-auto text-[length:calc(11px*var(--ts))] text-ink-3 whitespace-nowrap">{it.kind === 'student' ? (hi === i ? (lang === 'ko' ? '↩ 열기 · ⌘↩ 행동 기록' : '↩ open · ⌘↩ behavior log') : '') : it.kind === 'page' ? (lang === 'ko' ? '페이지' : 'page') : ''}</span>
               </button>
             )
           })}

@@ -10,6 +10,9 @@
    ═══════════════════════════════════════════════════ */
 :root {
   color-scheme: light;
+  /* Text size: every font size in the app is multiplied by this. Set from
+     the name menu (Standard, Larger, Largest) and remembered per browser. */
+  --ts: 1.08;
   --paper: 245 241 232;      /* page */
   --paper-2: 237 231 218;    /* panels, table heads */
   --paper-3: 227 220 203;    /* tracks, disabled */
@@ -32,7 +35,7 @@
   --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
   --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
   --wet: 107 58 51;          /* fresh ink: unsaved words */
-  --font-serif-stack: var(--font-serif), 'Iowan Old Style', Georgia, var(--font-kr-serif), serif;
+  --font-serif-stack: var(--font-serif), 'Iowan Old Style', Georgia, var(--font-kr), serif;
   --font-sans-stack: var(--font-sans), var(--font-kr), system-ui, -apple-system, sans-serif;
   /* Kept for older components that read the old variables. */
   --font-display: var(--font-serif-stack);
@@ -341,7 +344,7 @@ html { scroll-behavior: smooth; }
 .neu-card { background: rgb(var(--white)); border: 1px solid rgb(var(--rule-2)); border-radius: 6px; }
 .neu-input {
   background: rgb(var(--white)); border: 1px solid rgb(var(--rule-2)); border-radius: 4px;
-  padding: 10px 14px; font-size: 14px; color: rgb(var(--ink)); outline: none;
+  padding: 10px 14px; font-size: calc(14px * var(--ts)); color: rgb(var(--ink)); outline: none;
 }
 .neu-input::placeholder { color: rgb(var(--ink-3)); }
 .neu-btn {
@@ -363,7 +366,7 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
   width: 72px; text-align: center;
   border: 1px solid rgb(var(--rule-2)); border-radius: 4px;
   background: rgb(var(--white)); color: rgb(var(--ink));
-  padding: 6px 4px; font-size: 14px; font-weight: 500;
+  padding: 6px 4px; font-size: calc(14px * var(--ts)); font-weight: 500;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .score-input:focus { outline: none; border-color: rgb(var(--accent)); box-shadow: 0 0 0 3px rgb(var(--accent) / 0.12); }
@@ -373,7 +376,7 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 /* ═══════════════════════════════════════════════════
    EDITORIAL PRIMITIVES — used by the rebuilt screens
    ═══════════════════════════════════════════════════ */
-.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
+.eyebrow { font-size: calc(11px * var(--ts)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
 .eyebrow-accent { color: rgb(var(--accent)); }
 .rule { border-top: 1px solid rgb(var(--rule)); }
 .rule-2 { border-top: 1px solid rgb(var(--rule-2)); }
@@ -446,16 +449,20 @@ svg.class-flower.is-drawing circle { opacity: 0; animation: pen-dot 200ms var(--
   background: color-mix(in srgb, var(--c) 20%, rgb(var(--white))); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
 .flower-avatar svg.class-flower { --fc: color-mix(in srgb, var(--c) 90%, rgb(var(--ink))); }
 
-/* ─── Loading: ruled lines and the flower drawing itself ─── */
+/* ─── Loading: ruled lines with a soft light passing across ─── */
 .ruled-wait { position: relative; opacity: 0; transition: opacity 200ms ease; }
 .ruled-wait.is-shown { opacity: 1; }
 .ruled-wait::before { content: ""; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px; background: rgb(var(--accent) / .35); }
 .ruled-wait-line { height: 34px; border-bottom: 1px solid rgb(var(--rule)); }
-.ruled-wait-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.ruled-wait-flower { position: relative; display: block; }
-.ruled-wait-flower .flower-base { opacity: .2; }
-.ruled-wait-flower .flower-pen { position: absolute; inset: 0; animation: flower-cycle var(--cycle, 3.3s) linear both; }
-@keyframes flower-cycle { 0%, 86% { opacity: 1; } 100% { opacity: 0; } }
+.ruled-wait::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgb(var(--white) / .75) 50%, transparent 70%); background-size: 250% 100%; animation: ruled-sheen 1.6s ease-in-out infinite; }
+/* Quiet: keep the space; a grey word only if it takes longer than a second. */
+.quiet-wait { display: flex; align-items: center; justify-content: center; }
+.quiet-wait-text { font-family: var(--font-serif-stack); font-style: italic; font-size: calc(14px * var(--ts)); color: rgb(var(--ink-3)); opacity: 0; transition: opacity 300ms ease; }
+.quiet-wait-text.is-shown { opacity: 1; }
+/* A page that keeps its content on screen while the next lot loads. */
+.is-refreshing > *:not(:first-child) { opacity: .5; pointer-events: none; transition: opacity 200ms ease 150ms; }
+@keyframes ruled-sheen { from { background-position: 120% 0; } to { background-position: -120% 0; } }
 
 /* ─── A check that draws itself ─── */
 svg.drawn-check { display: inline-block; flex: none; fill: none; stroke: rgb(var(--good)); stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
@@ -470,11 +477,11 @@ svg.drawn-check path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: pen
   border-radius: 4px; transform: rotate(-8deg); line-height: 1.1; white-space: nowrap; mix-blend-mode: multiply; }
 html.dark .stamp { mix-blend-mode: screen; }
 .stamp-md { padding: 5px 13px 4px; }
-.stamp-md .stamp-big { font-size: 17px; font-weight: 700; letter-spacing: .18em; }
-.stamp-md .stamp-small { font-size: 10px; font-weight: 600; letter-spacing: .1em; margin-top: 2px; }
+.stamp-md .stamp-big { font-size: calc(17px * var(--ts)); font-weight: 700; letter-spacing: .18em; }
+.stamp-md .stamp-small { font-size: calc(10px * var(--ts)); font-weight: 600; letter-spacing: .1em; margin-top: 2px; }
 .stamp-sm { padding: 2px 7px 2px; border-width: 1.5px; outline-offset: 1.5px; transform: rotate(-6deg); }
-.stamp-sm .stamp-big { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; }
-.stamp-sm .stamp-small { font-size: 8px; font-weight: 600; letter-spacing: .08em; }
+.stamp-sm .stamp-big { font-size: calc(10.5px * var(--ts)); font-weight: 700; letter-spacing: .16em; }
+.stamp-sm .stamp-small { font-size: calc(8px * var(--ts)); font-weight: 600; letter-spacing: .08em; }
 .stamp [lang="ko"] { letter-spacing: .02em; }
 .stamp-land { animation: stamp-land 340ms cubic-bezier(.3, 0, .3, 1) both; }
 @keyframes stamp-land { 0% { opacity: 0; transform: rotate(-8deg) scale(1.6); } 55% { opacity: 1; transform: rotate(-8deg) scale(.95); } 100% { opacity: 1; transform: rotate(-8deg) scale(1); } }
@@ -486,10 +493,10 @@ html.dark .stamp { mix-blend-mode: screen; }
    object above the page. A hairline under it runs down the time left. */
 .toast-card { width: max-content; min-width: 240px; max-width: min(420px, calc(100vw - 32px)); background: rgb(var(--ink)); color: rgb(var(--paper));
   border-radius: 6px; box-shadow: 0 10px 28px rgb(0 0 0 / .22), 0 1px 2px rgb(0 0 0 / .2); overflow: hidden; }
-.toast-card .toast-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px 10px 12px; font-size: 13.5px; font-weight: 500; line-height: 1.4; }
+.toast-card .toast-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px 10px 12px; font-size: calc(13.5px * var(--ts)); font-weight: 500; line-height: 1.4; }
 .toast-card svg.drawn-check { stroke: rgb(var(--good-soft)); }
-.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-.toast-card .toast-action { flex: none; margin-left: 6px; color: rgb(var(--accent-soft)); font-weight: 600; font-size: 13px; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: calc(11px * var(--ts)); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.toast-card .toast-action { flex: none; margin-left: 6px; color: rgb(var(--accent-soft)); font-weight: 600; font-size: calc(13px * var(--ts)); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .toast-card .toast-time { height: 2px; background: rgb(var(--paper) / .28); transform-origin: left; animation: toast-time linear forwards; }
 @keyframes toast-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
@@ -505,3 +512,6 @@ html.dark .stamp { mix-blend-mode: screen; }
 
 /* Overlays never print. */
 @media print { .toast-card, .fixed.inset-0 { display: none !important; } }
+
+html[data-text="larger"] { --ts: 1.18; }
+html[data-text="largest"] { --ts: 1.3; }

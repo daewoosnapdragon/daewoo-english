@@ -86,12 +86,12 @@ export default function WIDABadge({ studentId, compact }: { studentId: string; c
     return (
       <span className="relative inline-block"
         onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold cursor-help"
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold cursor-help"
           style={{ backgroundColor: info.bg, color: '#374151', borderLeft: `2px solid ${info.color}` }}>
           L{info.level}
         </span>
         {showTip && (
-          <span className="absolute left-0 top-full mt-1 w-56 bg-navy-dark text-white rounded-lg shadow-lg p-3 z-[200] text-[10px] leading-relaxed pointer-events-none">
+          <span className="absolute left-0 top-full mt-1 w-56 bg-navy-dark text-white rounded-lg shadow-lg p-3 z-[200] text-[length:calc(10px*var(--ts))] leading-relaxed pointer-events-none">
             <span className="font-bold text-gold block mb-1">L{info.level} {info.name} ({breakdown})</span>
             <span className="block text-blue-200 mb-1.5">{info.desc}</span>
             <span className="block text-green-300 font-medium">Scaffolds:</span>
@@ -105,13 +105,13 @@ export default function WIDABadge({ studentId, compact }: { studentId: string; c
   return (
     <span className="relative inline-block"
       onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-help"
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[length:calc(10px*var(--ts))] font-medium cursor-help"
         style={{ backgroundColor: info.bg, color: '#374151' }}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: info.color }} />
         L{info.level}
       </span>
       {showTip && (
-        <span className="absolute bottom-full left-0 mb-1 w-56 bg-navy-dark text-white rounded-lg shadow-lg p-3 z-[90] text-[10px] leading-relaxed pointer-events-none">
+        <span className="absolute bottom-full left-0 mb-1 w-56 bg-navy-dark text-white rounded-lg shadow-lg p-3 z-[90] text-[length:calc(10px*var(--ts))] leading-relaxed pointer-events-none">
           <span className="font-bold text-gold block mb-1">L{info.level} {info.name} ({breakdown})</span>
           <span className="block text-blue-200 mb-1.5">{info.desc}</span>
           <span className="block text-green-300 font-medium">Scaffolds:</span>
