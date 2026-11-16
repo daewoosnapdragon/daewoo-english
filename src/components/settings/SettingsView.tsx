@@ -11,6 +11,7 @@ import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
 import { DEFAULT_LADDER, loadLadderSettings, saveLadderSettings, type LadderSettings } from '@/lib/behaviorLadder'
 import OfficeJobsSection from './OfficeJobsSection'
 import OvertimeSection from './OvertimeSection'
+import { serif as classicSerif, sans as classicSans, clean as cleanFont, readable as readableFont } from '@/app/fonts'
 import { FONTS, TEXT_SIZES, type FontChoice, type TextSize, currentFont, currentTextSize, setFont, setTextSize, onDisplayChange } from '@/lib/display'
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
@@ -59,12 +60,15 @@ export default function SettingsView() {
 
 // ─── Display: typeface and text size ─────────────────────────────
 // Saved in this browser only, so each teacher picks what is easiest for them
-// to read without changing it for anyone else.
+// to read without changing it for anyone else. Samples name each face
+// directly (not through --font-sans) so each card shows its own font
+// whichever one is chosen.
+const KR = "var(--font-kr, 'Apple SD Gothic Neo'), 'Malgun Gothic', sans-serif"
 const FONT_INFO: Record<FontChoice, { en: string; ko: string; noteEn: string; noteKo: string; family: string }> = {
-  classic: { en: 'Classic', ko: '기본', noteEn: 'Serif headings with a sans body. The original look.', noteKo: '제목은 명조, 본문은 고딕. 원래 모양입니다.', family: 'var(--font-classic-sans), var(--font-kr), sans-serif' },
-  clean: { en: 'Clean', ko: '깔끔하게', noteEn: 'Inter everywhere. Plain, even, familiar.', noteKo: '모든 글자를 Inter로. 단정하고 익숙합니다.', family: 'var(--font-clean), var(--font-kr), sans-serif' },
-  readable: { en: 'Easy to read', ko: '읽기 쉽게', noteEn: 'Atkinson Hyperlegible, made so letters like I, l and 1 never look alike.', noteKo: 'Atkinson Hyperlegible. I, l, 1처럼 비슷한 글자를 쉽게 구별합니다.', family: 'var(--font-readable), var(--font-kr), sans-serif' },
-  system: { en: 'This device', ko: '기기 기본', noteEn: 'The font your computer already uses for everything else.', noteKo: '컴퓨터에서 평소 쓰는 글꼴입니다.', family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, var(--font-kr), sans-serif" },
+  classic: { en: 'Classic', ko: '기본', noteEn: 'Serif headings with a sans body. The original look.', noteKo: '제목은 명조, 본문은 고딕. 원래 모양입니다.', family: `${classicSans.style.fontFamily}, ${KR}` },
+  clean: { en: 'Clean', ko: '깔끔하게', noteEn: 'Inter everywhere. Plain, even, familiar.', noteKo: '모든 글자를 Inter로. 단정하고 익숙합니다.', family: `${cleanFont.style.fontFamily}, ${KR}` },
+  readable: { en: 'Easy to read', ko: '읽기 쉽게', noteEn: 'Atkinson Hyperlegible, made so letters like I, l and 1 never look alike.', noteKo: 'Atkinson Hyperlegible. I, l, 1처럼 비슷한 글자를 쉽게 구별합니다.', family: `${readableFont.style.fontFamily}, ${KR}` },
+  system: { en: 'This device', ko: '기기 기본', noteEn: 'The font your computer already uses for everything else.', noteKo: '컴퓨터에서 평소 쓰는 글꼴입니다.', family: `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, ${KR}` },
 }
 
 function DisplaySection() {
@@ -102,7 +106,7 @@ function DisplaySection() {
                   {on && <Check size={14} className="text-accent ml-auto" />}
                 </div>
                 <div style={{ fontFamily: info.family }} className="text-ink text-[length:calc(17px*var(--ts))] leading-snug mb-1.5">
-                  {f === 'classic' && <span style={{ fontFamily: "var(--font-classic-serif), Georgia, var(--font-kr), serif" }} className="block text-[length:calc(19px*var(--ts))]">Minji read 112 words</span>}
+                  {f === 'classic' && <span style={{ fontFamily: `${classicSerif.style.fontFamily}, Georgia, ${KR}` }} className="block text-[length:calc(19px*var(--ts))]">Minji read 112 words</span>}
                   {f !== 'classic' && <span className="block text-[length:calc(19px*var(--ts))]">Minji read 112 words</span>}
                   <span className="block text-[length:calc(13.5px*var(--ts))] text-ink-2">Il1 O0 rn m · 민지 · 3.8 · Proficient</span>
                 </div>

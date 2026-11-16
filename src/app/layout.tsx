@@ -1,17 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { Newsreader, Archivo, Noto_Sans_KR, Inter, Atkinson_Hyperlegible } from 'next/font/google'
+import { serif, sans, kr, clean, readable } from './fonts'
 import { AppProvider } from '@/lib/context'
 import './globals.css'
-
-// Serif for headings and big numbers, sans for everything you operate, and a
-// Korean face at matching weights so 한국어 mode keeps the same rhythm.
-const serif = Newsreader({ subsets: ['latin'], variable: '--font-classic-serif', display: 'swap' })
-const sans = Archivo({ subsets: ['latin'], variable: '--font-classic-sans', display: 'swap' })
-const kr = Noto_Sans_KR({ subsets: ['latin'], variable: '--font-kr', display: 'swap', preload: false })
-// Alternatives a teacher can pick in Settings → Display. Not preloaded: the
-// browser only downloads one once a page actually uses it.
-const clean = Inter({ subsets: ['latin'], variable: '--font-clean', display: 'swap', preload: false })
-const readable = Atkinson_Hyperlegible({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-readable', display: 'swap', preload: false })
 
 export const metadata: Metadata = {
   title: 'Daewoo English',
