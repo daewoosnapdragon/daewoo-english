@@ -1,5 +1,6 @@
 'use client'
 
+import { transitionTo } from '@/lib/pageTransition'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
@@ -58,7 +59,7 @@ export default function CommandPalette() {
     }
   }, [open, currentTeacher, students.length])
 
-  const go = (path: string) => { setOpen(false); router.push(path) }
+  const go = (path: string) => { setOpen(false); transitionTo(router, path) }
 
   const items = useMemo<Item[]>(() => {
     const s = q.trim().toLowerCase()

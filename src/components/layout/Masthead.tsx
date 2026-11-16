@@ -442,7 +442,7 @@ export default function Masthead() {
 
   if (collapsed) {
     return (
-      <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
+      <header className="masthead-bar sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
         <div className="mx-auto max-w-[1440px] px-6 grid grid-cols-[auto_1fr_auto] items-center gap-4">
           <Link href="/dashboard" className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
           <NavLinks active={active} signals={signals} label={label} />
@@ -455,7 +455,7 @@ export default function Masthead() {
   }
 
   return (
-    <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
+    <header className="masthead-bar sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
       <div className="mx-auto max-w-[1440px] px-6">
         {/* Row 1: find · brand · user */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center pt-3 pb-2">

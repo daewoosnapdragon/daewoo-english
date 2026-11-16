@@ -246,9 +246,13 @@ export default function DashboardView() {
       {/* ─── Behavior ladder: admin sees every case that needs an action, with no dismiss; a teacher sees their class's ─── */}
       <BehaviorLadderPanel mode={isAdmin ? 'admin' : 'teacher'} onChanged={() => window.dispatchEvent(new Event('daewoo:ladder-changed'))} />
 
-      {/* ─── Stats ─── */}
-      {!shared.loading && (
-        <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-rule-2">
+      {/* ─── Stats: the strip holds its place; the numbers fill in when they arrive ─── */}
+      {shared.loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-rule-2" aria-busy="true">
+          {[lang === 'ko' ? '오늘 출석' : 'Attendance today', lang === 'ko' ? '미채점' : 'Ungraded', lang === 'ko' ? '중간고사 마감' : 'Midterm cutoff', lang === 'ko' ? '성적표 성적 마감' : 'Report card grades due', lang === 'ko' ? '오늘 행동 기록' : 'Behavior logs today'].map(l => <Stat key={l} label={l} value="" />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-5 border-t border-b border-rule-2 stats-in">
           <Stat href="/attendance" label={lang === 'ko' ? '오늘 출석' : 'Attendance today'} value={todayOff ? '—' : unmarked > 0 ? String(unmarked) : '✓'} sub={todayOff ? `${lang === 'ko' ? '휴일' : 'day off'} · ${todayOff}` : unmarked > 0 ? (lang === 'ko' ? '명 미체크' : 'students unmarked') : (lang === 'ko' ? '모두 완료' : 'all marked')} alert={!todayOff && unmarked > 0} />
           <Stat href="#grading" label={lang === 'ko' ? '미채점' : 'Ungraded'} value={String(queue.length)} sub={queue.length ? `${lang === 'ko' ? '평가' : 'assessments'} · ${ungradedStudents} ${lang === 'ko' ? '명' : 'students'}` : (lang === 'ko' ? '없음' : 'nothing waiting')} alert={queue.length > 0} />
           <Stat label={lang === 'ko' ? '중간고사 마감' : 'Midterm cutoff'} value={midtermDays != null && midtermDays >= 0 ? String(midtermDays) : '—'} sub={midtermDays != null && midtermDays >= 0 ? `${lang === 'ko' ? '일 남음' : 'days'} · ${fmtShort(sem.midterm_cutoff_date)}` : (lang === 'ko' ? '설정 없음' : 'not set')} alert={midtermDays != null && midtermDays >= 0 && midtermDays <= 3} />
@@ -290,7 +294,7 @@ function Stat({ label, value, sub, alert, href }: { label: string; value: string
   const inner = (
     <>
       <p className="eyebrow">{label}</p>
-      <p className={`font-display text-[length:calc(28px*var(--ts))] leading-none mt-1.5 tabular-nums ${alert ? 'text-accent' : 'text-ink'}`}>{value}</p>
+      <p className={`font-display text-[length:calc(28px*var(--ts))] leading-none mt-1.5 tabular-nums ${alert ? 'text-accent' : 'text-ink'}`}>{value || '\u00a0'}</p>
       {sub ? <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1 truncate">{sub}</p> : <p className="text-[length:calc(11.5px*var(--ts))] mt-1">&nbsp;</p>}
     </>
   )

@@ -1,26 +1,41 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, Teacher, SchoolSettings, EnglishClass, Grade, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES } from '@/types'
 
+// ─── Remembered reads ────────────────────────────────────────────────
+// Lists most pages need (the teachers, a class's students) are kept in
+// memory for the session. A page opened again shows what it had at once and
+// refreshes quietly behind it, so moving between pages does not start from
+// nothing every time.
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
 // ─── Teachers ────────────────────────────────────────────────────────
 
+let teachersCache: Teacher[] | null = null
+
 export function useTeachers() {
-  const [teachers, setTeachers] = useState<Teacher[]>([])
-  const [loading, setLoading] = useState(true)
+  const [teachers, setTeachers] = useState<Teacher[]>(teachersCache || [])
+  const [loading, setLoading] = useState(!teachersCache)
 
   useEffect(() => {
+    let cancelled = false
     async function fetch() {
       const { data, error } = await supabase
         .from('teachers')
         .select('*')
         .eq('is_active', true)
         .order('role', { ascending: false }) // admin first
-      if (!error && data) setTeachers(data)
+      if (cancelled) return
+      if (!error && data) {
+        if (!same(data, teachersCache)) { teachersCache = data; setTeachers(data) }
+      }
       setLoading(false)
     }
     fetch()
+    return () => { cancelled = true }
   }, [])
 
   return { teachers, loading }
@@ -35,9 +50,22 @@ interface UseStudentsOptions {
   search?: string
 }
 
+const studentsCache = new Map<string, Student[]>()
+
+function filterStudents(list: Student[], search?: string) {
+  if (!search) return list
+  const q = search.toLowerCase()
+  return list.filter(s =>
+    s.english_name.toLowerCase().includes(q) ||
+    s.korean_name.includes(q) ||
+    String(s.class_number).includes(q)
+  )
+}
+
 export function useStudents(options: UseStudentsOptions = {}) {
-  const [students, setStudents] = useState<Student[]>([])
-  const [loading, setLoading] = useState(true)
+  const key = JSON.stringify([options.grade || null, options.english_class || null, options.teacher_id || null])
+  const [all, setAll] = useState<Student[]>(studentsCache.get(key) || [])
+  const [loading, setLoading] = useState(!studentsCache.has(key))
   const [error, setError] = useState<string | null>(null)
   // Changing grade/class starts a new fetch while the previous one is still in
   // flight. Without this counter the slower (older) response can land last and
@@ -46,7 +74,9 @@ export function useStudents(options: UseStudentsOptions = {}) {
 
   const fetchStudents = useCallback(async () => {
     const req = ++requestId.current
-    setLoading(true)
+    const cached = studentsCache.get(key)
+    // What this class had last time shows at once; only a first visit waits.
+    if (cached) { setAll(cached); setLoading(false) } else { setLoading(true) }
     setError(null)
 
     let query = supabase
@@ -72,28 +102,20 @@ export function useStudents(options: UseStudentsOptions = {}) {
       return
     }
 
-    let result = (data || []).map((row: any) => ({
+    const result = (data || []).map((row: any) => ({
       ...row,
       teacher_name: row.teachers?.name || '',
     }))
-
-    // Client-side search (faster than ilike for small datasets)
-    if (options.search) {
-      const q = options.search.toLowerCase()
-      result = result.filter((s: Student) =>
-        s.english_name.toLowerCase().includes(q) ||
-        s.korean_name.includes(q) ||
-        String(s.class_number).includes(q)
-      )
-    }
-
-    setStudents(result)
+    if (!same(result, studentsCache.get(key))) { studentsCache.set(key, result); setAll(result) }
     setLoading(false)
-  }, [options.grade, options.english_class, options.teacher_id, options.search])
+  }, [key])
 
   useEffect(() => {
     fetchStudents()
   }, [fetchStudents])
+
+  // Search filters what is loaded; it does not ask the database again.
+  const students = useMemo(() => filterStudents(all, options.search), [all, options.search])
 
   return { students, loading, error, refetch: fetchStudents }
 }

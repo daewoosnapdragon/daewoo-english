@@ -1,5 +1,6 @@
 'use client'
 
+import { transitionTo } from '@/lib/pageTransition'
 import { setActivityActor } from '@/lib/activity'
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
@@ -154,7 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const navigateTo = useCallback((target: NavigationTarget) => {
     setPendingNavigation(target)
-    router.push(pathForView(target.view, { studentId: target.preSelectedStudent }))
+    transitionTo(router, pathForView(target.view, { studentId: target.preSelectedStudent }))
   }, [router])
 
   const clearNavigation = useCallback(() => {

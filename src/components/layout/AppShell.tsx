@@ -1,9 +1,10 @@
 'use client'
 
+import { canTransition, transitionTo } from '@/lib/pageTransition'
 import { takeWelcome } from '@/lib/welcome'
 import Welcome from '@/components/brand/Welcome'
 import { useCallback, useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { viewForPath, PAGE_TITLES } from '@/lib/routes'
@@ -22,7 +23,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const { currentTeacher, semestersLoading, pendingNavigation, clearNavigation, language } = useApp()
   const { teachers, loading: teachersLoading } = useTeachers()
   const pathname = usePathname()
+  const router = useRouter()
   const view = viewForPath(pathname)
+
+  // Every internal link goes through the page transition: the page stays
+  // until the next one is ready, then they cross-fade. Next's Link sees the
+  // click was handled and does not navigate a second time.
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || !canTransition()) return
+      const a = (e.target as Element | null)?.closest?.('a')
+      if (!a || !a.href || (a.target && a.target !== '_self') || a.hasAttribute('download')) return
+      const url = new URL(a.href, window.location.href)
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return
+      e.preventDefault()
+      transitionTo(router, url.pathname + url.search + url.hash)
+    }
+    document.addEventListener('click', onClick, true)
+    return () => document.removeEventListener('click', onClick, true)
+  }, [router])
 
   // A deep link's extras (which student, which filter) stay readable by the
   // target view for a moment after the route changes, then are cleared.
@@ -78,7 +97,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <Masthead />
       <NoticeBoard />
       <main className="mx-auto max-w-[1440px]">
-        <div key={pathname} className="page-set">
+        <div key={pathname} data-page={pathname} className="page-fade">
           {children}
         </div>
       </main>
