@@ -63,7 +63,8 @@ export default function AttendanceView() {
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
   )
   const [records, setRecords] = useState<Record<string, { status: Status; note: string; id?: string }>>({})
-  const [loading, setLoading] = useState(false)
+  // Starts true so the roster is not shown before its marks, then hidden again while they load.
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [focusedRow, setFocusedRow] = useState<number>(-1)
@@ -158,7 +159,7 @@ export default function AttendanceView() {
     setHasChanges(false)
   }, [selectedDate, students, selectedGrade])
 
-  useEffect(() => { if (students.length > 0) loadRecords() }, [loadRecords, students])
+  useEffect(() => { if (students.length > 0) loadRecords(); else if (!loadingStudents) setLoading(false) }, [loadRecords, students, loadingStudents])
 
   const setStatus = (studentId: string, status: Status) => {
     setRecords((prev: any) => ({ ...prev, [studentId]: { ...prev[studentId], status, note: prev[studentId]?.note || '' } }))
