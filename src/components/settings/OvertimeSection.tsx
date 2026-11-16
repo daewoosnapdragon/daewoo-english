@@ -11,8 +11,8 @@ import { Loader2, Save } from 'lucide-react'
 // at the top of every sheet ({rate} becomes the rate), and reasons offered
 // to everyone as chips.
 
-const inp = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
-const area = 'w-full px-2.5 py-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink leading-relaxed'
+const inp = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
+const area = 'w-full px-2.5 py-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink leading-relaxed'
 
 export default function OvertimeSection() {
   const { language, showToast } = useApp()
@@ -36,13 +36,13 @@ export default function OvertimeSection() {
   return (
     <div id="set-overtime" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-2 mb-4">
-        <h3 className="font-display text-[22px] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h3>
-        <button onClick={save} disabled={!dirty || saving || !s} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1.5">
+        <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h3>
+        <button onClick={save} disabled={!dirty || saving || !s} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1.5">
           {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}{ko ? '저장' : 'Save'}
         </button>
       </div>
-      {!s ? <p className="text-[12.5px] text-ink-3">{ko ? '불러오는 중' : 'Loading'}</p> : (
-        <div className="space-y-5 text-[12.5px]">
+      {!s ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '불러오는 중' : 'Loading'}</p> : (
+        <div className="space-y-5 text-[length:calc(12.5px*var(--ts))]">
           <label className="block">
             <span className="block font-semibold text-ink mb-1">{ko ? '시간당 금액 (원)' : 'Rate, won an hour'}</span>
             <input type="number" min={0} step={10} value={s.rate || ''} onChange={e => upd({ rate: Number(e.target.value) })} className={`${inp} w-[140px] tabular-nums`} />
@@ -53,8 +53,8 @@ export default function OvertimeSection() {
             <p className="text-ink-3 mb-2">{ko ? '모든 양식 위에 인쇄됩니다. {rate}는 위의 금액으로 바뀝니다.' : 'This prints at the top of every sheet. {rate} becomes the number above.'}</p>
             <textarea rows={3} value={s.policyEn} onChange={e => upd({ policyEn: e.target.value })} className={area} aria-label="English" />
             <textarea rows={2} value={s.policyKo} onChange={e => upd({ policyKo: e.target.value })} className={`${area} mt-2`} aria-label="Korean" />
-            <p className="mt-1.5 text-ink-3 text-[11.5px]">{ko ? '미리보기' : 'Preview'}: {policyText(s.policyEn, s.rate || 0)}</p>
-            <button onClick={() => upd({ policyEn: DEFAULT_OVERTIME_SETTINGS.policyEn, policyKo: DEFAULT_OVERTIME_SETTINGS.policyKo })} className="mt-1 text-[11.5px] text-ink-2 hover:text-ink underline">{ko ? '기본 문구로' : 'Back to the default wording'}</button>
+            <p className="mt-1.5 text-ink-3 text-[length:calc(11.5px*var(--ts))]">{ko ? '미리보기' : 'Preview'}: {policyText(s.policyEn, s.rate || 0)}</p>
+            <button onClick={() => upd({ policyEn: DEFAULT_OVERTIME_SETTINGS.policyEn, policyKo: DEFAULT_OVERTIME_SETTINGS.policyKo })} className="mt-1 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink underline">{ko ? '기본 문구로' : 'Back to the default wording'}</button>
           </div>
           <label className="block">
             <span className="block font-semibold text-ink mb-1">{ko ? '자주 쓰는 사유' : 'Reasons offered to everyone'}</span>

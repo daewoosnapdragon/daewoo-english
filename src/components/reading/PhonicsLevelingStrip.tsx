@@ -22,7 +22,7 @@ export default function PhonicsLevelingStrip({ title, lanes, students, pos, flag
 }) {
   return (
     <div className="border border-rule-2 rounded-md bg-surface px-3 pt-2 pb-1 mb-3">
-      <p className="text-[12px] font-semibold text-ink mb-1">{title}</p>
+      <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink mb-1">{title}</p>
       {lanes.map(lane => {
         // Stack students who share a position, so every one is visible.
         const stacks: Record<number, string[]> = {}
@@ -32,9 +32,9 @@ export default function PhonicsLevelingStrip({ title, lanes, students, pos, flag
         const h = Math.max(26, tallest * (DOT + 2) + 8)
         return (
           <div key={lane.englishClass} className="grid grid-cols-[112px_1fr] items-center border-b border-rule last:border-b-0">
-            <div className="text-[11.5px] text-ink pr-2 truncate">
+            <div className="text-[length:calc(11.5px*var(--ts))] text-ink pr-2 truncate">
               <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[lane.englishClass] || 'bg-ink-3'}`} />{lane.englishClass}
-              <span className="text-ink-3 text-[10.5px]"> {lane.tested}/{lane.studentIds.length}</span>
+              <span className="text-ink-3 text-[length:calc(10.5px*var(--ts))]"> {lane.tested}/{lane.studentIds.length}</span>
             </div>
             <div className="relative mx-[6px]" style={{ height: h }}>
               {/* sheet gridlines */}
@@ -60,10 +60,10 @@ export default function PhonicsLevelingStrip({ title, lanes, students, pos, flag
         )
       })}
       <div className="grid grid-cols-[112px_1fr] mt-0.5">
-        <span className="text-[9.5px] text-ink-3">{lang === 'ko' ? '위치' : 'position'}</span>
+        <span className="text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3">{lang === 'ko' ? '위치' : 'position'}</span>
         <div className="relative mx-[6px] h-4">
           {Array.from({ length: 21 }, (_, p) => (
-            <span key={p} className="absolute text-[9.5px] text-ink-3 -translate-x-1/2 tabular-nums" style={{ left: x(p) }} title={p === 0 ? 'nothing yet' : PHONICS_SKILLS[p - 1].label}>{p}</span>
+            <span key={p} className="absolute text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3 -translate-x-1/2 tabular-nums" style={{ left: x(p) }} title={p === 0 ? 'nothing yet' : PHONICS_SKILLS[p - 1].label}>{p}</span>
           ))}
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function PhonicsLevelingStrip({ title, lanes, students, pos, flag
 export function FlagChip({ f, lang }: { f: LevelFlag; lang: 'en' | 'ko' }) {
   const tone = f.dir === 'up' ? 'bg-good-soft text-good border-good/30' : f.unsure ? 'bg-warn-soft text-warn border-warn/30' : 'bg-bad-soft text-bad border-bad/30'
   return (
-    <span className={`inline-flex items-center gap-0.5 px-1.5 h-5 rounded-full border text-[10.5px] font-semibold whitespace-nowrap ${tone}`}
+    <span className={`inline-flex items-center gap-0.5 px-1.5 h-5 rounded-full border text-[length:calc(10.5px*var(--ts))] font-semibold whitespace-nowrap ${tone}`}
       title={f.unsure ? (lang === 'ko' ? '이 위치 너머로는 점검하지 않았습니다' : 'Never tested past this point: check further before moving') : ''}>
       {f.dir === 'up' ? <ArrowUp size={10} strokeWidth={3} /> : <ArrowDown size={10} strokeWidth={3} />}
       {lang === 'ko' ? `${f.likeClass} 수준` : `like ${f.likeClass}`}{f.unsure ? '?' : ''}

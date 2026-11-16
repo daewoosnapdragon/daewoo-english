@@ -185,7 +185,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
         {/* Header */}
         <div className="px-5 py-4 border-b border-border bg-accent-light shrink-0">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-[15px] font-semibold text-navy flex items-center gap-2">
+            <h3 className="font-display text-[length:calc(15px*var(--ts))] font-semibold text-navy flex items-center gap-2">
               <BookOpen size={18} /> Passage Library
             </h3>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={18} /></button>
@@ -197,19 +197,19 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
               <input value={searchText} onChange={e => setSearchText(e.target.value)}
                 placeholder="Search by title..."
-                className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-text-secondary font-medium shrink-0">Lexile</span>
+              <span className="text-[length:calc(11px*var(--ts))] text-text-secondary font-medium shrink-0">Lexile</span>
               <select value={lexileMin} onChange={e => setLexileMin(Number(e.target.value))}
-                className="flex-1 px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+                className="flex-1 px-2 py-2 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none focus:border-navy bg-white">
                 {LEXILE_OPTIONS.filter(o => o.value <= lexileMax || o.value === -9999).map(o => (
                   <option key={`min-${o.value}`} value={o.value}>{o.value === -9999 ? 'Min' : o.label}</option>
                 ))}
               </select>
-              <span className="text-[11px] text-text-tertiary">to</span>
+              <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">to</span>
               <select value={lexileMax} onChange={e => setLexileMax(Number(e.target.value))}
-                className="flex-1 px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+                className="flex-1 px-2 py-2 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none focus:border-navy bg-white">
                 {LEXILE_OPTIONS.filter(o => o.value >= lexileMin || o.value === 9999).map(o => (
                   <option key={`max-${o.value}`} value={o.value}>{o.value === 9999 ? 'Max' : o.label}</option>
                 ))}
@@ -217,11 +217,11 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
             </div>
             {(searchText || lexileMin > -9999 || lexileMax < 9999) && (
               <button onClick={() => { setSearchText(''); setLexileMin(-9999); setLexileMax(9999) }}
-                className="text-[10px] text-blue-600 hover:text-blue-800 underline">Clear All Filters</button>
+                className="text-[length:calc(10px*var(--ts))] text-blue-600 hover:text-blue-800 underline">Clear All Filters</button>
             )}
           </div>
 
-          <p className="text-[10px] text-text-tertiary mt-2">
+          <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-2">
             {filtered.length} passage{filtered.length !== 1 ? 's' : ''}
             {currentStudentName && <span> · Checking history for <strong>{currentStudentName}</strong></span>}
           </p>
@@ -232,7 +232,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-text-tertiary">
               <FileText size={28} className="mb-2 opacity-40" />
-              <p className="text-[12px]">No passages found</p>
+              <p className="text-[length:calc(12px*var(--ts))]">No passages found</p>
             </div>
           ) : (
             <div className="divide-y divide-border">
@@ -247,13 +247,13 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                     <div className="px-5 py-3 flex items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[12px] font-semibold text-navy truncate">{p.title}</span>
+                          <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy truncate">{p.title}</span>
                           {p.level && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 shrink-0">{p.level}</span>
+                            <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 shrink-0">{p.level}</span>
                           )}
-                          <span className="text-[9px] text-text-tertiary shrink-0">{p.word_count}w</span>
+                          <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary shrink-0">{p.word_count}w</span>
                           {alreadyRead && (
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 shrink-0 flex items-center gap-0.5">
+                            <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 shrink-0 flex items-center gap-0.5">
                               <AlertTriangle size={9} /> Already read
                             </span>
                           )}
@@ -263,11 +263,11 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                         {usage.length > 0 && (
                           <div className="mt-1 flex items-center gap-1 flex-wrap">
                             <Users size={10} className="text-text-tertiary shrink-0" />
-                            <span className="text-[9px] text-text-tertiary">{getClassSummary(usage)}</span>
+                            <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{getClassSummary(usage)}</span>
                           </div>
                         )}
 
-                        {p.source && <p className="text-[9px] text-text-tertiary mt-0.5">{p.source}</p>}
+                        {p.source && <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-0.5">{p.source}</p>}
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -278,7 +278,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                           </button>
                         )}
                         <button onClick={() => { onSelect(p); onClose() }}
-                          className="px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
+                          className="px-3 py-1.5 rounded-lg text-[length:calc(10px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
                           Select
                         </button>
                       </div>
@@ -288,7 +288,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                     {isExpanded && usage.length > 0 && (
                       <div className="px-5 pb-3">
                         <div className="bg-surface-alt rounded-lg border border-border overflow-hidden">
-                          <table className="w-full text-[10px]">
+                          <table className="w-full text-[length:calc(10px*var(--ts))]">
                             <thead>
                               <tr className="bg-surface border-b border-border">
                                 <th className="text-left px-3 py-1.5 font-semibold text-text-secondary">Student</th>
@@ -313,7 +313,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                             </tbody>
                           </table>
                           {usage.length > 20 && (
-                            <p className="text-[9px] text-text-tertiary text-center py-1">+ {usage.length - 20} more</p>
+                            <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary text-center py-1">+ {usage.length - 20} more</p>
                           )}
                         </div>
                       </div>

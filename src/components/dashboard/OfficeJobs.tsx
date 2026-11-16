@@ -25,16 +25,16 @@ export default function OfficeJobs() {
   if (loading) return null
   const head = (meta?: string) => (
     <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-2">
-      <h3 className="font-display text-[18px] leading-none text-ink">{ko ? '사무실 청소' : 'Office jobs'}</h3>
+      <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">{ko ? '사무실 청소' : 'Office jobs'}</h3>
       {meta && <span className="eyebrow">{meta}</span>}
     </div>
   )
   if (!ready) {
     if (!isAdmin) return null
-    return <div>{head()}<p className="text-[12.5px] text-ink-3">{ko ? '순번이 아직 없습니다. ' : 'No rotation yet. '}<Link href="/settings#set-office" className="text-accent hover:underline">{ko ? '설정에서 만들기' : 'Set it up in Settings'}</Link></p></div>
+    return <div>{head()}<p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '순번이 아직 없습니다. ' : 'No rotation yet. '}<Link href="/settings#set-office" className="text-accent hover:underline">{ko ? '설정에서 만들기' : 'Set it up in Settings'}</Link></p></div>
   }
   const day = next
-  if (!day) return <div>{head()}<p className="text-[12.5px] text-ink-3">{ko ? '예정된 청소일이 없습니다.' : 'No cleaning days ahead.'}</p></div>
+  if (!day) return <div>{head()}<p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '예정된 청소일이 없습니다.' : 'No cleaning days ahead.'}</p></div>
   const nameOf = (id: string) => teachers.find(t => t.id === id)?.name || '—'
   const me = currentTeacher?.id
   const mine = day.assignments.find(a => a.personId === me)
@@ -42,16 +42,16 @@ export default function OfficeJobs() {
   return (
     <div>
       {head(todays ? (ko ? '오늘' : 'Today') : fmtDay(day.date, lang))}
-      {day.moved && <p className="text-[11px] text-warn mb-1.5">{ko ? `금요일이 쉬는 날(${day.reason || '휴일'})이라 하루 앞당깁니다` : `Friday is ${day.reason || 'a day off'}, so the jobs are a day early`}</p>}
+      {day.moved && <p className="text-[length:calc(11px*var(--ts))] text-warn mb-1.5">{ko ? `금요일이 쉬는 날(${day.reason || '휴일'})이라 하루 앞당깁니다` : `Friday is ${day.reason || 'a day off'}, so the jobs are a day early`}</p>}
       {day.everyone ? (
-        <p className="text-[12.5px] text-ink-2">{ko ? '모두 함께 청소하는 날입니다.' : 'Everyone cleans together.'}</p>
+        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '모두 함께 청소하는 날입니다.' : 'Everyone cleans together.'}</p>
       ) : (
         <>
           {mine && (
             <div className="mb-2.5">
               <p className="eyebrow eyebrow-accent">{ko ? '내 담당' : 'Your job'}</p>
-              <p className="font-display text-[24px] leading-tight text-ink">{mine.job.name}</p>
-              {todays && mine.job.description && <p className="text-[11.5px] text-ink-2 mt-1 leading-snug">{mine.job.description}</p>}
+              <p className="font-display text-[length:calc(24px*var(--ts))] leading-tight text-ink">{mine.job.name}</p>
+              {todays && mine.job.description && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-1 leading-snug">{mine.job.description}</p>}
             </div>
           )}
           <ul className="divide-y divide-rule">
@@ -59,11 +59,11 @@ export default function OfficeJobs() {
               const isMe = a.personId === me, isOpen = open === a.job.key
               return (
                 <li key={a.job.key} className="py-1">
-                  <button onClick={() => setOpen(isOpen ? null : a.job.key)} className="w-full flex items-center justify-between gap-2 text-left text-[12.5px]" title={a.job.description ? (ko ? '설명 보기' : 'What the job is') : undefined}>
+                  <button onClick={() => setOpen(isOpen ? null : a.job.key)} className="w-full flex items-center justify-between gap-2 text-left text-[length:calc(12.5px*var(--ts))]" title={a.job.description ? (ko ? '설명 보기' : 'What the job is') : undefined}>
                     <span className={`inline-flex items-center gap-1.5 ${isMe ? 'font-semibold text-ink' : 'text-ink-2'}`}>{a.job.name}{a.job.description ? (isOpen ? <ChevronUp size={11} className="text-ink-3" /> : <ChevronDown size={11} className="text-ink-3" />) : null}</span>
                     <span className={`tabular-nums ${isMe ? 'font-semibold text-ink' : 'text-ink-3'}`}>{nameOf(a.personId)}</span>
                   </button>
-                  {isOpen && a.job.description && <p className="text-[11px] text-ink-3 leading-snug pb-1 pr-6">{a.job.description}</p>}
+                  {isOpen && a.job.description && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 leading-snug pb-1 pr-6">{a.job.description}</p>}
                 </li>
               )
             })}
@@ -72,9 +72,9 @@ export default function OfficeJobs() {
       )}
       <div className="flex items-baseline justify-between gap-2 mt-2">
         {following
-          ? <p className="text-[11px] text-ink-3">{ko ? '다음' : 'Next'}: {fmtDay(following.date, lang)}{following.everyone ? (ko ? ' · 모두 함께' : ' · everyone') : mineNext ? ` · ${ko ? '내 담당' : 'you'}: ${mineNext.job.name}` : ''}</p>
+          ? <p className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '다음' : 'Next'}: {fmtDay(following.date, lang)}{following.everyone ? (ko ? ' · 모두 함께' : ' · everyone') : mineNext ? ` · ${ko ? '내 담당' : 'you'}: ${mineNext.job.name}` : ''}</p>
           : <span />}
-        {isAdmin && <Link href="/settings#set-office" className="text-[11px] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '설정에서 수정' : 'Edit in Settings'}</Link>}
+        {isAdmin && <Link href="/settings#set-office" className="text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '설정에서 수정' : 'Edit in Settings'}</Link>}
       </div>
     </div>
   )
@@ -91,7 +91,7 @@ export function OfficeJobsBand() {
   if (!text) return null
   return (
     <Link href="/dashboard" className="block bg-paper-2 border-t border-rule">
-      <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-ink-2"><ClipboardList size={13} />{text}</div>
+      <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[length:calc(12.5px*var(--ts))] font-semibold text-ink-2"><ClipboardList size={13} />{text}</div>
     </Link>
   )
 }

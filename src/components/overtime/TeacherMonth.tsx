@@ -94,13 +94,13 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
   const entryRow = (e: OvertimeEntry, note?: string) => editing === e.id ? (
     <EntryEditor key={e.id} initial={e} today={today} rate={settings.rate} ko={ko} daysOff={m.daysOff} known={known} onSave={d => save(d, e.id)} onCancel={() => setEditing(null)} />
   ) : (
-    <div key={e.id} className={`group ${OT_COLS} px-4 h-[42px] border-b border-rule text-[13.5px] ${note ? 'text-ink-3' : 'text-ink'}`}>
+    <div key={e.id} className={`group ${OT_COLS} px-4 h-[42px] border-b border-rule text-[length:calc(13.5px*var(--ts))] ${note ? 'text-ink-3' : 'text-ink'}`}>
       <span />
       <span className="tabular-nums">{fmtDayDate(e.date, ko)}</span>
       <span className="tabular-nums text-ink-2">{fmtRange(e.start_time, e.end_time, ko)}</span>
       <span className={`tabular-nums ${note ? 'line-through' : 'font-semibold'}`}>{fmtMinutes(e.minutes, ko)}</span>
       <span className={`tabular-nums text-ink-2 ${note ? 'line-through' : ''}`}>{fmtWon(wonFor(e.minutes, settings.rate), ko)}</span>
-      <span className="truncate pr-3" title={e.reason}>{e.reason}{note && <span className="ml-2 text-[12px]">· {note}</span>}</span>
+      <span className="truncate pr-3" title={e.reason}>{e.reason}{note && <span className="ml-2 text-[length:calc(12px*var(--ts))]">· {note}</span>}</span>
       <span className="flex justify-end gap-0.5 opacity-50 group-hover:opacity-100 focus-within:opacity-100">
         <button onClick={() => setEditing(e.id)} className={rowBtn} title={ko ? '고치기' : 'Edit'} aria-label={ko ? '고치기' : 'Edit'}><Pencil size={13} /></button>
         <button onClick={() => remove(e)} className={rowBtn} title={ko ? '삭제' : 'Delete'} aria-label={ko ? '삭제' : 'Delete'}><Trash2 size={13} /></button>
@@ -124,11 +124,11 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
       <div key={w.from}>
         <div className={`${OT_COLS} px-4 h-[44px] bg-paper border-b border-rule`}>
           <span />
-          <span className="col-span-4 text-[14px] font-semibold text-ink">{weekLabel(w, ko)}{thisWeek && <span className="ml-1.5 font-normal text-[12.5px] text-ink-2">· {ko ? '이번 주' : 'this week'}</span>}</span>
-          <span className="col-span-2 text-right text-[13px] text-ink-2 tabular-nums">{es.length ? <><span className="font-semibold text-ink">{fmtMinutes(t.minutes, ko)}</span> · {fmtWon(t.won, ko)}</> : <span className="text-ink-3">{ko ? '기록 없음' : 'Nothing logged'}</span>}</span>
+          <span className="col-span-4 text-[length:calc(14px*var(--ts))] font-semibold text-ink">{weekLabel(w, ko)}{thisWeek && <span className="ml-1.5 font-normal text-[length:calc(12.5px*var(--ts))] text-ink-2">· {ko ? '이번 주' : 'this week'}</span>}</span>
+          <span className="col-span-2 text-right text-[length:calc(13px*var(--ts))] text-ink-2 tabular-nums">{es.length ? <><span className="font-semibold text-ink">{fmtMinutes(t.minutes, ko)}</span> · {fmtWon(t.won, ko)}</> : <span className="text-ink-3">{ko ? '기록 없음' : 'Nothing logged'}</span>}</span>
         </div>
         {lines.map(l => l.kind === 'entry' ? entryRow(l.e, l.note) : (
-          <div key={`off-${l.date}`} className={`${OT_COLS} px-4 h-[34px] border-b border-rule text-[12.5px] text-ink-3`}>
+          <div key={`off-${l.date}`} className={`${OT_COLS} px-4 h-[34px] border-b border-rule text-[length:calc(12.5px*var(--ts))] text-ink-3`}>
             <span />
             <span className="tabular-nums">{fmtDayDate(l.date, ko)}</span>
             <span className="col-span-5">{ko ? `${m.daysOff[l.date]} · 쉬는 날, 초과근무 없음` : `${m.daysOff[l.date]} · day off, no overtime`}</span>
@@ -143,21 +143,21 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
   return (
     <div>
       {asAdmin && onBack && (
-        <button onClick={onBack} className="mb-4 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ArrowLeft size={13} />{ko ? '전체 교사로' : 'Back to all teachers'}</button>
+        <button onClick={onBack} className="mb-4 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ArrowLeft size={13} />{ko ? '전체 교사로' : 'Back to all teachers'}</button>
       )}
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{teacher.name}{teacher.role !== 'admin' ? ` · ${teacher.english_class}` : ''}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
         </div>
         <div className="flex items-center gap-5 flex-wrap">
           <div className="flex items-center gap-1">
             <button onClick={() => goMonth(-1)} className={iconBtn} aria-label={ko ? '지난달' : 'Previous month'}><ChevronLeft size={15} /></button>
-            <span className="text-[14.5px] font-semibold text-ink min-w-[140px] text-center">{monthLabel(month, ko)}</span>
+            <span className="text-[length:calc(14.5px*var(--ts))] font-semibold text-ink min-w-[140px] text-center">{monthLabel(month, ko)}</span>
             <button onClick={() => goMonth(1)} className={iconBtn} aria-label={ko ? '다음 달' : 'Next month'}><ChevronRight size={15} /></button>
           </div>
           <button onClick={() => setPrinting(true)}
-            className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-2">
+            className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-2">
             <Printer size={14} />{ko ? '양식 인쇄' : 'Print sheet'}
           </button>
         </div>
@@ -165,7 +165,7 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
 
       <div className="overflow-x-auto">
         <div id="add" className="min-w-[900px] bg-surface border border-rule rounded-md overflow-hidden">
-          <div className={`${OT_COLS} px-4 h-[38px] bg-paper-2 border-b border-rule-2 text-[11px] uppercase tracking-wider font-semibold text-ink-2`}>
+          <div className={`${OT_COLS} px-4 h-[38px] bg-paper-2 border-b border-rule-2 text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-ink-2`}>
             <span /><span>{ko ? '날짜' : 'Date'}</span><span>{ko ? '시작 – 끝' : 'From – To'}</span><span>{ko ? '시간' : 'Time'}</span><span>{ko ? '금액' : 'Won'}</span><span>{ko ? '무슨 일' : 'What was the work'}</span><span />
           </div>
 
@@ -174,21 +174,21 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
           </div>
 
           {m.loading ? (
-            <p className="px-4 py-6 text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+            <p className="px-4 py-6 text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
           ) : (
             <>
-              {weeks.length === 0 && <p className="px-14 py-5 text-[13px] text-ink-3">{ko ? '이 달은 아직 시작되지 않았습니다.' : 'This month hasn’t started yet.'}</p>}
+              {weeks.length === 0 && <p className="px-14 py-5 text-[length:calc(13px*var(--ts))] text-ink-3">{ko ? '이 달은 아직 시작되지 않았습니다.' : 'This month hasn’t started yet.'}</p>}
               {weeks.map(weekBlock)}
               {weekend.length > 0 && (
                 <div>
-                  <div className={`${OT_COLS} px-4 h-[40px] bg-paper border-b border-rule text-[13.5px] font-semibold text-ink-3`}><span /><span className="col-span-6">{ko ? '주말 (포함 안 됨)' : 'Weekends (not counted)'}</span></div>
+                  <div className={`${OT_COLS} px-4 h-[40px] bg-paper border-b border-rule text-[length:calc(13.5px*var(--ts))] font-semibold text-ink-3`}><span /><span className="col-span-6">{ko ? '주말 (포함 안 됨)' : 'Weekends (not counted)'}</span></div>
                   {weekend.map(e => entryRow(e, ko ? '주말' : 'weekend'))}
                 </div>
               )}
               <div className={`${OT_COLS} px-4 h-[52px] bg-paper-2`}>
                 <span />
-                <span className="col-span-4 text-[13px] text-ink-2">{isCurrent ? (ko ? `${monthLabel(month, true)} 현재까지` : `${monthLabel(month).split(' ')[0]} so far`) : monthLabel(month, ko)} · {ko ? `시간당 ${fmtWon(settings.rate, true)}` : `${fmtWon(settings.rate)} an hour`}{isCurrent && !ko ? ' · later weeks appear as they come' : ''}</span>
-                <span className="col-span-2 text-right text-[15px] tabular-nums text-ink"><span className="font-semibold">{fmtMinutes(monthTotal.minutes, ko)}</span> · {fmtWon(monthTotal.won, ko)}</span>
+                <span className="col-span-4 text-[length:calc(13px*var(--ts))] text-ink-2">{isCurrent ? (ko ? `${monthLabel(month, true)} 현재까지` : `${monthLabel(month).split(' ')[0]} so far`) : monthLabel(month, ko)} · {ko ? `시간당 ${fmtWon(settings.rate, true)}` : `${fmtWon(settings.rate)} an hour`}{isCurrent && !ko ? ' · later weeks appear as they come' : ''}</span>
+                <span className="col-span-2 text-right text-[length:calc(15px*var(--ts))] tabular-nums text-ink"><span className="font-semibold">{fmtMinutes(monthTotal.minutes, ko)}</span> · {fmtWon(monthTotal.won, ko)}</span>
               </div>
             </>
           )}

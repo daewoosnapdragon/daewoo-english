@@ -21,11 +21,11 @@ import { ArrowDown, ArrowUp, Check, Copy, Loader2, Maximize2, Plus, Trash2, X } 
 // date. Copy brings another grade's books over. Class plans shows the same
 // plans as a timeline.
 
-const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
-const btn = 'h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
-const btnP = 'h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5 whitespace-nowrap'
-const btnS = 'h-7 px-2 rounded border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
-const badge = 'inline-flex items-center h-4 px-1 rounded bg-paper-3 text-ink-3 text-[9.5px] font-semibold tracking-wide shrink-0'
+const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
+const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
+const btnP = 'h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5 whitespace-nowrap'
+const btnS = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const badge = 'inline-flex items-center h-4 px-1 rounded bg-paper-3 text-ink-3 text-[length:max(10px,calc(9.5px*var(--ts)))] font-semibold tracking-wide shrink-0'
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 const rowKey = (cls: string, grade: number) => `${cls}|${grade}`
 
@@ -61,8 +61,8 @@ export default function MapView() {
   const cellOf = (key: string) => { const [cls, g] = key.split('|'); return { cls, grade: Number(g) } }
   const activeKey = placing || copying || (open ? (() => { const pl = masters.find(x => x.id === open); return pl ? rowKey(pl.english_class, pl.grade) : null })() : null)
 
-  if (p.loading) return <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
-  if (p.missing) return <p className="text-[12.5px] text-warn">{p.missing === 'catalogue' ? 'Run supabase/migration-curriculum-catalogue.sql first.' : 'The placements tables are missing. Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
+  if (p.loading) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{p.missing === 'catalogue' ? 'Run supabase/migration-curriculum-catalogue.sql first.' : 'The placements tables are missing. Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
 
   const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Sp', fall: ko ? '가을' : 'F', year: ko ? '한 해' : 'Yr' }
   const showTags = terms.length > 1 || masters.some(x => !terms.includes(x.term))
@@ -79,12 +79,12 @@ export default function MapView() {
     return (
       <button key={pl.id} onClick={() => { setOpen(on ? null : pl.id); setPlacing(null); setCopying(null) }}
         className={`w-full flex items-center gap-1.5 rounded px-1.5 py-1 text-left border ${on ? 'border-ink bg-paper-2' : 'border-rule hover:border-rule-2 bg-surface'}`} style={{ borderLeft: `3px solid ${color}` }} title={`${label(pl)} · ${TERM_LABEL[pl.term].en}`}>
-        <span className="font-display text-[15px] leading-none shrink-0" style={{ color }}>{levelShort(book?.level_number) || '·'}</span>
+        <span className="font-display text-[length:calc(15px*var(--ts))] leading-none shrink-0" style={{ color }}>{levelShort(book?.level_number) || '·'}</span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[11.5px] font-medium text-ink truncate">{se?.name || '?'}</span>
-          <span className="block text-[10px] truncate text-ink-3">{book && levelShort(book.level_number) !== book.level_number ? `${book.level_number} · ` : ''}{what}{over ? (ko ? ` · ${num(total - length)}주 초과` : ` · ${num(total - length)} wk over`) : ''}</span>
+          <span className="block text-[length:calc(11.5px*var(--ts))] font-medium text-ink truncate">{se?.name || '?'}</span>
+          <span className="block text-[length:calc(10px*var(--ts))] truncate text-ink-3">{book && levelShort(book.level_number) !== book.level_number ? `${book.level_number} · ` : ''}{what}{over ? (ko ? ` · ${num(total - length)}주 초과` : ` · ${num(total - length)} wk over`) : ''}</span>
         </span>
-        {showTags && <span className={`shrink-0 text-[9.5px] font-semibold px-1 rounded ${pl.term === 'year' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}>{TERM_TAG[pl.term]}</span>}
+        {showTags && <span className={`shrink-0 text-[length:max(10px,calc(9.5px*var(--ts)))] font-semibold px-1 rounded ${pl.term === 'year' ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-2'}`}>{TERM_TAG[pl.term]}</span>}
       </button>
     )
   }
@@ -93,15 +93,15 @@ export default function MapView() {
   return (
     <div>
       <div className="flex items-end gap-3 flex-wrap mb-2">
-        <label className="text-[11px] text-ink-3">{ko ? '학년도' : 'Year'}<br />
+        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => { setYear(e.target.value); setOpen(null); setPlacing(null); setCopying(null) }} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
-        <span className="text-[12px] text-ink-3 pb-2">{terms.filter(t => t !== 'year').map(t => `${ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en} ${yw[t as 'spring' | 'fall'].length}${ko ? '주' : ' wk'}`).join(' · ')} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'book placed' : 'books placed'}</span>
+        <span className="text-[length:calc(12px*var(--ts))] text-ink-3 pb-2">{terms.filter(t => t !== 'year').map(t => `${ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en} ${yw[t as 'spring' | 'fall'].length}${ko ? '주' : ' wk'}`).join(' · ')} · {masters.length} {ko ? '개 배치' : masters.length === 1 ? 'book placed' : 'books placed'}</span>
       </div>
       <div className="mb-4"><PeriodsLine year={theYear} /></div>
 
       <div className="border border-rule rounded overflow-hidden bg-surface">
-        <div className="grid border-b border-rule text-[10.5px] uppercase tracking-wide text-ink-3" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
+        <div className="grid border-b border-rule text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
           <div className="px-3 py-2">{ko ? '레벨' : 'Level'}</div>
           {GRADES.map(g => <div key={g} className="px-2 py-2 border-l border-rule">{ko ? `${g}학년` : `Grade ${g}`}</div>)}
         </div>
@@ -109,7 +109,7 @@ export default function MapView() {
           <div key={cls} className="grid border-b border-rule last:border-b-0" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
             <div className="px-3 py-2 flex items-start gap-2 pt-3">
               <span className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ background: classToColor(cls as any) }} />
-              <span className="text-[12.5px] font-semibold text-ink">{cls}</span>
+              <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{cls}</span>
             </div>
             {GRADES.map(grade => {
               const key = rowKey(cls, grade)
@@ -119,8 +119,8 @@ export default function MapView() {
                 <div key={key} className={`border-l border-rule p-1.5 flex flex-col gap-1 min-h-[64px] ${active ? 'bg-paper-2' : ''}`}>
                   {mine.map(chip)}
                   <div className="flex gap-1 mt-auto pt-0.5">
-                    <button onClick={() => { setPlacing(placing === key ? null : key); setCopying(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center gap-1 ${placing === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`}><Plus size={10} />{ko ? '배치' : 'Place'}</button>
-                    <button onClick={() => { setCopying(copying === key ? null : key); setPlacing(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[10.5px] inline-flex items-center ${copying === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`} title={ko ? '다른 곳에서 복사' : 'Copy another grade\u2019s books here'}><Copy size={10} /></button>
+                    <button onClick={() => { setPlacing(placing === key ? null : key); setCopying(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[length:calc(10.5px*var(--ts))] inline-flex items-center gap-1 ${placing === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`}><Plus size={10} />{ko ? '배치' : 'Place'}</button>
+                    <button onClick={() => { setCopying(copying === key ? null : key); setPlacing(null); setOpen(null) }} className={`h-6 px-1.5 rounded text-[length:calc(10.5px*var(--ts))] inline-flex items-center ${copying === key ? 'bg-ink text-paper' : 'text-ink-3 hover:text-ink hover:bg-paper-2'}`} title={ko ? '다른 곳에서 복사' : 'Copy another grade\u2019s books here'}><Copy size={10} /></button>
                   </div>
                 </div>
               )
@@ -131,14 +131,14 @@ export default function MapView() {
 
       {(placing || copying || opened) && (
         <div className="mt-4 border border-rule-2 rounded bg-paper-2 p-3 flex flex-col gap-2">
-          <p className="text-[11px] uppercase tracking-wide text-ink-3">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
+          <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wide text-ink-3">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
           {placing && <PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
           {copying && <CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cellOf(copying).cls, grade: cellOf(copying).grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} />}
           {opened && <PlacementCard terms={terms} hc={hcOf(opened.grade)} pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
         </div>
       )}
 
-      <p className="text-[11.5px] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 목록을 봅니다.' : `Click a chip for its list.${showTags ? ' Sp and F are the spring and fall halves; Yr runs across both.' : ''}`}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 목록을 봅니다.' : `Click a chip for its list.${showTags ? ' Sp and F are the spring and fall halves; Yr runs across both.' : ''}`}</p>
     </div>
   )
 }
@@ -172,13 +172,13 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
   return (
     <section className="border border-rule rounded bg-surface">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-rule flex-wrap">
-        <span className="font-display text-[26px] leading-none min-w-8 text-center" style={{ color: colorHex(series?.color || 'slate') }}>{levelShort(book?.level_number) || '·'}</span>
+        <span className="font-display text-[length:calc(26px*var(--ts))] leading-none min-w-8 text-center" style={{ color: colorHex(series?.color || 'slate') }}>{levelShort(book?.level_number) || '·'}</span>
         <div className="min-w-0">
-          <p className="text-[14px] font-semibold text-ink">{label}</p>
-          <p className="text-[11.5px] text-ink-3">{series ? (ko ? STRAND_LABEL[series.strand].ko : STRAND_LABEL[series.strand].en) : ''} · {rows.length} {noun(rows.length)} · {num(total)} {ko ? '주' : 'wk'}{length ? (ko ? ` / 학기 ${length}주` : ` of ${length} in the term`) : ''}{over ? (ko ? ` · ${num(total - length)}주 넘침` : ` · runs ${num(total - length)} wk past it`) : ''}</p>
+          <p className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{label}</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{series ? (ko ? STRAND_LABEL[series.strand].ko : STRAND_LABEL[series.strand].en) : ''} · {rows.length} {noun(rows.length)} · {num(total)} {ko ? '주' : 'wk'}{length ? (ko ? ` / 학기 ${length}주` : ` of ${length} in the term`) : ''}{over ? (ko ? ` · ${num(total - length)}주 넘침` : ` · runs ${num(total - length)} wk past it`) : ''}</p>
         </div>
         <span className="flex-1" />
-        <label className="text-[11px] text-ink-3 inline-flex items-center gap-1.5">{ko ? '목표일' : 'Aim to finish by'}
+        <label className="text-[length:calc(11px*var(--ts))] text-ink-3 inline-flex items-center gap-1.5">{ko ? '목표일' : 'Aim to finish by'}
           <input type="date" value={pl.aim_date || ''} onChange={async e => { if (!fail(await setAimDate(pl.id, e.target.value || null, label))) p.reload() }} className={`${sel} w-[140px]`} />
         </label>
         {length > 0 && rows.length > 0 && Math.abs(total - length) > 0.01 && <button onClick={fit} disabled={busy} className={btnS} title={ko ? '학기에 맞게 길이를 고르게 나눕니다' : 'Give every unit an even share so the list fills the term'}><Maximize2 size={11} />{ko ? '학기에 맞추기' : 'Fit to the term'}</button>}
@@ -194,21 +194,21 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
           <div className="flex gap-2"><button onClick={addPicked} disabled={busy || !picked.size} className={btnP}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}{ko ? `${picked.size}개 추가` : `Add ${picked.size} ${noun(picked.size)}`}</button><button onClick={() => setPicking(false)} className={btn}>{ko ? '취소' : 'Cancel'}</button></div>
         </div>
       )}
-      {rows.length === 0 && <p className="px-4 py-3 text-[12.5px] text-ink-3">{units.length ? (ko ? '아직 고른 것이 없습니다. 추가를 누르세요.' : `Nothing picked yet. Press Add ${anthology ? 'stories' : 'units'}.`) : (ko ? '이 책에는 아직 단원이 없습니다. 책꽂이에서 먼저 색인하세요.' : 'This book has no units yet. Add them on the Bookshelf first.')}</p>}
+      {rows.length === 0 && <p className="px-4 py-3 text-[length:calc(12.5px*var(--ts))] text-ink-3">{units.length ? (ko ? '아직 고른 것이 없습니다. 추가를 누르세요.' : `Nothing picked yet. Press Add ${anthology ? 'stories' : 'units'}.`) : (ko ? '이 책에는 아직 단원이 없습니다. 책꽂이에서 먼저 색인하세요.' : 'This book has no units yet. Add them on the Bookshelf first.')}</p>}
       {rows.length > 0 && (
-        <table className="w-full text-[12.5px]">
-          <thead><tr className="text-[10.5px] uppercase tracking-wide text-ink-3"><th className="text-left font-medium px-4 py-1.5 w-10">#</th><th className="text-left font-medium py-1.5">{anthology ? (ko ? '이야기' : 'Story') : (ko ? '단원' : 'Unit')}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '주' : 'Weeks'}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '위치' : 'Weeks of the term'}</th><th className="w-48" /></tr></thead>
+        <table className="w-full text-[length:calc(12.5px*var(--ts))]">
+          <thead><tr className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3"><th className="text-left font-medium px-4 py-1.5 w-10">#</th><th className="text-left font-medium py-1.5">{anthology ? (ko ? '이야기' : 'Story') : (ko ? '단원' : 'Unit')}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '주' : 'Weeks'}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '위치' : 'Weeks of the term'}</th><th className="w-48" /></tr></thead>
           <tbody>
             {groups.map(g => (
               <Fragment key={g.key}>
-                {showGroups && <tr className="border-t border-rule bg-paper"><td colSpan={5} className="px-4 py-1 text-[10.5px] uppercase tracking-wide text-ink-3">{g.label}</td></tr>}
+                {showGroups && <tr className="border-t border-rule bg-paper"><td colSpan={5} className="px-4 py-1 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3">{g.label}</td></tr>}
                 {g.units.map(b => {
                   n += 1; const i = n - 1
                   const t = splitUnitTitle(b.unit.title)
                   return (
                     <tr key={b.pacing.id} className="border-t border-rule">
                       <td className="px-4 py-1.5 text-ink-3">{i + 1}</td>
-                      <td className="py-1.5"><span className="inline-flex items-center gap-2 min-w-0">{t.badge && !showGroups && <span className={badge}>{t.badge}</span>}{t.badge && showGroups && /^M\d+/i.test(t.badge) && <span className={badge}>{t.badge}</span>}<span className="text-ink">{t.name}</span>{done.has(b.unit.id) && <span className="text-[10.5px] text-good inline-flex items-center gap-0.5"><Check size={10} />{ko ? '끝남' : 'done'}</span>}</span></td>
+                      <td className="py-1.5"><span className="inline-flex items-center gap-2 min-w-0">{t.badge && !showGroups && <span className={badge}>{t.badge}</span>}{t.badge && showGroups && /^M\d+/i.test(t.badge) && <span className={badge}>{t.badge}</span>}<span className="text-ink">{t.name}</span>{done.has(b.unit.id) && <span className="text-[length:calc(10.5px*var(--ts))] text-good inline-flex items-center gap-0.5"><Check size={10} />{ko ? '끝남' : 'done'}</span>}</span></td>
                       <td className="py-1.5"><WeeksInput key={`${b.pacing.id}-${b.pacing.weeks}`} value={b.pacing.weeks} onSave={async w => { if (!fail(await setPacingWeeks(b.pacing.id, w, `${label} · ${b.unit.title}`))) p.reload() }} /></td>
                       <td className="py-1.5 tabular-nums text-ink-2">{b.start === b.end ? `${num(b.start)}` : `${num(b.start)}–${num(b.end)}`}{length && b.end > length + 0.01 ? <span className="text-ink-3">{ko ? ' (학기 뒤)' : ' (after the term)'}</span> : null}</td>
                       <td className="py-1.5 pr-3 text-right">
@@ -236,7 +236,7 @@ export function WeeksInput({ value, onSave }: { value: number; onSave: (w: numbe
   const commit = async () => { const w = parseFloat(v); if (Number.isNaN(w) || w === value) { setV(String(value)); return } setSaving(true); await onSave(w); setSaving(false) }
   return (
     <span className="inline-flex items-center gap-1">
-      <input value={v} onChange={e => setV(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} inputMode="decimal" className="h-7 w-14 px-1.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink tabular-nums" />
+      <input value={v} onChange={e => setV(e.target.value)} onBlur={commit} onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }} inputMode="decimal" className="h-7 w-14 px-1.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink tabular-nums" />
       {saving && <Loader2 size={11} className="animate-spin text-ink-3" />}
     </span>
   )
@@ -272,24 +272,24 @@ export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone,
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-end gap-3 flex-wrap">
-        <span className="text-[12.5px] text-ink pb-2 font-medium">{cls} · {ko ? `${grade}학년` : `Grade ${grade}`}</span>
-        <label className="text-[11px] text-ink-3">{ko ? '책' : 'Book'}<br />
+        <span className="text-[length:calc(12.5px*var(--ts))] text-ink pb-2 font-medium">{cls} · {ko ? `${grade}학년` : `Grade ${grade}`}</span>
+        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '책' : 'Book'}<br />
           <select value={bookId} onChange={e => { setBookId(e.target.value); setPicked(new Set()) }} className={`${sel} min-w-[240px]`} autoFocus>
             <option value="">{ko ? '책 고르기…' : 'Pick a book…'}</option>
             {choices.map(({ b, s }) => <option key={b.id} value={b.id}>{bookName(b, s)}{s?.kind === 'anthology' ? (ko ? ' (선집)' : ' (anthology)') : ''}</option>)}
           </select>
         </label>
-        <label className="text-[11px] text-ink-3">{ko ? '기간' : 'Term'}<br />
+        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '기간' : 'Term'}<br />
           <select value={term} onChange={e => setTerm(e.target.value as Term)} className={sel}>{terms.map(t => <option key={t} value={t}>{ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en}</option>)}</select>
         </label>
-        <span className="text-[12px] text-ink-3 pb-2">{chosen && !units.length ? (ko ? '단원 없음: 먼저 색인하세요' : 'no units yet; index it on the Bookshelf first') : ''}{dup && <span className="text-warn"> · {ko ? '이미 배치됨' : 'already placed for this term'}</span>}</span>
+        <span className="text-[length:calc(12px*var(--ts))] text-ink-3 pb-2">{chosen && !units.length ? (ko ? '단원 없음: 먼저 색인하세요' : 'no units yet; index it on the Bookshelf first') : ''}{dup && <span className="text-warn"> · {ko ? '이미 배치됨' : 'already placed for this term'}</span>}</span>
         <span className="flex-1" />
         <button onClick={save} disabled={!chosen || saving || !!dup || !picked.size} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? `${picked.size}개 배치` : `Place ${picked.size} ${anthology ? (picked.size === 1 ? 'story' : 'stories') : (picked.size === 1 ? 'unit' : 'units')}`}</button>
         <button onClick={onDone} className={btn}>{ko ? '취소' : 'Cancel'}</button>
       </div>
       {chosen && units.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <p className="text-[12px] text-ink-2">{anthology ? (ko ? '이 반이 읽을 이야기를 고르세요. 책의 순서대로, 제안된 길이로 들어갑니다.' : 'Tick the stories this class will read. They go in the book’s order at their suggested lengths; change any length in the list.') : (ko ? '이 반이 할 단원을 고르세요. 책의 순서대로, 제안된 길이로 들어갑니다.' : 'Tick the units this class will do, or press All units. They go in the book’s order at their suggested lengths; change any length in the list.')}</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{anthology ? (ko ? '이 반이 읽을 이야기를 고르세요. 책의 순서대로, 제안된 길이로 들어갑니다.' : 'Tick the stories this class will read. They go in the book’s order at their suggested lengths; change any length in the list.') : (ko ? '이 반이 할 단원을 고르세요. 책의 순서대로, 제안된 길이로 들어갑니다.' : 'Tick the units this class will do, or press All units. They go in the book’s order at their suggested lengths; change any length in the list.')}</p>
           <StoryPicker units={units} selected={picked} onChange={setPicked} ko={ko} presets={presets} />
         </div>
       )}
@@ -311,11 +311,11 @@ export function CopyForm({ p, ko, me, years, to, fail, onDone }: { p: Planner; k
   }
   return (
     <div className="flex items-end gap-3 flex-wrap">
-      <span className="text-[12.5px] text-ink-2 pb-2">{ko ? '복사 원본:' : 'Copy the books of'}</span>
+      <span className="text-[length:calc(12.5px*var(--ts))] text-ink-2 pb-2">{ko ? '복사 원본:' : 'Copy the books of'}</span>
       <select value={from.english_class} onChange={e => setFrom({ ...from, english_class: e.target.value })} className={sel}>{PLACED_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
       <select value={from.grade} onChange={e => setFrom({ ...from, grade: Number(e.target.value) })} className={sel}>{GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}</select>
       <select value={from.academic_year} onChange={e => setFrom({ ...from, academic_year: e.target.value })} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
-      <span className="text-[12.5px] text-ink-2 pb-2">{ko ? `→ ${to.english_class} ${to.grade}학년` : `into ${to.english_class} Grade ${to.grade}`} <span className="text-ink-3">({n} {ko ? '개' : n === 1 ? 'book' : 'books'}{same ? (ko ? ', 같은 곳' : ', the same place') : ''})</span></span>
+      <span className="text-[length:calc(12.5px*var(--ts))] text-ink-2 pb-2">{ko ? `→ ${to.english_class} ${to.grade}학년` : `into ${to.english_class} Grade ${to.grade}`} <span className="text-ink-3">({n} {ko ? '개' : n === 1 ? 'book' : 'books'}{same ? (ko ? ', 같은 곳' : ', the same place') : ''})</span></span>
       <span className="flex-1" />
       <button onClick={go} disabled={saving || !n || same} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Copy size={13} />}{ko ? '복사' : 'Copy'}</button>
       <button onClick={onDone} className={btn}>{ko ? '취소' : 'Cancel'}</button>

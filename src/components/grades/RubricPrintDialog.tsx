@@ -61,17 +61,17 @@ export default function RubricPrintDialog({ rubric, title, subtitle, students, s
     { key: 'quarter', name: ko ? '1/4 페이지' : 'Quarter page', hint: ko ? 'A4 한 장에 넷. 기준별로 0–4에 동그라미.' : 'Four per sheet. Circle 0–4 per criterion, no descriptors.' },
   ]
   const check = (on: boolean, set: (v: boolean) => void, label: string) => (
-    <label className="flex items-center gap-2 text-[12.5px] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={on} onChange={e => set(e.target.checked)} className="accent-[rgb(var(--accent))]" />{label}</label>
+    <label className="flex items-center gap-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={on} onChange={e => set(e.target.checked)} className="accent-[rgb(var(--accent))]" />{label}</label>
   )
   const radio = (on: boolean, onPick: () => void, label: string, hint?: string, disabled = false) => (
-    <label className={`flex items-start gap-2 text-[12.5px] cursor-pointer select-none ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}><input type="radio" checked={on} disabled={disabled} onChange={onPick} className="mt-0.5 accent-[rgb(var(--accent))]" /><span><span className="block text-ink">{label}</span>{hint && <span className="block text-[11px] text-ink-3">{hint}</span>}</span></label>
+    <label className={`flex items-start gap-2 text-[length:calc(12.5px*var(--ts))] cursor-pointer select-none ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}><input type="radio" checked={on} disabled={disabled} onChange={onPick} className="mt-0.5 accent-[rgb(var(--accent))]" /><span><span className="block text-ink">{label}</span>{hint && <span className="block text-[length:calc(11px*var(--ts))] text-ink-3">{hint}</span>}</span></label>
   )
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
-          <div><h3 className="font-display text-[22px] leading-none text-ink">{ko ? '루브릭 인쇄' : 'Print rubric'}</h3><p className="text-[12px] text-ink-3 mt-1 truncate">{rubric.name} · {rubric.criteria.length} {ko ? '기준' : 'criteria'}</p></div>
+          <div><h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '루브릭 인쇄' : 'Print rubric'}</h3><p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1 truncate">{rubric.name} · {rubric.criteria.length} {ko ? '기준' : 'criteria'}</p></div>
           <button onClick={onClose} aria-label="Close" className="w-8 h-8 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={16} /></button>
         </div>
         <div className="px-5 py-4 space-y-4">
@@ -83,8 +83,8 @@ export default function RubricPrintDialog({ rubric, title, subtitle, students, s
                   <span className={`block mx-auto mb-1.5 border border-ink-3 ${l.key === 'quarter' ? 'w-9 h-6 grid grid-cols-2 grid-rows-2' : 'w-6 h-9 grid grid-cols-1'} ${l.key === 'half' ? 'grid-rows-2' : ''}`} aria-hidden>
                     {Array.from({ length: SLIPS_PER_SHEET[l.key] }).map((_, i) => <span key={i} className={`border-ink-3 ${l.key === 'half' && i === 0 ? 'border-b border-dashed' : ''} ${l.key === 'quarter' ? `${i < 2 ? 'border-b' : ''} ${i % 2 === 0 ? 'border-r' : ''} border-dashed` : ''}`} />)}
                   </span>
-                  <span className="block text-[12.5px] font-semibold text-ink">{l.name}</span>
-                  <span className="block text-[10.5px] text-ink-3 leading-snug mt-0.5">{l.hint}</span>
+                  <span className="block text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{l.name}</span>
+                  <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3 leading-snug mt-0.5">{l.hint}</span>
                 </button>
               ))}
             </div>
@@ -94,8 +94,8 @@ export default function RubricPrintDialog({ rubric, title, subtitle, students, s
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 {radio(who === 'blank', () => setWho('blank'), ko ? '빈 루브릭' : 'Blank')}
-                <input type="number" min={1} max={200} value={copies} disabled={who !== 'blank'} onChange={e => setCopies(Math.max(1, Math.min(200, Number(e.target.value) || 1)))} className="h-7 w-16 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink tabular-nums disabled:text-ink-3" aria-label={ko ? '매수' : 'Copies'} />
-                <span className="text-[11px] text-ink-3">{ko ? '매' : 'copies'}</span>
+                <input type="number" min={1} max={200} value={copies} disabled={who !== 'blank'} onChange={e => setCopies(Math.max(1, Math.min(200, Number(e.target.value) || 1)))} className="h-7 w-16 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink tabular-nums disabled:text-ink-3" aria-label={ko ? '매수' : 'Copies'} />
+                <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '매' : 'copies'}</span>
               </div>
               {students && students.length > 0 && radio(who === 'students', () => setWho('students'), ko ? `학생별 1장 (${students.length}명), 이름 인쇄` : `One per student (${students.length}), names filled in`)}
               {students && students.length > 0 && scored && radio(who === 'scored', () => setWho('scored'), ko ? `채점 결과 포함 (${scoredCount}명)` : `With marked levels (${scoredCount} students)`, ko ? '각 학생이 받은 단계를 표시하고 합계를 적습니다.' : 'Shades each student’s level and writes the total.', scoredCount === 0)}
@@ -107,13 +107,13 @@ export default function RubricPrintDialog({ rubric, title, subtitle, students, s
               {check(showStandards, setShowStandards, ko ? '성취기준 코드' : 'Standard codes')}
               {check(showZero, setShowZero, ko ? '0 (없음) 열' : 'The 0 column')}
               {check(commentLine, setCommentLine, ko ? '코멘트 줄' : 'Comment lines')}
-              <label className="flex items-center gap-2 text-[12.5px] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={lang === 'ko'} onChange={e => setLang(e.target.checked ? 'ko' : 'en')} className="accent-[rgb(var(--accent))]" />{ko ? '한국어 제목' : 'Korean headings'}</label>
+              <label className="flex items-center gap-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={lang === 'ko'} onChange={e => setLang(e.target.checked ? 'ko' : 'en')} className="accent-[rgb(var(--accent))]" />{ko ? '한국어 제목' : 'Korean headings'}</label>
             </div>
           </div>
         </div>
         <div className="px-5 py-3 border-t border-rule-2 flex items-center justify-between gap-3">
-          <span className="text-[12px] text-ink-3 tabular-nums">{slipCount} {ko ? '장' : slipCount === 1 ? 'slip' : 'slips'} · {sheets} A4 {ko ? '매' : sheets === 1 ? 'sheet' : 'sheets'}</span>
-          <button onClick={print} disabled={slipCount === 0} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums">{slipCount} {ko ? '장' : slipCount === 1 ? 'slip' : 'slips'} · {sheets} A4 {ko ? '매' : sheets === 1 ? 'sheet' : 'sheets'}</span>
+          <button onClick={print} disabled={slipCount === 0} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
         </div>
       </div>
     </div>

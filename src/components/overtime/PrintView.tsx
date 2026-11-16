@@ -32,8 +32,8 @@ interface Props {
   onBack: () => void
 }
 
-const pickBtn = 'h-9 px-3 rounded border text-[13px] text-left'
-const dateInp = 'h-10 px-2.5 bg-surface border border-rule-2 rounded text-[13.5px] text-ink w-full focus:outline-none focus:border-ink-2'
+const pickBtn = 'h-9 px-3 rounded border text-[length:calc(13px*var(--ts))] text-left'
+const dateInp = 'h-10 px-2.5 bg-surface border border-rule-2 rounded text-[length:calc(13.5px*var(--ts))] text-ink w-full focus:outline-none focus:border-ink-2'
 const PREVIEW_W = 1140   // px: the preview document's width, an A4 landscape page and a little room
 
 export default function PrintView({ settings, teachers, admin, initialFrom, initialTo, initialWho = 'all', onBack }: Props) {
@@ -108,16 +108,16 @@ export default function PrintView({ settings, teachers, admin, initialFrom, init
 
   return (
     <div>
-      <button onClick={onBack} className="mb-4 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ArrowLeft size={13} />{ko ? '기록으로 돌아가기' : 'Back to the log'}</button>
+      <button onClick={onBack} className="mb-4 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ArrowLeft size={13} />{ko ? '기록으로 돌아가기' : 'Back to the log'}</button>
       <div className="mb-5">
         <p className="eyebrow eyebrow-accent mb-1.5">{admin && !single ? (ko ? '전체 교사' : 'All teachers') : single ? `${single.name}${single.role !== 'admin' ? ` · ${single.english_class}` : ''}` : ''}</p>
-        <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '양식 인쇄' : 'Print the sheet'}</h1>
+        <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '양식 인쇄' : 'Print the sheet'}</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-7 items-start">
         <div className="flex flex-col gap-5">
           {admin && (
-            <label className="flex flex-col gap-1.5 text-[12.5px] font-semibold text-ink-2">
+            <label className="flex flex-col gap-1.5 text-[length:calc(12.5px*var(--ts))] font-semibold text-ink-2">
               {ko ? '누구' : 'Who'}
               <select value={who} onChange={e => setWho(e.target.value)} className={`${dateInp} font-normal`}>
                 <option value="all">{ko ? '기록이 있는 모든 교사' : 'Everyone with overtime'}</option>
@@ -127,47 +127,47 @@ export default function PrintView({ settings, teachers, admin, initialFrom, init
           )}
 
           <div className="flex flex-col gap-1.5">
-            <span className="text-[12.5px] font-semibold text-ink-2">{ko ? '기간' : 'Dates'}</span>
+            <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink-2">{ko ? '기간' : 'Dates'}</span>
             <div className="flex flex-col gap-1.5" role="group" aria-label={ko ? '빠른 선택' : 'Quick picks'}>
               {picks.map(p => (
                 <button key={p.id} onClick={() => choose(p.id)} aria-pressed={pick === p.id}
                   className={`${pickBtn} ${pick === p.id ? 'border-ink bg-ink text-paper font-semibold' : 'border-rule-2 bg-surface text-ink-2 hover:text-ink'}`}>
                   {p.label}
-                  <span className={`ml-2 text-[12px] font-normal ${pick === p.id ? 'text-paper/80' : 'text-ink-3'}`}>{selectionLabel([quickRanges(today)[p.id]], ko)}</span>
+                  <span className={`ml-2 text-[length:calc(12px*var(--ts))] font-normal ${pick === p.id ? 'text-paper/80' : 'text-ink-3'}`}>{selectionLabel([quickRanges(today)[p.id]], ko)}</span>
                 </button>
               ))}
             </div>
             <div className="grid grid-cols-2 gap-2 mt-1.5">
-              <label className="flex flex-col gap-1 text-[12px] text-ink-2">{ko ? '시작' : 'From'}<input type="date" value={from} onChange={e => setFrom(e.target.value)} className={dateInp} /></label>
-              <label className="flex flex-col gap-1 text-[12px] text-ink-2">{ko ? '끝' : 'To'}<input type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} className={dateInp} /></label>
+              <label className="flex flex-col gap-1 text-[length:calc(12px*var(--ts))] text-ink-2">{ko ? '시작' : 'From'}<input type="date" value={from} onChange={e => setFrom(e.target.value)} className={dateInp} /></label>
+              <label className="flex flex-col gap-1 text-[length:calc(12px*var(--ts))] text-ink-2">{ko ? '끝' : 'To'}<input type="date" value={to} min={from || undefined} onChange={e => setTo(e.target.value)} className={dateInp} /></label>
             </div>
-            {!span && <p className="text-[12px] text-ink-2">{ko ? '시작 날짜가 끝 날짜보다 앞이어야 합니다.' : 'From has to come before To.'}</p>}
+            {!span && <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{ko ? '시작 날짜가 끝 날짜보다 앞이어야 합니다.' : 'From has to come before To.'}</p>}
           </div>
 
           <div className="bg-paper-2 rounded-md px-4 py-3.5 flex flex-col gap-1">
-            <span className="text-[12px] text-ink-2">{ko ? '인쇄할 내용' : 'On the sheet'}</span>
-            <span className="text-[15px] font-semibold text-ink">{selectionLabel([shown], ko)}</span>
-            <span className="text-[14px] tabular-nums text-ink"><span className="font-semibold">{fmtMinutes(total.minutes, ko)}</span> · {fmtWon(total.won, ko)}</span>
-            <span className="text-[12px] text-ink-2">{total.count} {ko ? '건' : total.count === 1 ? 'entry' : 'entries'}{admin && !single ? ` · ${sheets.length} ${ko ? '명, 한 사람당 한 장' : sheets.length === 1 ? 'teacher, one page' : 'teachers, a page each'}` : ''}</span>
+            <span className="text-[length:calc(12px*var(--ts))] text-ink-2">{ko ? '인쇄할 내용' : 'On the sheet'}</span>
+            <span className="text-[length:calc(15px*var(--ts))] font-semibold text-ink">{selectionLabel([shown], ko)}</span>
+            <span className="text-[length:calc(14px*var(--ts))] tabular-nums text-ink"><span className="font-semibold">{fmtMinutes(total.minutes, ko)}</span> · {fmtWon(total.won, ko)}</span>
+            <span className="text-[length:calc(12px*var(--ts))] text-ink-2">{total.count} {ko ? '건' : total.count === 1 ? 'entry' : 'entries'}{admin && !single ? ` · ${sheets.length} ${ko ? '명, 한 사람당 한 장' : sheets.length === 1 ? 'teacher, one page' : 'teachers, a page each'}` : ''}</span>
           </div>
 
-          <button onClick={print} disabled={!sheets.length || data.loading} className="h-11 rounded bg-accent text-white text-[14px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center justify-center gap-2">
+          <button onClick={print} disabled={!sheets.length || data.loading} className="h-11 rounded bg-accent text-white text-[length:calc(14px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center justify-center gap-2">
             <Printer size={15} />{ko ? '인쇄' : 'Print'}
           </button>
           {admin && (
-            <button onClick={doExport} disabled={exporting || data.loading} className="h-9 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center justify-center gap-1.5">
+            <button onClick={doExport} disabled={exporting || data.loading} className="h-9 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center justify-center gap-1.5">
               {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}{ko ? '엑셀로 내보내기' : 'Export to Excel'}
             </button>
           )}
         </div>
 
         <div ref={boxRef} className="min-w-0 rounded-md border border-rule bg-[#e6e9ed] overflow-hidden relative" style={{ height: sheets.length ? docH * scale : 240 }}>
-          {data.loading && <span className="absolute top-3 right-3 z-10 text-[12px] text-ink-2 inline-flex items-center gap-1.5 bg-surface/90 rounded px-2 py-1"><Loader2 size={12} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</span>}
+          {data.loading && <span className="absolute top-3 right-3 z-10 text-[length:calc(12px*var(--ts))] text-ink-2 inline-flex items-center gap-1.5 bg-surface/90 rounded px-2 py-1"><Loader2 size={12} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</span>}
           {sheets.length ? (
             <iframe ref={frameRef} srcDoc={html} onLoad={measure} title={ko ? '양식 미리보기' : 'Sheet preview'}
               style={{ width: PREVIEW_W, height: docH, border: 0, transform: `scale(${scale})`, transformOrigin: 'top left', display: 'block' }} />
           ) : (
-            <p className="p-8 text-[13.5px] text-ink-2">{ko ? '이 기간에는 초과근무 기록이 없습니다.' : 'No overtime in these dates.'}</p>
+            <p className="p-8 text-[length:calc(13.5px*var(--ts))] text-ink-2">{ko ? '이 기간에는 초과근무 기록이 없습니다.' : 'No overtime in these dates.'}</p>
           )}
         </div>
       </div>

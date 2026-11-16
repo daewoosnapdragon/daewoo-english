@@ -94,8 +94,8 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
         <div className="absolute left-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-[80] w-72 p-4 animate-fade-in">
           <div className="flex items-center justify-between mb-3">
             <div>
-              <p className="text-[13px] font-semibold text-navy">{name}</p>
-              {koreanName && <p className="text-[11px] text-text-tertiary">{koreanName}</p>}
+              <p className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">{name}</p>
+              {koreanName && <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{koreanName}</p>}
             </div>
             <div className="flex items-center gap-1.5">
               <WIDABadge studentId={studentId} compact />
@@ -105,31 +105,31 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
           {loading ? <div className="py-4 text-center"><Loader2 size={16} className="animate-spin text-navy mx-auto" /></div> :
           data && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-[length:calc(11px*var(--ts))]">
                 <span className="flex items-center gap-1.5 text-text-secondary"><BookOpen size={12} /> Last CWPM</span>
                 {data.reading ? <span className="font-bold text-navy">{Math.round(data.reading.cwpm)}</span> : <span className="text-text-tertiary">--</span>}
               </div>
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-[length:calc(11px*var(--ts))]">
                 <span className="flex items-center gap-1.5 text-text-secondary"><BarChart3 size={12} /> Grade Avg</span>
                 {data.gradeAvg != null ? <span className={`font-bold ${data.gradeAvg >= 80 ? 'text-green-600' : data.gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{data.gradeAvg}%</span> : <span className="text-text-tertiary">--</span>}
               </div>
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-[length:calc(11px*var(--ts))]">
                 <span className="flex items-center gap-1.5 text-text-secondary"><AlertTriangle size={12} /> Behavior Logs</span>
                 <span className="font-bold text-navy">{data.behaviorCount}</span>
               </div>
               {data.attendanceRate != null && (
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-[length:calc(11px*var(--ts))]">
                   <span className="text-text-secondary">Attendance</span>
                   <span className={`font-bold ${data.attendanceRate >= 95 ? 'text-green-600' : data.attendanceRate >= 85 ? 'text-amber-600' : 'text-red-600'}`}>{data.attendanceRate}%</span>
                 </div>
               )}
               {/* Quick note */}
-              {data.note && <p className="text-[10px] text-text-secondary bg-surface-alt rounded-lg px-2.5 py-1.5 mt-2 italic"><MessageSquare size={10} className="inline mr-1 text-text-tertiary" />{data.note}</p>}
+              {data.note && <p className="text-[length:calc(10px*var(--ts))] text-text-secondary bg-surface-alt rounded-lg px-2.5 py-1.5 mt-2 italic"><MessageSquare size={10} className="inline mr-1 text-text-tertiary" />{data.note}</p>}
               <div className="pt-2 border-t border-border mt-2">
                 <div className="flex gap-1.5">
                   <input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Quick note..." onKeyDown={e => { if (e.key === 'Enter') saveNote() }}
-                    className="flex-1 px-2 py-1 border border-border rounded text-[11px] outline-none focus:border-navy" />
-                  <button onClick={saveNote} disabled={savingNote || !noteText.trim()} className="px-2 py-1 rounded bg-navy text-white text-[10px] font-medium disabled:opacity-40">
+                    className="flex-1 px-2 py-1 border border-border rounded text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
+                  <button onClick={saveNote} disabled={savingNote || !noteText.trim()} className="px-2 py-1 rounded bg-navy text-white text-[length:calc(10px*var(--ts))] font-medium disabled:opacity-40">
                     {savingNote ? '...' : 'Save'}
                   </button>
                 </div>

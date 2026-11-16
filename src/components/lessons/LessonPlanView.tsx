@@ -366,6 +366,9 @@ function ParentCalendarView() {
 
   // Each load gets a number; a slower, older load that lands after a newer one is dropped.
   const loadToken = useRef(0)
+  // After the first month has loaded, a switch of grade or class keeps the
+  // page on screen, faded, until the next month arrives: nothing flashes.
+  const loadedOnce = useRef(false)
   const loadData = useCallback(async () => {
     const token = ++loadToken.current
     setLoading(true)
@@ -381,7 +384,7 @@ function ParentCalendarView() {
     // saves while a never-saved template-only day stays out of the database.
     persistedDates.current = new Set(Object.keys(dd))
     setWeeklyHomework(hw)
-    setLoading(false)
+    setLoading(false); loadedOnce.current = true
   }, [fetchMonth, selectedClass, selectedGrade, rememberSubjects])
 
   useEffect(() => { loadData() }, [loadData])
@@ -865,44 +868,44 @@ ${pages.join('\n')}
     return new Date(y, m - 1, d).toLocaleDateString('en-US', { weekday: 'long' })
   }
 
-  if (loading) return (
+  if (loading && !loadedOnce.current) return (
     <div>
       <div className="bg-surface border-b border-border px-8 py-5">
         <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
-        <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
+        <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
       </div>
-      <Loading rows={5} />
+      <Loading kind="quiet" rows={5} />
     </div>
   )
 
 
   return (
-    <div>
+    <div className={loading ? 'is-refreshing' : undefined} aria-busy={loading || undefined}>
       <div className="bg-surface border-b border-border px-8 py-5">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
-            <p className="text-[13px] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
+            <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <div className="flex">
-                <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
+                <button onClick={() => handlePrint()} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
                 <button onClick={() => setShowPrintOptions(!showPrintOptions)} className="px-2 py-2 rounded-r-lg text-white bg-navy hover:bg-navy-dark border-l border-white/20"><ChevronDown size={14} /></button>
               </div>
               {showPrintOptions && (
                 <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[240px]">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[11px] font-semibold text-navy">Print Selected Weeks</p>
+                    <p className="text-[length:calc(11px*var(--ts))] font-semibold text-navy">Print Selected Weeks</p>
                     <button onClick={() => setPrintWeeks(printWeeks.size === weeks.length ? new Set() : new Set(weeks.map((_, i) => i)))}
-                      className="text-[10.5px] text-text-secondary hover:text-navy">{printWeeks.size === weeks.length ? 'Clear' : 'All weeks'}</button>
+                      className="text-[length:calc(10.5px*var(--ts))] text-text-secondary hover:text-navy">{printWeeks.size === weeks.length ? 'Clear' : 'All weeks'}</button>
                   </div>
                   <div className="space-y-1.5 mb-3">
                     {weeks.map((week, i) => {
                       const firstDay = week[0]; const lastDay = week[week.length - 1]
                       const label = firstDay && lastDay ? `${month + 1}/${firstDay.dayNum} - ${month + 1}/${lastDay.dayNum}` : `Week ${i + 1}`
                       return (
-                        <label key={i} className="flex items-center gap-2 text-[11px] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1">
+                        <label key={i} className="flex items-center gap-2 text-[length:calc(11px*var(--ts))] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1">
                           <input type="checkbox" checked={printWeeks.has(i)}
                             onChange={() => setPrintWeeks(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n })}
                             className="rounded border-border text-navy" />
@@ -913,25 +916,25 @@ ${pages.join('\n')}
                   </div>
                   {/* Every grade of this class in one document: one page per
                       grade, so Save as PDF gives a single file. */}
-                  <label className="flex items-start gap-2 text-[11px] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1 mb-3 border-t border-border pt-2.5">
+                  <label className="flex items-start gap-2 text-[length:calc(11px*var(--ts))] text-text-primary cursor-pointer hover:bg-surface-alt rounded px-1.5 py-1 mb-3 border-t border-border pt-2.5">
                     <input type="checkbox" checked={printAllGrades} onChange={() => setPrintAllGrades(v => !v)} className="rounded border-border text-navy mt-px" />
-                    <span>All grades (1–5)<span className="block text-[10px] text-text-tertiary">{selectedClass}, one page per grade, one file</span></span>
+                    <span>All grades (1–5)<span className="block text-[length:calc(10px*var(--ts))] text-text-tertiary">{selectedClass}, one page per grade, one file</span></span>
                   </label>
                   <div className="flex gap-2">
                     <button onClick={() => { if (printAllGrades) handlePrintAllGrades(printWeeks); else handlePrint(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
                       disabled={printWeeks.size === 0 || printingAll}
-                      className="flex-1 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                      className="flex-1 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
                       Print {printWeeks.size > 0 ? `${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}${printAllGrades ? ' · Grades 1–5' : ''}` : '(select weeks)'}
                     </button>
                     <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }}
-                      className="px-3 py-1.5 rounded-lg text-[11px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
+                      className="px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
                   </div>
                 </div>
               )}
             </div>
             {canEdit && (
               <button onClick={saveAll} disabled={saving}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[12px] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50">
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 {saving ? 'Saving...' : 'Save Month'}
               </button>
@@ -941,13 +944,13 @@ ${pages.join('\n')}
         <div className="flex items-center gap-4 mt-4">
           <div className="flex gap-1">
             {(isAdmin ? ENGLISH_CLASSES : [teacherClass]).filter(Boolean).map(c => (
-              <button key={c} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (c !== selectedClass) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedClass(c) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedClass === c ? 'text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}
+              <button key={c} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (c !== selectedClass) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setSelectedClass(c) } }} className={`px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${selectedClass === c ? 'text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt'}`}
                 style={selectedClass === c ? { backgroundColor: classToColor(c), color: classToTextColor(c) } : {}}>{c}</button>
             ))}
           </div>
           <div className="w-px h-6 bg-border" />
           <div className="flex gap-1">
-            {GRADES.map(g => <button key={g} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setDayData({}); setWeeklyHomework({}); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
+            {GRADES.map(g => <button key={g} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
           </div>
         </div>
       </div>
@@ -955,9 +958,9 @@ ${pages.join('\n')}
       <div className="px-8 py-6 mx-auto max-w-[1400px]">
         {/* After a Push or Pull: what moved, and Undo */}
         {undo && undo.cls === selectedClass && (
-          <div className="mb-4 flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-lg border border-border bg-surface-alt text-[13px]">
+          <div className="mb-4 flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-lg border border-border bg-surface-alt text-[length:calc(13px*var(--ts))]">
             <span className="text-text-primary">{undo.text}</span>
-            <button onClick={undoShift} disabled={shifting === 'undo'} className="px-3 py-1 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting === 'undo' ? 'Undoing…' : 'Undo'}</button>
+            <button onClick={undoShift} disabled={shifting === 'undo'} className="px-3 py-1 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting === 'undo' ? 'Undoing…' : 'Undo'}</button>
             <button onClick={() => setUndo(null)} className="ml-auto text-text-tertiary hover:text-text-primary" aria-label="Dismiss"><X size={14} /></button>
           </div>
         )}
@@ -973,7 +976,7 @@ ${pages.join('\n')}
           {/* Column headers */}
           <div className="grid grid-cols-5 bg-surface-alt border-b border-border">
             {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(d => (
-              <div key={d} className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider text-text-tertiary border-r border-border last:border-r-0">{d}</div>
+              <div key={d} className="px-3 py-2 text-center text-[length:calc(10px*var(--ts))] font-bold uppercase tracking-wider text-text-tertiary border-r border-border last:border-r-0">{d}</div>
             ))}
           </div>
 
@@ -1000,14 +1003,14 @@ ${pages.join('\n')}
                       <div key={di} title={`${blocked.title} · from the school calendar`}
                         className="border-r border-border last:border-r-0 min-h-[140px] p-3 flex flex-col items-center justify-center text-center gap-1"
                         style={{ backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--good-soft)) 0 8px, rgb(var(--paper-2)) 8px 10px)' }}>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{DAY_SHORT[di]} {month + 1}/{day.dayNum}</span>
-                        <span className="text-[13px] font-semibold text-good">{blocked.title}</span>
-                        <span className="text-[10.5px] text-ink-3">{lang === 'ko' ? '수업 없음 · 학교 달력' : 'No lesson · from the school calendar'}</span>
+                        <span className="text-[length:calc(10px*var(--ts))] font-bold uppercase tracking-wider text-ink-3">{DAY_SHORT[di]} {month + 1}/{day.dayNum}</span>
+                        <span className="text-[length:calc(13px*var(--ts))] font-semibold text-good">{blocked.title}</span>
+                        <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3">{lang === 'ko' ? '수업 없음 · 학교 달력' : 'No lesson · from the school calendar'}</span>
                         {/* A plan written before the day was taken: say so, and offer to move it on. */}
                         {canEdit && dayData[day.date] && !isDayEmpty(dayData[day.date]) && (
                           <span className="mt-1 flex flex-col items-center gap-1 bg-white/85 rounded px-2 py-1.5">
-                            <span className="text-[10.5px] text-text-primary leading-snug">Planned here: {dayData[day.date].subjects.filter(s => s.content.trim()).map(s => s.label || s.content).join(', ') || dayData[day.date].objective}</span>
-                            <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">{shifting === day.date ? 'Moving…' : 'Move a day later from here →'}</button>
+                            <span className="text-[length:calc(10.5px*var(--ts))] text-text-primary leading-snug">Planned here: {dayData[day.date].subjects.filter(s => s.content.trim()).map(s => s.label || s.content).join(', ') || dayData[day.date].objective}</span>
+                            <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[length:calc(10.5px*var(--ts))] font-semibold text-navy hover:underline disabled:opacity-50">{shifting === day.date ? 'Moving…' : 'Move a day later from here →'}</button>
                           </span>
                         )}
                       </div>
@@ -1020,22 +1023,22 @@ ${pages.join('\n')}
                         canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
                       } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : blocked?.kind === 'exam' ? 'bg-warn-soft/60' : 'bg-white'}`}>
                       {/* Day header */}
-                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-2 pb-1.5 border-b flex items-center justify-between ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
+                      <div className={`text-[length:calc(10px*var(--ts))] font-bold uppercase tracking-wider mb-2 pb-1.5 border-b flex items-center justify-between ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
                         <span>{DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span></span>
-                        {isToday && <span className="text-[8px] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
-                        {canEdit && hasFill && <span className="text-[8px] text-blue-400">✎</span>}
+                        {isToday && <span className="text-[length:max(10px,calc(8px*var(--ts)))] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">TODAY</span>}
+                        {canEdit && hasFill && <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-blue-400">✎</span>}
                       </div>
 
                       {noG5 ? (
-                        <div className="text-[11px] text-text-secondary italic text-center mt-6">{lang === 'ko' ? `${selectedGrade}학년 ${WEEKDAY_LABELS[di + 1]} 수업 없음` : `No Grade ${selectedGrade} on ${WEEKDAY_LABELS[di + 1]}s`}</div>
+                        <div className="text-[length:calc(11px*var(--ts))] text-text-secondary italic text-center mt-6">{lang === 'ko' ? `${selectedGrade}학년 ${WEEKDAY_LABELS[di + 1]} 수업 없음` : `No Grade ${selectedGrade} on ${WEEKDAY_LABELS[di + 1]}s`}</div>
                       ) : (
                         <>
-                          {blocked?.kind === 'exam' && <div className="text-[10px] font-bold uppercase tracking-wider text-warn mb-1.5">{blocked.title}</div>}
-                          {evts.map((ev, ei) => <div key={ei} className="text-[10px] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
+                          {blocked?.kind === 'exam' && <div className="text-[length:calc(10px*var(--ts))] font-bold uppercase tracking-wider text-warn mb-1.5">{blocked.title}</div>}
+                          {evts.map((ev, ei) => <div key={ei} className="text-[length:calc(10px*var(--ts))] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
                           {/* Only rows with content. A labeled-but-empty row must never
                               show here or in print -- this is the parent-facing calendar. */}
                           {data.subjects.map((s, si) => s.content.trim() ? (
-                            <div key={si} className="group/row text-[11px] leading-snug mb-1 flex items-start gap-1">
+                            <div key={si} className="group/row text-[length:calc(11px*var(--ts))] leading-snug mb-1 flex items-start gap-1">
                               <span className="flex-1 min-w-0">
                                 {s.label.trim() && <><span className="font-bold text-navy">{s.label}:</span>{' '}</>}
                                 <span className="text-text-primary">{s.content}</span>
@@ -1043,12 +1046,12 @@ ${pages.join('\n')}
                             </div>
                           ) : null)}
                           {data.objective && (
-                            <div className="text-[10px] text-text-primary italic mt-1.5 pt-1.5 border-t border-border/20">
+                            <div className="text-[length:calc(10px*var(--ts))] text-text-primary italic mt-1.5 pt-1.5 border-t border-border/20">
                               <span className="text-navy font-semibold">Students will</span> {data.objective}
                             </div>
                           )}
                           {!hasFill && !data.objective && evts.length === 0 && canEdit && (
-                            <div className="text-[11px] text-text-tertiary/30 italic text-center mt-8">Click to add</div>
+                            <div className="text-[length:calc(11px*var(--ts))] text-text-tertiary/30 italic text-center mt-8">Click to add</div>
                           )}
                         </>
                       )}
@@ -1066,22 +1069,22 @@ ${pages.join('\n')}
                       const off = blockedDays[day.date]?.kind === 'off' ? blockedDays[day.date] : null
                       if (off) return (
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-center py-2.5 border-b border-border/40 last:border-b-0">
-                          <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">{DAY_SHORT[di]}<span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span></div>
-                          <div className="text-[12.5px] text-good font-semibold flex items-center gap-3">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '수업 없음' : 'no lesson'}</span>
-                            {dayData[day.date] && !isDayEmpty(dayData[day.date]) && <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[11px] font-semibold text-navy hover:underline disabled:opacity-50">A plan is still here · Move a day later from here →</button>}
+                          <div className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{DAY_SHORT[di]}<span className="block text-[length:calc(12px*var(--ts))] text-text-primary font-bold">{month + 1}/{day.dayNum}</span></div>
+                          <div className="text-[length:calc(12.5px*var(--ts))] text-good font-semibold flex items-center gap-3">{off.title} <span className="text-ink-3 font-normal">· {lang === 'ko' ? '수업 없음' : 'no lesson'}</span>
+                            {dayData[day.date] && !isDayEmpty(dayData[day.date]) && <button onClick={() => shiftFrom(day.date, 1)} disabled={shifting === day.date} className="text-[length:calc(11px*var(--ts))] font-semibold text-navy hover:underline disabled:opacity-50">A plan is still here · Move a day later from here →</button>}
                           </div>
                         </div>
                       )
                       const data = dayData[day.date] || emptyDay()
                       return (
                         <div key={day.date} className="grid grid-cols-[64px_1fr] gap-3 items-start py-2.5 border-b border-border/40 last:border-b-0">
-                          <div className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold pt-2.5">
+                          <div className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold pt-2.5">
                             {DAY_SHORT[di]}
-                            <span className="block text-[12px] text-text-primary font-bold">{month + 1}/{day.dayNum}</span>
+                            <span className="block text-[length:calc(12px*var(--ts))] text-text-primary font-bold">{month + 1}/{day.dayNum}</span>
                             {(
                               <span className="flex flex-col items-start gap-0.5 mt-1.5 normal-case tracking-normal">
-                                {!isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, 1)} disabled={!!shifting} title="Move this day's plan and every later one a class day on" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">Move a day later →</button>}
-                                {isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, -1)} disabled={!!shifting} title="Bring the plans after this day back a class day, into this one" className="text-[10.5px] font-semibold text-navy hover:underline disabled:opacity-50">← Move a day earlier</button>}
+                                {!isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, 1)} disabled={!!shifting} title="Move this day's plan and every later one a class day on" className="text-[length:calc(10.5px*var(--ts))] font-semibold text-navy hover:underline disabled:opacity-50">Move a day later →</button>}
+                                {isDayEmpty(data) && <button onClick={() => shiftFrom(day.date, -1)} disabled={!!shifting} title="Bring the plans after this day back a class day, into this one" className="text-[length:calc(10.5px*var(--ts))] font-semibold text-navy hover:underline disabled:opacity-50">← Move a day earlier</button>}
                               </span>
                             )}
                           </div>
@@ -1093,7 +1096,7 @@ ${pages.join('\n')}
                                   <div className="flex items-center gap-2">
                                     <button
                                       onClick={() => { setCustomDraft(''); setOpenPicker(openPicker === pickerKey ? null : pickerKey) }}
-                                      className={`shrink-0 text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${
+                                      className={`shrink-0 text-[length:calc(12px*var(--ts))] font-bold px-3 py-1.5 rounded-full transition-colors ${
                                         sub.label
                                           ? 'bg-accent-light text-navy border border-accent-light hover:border-navy'
                                           : 'border border-dashed border-border text-text-tertiary hover:border-navy hover:text-navy'
@@ -1129,14 +1132,14 @@ ${pages.join('\n')}
                                   })()}
                                   {openPicker === pickerKey && (
                                     <div className="mt-2 p-3 bg-surface border border-border rounded-xl">
-                                      <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">
+                                      <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">
                                         Subject for {DAY_SHORT[di]} {month + 1}/{day.dayNum}
                                       </p>
                                       <div className="flex flex-wrap gap-1.5">
                                         {subjectChoices.map(s => (
                                           <button key={s}
                                             onClick={() => { updateSubjectLabel(day.date, si, s); setOpenPicker(null) }}
-                                            className={`text-[12px] font-semibold px-3 py-1.5 rounded-full border transition-colors ${
+                                            className={`text-[length:calc(12px*var(--ts))] font-semibold px-3 py-1.5 rounded-full border transition-colors ${
                                               sub.label === s
                                                 ? 'bg-navy text-white border-navy'
                                                 : 'bg-surface text-text-secondary border-border hover:border-navy hover:text-navy'
@@ -1153,7 +1156,7 @@ ${pages.join('\n')}
                                             }`}>
                                             <button
                                               onClick={() => { updateSubjectLabel(day.date, si, s); setOpenPicker(null) }}
-                                              className="text-[12px] font-semibold pl-3 pr-1 py-1.5 rounded-l-full">{s}</button>
+                                              className="text-[length:calc(12px*var(--ts))] font-semibold pl-3 pr-1 py-1.5 rounded-l-full">{s}</button>
                                             <button onClick={() => forgetSubject(s)}
                                               title={`Remove "${s}" from the subject list`}
                                               className="pl-0.5 pr-2.5 py-1.5 rounded-r-full opacity-50 hover:opacity-100"><X size={11} /></button>
@@ -1169,11 +1172,11 @@ ${pages.join('\n')}
                                             if (e.key === 'Escape') { setCustomDraft(''); setOpenPicker(null) }
                                           }}
                                           placeholder="Or write your own subject…"
-                                          className="flex-1 min-w-0 text-[12px] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/40"
+                                          className="flex-1 min-w-0 text-[length:calc(12px*var(--ts))] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/40"
                                         />
                                         <button onClick={() => applyCustomSubject(day.date, si)}
                                           disabled={!customDraft.trim()}
-                                          className="shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-full border border-border text-text-secondary transition-colors enabled:hover:border-navy enabled:hover:text-navy disabled:opacity-40 disabled:cursor-not-allowed">
+                                          className="shrink-0 text-[length:calc(12px*var(--ts))] font-semibold px-3 py-1.5 rounded-full border border-border text-text-secondary transition-colors enabled:hover:border-navy enabled:hover:text-navy disabled:opacity-40 disabled:cursor-not-allowed">
                                           Add
                                         </button>
                                       </div>
@@ -1187,11 +1190,11 @@ ${pages.join('\n')}
                                 value={data.objective}
                                 onChange={e => updateField(day.date, 'objective', e.target.value)}
                                 placeholder="Students will…"
-                                className="lp-field flex-1 min-w-0 text-[12px] italic bg-transparent border-b border-border/40 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/35"
+                                className="lp-field flex-1 min-w-0 text-[length:calc(12px*var(--ts))] italic bg-transparent border-b border-border/40 outline-none focus:border-navy py-1 placeholder:text-text-tertiary/35"
                                 onKeyDown={fieldNav}
                               />
                               <button onClick={() => addSubjectRow(day.date)}
-                                className="shrink-0 text-[11px] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface transition-colors">
+                                className="shrink-0 text-[length:calc(11px*var(--ts))] text-text-tertiary hover:text-navy font-medium px-2 py-1 rounded hover:bg-surface transition-colors">
                                 + Another subject
                               </button>
                             </div>
@@ -1200,9 +1203,9 @@ ${pages.join('\n')}
                       )
                     })}
                     <div className="flex items-center justify-between gap-3 pt-3 mt-1">
-                      <span className="text-[11px] text-text-tertiary">Saves as you type. Homework below covers the whole week.</span>
+                      <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">Saves as you type. Homework below covers the whole week.</span>
                       <button onClick={async () => { await flushDirty(); setOpenWeek(null); setOpenPicker(null) }}
-                        className="px-4 py-1.5 rounded-lg text-[12.5px] font-semibold bg-navy text-white hover:bg-navy-dark transition-colors">
+                        className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark transition-colors">
                         Done
                       </button>
                     </div>
@@ -1212,7 +1215,7 @@ ${pages.join('\n')}
                 {/* Weekly homework bar */}
                 {(hw || canEdit) && (
                   <div className={`border-b border-border px-3 py-1.5 flex items-center gap-2 ${hw ? 'bg-amber-50/50' : 'bg-gray-50/30'}`}>
-                    <span className="text-[10px] font-bold text-amber-800 shrink-0">Weekly HW:</span>
+                    <span className="text-[length:calc(10px*var(--ts))] font-bold text-amber-800 shrink-0">Weekly HW:</span>
                     {canEdit ? (
                       <input value={hw} onChange={e => updateHomework(weekMonday, e.target.value)}
                         onBlur={async () => {
@@ -1224,16 +1227,16 @@ ${pages.join('\n')}
                           logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: weekly homework for ${weekMonday}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
                         }}
                         placeholder="Enter homework for this week..."
-                        className="flex-1 text-[10px] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />
+                        className="flex-1 text-[length:calc(10px*var(--ts))] bg-transparent outline-none text-amber-900 placeholder:text-amber-300 py-0.5" />
                     ) : (
-                      <span className="text-[10px] text-amber-900">{hw || '--'}</span>
+                      <span className="text-[length:calc(10px*var(--ts))] text-amber-900">{hw || '--'}</span>
                     )}
                     {canEdit && weekMonday && (
                       <button data-guide="lessons.copy"
                         onClick={() => copyLastWeek(weekMonday)}
                         disabled={copyingWeek === weekMonday}
                         title="Fill this week's empty days from last week. Days that already have content are left untouched."
-                        className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-text-secondary hover:text-navy px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50"
+                        className="shrink-0 inline-flex items-center gap-1 text-[length:calc(10px*var(--ts))] font-semibold text-text-secondary hover:text-navy px-2 py-0.5 rounded hover:bg-surface-alt transition-colors disabled:opacity-50"
                       >
                         {copyingWeek === weekMonday
                           ? <><Loader2 size={10} className="animate-spin" /> Copying...</>
@@ -1257,9 +1260,9 @@ ${pages.join('\n')}
           <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`${verb} preview`}>
             <div className="bg-surface rounded-xl shadow-xl w-full max-w-[620px] max-h-[85vh] flex flex-col">
               <div className="px-5 pt-4 pb-3 border-b border-border">
-                <h3 className="text-[16px] font-semibold text-navy">{sp.dir === 1 ? 'Move the plans a class day later' : 'Move the plans a class day earlier'}</h3>
-                <p className="text-[12.5px] text-text-secondary mt-1 leading-snug">From {fmtShort(sp.date)} to the end of the term ({fmtShort(sp.to)}). Days off, trips, no-class days and exam days are skipped and keep what they have. Weekly homework stays with its week.{sp.date < todayStr ? ' This starts on a day that has already passed.' : ''}</p>
-                <label className="mt-2.5 inline-flex items-center gap-2 text-[12.5px] text-text-primary cursor-pointer">
+                <h3 className="text-[length:calc(16px*var(--ts))] font-semibold text-navy">{sp.dir === 1 ? 'Move the plans a class day later' : 'Move the plans a class day earlier'}</h3>
+                <p className="text-[length:calc(12.5px*var(--ts))] text-text-secondary mt-1 leading-snug">From {fmtShort(sp.date)} to the end of the term ({fmtShort(sp.to)}). Days off, trips, no-class days and exam days are skipped and keep what they have. Weekly homework stays with its week.{sp.date < todayStr ? ' This starts on a day that has already passed.' : ''}</p>
+                <label className="mt-2.5 inline-flex items-center gap-2 text-[length:calc(12.5px*var(--ts))] text-text-primary cursor-pointer">
                   <input type="checkbox" checked={sp.all} disabled={!!shifting} onChange={e => prepareShift(sp.date, sp.dir, e.target.checked)} />
                   All grades of {selectedClass} (1–5), for a day the whole class missed
                 </label>
@@ -1267,26 +1270,26 @@ ${pages.join('\n')}
               <div className="px-5 py-3 overflow-y-auto flex-1 space-y-3">
                 {sp.grades.map(g => (
                   <div key={g.grade}>
-                    {sp.all && <p className="text-[11px] uppercase tracking-wider font-semibold text-text-tertiary mb-1">Grade {g.grade}</p>}
-                    {g.error ? <p className="text-[12.5px] text-text-tertiary">{g.error}</p> : (
+                    {sp.all && <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-text-tertiary mb-1">Grade {g.grade}</p>}
+                    {g.error ? <p className="text-[length:calc(12.5px*var(--ts))] text-text-tertiary">{g.error}</p> : (
                       <ul className="space-y-1">
                         {g.moves.slice(0, sp.all ? 4 : 14).map(m => (
-                          <li key={m.from} className="grid grid-cols-[132px_1fr] gap-2 text-[12.5px]">
+                          <li key={m.from} className="grid grid-cols-[132px_1fr] gap-2 text-[length:calc(12.5px*var(--ts))]">
                             <span className="text-text-secondary tabular-nums">{fmtShort(m.from)} → <span className="text-text-primary font-semibold">{fmtShort(m.to)}</span></span>
                             <span className="text-text-primary truncate" title={m.summary}>{m.summary}</span>
                           </li>
                         ))}
-                        {g.moves.length > (sp.all ? 4 : 14) && <li className="text-[12px] text-text-tertiary">and {g.moves.length - (sp.all ? 4 : 14)} more days, each one class day {sp.dir === 1 ? 'later' : 'earlier'}</li>}
+                        {g.moves.length > (sp.all ? 4 : 14) && <li className="text-[length:calc(12px*var(--ts))] text-text-tertiary">and {g.moves.length - (sp.all ? 4 : 14)} more days, each one class day {sp.dir === 1 ? 'later' : 'earlier'}</li>}
                       </ul>
                     )}
                   </div>
                 ))}
               </div>
               <div className="px-5 py-3 border-t border-border flex items-center gap-2">
-                <span className="text-[12px] text-text-tertiary">{total} planned day{total === 1 ? '' : 's'} move. You can undo it afterwards.</span>
+                <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{total} planned day{total === 1 ? '' : 's'} move. You can undo it afterwards.</span>
                 <span className="flex-1" />
-                <button onClick={() => setShiftPlan(null)} disabled={!!shifting} className="px-4 py-1.5 rounded-lg text-[12.5px] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
-                <button onClick={applyShift} disabled={!!shifting || total === 0} className="px-4 py-1.5 rounded-lg text-[12.5px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting ? 'Moving…' : verb}</button>
+                <button onClick={() => setShiftPlan(null)} disabled={!!shifting} className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
+                <button onClick={applyShift} disabled={!!shifting || total === 0} className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting ? 'Moving…' : verb}</button>
               </div>
             </div>
           </div>

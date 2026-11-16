@@ -190,11 +190,11 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       }))
   }
 
-  const seg = (on: boolean) => `px-3 h-8 rounded text-[12.5px] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const openStudent = open ? students.find(s => s.id === open.sid) : null
 
   if (loading || loadingChecks) return <Loading rows={5} />
-  if (students.length === 0) return <p className="text-[13px] text-ink-3 py-8">{lang === 'ko' ? '학생이 없습니다.' : 'No students.'}</p>
+  if (students.length === 0) return <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-8">{lang === 'ko' ? '학생이 없습니다.' : 'No students.'}</p>
 
   return (
     <div>
@@ -203,14 +203,14 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
           <button onClick={() => setSort('class')} className={seg(sort === 'class')}>{lang === 'ko' ? '반별' : 'By class'}</button>
           <button onClick={() => setSort('position')} className={seg(sort === 'position')}>{lang === 'ko' ? '위치순' : 'By position'}</button>
         </div>}
-        <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-2">
+        <label className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2">
           {lang === 'ko' ? '이후 점검만' : 'Checks since'}
-          <input type="date" value={since} onChange={e => setSince(e.target.value)} className="h-8 px-2 rounded border border-rule-2 bg-surface text-[12px] text-ink" />
+          <input type="date" value={since} onChange={e => setSince(e.target.value)} className="h-8 px-2 rounded border border-rule-2 bg-surface text-[length:calc(12px*var(--ts))] text-ink" />
           {since && <button onClick={() => setSince('')} className="text-ink-3 hover:text-ink" aria-label={lang === 'ko' ? '날짜 지우기' : 'Clear date'}><X size={13} /></button>}
         </label>
-        <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink"><Download size={11} /> CSV</button>
+        <button onClick={exportCsv} className="ml-auto inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink"><Download size={11} /> CSV</button>
       </div>
-      <p className="text-[12px] text-ink-3 mb-5 max-w-[920px]">
+      <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mb-5 max-w-[920px]">
         {lang === 'ko' ? '완성 = 가장 최근 점검에서 90% 이상.' : 'Mastered = 90% or more on the latest check of that sheet.'}
         {' '}{lang === 'ko' ? `학생 ${MIN_TESTED}명 미만이 점검한 시트는 회색입니다.` : `Figures from fewer than ${MIN_TESTED} students tested are greyed: too few to compare on.`}
         {since && <> {lang === 'ko' ? `${since} 이후 점검만 셉니다.` : `Counting checks from ${fmtShort(since, lang)} on.`}</>}
@@ -223,7 +223,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
           ['patterns', lang === 'ko' ? '오류 패턴' : 'Error patterns'],
           ['groups', lang === 'ko' ? '그룹' : 'Groups'],
         ] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-9 text-[13px] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
+          <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-9 text-[length:calc(13px*var(--ts))] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
             {label}{tab === id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
           </button>
         ))}
@@ -236,11 +236,11 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
 
       {/* ─── Classes compared ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
-      <p className="text-[11.5px] text-ink-3 mb-2">{lang === 'ko'
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
         ? `각 칸: 그 시트를 점검한 학생 중 완성한(최근 점검 90% 이상) 학생 수. 5/8은 점검한 8명 중 5명. 색은 비율을 따릅니다. 테두리 칸은 그 반의 경계: 완성 ${EDGE_PCT}% 미만인 첫 시트입니다.`
         : `Each cell: how many of the students checked on that sheet have mastered it (90% or more on their latest check), so 5/8 is five of the eight checked. Colour follows the share. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}% mastered.`}</p>
       <div className="border border-rule-2 rounded-md overflow-x-auto mb-8">
-        <table className="w-full min-w-[980px] table-fixed text-[12px] tabular-nums border-collapse">
+        <table className="w-full min-w-[980px] table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: 168 }} />
             <col style={{ width: 66 }} />
@@ -254,8 +254,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                 <td className={`px-3 py-1 border-r border-rule-2 truncate ${r.isGrade ? 'font-semibold text-ink' : 'text-ink'}`}>
                   {r.englishClass && <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[r.englishClass] || 'bg-ink-3'}`} />}{r.label}
                 </td>
-                <td className="px-2 py-1 text-[11px] text-ink-2 text-center">{r.stats.tested}/{r.stats.students}</td>
-                <td className="px-2 py-1 text-[11px] text-ink-2 border-r border-rule-2 truncate" title={r.stats.medianPosition != null ? positionLabel(r.stats.medianPosition) : ''}>
+                <td className="px-2 py-1 text-[length:calc(11px*var(--ts))] text-ink-2 text-center">{r.stats.tested}/{r.stats.students}</td>
+                <td className="px-2 py-1 text-[length:calc(11px*var(--ts))] text-ink-2 border-r border-rule-2 truncate" title={r.stats.medianPosition != null ? positionLabel(r.stats.medianPosition) : ''}>
                   {r.stats.medianPosition == null ? <span className="text-ink-3">—</span>
                     : <><span className="font-semibold text-ink">{r.stats.medianPosition}</span> <span className="text-ink-3">{positionShort(r.stats.medianPosition)}</span></>}
                 </td>
@@ -266,7 +266,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                     <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                       <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of the ${st.tested} checked have mastered it, 90% or more on their latest check (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${st.thin && st.tested ? ' · too few to compare on' : ''}${edge ? ' · the class’s edge' : ''}`}
                         className={`w-full h-8 rounded-sm font-semibold flex flex-col items-center justify-center leading-none ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
-                        {st.pct == null ? <span className="text-[10.5px]">·</span> : <><span className="text-[11px]">{st.meeting}/{st.tested}</span><span className="text-[8.5px] font-normal opacity-75 mt-[2px] whitespace-nowrap">{lang === 'ko' ? '완성' : 'mastered'}</span></>}
+                        {st.pct == null ? <span className="text-[length:calc(10.5px*var(--ts))]">·</span> : <><span className="text-[length:calc(11px*var(--ts))]">{st.meeting}/{st.tested}</span><span className="text-[length:max(10px,calc(8.5px*var(--ts)))] font-normal opacity-75 mt-[2px] whitespace-nowrap">{lang === 'ko' ? '완성' : 'mastered'}</span></>}
                       </div>
                     </td>
                   )
@@ -282,7 +282,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       {tab === 'leveling' && <>
       {/* ─── Leveling ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '레벨링' : 'Leveling'}</h3>
-      <p className="text-[11.5px] text-ink-3 mb-2 max-w-[920px]">{lang === 'ko'
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2 max-w-[920px]">{lang === 'ko'
         ? `점 하나가 학생 한 명, 위치(0–20)에 놓입니다. 음영은 그 반의 중간 50%, 막대는 중앙값. 초록 테두리: 위 반의 중앙값에 이름. 빨간 테두리: 아래 반의 중앙값 이하. 노란 테두리: 아래 반 수준이지만 그 위로는 점검하지 않음.`
         : `A dot per checked student at their position (0–20). Shaded: the class’s middle half; bar: its median. Ringed green: at or past the median of the class above. Ringed red: at or under the median of the class below. Ringed amber: the same, but never tested past that point, so check further first.`}</p>
       {leveling.byGrade.map(g => (
@@ -290,10 +290,10 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
           lang={lang} onOpenStudent={onOpenStudent} />
       ))}
       <div className="mt-4 mb-8">
-        <p className="text-[12.5px] font-semibold text-ink mb-1.5">{lang === 'ko' ? '레벨링 후보' : 'Leveling candidates'} <span className="font-normal text-ink-3">· {candidates.length}</span></p>
-        {candidates.length === 0 ? <p className="text-[12px] text-ink-3">{lang === 'ko' ? '이웃 반 수준에 있는 학생이 없습니다.' : 'Nobody reads like a neighbouring class on phonics.'}</p> : (
+        <p className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink mb-1.5">{lang === 'ko' ? '레벨링 후보' : 'Leveling candidates'} <span className="font-normal text-ink-3">· {candidates.length}</span></p>
+        {candidates.length === 0 ? <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '이웃 반 수준에 있는 학생이 없습니다.' : 'Nobody reads like a neighbouring class on phonics.'}</p> : (
           <div className="border border-rule-2 rounded-md overflow-x-auto">
-            <table className="w-full min-w-[760px] text-[12px] border-collapse">
+            <table className="w-full min-w-[760px] text-[length:calc(12px*var(--ts))] border-collapse">
               <thead><tr className="bg-paper-2 text-left">
                 <th className="w-8" />
                 <th className="px-2 py-1.5 eyebrow font-semibold">{lang === 'ko' ? '학생' : 'Student'}</th>
@@ -308,11 +308,11 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                   return (
                     <tr key={s.id}>
                       <td className="text-center"><PickBox on={picked.includes(s.id)} full={picked.length >= MAX_COMPARE} onToggle={() => togglePick(s.id)} lang={lang} /></td>
-                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="text-ink-3 text-[11px]">{s.korean_name}</span></td>
+                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span></td>
                       <td className="px-2 py-1 text-ink-2 whitespace-nowrap"><span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</td>
-                      <td className="px-2 py-1 text-ink whitespace-nowrap"><span className="font-semibold">{p.position}</span> {p.through ? phonicsSkill(p.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')} <span className="text-ink-3 text-[11px]">· {lang === 'ko' ? `${p.testedThrough}번까지 점검` : `tested to ${p.testedThrough}`}</span></td>
-                      <td className="px-2 py-1"><FlagChip f={f} lang={lang} /> <span className="text-[11px] text-ink-3">{lang === 'ko' ? `중앙값 ${f.likeMedian}` : `median ${f.likeMedian}`}</span></td>
-                      <td className="px-2 py-1 text-[11px] text-ink-2">{p.gaps.length ? p.gaps.map(g => phonicsSkill(g)?.short).join(', ') : <span className="text-ink-3">—</span>}</td>
+                      <td className="px-2 py-1 text-ink whitespace-nowrap"><span className="font-semibold">{p.position}</span> {p.through ? phonicsSkill(p.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')} <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">· {lang === 'ko' ? `${p.testedThrough}번까지 점검` : `tested to ${p.testedThrough}`}</span></td>
+                      <td className="px-2 py-1"><FlagChip f={f} lang={lang} /> <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{lang === 'ko' ? `중앙값 ${f.likeMedian}` : `median ${f.likeMedian}`}</span></td>
+                      <td className="px-2 py-1 text-[length:calc(11px*var(--ts))] text-ink-2">{p.gaps.length ? p.gaps.map(g => phonicsSkill(g)?.short).join(', ') : <span className="text-ink-3">—</span>}</td>
                     </tr>
                   )
                 })}
@@ -329,18 +329,18 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       <div className="flex items-end justify-between gap-3 flex-wrap mb-2">
         <div>
           <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '학생' : 'Students'}</h3>
-          <p className="text-[11.5px] text-ink-3">{lang === 'ko'
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko'
             ? `위치 = 완성한 가장 먼 시트 (20개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
             : `Position = the furthest sheet mastered, of 20. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>
         </div>
-        <div className="flex items-center gap-3 text-[11.5px] text-ink-2 flex-wrap">
+        <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-ink-2 flex-wrap">
           {BANDS.map(b => <span key={b} className="inline-flex items-center gap-1.5"><span className={`w-3 h-3 rounded-sm ${BAND_TONE[b]} ${b !== 'mastered' ? 'border border-rule-2' : ''}`} />{PHONICS_BAND_LABELS[b][lang]}</span>)}
           <button onClick={() => setCollapsed(new Set())} className="text-ink-3 hover:text-ink underline-offset-2 hover:underline">{lang === 'ko' ? '모두 펼치기' : 'Expand all'}</button>
           <button onClick={() => setCollapsed('all')} className="text-ink-3 hover:text-ink underline-offset-2 hover:underline">{lang === 'ko' ? '모두 접기' : 'Collapse all'}</button>
         </div>
       </div>
       <div className="border border-rule-2 rounded-md overflow-x-auto">
-        <table className="w-full min-w-[980px] table-fixed text-[12px] tabular-nums border-collapse">
+        <table className="w-full min-w-[980px] table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: 196 }} />
             {PHONICS_SKILLS.map(s => <col key={s.id} />)}
@@ -356,11 +356,11 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                 <Fragment key={g.key}>
                   <tr className="bg-paper-2 border-t border-rule-2">
                     <td colSpan={PHONICS_SKILLS.length + 2} className="px-2 py-1.5">
-                      <button onClick={() => toggle(g.key)} className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-ink">
+                      <button onClick={() => toggle(g.key)} className="inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">
                         {shut ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
                         {g.englishClass && <span className={`w-2 h-2 rounded-full ${CLASS_DOT[g.englishClass] || 'bg-ink-3'}`} />}
                         {g.label}
-                        <span className="font-normal text-ink-3 text-[11.5px]">· {tested}/{g.students.length} {lang === 'ko' ? '점검' : 'checked'}{med != null ? ` · ${lang === 'ko' ? '중앙' : 'median'} ${med} ${positionShort(med)}` : ''}</span>
+                        <span className="font-normal text-ink-3 text-[length:calc(11.5px*var(--ts))]">· {tested}/{g.students.length} {lang === 'ko' ? '점검' : 'checked'}{med != null ? ` · ${lang === 'ko' ? '중앙' : 'median'} ${med} ${positionShort(med)}` : ''}</span>
                       </button>
                     </td>
                   </tr>
@@ -382,15 +382,15 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         <div className="sticky bottom-4 z-20 mt-4 flex justify-center pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-2 flex-wrap px-3 py-2 rounded-lg border border-rule-2 bg-surface shadow-lg">
             {pickedStudents.map(s => (
-              <span key={s.id} className="inline-flex items-center gap-1 pl-2 pr-1 h-7 rounded-full border border-rule-2 text-[12px] text-ink">
+              <span key={s.id} className="inline-flex items-center gap-1 pl-2 pr-1 h-7 rounded-full border border-rule-2 text-[length:calc(12px*var(--ts))] text-ink">
                 <span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{getDisplayName(s)}
                 <button onClick={() => togglePick(s.id)} aria-label={`Remove ${s.english_name}`} className="text-ink-3 hover:text-ink"><X size={12} /></button>
               </span>
             ))}
-            <span className="text-[11px] text-ink-3">{pickedStudents.length}/{MAX_COMPARE}</span>
-            <button onClick={() => setPicked([])} className="text-[12px] text-ink-3 hover:text-ink">{lang === 'ko' ? '지우기' : 'Clear'}</button>
+            <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{pickedStudents.length}/{MAX_COMPARE}</span>
+            <button onClick={() => setPicked([])} className="text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '지우기' : 'Clear'}</button>
             <button onClick={() => setComparing(true)} disabled={pickedStudents.length < 2}
-              className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1.5">
+              className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1.5">
               <Columns3 size={13} /> {pickedStudents.length < 2 ? (lang === 'ko' ? '2명 이상 선택' : 'Pick 2 or more') : (lang === 'ko' ? '나란히 비교' : 'Compare')}
             </button>
           </div>
@@ -433,8 +433,8 @@ function SheetHeader({ lang, lead, trail }: { lang: Lang; lead: string[]; trail?
         {PHONICS_SKILLS.map((s, i) => (
           <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[96px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${i + 1}. ${s.label}\n${s.covers}`}>
             <div className="flex flex-col items-center justify-end gap-1 h-full">
-              <span className="text-[10.5px] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
-              <span className="text-[9.5px] leading-none text-ink-3">{i + 1}</span>
+              <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
+              <span className="text-[length:max(10px,calc(9.5px*var(--ts)))] leading-none text-ink-3">{i + 1}</span>
             </div>
           </th>
         ))}
@@ -462,7 +462,7 @@ function StudentRow({ s, latest, pos, flag, lang, showClass, onName, onCell, pic
         <PickBox on={picked} full={full} onToggle={onPick} lang={lang} />
         <button onClick={onName} className="block min-w-0 flex-1 text-left truncate hover:underline" title={`${s.english_name} · ${s.english_class} · ${lang === 'ko' ? '시도별 진전 보기' : 'open progress'}`}>
           {showClass && <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />}
-          <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[11px]">{s.korean_name}</span>
+          <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
         </button>
         </div>
       </td>
@@ -473,13 +473,13 @@ function StudentRow({ s, latest, pos, flag, lang, showClass, onName, onCell, pic
           <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
             <button onClick={() => l && onCell(sk.id)} disabled={!l}
               title={l ? `${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}` : `${sk.label}: not checked`}
-              className={`w-full h-6 rounded-sm text-[10.5px] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
+              className={`w-full h-6 rounded-sm text-[length:calc(10.5px*var(--ts))] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
               {l ? l.score.pct : '·'}
             </button>
           </td>
         )
       })}
-      <td className="px-3 py-1 border-l border-rule-2 text-[11px] leading-tight overflow-hidden">
+      <td className="px-3 py-1 border-l border-rule-2 text-[length:calc(11px*var(--ts))] leading-tight overflow-hidden">
         {!pos.tested ? <span className="text-ink-3">{lang === 'ko' ? '미점검' : 'Not checked'}</span> : (
           <>
             <span className="flex items-center gap-1 text-ink truncate" title={pos.through ? `Mastered through ${phonicsSkill(pos.through)?.label}${pos.gaps.length ? ` · under 90% below it: ${pos.gaps.map(g => phonicsSkill(g)?.label).join(', ')}` : ''}` : 'Nothing mastered yet'}>
@@ -487,7 +487,7 @@ function StudentRow({ s, latest, pos, flag, lang, showClass, onName, onCell, pic
               <span className="truncate">{pos.through ? phonicsSkill(pos.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')}</span>
               {pos.gaps.length > 0 && <AlertTriangle size={11} className="text-warn shrink-0" />}
             </span>
-            <span className="flex items-center gap-1 text-[10px] text-ink-3">
+            <span className="flex items-center gap-1 text-[length:calc(10px*var(--ts))] text-ink-3">
               <span className="truncate">{lang === 'ko' ? `${pos.testedThrough}번까지${flag ? '' : ' 점검'}` : `${flag ? 'to' : 'tested to'} ${pos.testedThrough}`}{last && !flag ? ` · ${fmtShort(last, lang)}` : ''}</span>
               {flag && <span className="ml-auto shrink-0"><FlagChip f={flag} lang={lang} /></span>}
             </span>

@@ -54,12 +54,12 @@ export default function CurriculumView() {
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '가르칠 것, 언제' : 'What to teach, and when'}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '교육과정' : 'Curriculum'}</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '교육과정' : 'Curriculum'}</h1>
         </div>
       </div>
       <div className="flex gap-1.5 flex-wrap mb-6">
         {tabs.filter(t => !t.hidden).map(t => (
-          <button key={t.id} onClick={() => go(t.id)} className={`h-9 px-3.5 rounded text-[13px] inline-flex items-center gap-2 border ${shown === t.id ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
+          <button key={t.id} onClick={() => go(t.id)} className={`h-9 px-3.5 rounded text-[length:calc(13px*var(--ts))] inline-flex items-center gap-2 border ${shown === t.id ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
             {t.icon}{t.label}
           </button>
         ))}

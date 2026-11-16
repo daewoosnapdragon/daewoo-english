@@ -90,7 +90,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     screen: [
       'The header greets you with today’s date and the active semester. Two buttons jump to marking attendance and entering grades.',
       'Under the date in the top bar, “Week 12 of 18” and a thin line that fills across the semester. The oxblood mark on it is when report card grades are due. The Attendance link gets a small check once every class you teach is marked for today.',
-      'Your avatar at the top right is your class flower. While a page or a list is loading, the same flower draws itself on ruled lines; a page that loads quickly shows nothing at all.',
+      'Your avatar at the top right is your class flower, and a page with nothing on it yet draws the same flower. While a list is loading you see ruled lines in its shape; a page that loads quickly shows nothing at all. Text size, in the menu under your name, makes all the text larger (Standard, Larger, Largest) on this computer.',
       'The stats strip: attendance still unmarked today, ungraded assessments, days to the midterm cutoff, days until report card grades are due. Each one is a link.',
       'The notice board sits under the header on every page. Teachers post notices; you dismiss your own copy. Urgent ones are shaded red until read.',
       'The month calendar with the agenda beside it. Events come from the school calendar; five colors mark the kinds. Admins add events here.',

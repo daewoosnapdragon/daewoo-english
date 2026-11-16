@@ -59,11 +59,11 @@ export default function ActivityView() {
   }).sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || '')), [teachers, rows])
 
   if (!allowed) return (
-    <div className="px-8 py-6 animate-fade-in"><p className="text-[13px] text-ink-3">{ko ? '이 페이지는 스냅드래곤 교사 계정에서만 볼 수 있습니다.' : 'This page can only be opened from the Snapdragon account.'}</p></div>
+    <div className="px-8 py-6 animate-fade-in"><p className="text-[length:calc(13px*var(--ts))] text-ink-3">{ko ? '이 페이지는 스냅드래곤 교사 계정에서만 볼 수 있습니다.' : 'This page can only be opened from the Snapdragon account.'}</p></div>
   )
 
-  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
-  const sel = 'h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
+  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const sel = 'h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
   const tone = (a: ActivityAction) => a === 'login' ? 'text-good' : a === 'logout' ? 'text-ink-3' : a === 'deleted' ? 'text-bad' : a === 'visit' ? 'text-ink-3' : 'text-ink'
 
   return (
@@ -71,12 +71,12 @@ export default function ActivityView() {
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '누가 언제 무엇을' : 'Who did what, and when'}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '활동 기록' : 'Activity'}</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '활동 기록' : 'Activity'}</h1>
         </div>
-        <button onClick={load} className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink"><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
+        <button onClick={load} className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink"><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
       </div>
 
-      {missing && <p className="mb-4 text-[12.5px] text-warn">{ko ? 'supabase/migration-activity-log.sql을 먼저 실행하세요.' : 'The activity_log table is missing. Run supabase/migration-activity-log.sql in the Supabase SQL editor, then reload.'}</p>}
+      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-activity-log.sql을 먼저 실행하세요.' : 'The activity_log table is missing. Run supabase/migration-activity-log.sql in the Supabase SQL editor, then reload.'}</p>}
 
       <div className="flex items-center gap-3 flex-wrap mb-6">
         <div className="flex gap-1.5">{[1, 7, 30].map(d => <button key={d} onClick={() => setDays(d)} className={chip(days === d)}>{d === 1 ? (ko ? '오늘' : 'Today') : (ko ? `${d}일` : `${d} days`)}</button>)}</div>
@@ -90,7 +90,7 @@ export default function ActivityView() {
           <option value="logins">{ko ? '로그인/로그아웃' : 'Sign-ins and sign-outs'}</option>
           {(Object.keys(ACTION_LABELS) as ActivityAction[]).filter(a => a !== 'login' && a !== 'logout').map(a => <option key={a} value={a}>{ACTION_LABELS[a][ko ? 'ko' : 'en']}</option>)}
         </select>
-        <span className="text-[12px] text-ink-3 ml-auto tabular-nums">{filtered.length} {ko ? '건' : filtered.length === 1 ? 'entry' : 'entries'}</span>
+        <span className="text-[length:calc(12px*var(--ts))] text-ink-3 ml-auto tabular-nums">{filtered.length} {ko ? '건' : filtered.length === 1 ? 'entry' : 'entries'}</span>
       </div>
 
       {!loading && rows.length > 0 && (
@@ -99,9 +99,9 @@ export default function ActivityView() {
           <div className="grid gap-px bg-rule border border-rule-2 rounded-lg overflow-hidden" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
             {presence.map(({ t, lastLogin, lastSeen, n }) => (
               <button key={t.id} onClick={() => setWho(who === t.id ? 'all' : t.id)} className={`text-left px-3.5 py-3 bg-surface hover:bg-paper-2 ${who === t.id ? 'shadow-[inset_3px_0_0_rgb(var(--accent))]' : ''}`}>
-                <p className="text-[13px] font-semibold text-ink">{t.name} <span className="font-normal text-ink-3">· {t.role === 'admin' ? 'admin' : t.english_class}</span></p>
-                <p className="text-[11.5px] text-ink-2 mt-1 tabular-nums">{ko ? '로그인' : 'Signed in'}: {lastLogin ? whenOf(lastLogin, lang) : <span className="text-ink-3">{ko ? '기록 없음' : 'not in this window'}</span>}</p>
-                <p className="text-[11.5px] text-ink-3 tabular-nums">{ko ? '마지막 활동' : 'Last seen'}: {lastSeen ? whenOf(lastSeen, lang) : '—'}{n ? ` · ${n} ${ko ? '건' : n === 1 ? 'entry' : 'entries'}` : ''}</p>
+                <p className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{t.name} <span className="font-normal text-ink-3">· {t.role === 'admin' ? 'admin' : t.english_class}</span></p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-1 tabular-nums">{ko ? '로그인' : 'Signed in'}: {lastLogin ? whenOf(lastLogin, lang) : <span className="text-ink-3">{ko ? '기록 없음' : 'not in this window'}</span>}</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">{ko ? '마지막 활동' : 'Last seen'}: {lastSeen ? whenOf(lastSeen, lang) : '—'}{n ? ` · ${n} ${ko ? '건' : n === 1 ? 'entry' : 'entries'}` : ''}</p>
               </button>
             ))}
           </div>
@@ -109,27 +109,27 @@ export default function ActivityView() {
       )}
 
       {loading ? <Loading rows={5} />
-      : byDay.length === 0 ? <p className="text-[13px] text-ink-3 py-8">{missing ? '' : (ko ? '이 기간에 기록이 없습니다.' : 'Nothing recorded in this window.')}</p>
+      : byDay.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-8">{missing ? '' : (ko ? '이 기간에 기록이 없습니다.' : 'Nothing recorded in this window.')}</p>
       : byDay.map(g => (
         <div key={g.day} className="mb-6">
-          <h2 className="font-display text-[18px] leading-none text-ink border-b border-rule-2 pb-1.5 mb-1">{dayLabel(g.day, lang)}</h2>
+          <h2 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink border-b border-rule-2 pb-1.5 mb-1">{dayLabel(g.day, lang)}</h2>
           <div className="divide-y divide-rule">
             {g.rows.map(r => (
-              <div key={r.id} className="grid grid-cols-[72px_150px_120px_minmax(0,1fr)] gap-3 items-baseline py-1.5 text-[12.5px]">
+              <div key={r.id} className="grid grid-cols-[72px_150px_120px_minmax(0,1fr)] gap-3 items-baseline py-1.5 text-[length:calc(12.5px*var(--ts))]">
                 <span className="text-ink-3 tabular-nums">{timeOf(r.updated_at)}</span>
                 <span className="text-ink truncate" title={classOf(r.teacher_id)}>{nameOf(r.teacher_id)}</span>
                 <span className={`font-medium ${tone(r.action)}`}>{ACTION_LABELS[r.action]?.[ko ? 'ko' : 'en'] || r.action}</span>
                 <span className="min-w-0 text-ink-2">
                   <span className="break-words">{r.detail}</span>
-                  {r.count > 1 && <span className="ml-2 text-[10.5px] text-ink-3 tabular-nums" title={ko ? `${timeOf(r.created_at)}부터` : `since ${timeOf(r.created_at)}`}>×{r.count}</span>}
-                  {r.action !== 'visit' && r.path && <span className="ml-2 text-[10.5px] text-ink-3">{r.path}</span>}
+                  {r.count > 1 && <span className="ml-2 text-[length:calc(10.5px*var(--ts))] text-ink-3 tabular-nums" title={ko ? `${timeOf(r.created_at)}부터` : `since ${timeOf(r.created_at)}`}>×{r.count}</span>}
+                  {r.action !== 'visit' && r.path && <span className="ml-2 text-[length:calc(10.5px*var(--ts))] text-ink-3">{r.path}</span>}
                 </span>
               </div>
             ))}
           </div>
         </div>
       ))}
-      <p className="text-[11px] text-ink-3 mt-6">{ko ? '같은 작업을 10분 안에 반복하면 한 줄로 묶이고 횟수(×N)가 표시됩니다. 열람 줄은 화면에 무엇이 있었는지(반·학년·학생·시트·탭)를 적고, 그 밖에 채점, 저장, 생성·수정·삭제, 인쇄, 공지, 설정 변경, 로그인·로그아웃이 기록됩니다.' : 'The same action repeated within ten minutes folds into one line with a count (×N). An Opened line says what was on screen: the class and grade, the student, the sheet or tab. Everything saved, scored, created, edited, deleted, printed or posted is recorded with what it was, along with settings changes and sign-ins and sign-outs.'}</p>
+      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-6">{ko ? '같은 작업을 10분 안에 반복하면 한 줄로 묶이고 횟수(×N)가 표시됩니다. 열람 줄은 화면에 무엇이 있었는지(반·학년·학생·시트·탭)를 적고, 그 밖에 채점, 저장, 생성·수정·삭제, 인쇄, 공지, 설정 변경, 로그인·로그아웃이 기록됩니다.' : 'The same action repeated within ten minutes folds into one line with a count (×N). An Opened line says what was on screen: the class and grade, the student, the sheet or tab. Everything saved, scored, created, edited, deleted, printed or posted is recorded with what it was, along with settings changes and sign-ins and sign-outs.'}</p>
     </div>
   )
 }

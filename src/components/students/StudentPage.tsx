@@ -162,8 +162,8 @@ export default function StudentPage({ studentId }: { studentId: string }) {
     showToast(`${student.english_name} deleted`); router.push('/students')
   }
 
-  if (missing) return <div className="px-8 py-16 text-center"><p className="font-display text-[26px] text-ink">{lang === 'ko' ? '학생을 찾을 수 없습니다' : 'No such student'}</p><Link href="/students" className="text-accent underline text-[13px]">{lang === 'ko' ? '학생 명단으로' : 'Back to students'}</Link></div>
-  if (!student) return <Loading rows={5} />
+  if (missing) return <div className="px-8 py-16 text-center"><p className="font-display text-[length:calc(26px*var(--ts))] text-ink">{lang === 'ko' ? '학생을 찾을 수 없습니다' : 'No such student'}</p><Link href="/students" className="text-accent underline text-[length:calc(13px*var(--ts))]">{lang === 'ko' ? '학생 명단으로' : 'Back to students'}</Link></div>
+  if (!student) return <Loading kind="quiet" rows={5} />
 
   // Behavior first: it is what teachers open a student for most often.
   const sections: [string, string][] = [
@@ -174,30 +174,30 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   ]
   const letter = facts?.overall != null ? percentToLetter(facts.overall) : null
   const fmtDate = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  const fieldCls = 'h-9 px-3 bg-surface border border-rule-2 rounded text-[13px] text-ink w-full'
+  const fieldCls = 'h-9 px-3 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink w-full'
 
   return (
     <div className="px-8 py-6">
-      <Link href="/students" className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-3 hover:text-ink mb-4"><ArrowLeft size={13} />{lang === 'ko' ? '학생 명단' : 'Students'}</Link>
+      <Link href="/students" className="inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink mb-4"><ArrowLeft size={13} />{lang === 'ko' ? '학생 명단' : 'Students'}</Link>
       {student.needs_review && (
-        <div className="mb-4 px-4 py-2.5 bg-warn-soft border border-rule rounded flex items-center justify-between gap-3 text-[13px] text-warn">
+        <div className="mb-4 px-4 py-2.5 bg-warn-soft border border-rule rounded flex items-center justify-between gap-3 text-[length:calc(13px*var(--ts))] text-warn">
           <span>{lang === 'ko' ? '명단 업로드 시 검토 대상으로 표시된 학생입니다. 정보를 확인하세요.' : 'Flagged for review during roster upload. Check the details are right.'}</span>
-          <button onClick={async () => { const { error } = await supabase.from('students').update({ needs_review: false }).eq('id', student.id); if (!error) { showToast('Review flag cleared'); logActivity('edited', `Review flag cleared · ${student.english_name}`); load() } }} className="h-7 px-3 rounded bg-warn text-white text-[12px] font-semibold whitespace-nowrap">{lang === 'ko' ? '검토 완료' : 'Mark reviewed'}</button>
+          <button onClick={async () => { const { error } = await supabase.from('students').update({ needs_review: false }).eq('id', student.id); if (!error) { showToast('Review flag cleared'); logActivity('edited', `Review flag cleared · ${student.english_name}`); load() } }} className="h-7 px-3 rounded bg-warn text-white text-[length:calc(12px*var(--ts))] font-semibold whitespace-nowrap">{lang === 'ko' ? '검토 완료' : 'Mark reviewed'}</button>
         </div>
       )}
       <div className="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-8">
         {/* Rail */}
         <aside className="lg:sticky lg:top-[140px] self-start space-y-4">
           <div>
-            <h1 className="font-display text-[30px] leading-none text-ink">{student.english_name}</h1>
-            <p className="text-[15px] text-ink-2 mt-1">{student.korean_name}</p>
+            <h1 className="font-display text-[length:calc(30px*var(--ts))] leading-none text-ink">{student.english_name}</h1>
+            <p className="text-[length:calc(15px*var(--ts))] text-ink-2 mt-1">{student.korean_name}</p>
           </div>
           <div className="flex flex-wrap gap-1.5 items-center">
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold text-white ${CLASS_BG[student.english_class] || 'bg-ink'}`}>{student.english_class}</span>
+            <span className={`px-2 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold text-white ${CLASS_BG[student.english_class] || 'bg-ink'}`}>{student.english_class}</span>
             <WIDABadge studentId={student.id} />
-            {(student as any).is_transfer && <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-info-soft text-info">{lang === 'ko' ? '전학' : 'Transfer'}{(student as any).transfer_date ? ` · ${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}</span>}
+            {(student as any).is_transfer && <span className="px-2 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold bg-info-soft text-info">{lang === 'ko' ? '전학' : 'Transfer'}{(student as any).transfer_date ? ` · ${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}</span>}
           </div>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[12.5px] tabular-nums">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[length:calc(12.5px*var(--ts))] tabular-nums">
             <dt className="text-ink-3">{lang === 'ko' ? '학년' : 'Grade'}</dt><dd className="text-ink font-medium">{student.grade} · {student.korean_class} {student.class_number}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '담당' : 'Teacher'}</dt><dd className="text-ink font-medium">{student.teacher_name || '—'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '종합' : 'Overall'}</dt><dd className="text-ink font-medium">{facts ? (facts.overall != null ? `${facts.overall.toFixed(1)}% · ${letter}` : '—') : '…'}</dd>
@@ -206,13 +206,13 @@ export default function StudentPage({ studentId }: { studentId: string }) {
             <dt className="text-ink-3">{lang === 'ko' ? '레벨 테스트' : 'Level test'}</dt><dd className="text-ink font-medium">{facts ? (facts.placement ? `${facts.placement}${facts.placementTest ? ` · ${facts.placementTest}` : ''}` : '—') : '…'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '행동 (30일)' : 'Behavior · 30d'}</dt><dd className="text-ink font-medium">{facts ? `${facts.behavior30} ${lang === 'ko' ? '건' : facts.behavior30 === 1 ? 'log' : 'logs'}` : '…'}</dd>
           </dl>
-          <nav className="border-t border-rule-2 pt-3 grid gap-0.5 text-[12.5px]" aria-label="Sections">
+          <nav className="border-t border-rule-2 pt-3 grid gap-0.5 text-[length:calc(12.5px*var(--ts))]" aria-label="Sections">
             {sections.map(([id, l]) => <a key={id} href={`#sec-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className={`px-2 py-1 rounded ${active === id ? 'bg-surface text-ink font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'text-ink-2 hover:text-ink'}`}>{l}</a>)}
           </nav>
           <div className="border-t border-rule-2 pt-3 grid gap-1.5">
-            <button onClick={editing ? () => setEditing(false) : startEdit} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Pencil size={12} />{editing ? (lang === 'ko' ? '편집 취소' : 'Cancel edit') : (lang === 'ko' ? '정보 수정' : 'Edit details')}</button>
-            <button onClick={exportPDF} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Printer size={12} />{lang === 'ko' ? '포트폴리오 PDF' : 'Export portfolio'}</button>
-            {currentTeacher?.role === 'admin' && <button onClick={remove} disabled={deleting} className="h-8 px-3 rounded text-[12.5px] text-ink-3 hover:text-bad inline-flex items-center gap-1.5">{deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}{lang === 'ko' ? '학생 삭제' : 'Delete student'}</button>}
+            <button onClick={editing ? () => setEditing(false) : startEdit} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Pencil size={12} />{editing ? (lang === 'ko' ? '편집 취소' : 'Cancel edit') : (lang === 'ko' ? '정보 수정' : 'Edit details')}</button>
+            <button onClick={exportPDF} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Printer size={12} />{lang === 'ko' ? '포트폴리오 PDF' : 'Export portfolio'}</button>
+            {currentTeacher?.role === 'admin' && <button onClick={remove} disabled={deleting} className="h-8 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-bad inline-flex items-center gap-1.5">{deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}{lang === 'ko' ? '학생 삭제' : 'Delete student'}</button>}
           </div>
         </aside>
 
@@ -220,7 +220,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
         <div className="min-w-0 space-y-10">
           {editing && (
             <section className="border border-rule-2 rounded-lg p-4 bg-paper-2 grid gap-3">
-              <h2 className="font-display text-[20px] leading-none text-ink">{lang === 'ko' ? '학생 정보 수정' : 'Edit details'}</h2>
+              <h2 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '학생 정보 수정' : 'Edit details'}</h2>
               <div className="grid grid-cols-4 gap-3">
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '영어 이름' : 'English name'}</span><input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} className={fieldCls} /></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '한국어 이름' : 'Korean name'}</span><input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} className={fieldCls} /></label>
@@ -234,11 +234,11 @@ export default function StudentPage({ studentId }: { studentId: string }) {
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '영어 반' : 'English class'}</span><select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })} className={fieldCls}>{ALL_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select></label>
               </div>
               <div className="flex items-center gap-4 flex-wrap">
-                <label className="inline-flex items-center gap-2 text-[13px] text-ink-2"><input type="checkbox" checked={!!form.is_transfer} onChange={e => setForm({ ...form, is_transfer: e.target.checked, transfer_date: e.target.checked ? (form.transfer_date || getKSTDateString()) : '' })} />{lang === 'ko' ? '전학생' : 'Transfer student'}</label>
-                {form.is_transfer && <input type="date" value={form.transfer_date || ''} onChange={e => setForm({ ...form, transfer_date: e.target.value })} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[12px] text-ink" />}
+                <label className="inline-flex items-center gap-2 text-[length:calc(13px*var(--ts))] text-ink-2"><input type="checkbox" checked={!!form.is_transfer} onChange={e => setForm({ ...form, is_transfer: e.target.checked, transfer_date: e.target.checked ? (form.transfer_date || getKSTDateString()) : '' })} />{lang === 'ko' ? '전학생' : 'Transfer student'}</label>
+                {form.is_transfer && <input type="date" value={form.transfer_date || ''} onChange={e => setForm({ ...form, transfer_date: e.target.value })} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12px*var(--ts))] text-ink" />}
                 <div className="ml-auto flex gap-2">
-                  <button onClick={() => setEditing(false)} className="h-9 px-3 rounded border border-rule-2 text-[13px] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
-                  <button onClick={saveEdit} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5">{saving && <Loader2 size={13} className="animate-spin" />}{lang === 'ko' ? '저장' : 'Save'}</button>
+                  <button onClick={() => setEditing(false)} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
+                  <button onClick={saveEdit} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5">{saving && <Loader2 size={13} className="animate-spin" />}{lang === 'ko' ? '저장' : 'Save'}</button>
                 </div>
               </div>
             </section>
@@ -290,7 +290,7 @@ function Section({ id, title, meta, children }: { id: string; title: string; met
   return (
     <section id={`sec-${id}`} className="scroll-mt-[140px]">
       <div className="flex items-baseline justify-between gap-3 border-b border-rule-2 pb-2 mb-4">
-        <h2 className="font-display text-[24px] leading-none text-ink">{title}</h2>
+        <h2 className="font-display text-[length:calc(24px*var(--ts))] leading-none text-ink">{title}</h2>
         {meta && <span className="eyebrow">{meta}</span>}
       </div>
       {children}
@@ -315,17 +315,17 @@ function LevelTestHistory({ studentId, lang }: { studentId: string; lang: string
     })()
   }, [studentId])
   if (!rows) return <Loader2 size={16} className="animate-spin text-ink-3" />
-  if (rows.length === 0) return <p className="text-[13px] text-ink-3">{lang === 'ko' ? '레벨 테스트 기록이 없습니다.' : 'No level tests on record.'}</p>
+  if (rows.length === 0) return <p className="text-[length:calc(13px*var(--ts))] text-ink-3">{lang === 'ko' ? '레벨 테스트 기록이 없습니다.' : 'No level tests on record.'}</p>
   return (
-    <table className="w-full text-[13px] tabular-nums">
+    <table className="w-full text-[length:calc(13px*var(--ts))] tabular-nums">
       <thead><tr className="border-b border-rule-2"><th className="text-left py-1.5 eyebrow font-semibold">{lang === 'ko' ? '시험' : 'Test'}</th><th className="text-left py-1.5 eyebrow font-semibold">{lang === 'ko' ? '이전 반' : 'From'}</th><th className="text-right py-1.5 eyebrow font-semibold">{lang === 'ko' ? '종합' : 'Composite'}</th><th className="text-left py-1.5 pl-4 eyebrow font-semibold">{lang === 'ko' ? '배치' : 'Placed'}</th></tr></thead>
       <tbody className="divide-y divide-rule">
         {rows.map((r: any) => (
           <tr key={r.level_test_id}>
-            <td className="py-2 text-ink">{r.level_tests?.name || '—'}<span className="text-ink-3 ml-2 text-[11.5px]">G{r.level_tests?.grade}</span></td>
+            <td className="py-2 text-ink">{r.level_tests?.name || '—'}<span className="text-ink-3 ml-2 text-[length:calc(11.5px*var(--ts))]">G{r.level_tests?.grade}</span></td>
             <td className="py-2 text-ink-2">{r.previous_class || '—'}</td>
-            <td className="py-2 text-right text-ink-2">{r.composite_index != null ? Math.round(Number(r.composite_index) * 100) : '—'}{r.composite_band ? <span className="text-ink-3 ml-1 text-[11.5px]">{r.composite_band}</span> : null}</td>
-            <td className="py-2 pl-4"><span className="font-semibold text-ink">{r.final_placement || '—'}</span>{r.is_overridden && <span className="text-[11px] text-warn ml-2" title={r.override_reason || ''}>{lang === 'ko' ? '교사 판단' : 'teacher decision'}{r.auto_placement ? ` · ${lang === 'ko' ? '제안' : 'suggested'} ${r.auto_placement}` : ''}</span>}</td>
+            <td className="py-2 text-right text-ink-2">{r.composite_index != null ? Math.round(Number(r.composite_index) * 100) : '—'}{r.composite_band ? <span className="text-ink-3 ml-1 text-[length:calc(11.5px*var(--ts))]">{r.composite_band}</span> : null}</td>
+            <td className="py-2 pl-4"><span className="font-semibold text-ink">{r.final_placement || '—'}</span>{r.is_overridden && <span className="text-[length:calc(11px*var(--ts))] text-warn ml-2" title={r.override_reason || ''}>{lang === 'ko' ? '교사 판단' : 'teacher decision'}{r.auto_placement ? ` · ${lang === 'ko' ? '제안' : 'suggested'} ${r.auto_placement}` : ''}</span>}</td>
           </tr>
         ))}
       </tbody>
@@ -360,7 +360,7 @@ function ReadingTrend({ student, lang }: { student: Student; lang: string }) {
   return (
     <div className="mb-6">
       <LineChart points={points} band={band} height={200} unit="" />
-      <p className="text-[11px] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
+      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
     </div>
   )
 }
@@ -406,9 +406,9 @@ function GradesAtAGlance({ student, semesterId, lang }: { student: Student; seme
           return (
             <div key={d.domain} className="px-3 py-2.5 border-r border-rule last:border-r-0 min-w-0">
               <p className="eyebrow truncate">{label(d.domain)}</p>
-              <p className={`font-display text-[24px] leading-none mt-1 tabular-nums ${tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink'}`}>{d.mine != null ? Math.round(d.mine) : '—'}</p>
+              <p className={`font-display text-[length:calc(24px*var(--ts))] leading-none mt-1 tabular-nums ${tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink'}`}>{d.mine != null ? Math.round(d.mine) : '—'}</p>
               <div className="mt-1.5"><Sparkline values={d.series} tone={tone} width={110} height={22} /></div>
-              <p className="text-[10.5px] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
+              <p className="text-[length:calc(10.5px*var(--ts))] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
             </div>
           )
         })}

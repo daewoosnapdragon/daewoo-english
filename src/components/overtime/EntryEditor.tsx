@@ -37,8 +37,8 @@ interface Props {
   onCancel?: () => void
 }
 
-const inp = 'h-9 px-2 bg-surface border border-rule-2 rounded text-[13px] text-ink placeholder:text-ink-3 focus:outline-none focus:border-ink-2 w-full'
-const chip = 'h-6 px-2.5 rounded-full border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink hover:border-ink-3 max-w-[220px] truncate'
+const inp = 'h-9 px-2 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink placeholder:text-ink-3 focus:outline-none focus:border-ink-2 w-full'
+const chip = 'h-6 px-2.5 rounded-full border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3 max-w-[220px] truncate'
 
 const EntryEditor = forwardRef<EntryEditorHandle, Props>(function EntryEditor({ initial, today, rate, ko, daysOff, known, reasons = [], last, onSave, onCancel }, ref) {
   const editing = !!initial
@@ -109,11 +109,11 @@ const EntryEditor = forwardRef<EntryEditorHandle, Props>(function EntryEditor({ 
           <span className="text-ink-3">–</span>
           <input value={toText} onChange={e => setToText(e.target.value)} placeholder="6:45" className={`${inp} tabular-nums`} aria-label={ko ? '끝' : 'To'} />
         </div>
-        <span className={`text-[13px] tabular-nums ${timed ? 'font-semibold text-ink' : 'text-ink-3'}`}>{timed ? fmtMinutes(check.minutes!, ko) : '—'}</span>
-        <span className="text-[13px] tabular-nums text-ink-2">{timed ? fmtWon(wonFor(check.minutes!, rate), ko) : <span className="text-ink-3">—</span>}</span>
+        <span className={`text-[length:calc(13px*var(--ts))] tabular-nums ${timed ? 'font-semibold text-ink' : 'text-ink-3'}`}>{timed ? fmtMinutes(check.minutes!, ko) : '—'}</span>
+        <span className="text-[length:calc(13px*var(--ts))] tabular-nums text-ink-2">{timed ? fmtWon(wonFor(check.minutes!, rate), ko) : <span className="text-ink-3">—</span>}</span>
         <div className="pr-3"><input value={reason} onChange={e => setReason(e.target.value)} placeholder={ko ? '무슨 일이었나요? (성적표, 공개수업 준비…)' : 'Report cards, open class prep…'} className={inp} aria-label={ko ? '무슨 일이었나요' : 'What was the work'} /></div>
         <div className="flex items-center justify-end gap-1">
-          <button onClick={save} disabled={saving || (tried && !ready)} className="h-9 px-3.5 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">
+          <button onClick={save} disabled={saving || (tried && !ready)} className="h-9 px-3.5 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">
             {saving && <Loader2 size={13} className="animate-spin" />}{editing ? (ko ? '저장' : 'Save') : (ko ? '추가' : 'Add')}
           </button>
           {onCancel && <button onClick={onCancel} className="w-8 h-9 rounded text-ink-3 hover:text-ink hover:bg-paper-2 inline-flex items-center justify-center" aria-label={ko ? '취소' : 'Cancel'} title={ko ? '취소' : 'Cancel'}><X size={14} /></button>}
@@ -125,7 +125,7 @@ const EntryEditor = forwardRef<EntryEditorHandle, Props>(function EntryEditor({ 
           <div className="col-span-6 flex flex-wrap items-center gap-1.5">
             {!editing && last && <button onClick={sameAsLast} className={`${chip} inline-flex items-center gap-1`}><Copy size={11} />{ko ? '지난번과 같이' : 'Same as last time'}</button>}
             {!editing && reasons.map(r => <button key={r} onClick={() => setReason(r)} className={chip} title={r}>{r}</button>)}
-            {check.problem && <span className="ml-auto text-[12px] text-ink-2">{check.problem}</span>}
+            {check.problem && <span className="ml-auto text-[length:calc(12px*var(--ts))] text-ink-2">{check.problem}</span>}
           </div>
         </div>
       )}

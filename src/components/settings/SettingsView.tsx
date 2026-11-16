@@ -31,10 +31,10 @@ export default function SettingsView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="mb-6">
         <p className="eyebrow eyebrow-accent mb-1.5">{language === 'ko' ? '교사, 학기, 기준, 가중치' : 'Teachers · semesters · benchmarks · weights'}</p>
-        <h1 className="font-display text-[34px] leading-none text-ink">{language === 'ko' ? '설정' : 'Settings'}</h1>
+        <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{language === 'ko' ? '설정' : 'Settings'}</h1>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10">
-        <nav className="lg:sticky lg:top-[140px] self-start grid gap-0.5 text-[12.5px] border-t border-rule-2 pt-3" aria-label="Settings sections">
+        <nav className="lg:sticky lg:top-[140px] self-start grid gap-0.5 text-[length:calc(12.5px*var(--ts))] border-t border-rule-2 pt-3" aria-label="Settings sections">
           {sections.map(([id, l]) => <a key={id} href={`#set-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`set-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className="px-2 py-1 rounded text-ink-2 hover:text-ink hover:bg-paper-2">{l}</a>)}
         </nav>
         <div className="min-w-0 max-w-4xl">
@@ -149,28 +149,28 @@ function TeacherSection() {
     <div id="set-teachers" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center gap-2 mb-4">
         <UserCog size={18} className="text-ink-3" />
-        <h3 className="font-display text-[22px] leading-none text-ink">
+        <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
           {language === 'ko' ? '교사 관리' : 'Teacher Management'}
         </h3>
       </div>
-      <p className="text-[12.5px] text-ink-3 mb-4">
+      <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mb-4">
         {language === 'ko' ? '교사 이름을 수정하고 Enter를 누르거나 저장 버튼을 클릭하세요.' : 'Edit teacher names and press Enter or click Save. Non-core teachers can be deactivated.'}
       </p>
 
       <div className="border border-rule-2 rounded-md overflow-hidden">
         {loading ? (
-          <Loading rows={4} />
+          <Loading kind="quiet" rows={4} />
         ) : (
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>
               <tr className="bg-paper-2">
-                <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '영어반' : 'English Class'}
                 </th>
-                <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '교사 이름' : 'Teacher Name'}
                 </th>
-                <th className="text-left px-5 py-3 text-[11px] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '역할' : 'Role'}
                 </th>
                 <th className="px-5 py-3 w-32"></th>
@@ -183,9 +183,9 @@ function TeacherSection() {
                   <tr key={teacher.id} className="border-t border-border">
                     <td className="px-5 py-3">
                       {teacher.english_class === 'Admin' ? (
-                        <span className="text-[12px] font-semibold text-navy">Admin</span>
+                        <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Admin</span>
                       ) : (
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[11px] font-bold"
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-bold"
                           style={{
                             backgroundColor: classToColor(teacher.english_class as EnglishClass),
                             color: classToTextColor(teacher.english_class as EnglishClass),
@@ -199,7 +199,7 @@ function TeacherSection() {
                         value={edits[teacher.id] ?? teacher.name}
                         onChange={(e: any) => setEdits((prev: any) => ({ ...prev, [teacher.id]: e.target.value }))}
                         onKeyDown={(e: any) => { if (e.key === 'Enter') handleSave(teacher) }}
-                        className={`px-3 py-1.5 border rounded-lg text-[13px] outline-none w-48 transition-colors ${
+                        className={`px-3 py-1.5 border rounded-lg text-[length:calc(13px*var(--ts))] outline-none w-48 transition-colors ${
                           edited ? 'border-gold bg-warm-light' : 'border-border'
                         } focus:border-navy`}
                       />
@@ -208,14 +208,14 @@ function TeacherSection() {
                     <td className="px-5 py-3 flex items-center gap-1">
                       {edited && (
                         <button onClick={() => handleSave(teacher)} disabled={saving === teacher.id}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium bg-accent text-white hover:bg-accent-hover">
+                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
                           {saving === teacher.id ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {language === 'ko' ? '저장' : 'Save'}
                         </button>
                       )}
                       {!edited && !isCore(teacher) && teacher.id !== currentTeacher?.id && (
                         <button onClick={() => startDelete(teacher)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-red-500 hover:bg-red-50 transition-colors">
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-red-500 hover:bg-red-50 transition-colors">
                           <Trash2 size={12} /> {language === 'ko' ? '삭제' : 'Remove'}
                         </button>
                       )}
@@ -234,17 +234,17 @@ function TeacherSection() {
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle size={20} className="text-amber-500" />
-              <h3 className="font-display text-[22px] leading-none text-ink">
+              <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
                 {language === 'ko' ? '교사 비활성화' : 'Deactivate Teacher'}
               </h3>
             </div>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mb-3">
               {language === 'ko'
                 ? `${deleteConfirm.name}을(를) 비활성화하시겠습니까? 이 작업은 로그인 목록에서 제거되지만 기록 데이터는 유지됩니다.`
                 : `Deactivate ${deleteConfirm.name}? This removes them from login but preserves all historical data.`}
             </p>
             {deleteStats && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-[12px]">
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-[length:calc(12px*var(--ts))]">
                 <p className="font-semibold text-amber-800 mb-1">Associated data:</p>
                 <p className="text-amber-700">{deleteStats.students} active students (will be unassigned)</p>
                 <p className="text-amber-700">{deleteStats.logs} behavior logs</p>
@@ -253,16 +253,16 @@ function TeacherSection() {
             )}
             <div className="flex gap-2">
               <button onClick={() => handleExportTeacherData(deleteConfirm)}
-                className="flex-1 py-2 rounded-lg text-[12px] font-medium border border-border text-text-secondary hover:bg-surface-alt transition-colors">
+                className="flex-1 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-border text-text-secondary hover:bg-surface-alt transition-colors">
                 {language === 'ko' ? '데이터 다운로드' : 'Download Data First'}
               </button>
               <button onClick={handleDelete} disabled={saving === deleteConfirm.id}
-                className="flex-1 py-2 rounded-lg text-[12px] font-medium bg-red-500 text-white hover:bg-red-600 transition-colors">
+                className="flex-1 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-red-500 text-white hover:bg-red-600 transition-colors">
                 {saving === deleteConfirm.id ? <Loader2 size={14} className="animate-spin mx-auto" /> : (language === 'ko' ? '비활성화' : 'Deactivate')}
               </button>
             </div>
             <button onClick={() => { setDeleteConfirm(null); setDeleteStats(null) }}
-              className="w-full mt-2 py-2 rounded-lg text-[12px] text-text-tertiary hover:text-text-secondary transition-colors">
+              className="w-full mt-2 py-2 rounded-lg text-[length:calc(12px*var(--ts))] text-text-tertiary hover:text-text-secondary transition-colors">
               {language === 'ko' ? '취소' : 'Cancel'}
             </button>
           </div>
@@ -420,18 +420,18 @@ function SemesterSection() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CalendarDays size={18} className="text-ink-3" />
-          <h3 className="font-display text-[22px] leading-none text-ink">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
+          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
         </div>
         <div className="flex items-center gap-2">
           {canManage && archivedCount > 0 && (
             <button onClick={() => setShowArchived(!showArchived)}
-              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-all ${showArchived ? 'bg-surface-alt border-border text-text-primary' : 'bg-surface border-border text-text-secondary hover:bg-surface-alt'}`}>
+              className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium border transition-all ${showArchived ? 'bg-surface-alt border-border text-text-primary' : 'bg-surface border-border text-text-secondary hover:bg-surface-alt'}`}>
               <Archive size={13} /> {lang === 'ko' ? `보관됨 (${archivedCount})` : `Archived (${archivedCount})`}
             </button>
           )}
           {canManage && (
             <button onClick={() => setAdding(!adding)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover">
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
               <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
             </button>
           )}
@@ -439,7 +439,7 @@ function SemesterSection() {
       </div>
 
       {!canManage && (
-        <p className="text-[11px] text-text-tertiary mb-3">
+        <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mb-3">
           {lang === 'ko'
             ? '활성 학기는 관리자 또는 Snapdragon 계정만 설정할 수 있습니다.'
             : 'Only admin and Snapdragon accounts can set the active semester. Your account always follows whichever semester they make active.'}
@@ -448,7 +448,7 @@ function SemesterSection() {
 
       {canManage && activeCount > 1 && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
-          <p className="text-[12px] text-red-800 leading-relaxed">
+          <p className="text-[length:calc(12px*var(--ts))] text-red-800 leading-relaxed">
             <strong>{activeCount} semesters are marked active.</strong> Different screens can then disagree about
             which one they are showing, so grades from the wrong semester may appear. Click
             <strong> Keep Only This Active</strong> on the semester you actually want to fix it.
@@ -459,15 +459,15 @@ function SemesterSection() {
       {adding && canManage && (
         <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
-              <input value={newSem.name} onChange={(e: any) => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
-              <input value={newSem.name_ko} onChange={(e: any) => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
-              <input value={newSem.academic_year} onChange={(e: any) => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
+              <input value={newSem.name} onChange={(e: any) => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
+              <input value={newSem.name_ko} onChange={(e: any) => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
+              <input value={newSem.academic_year} onChange={(e: any) => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
               <select value={newSem.type} onChange={(e: any) => setNewSem({ ...newSem, type: e.target.value })}
-                className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy">
+                className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy">
                 <option value="spring">Spring</option>
                 <option value="fall">Fall</option>
                 <option value="spring_mid">Spring Midterm</option>
@@ -477,25 +477,25 @@ function SemesterSection() {
               </select></div>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start Date</label>
-              <input type="date" value={newSem.start_date} onChange={(e: any) => setNewSem({ ...newSem, start_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End Date</label>
-              <input type="date" value={newSem.end_date} onChange={(e: any) => setNewSem({ ...newSem, end_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Midterm Cutoff</label>
-              <input type="date" value={newSem.midterm_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, midterm_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Report Card Cutoff</label>
-              <input type="date" value={newSem.report_card_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, report_card_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start Date</label>
+              <input type="date" value={newSem.start_date} onChange={(e: any) => setNewSem({ ...newSem, start_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End Date</label>
+              <input type="date" value={newSem.end_date} onChange={(e: any) => setNewSem({ ...newSem, end_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Midterm Cutoff</label>
+              <input type="date" value={newSem.midterm_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, midterm_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Report Card Cutoff</label>
+              <input type="date" value={newSem.report_card_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, report_card_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover">Add</button>
-            <button onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
+            <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">Add</button>
+            <button onClick={() => setAdding(false)} className="px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium hover:bg-surface-alt">Cancel</button>
           </div>
         </div>
       )}
 
       <div className="border border-rule-2 rounded-md overflow-hidden">
         {loading ? (
-          <Loading rows={4} />
+          <Loading kind="quiet" rows={4} />
         ) : visibleSemesters.length === 0 ? (
           <div className="p-8 text-center text-text-tertiary text-sm">
             {semesters.length === 0 ? 'No semesters created yet.'
@@ -508,27 +508,27 @@ function SemesterSection() {
               <div key={sem.id} className={`p-4 ${sem.is_archived ? 'opacity-60' : sem.is_active ? 'bg-green-50/50' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-semibold text-navy">{sem.name}</span>
-                    {sem.name_ko && <span className="text-[12px] text-text-tertiary">{sem.name_ko}</span>}
-                    {sem.is_active && <span className="text-[9px] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
-                    {sem.is_archived && <span className="text-[9px] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
+                    <span className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{sem.name}</span>
+                    {sem.name_ko && <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{sem.name_ko}</span>}
+                    {sem.is_active && <span className="text-[length:max(10px,calc(9px*var(--ts)))] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
+                    {sem.is_archived && <span className="text-[length:max(10px,calc(9px*var(--ts)))] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-2">
                       {!sem.is_archived && (!sem.is_active || activeCount > 1) && (
                         <button onClick={() => handleSetActive(sem.id)} disabled={saving === sem.id}
                           title={sem.is_active ? 'Make this the only active semester' : 'Make this the active semester for every account'}
-                          className="text-[10px] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium disabled:opacity-50">
+                          className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium disabled:opacity-50">
                           {sem.is_active ? 'Keep Only This Active' : 'Set Active'}
                         </button>
                       )}
                       <button onClick={() => handleToggleArchive(sem)}
                         title={sem.is_archived ? 'Restore to semester pickers' : 'Hide from semester pickers (keeps all data)'}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
                         {sem.is_archived ? <><ArchiveRestore size={10} /> Restore</> : <><Archive size={10} /> Archive</>}
                       </button>
                       <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-medium bg-accent text-white hover:bg-accent-hover">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
                         {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
                       </button>
                       <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
@@ -536,30 +536,30 @@ function SemesterSection() {
                   )}
                 </div>
                 <div className="grid grid-cols-4 gap-3">
-                  <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
+                  <div><label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
                     <input type="date" value={sem.start_date || ''} onChange={(e: any) => updateField(sem.id, 'start_date', e.target.value)}
                       disabled={!canManage}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
-                  <div><label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
+                  <div><label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
                     <input type="date" value={sem.end_date || ''} onChange={(e: any) => updateField(sem.id, 'end_date', e.target.value)}
                       disabled={!canManage}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Midterm Cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
+                    <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
+                      Midterm Cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:max(10px,calc(8px*var(--ts)))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
                     </label>
                     <input type="date" value={sem.midterm_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'midterm_cutoff_date', e.target.value)}
                       disabled={!canManage}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Report Card Cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
+                    <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
+                      Report Card Cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:max(10px,calc(8px*var(--ts)))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
                     </label>
                     <input type="date" value={sem.report_card_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'report_card_cutoff_date', e.target.value)}
                       disabled={!canManage}
-                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[12px] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
+                      className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                 </div>
-                <p className="text-[9px] text-text-tertiary mt-2">Grades entered before the midterm cutoff count toward progress reports. All grades in the semester count toward the final report card. Grades auto-lock after each cutoff date.</p>
+                <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-2">Grades entered before the midterm cutoff count toward progress reports. All grades in the semester count toward the final report card. Grades auto-lock after each cutoff date.</p>
               </div>
             ))}
           </div>
@@ -683,7 +683,7 @@ function ProgramBenchmarksSection() {
 
   const gradeData = CLASSES.map((cls) => getBenchmark(selectedGrade, cls)).filter(Boolean)
 
-  if (loading) return <Loading rows={4} />
+  if (loading) return <Loading kind="quiet" rows={4} />
 
   return (
     <div id="set-benchmarks" className="mb-10 scroll-mt-[140px]">
@@ -691,13 +691,13 @@ function ProgramBenchmarksSection() {
         <div className="flex items-center gap-2">
           <Target size={18} className="text-ink-3" />
           <div>
-            <h3 className="font-display text-[22px] leading-none text-ink">Program Benchmarks</h3>
-            <p className="text-[12px] text-ink-3 mt-1">CWPM and Lexile targets per grade and class. Visible to all teachers.</p>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Program Benchmarks</h3>
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">CWPM and Lexile targets per grade and class. Visible to all teachers.</p>
           </div>
         </div>
         {(isAdmin || teacherClass) && (
           <button onClick={handleSave} disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save Benchmarks
           </button>
         )}
@@ -707,7 +707,7 @@ function ProgramBenchmarksSection() {
       <div className="flex gap-1 mb-3">
         {GRADES.map((g) => (
           <button key={g} onClick={() => setSelectedGrade(g)}
-            className={`px-4 py-2 rounded-lg text-[13px] font-semibold transition-all ${
+            className={`px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-semibold transition-all ${
               selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80'
             }`}>
             Grade {g}
@@ -716,14 +716,14 @@ function ProgramBenchmarksSection() {
       </div>
 
       <div className="border border-rule-2 rounded-md overflow-hidden">
-        <table className="w-full text-[12px]">
+        <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead>
             <tr className="bg-paper-2">
-              <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[8px]">mid-semester target</span></th>
-              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[8px]">end-semester target</span></th>
-              <th className="text-center px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
-              <th className="text-left px-3 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
+              <th className="text-left px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[length:max(10px,calc(8px*var(--ts)))]">mid-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[length:max(10px,calc(8px*var(--ts)))]">end-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
+              <th className="text-left px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -734,31 +734,31 @@ function ProgramBenchmarksSection() {
               return (
                 <tr key={cls} className="border-t border-border">
                   <td className="px-4 py-2.5">
-                    <span className="font-semibold text-[13px] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
+                    <span className="font-semibold text-[length:calc(13px*var(--ts))] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls), color: classToTextColor(cls) }}>
                       {cls}
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     {editable ? (
                       <input type="number" value={b.cwpm_mid} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'cwpm_mid', e.target.value)}
-                        className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
+                        className="w-16 px-2 py-1 border border-border rounded text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
                     ) : <span className="font-bold text-navy">{b.cwpm_mid}</span>}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     {editable ? (
                       <input type="number" value={b.cwpm_end} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'cwpm_end', e.target.value)}
-                        className="w-16 px-2 py-1 border border-border rounded text-center text-[12px] outline-none focus:border-navy" />
+                        className="w-16 px-2 py-1 border border-border rounded text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
                     ) : <span className="font-bold text-navy">{b.cwpm_end}</span>}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     {editable ? (
                       <span className="flex items-center justify-center gap-1">
                         <input type="number" value={b.lexile_min} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_min', e.target.value)}
-                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
+                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
                         <span className="text-text-tertiary">-</span>
                         <input type="number" value={b.lexile_max} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_max', e.target.value)}
-                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
-                        <span className="text-[10px] text-text-tertiary">L</span>
+                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
+                        <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">L</span>
                       </span>
                     ) : <span className="text-text-secondary">{b.lexile_min}-{b.lexile_max}L</span>}
                   </td>
@@ -766,9 +766,9 @@ function ProgramBenchmarksSection() {
                     {editable ? (
                       <textarea value={b.notes} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'notes', e.target.value)}
                         rows={2}
-                        className="w-full px-2 py-1.5 border border-border rounded text-[11px] outline-none focus:border-navy resize-y min-h-[48px]"
+                        className="w-full px-2 py-1.5 border border-border rounded text-[length:calc(11px*var(--ts))] outline-none focus:border-navy resize-y min-h-[48px]"
                         placeholder="Focus areas, WIDA levels, standards..." />
-                    ) : <span className="text-text-tertiary text-[11px] whitespace-pre-wrap">{b.notes}</span>}
+                    ) : <span className="text-text-tertiary text-[length:calc(11px*var(--ts))] whitespace-pre-wrap">{b.notes}</span>}
                   </td>
                 </tr>
               )
@@ -776,7 +776,7 @@ function ProgramBenchmarksSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-[9px] text-text-tertiary mt-2"><strong>CWPM Mid</strong> = expected correct words per minute by mid-semester (used as "Approaching" threshold). <strong>CWPM End</strong> = target fluency by end of semester (used as "Proficient" threshold). These are realistic ELL program targets, not native-speaker norms. Benchmarks appear in Reading Fluency, Leveling, and Report Cards. Admin and class teachers can edit.</p>
+      <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-2"><strong>CWPM Mid</strong> = expected correct words per minute by mid-semester (used as "Approaching" threshold). <strong>CWPM End</strong> = target fluency by end of semester (used as "Proficient" threshold). These are realistic ELL program targets, not native-speaker norms. Benchmarks appear in Reading Fluency, Leveling, and Report Cards. Admin and class teachers can edit.</p>
     </div>
   )
 }
@@ -824,24 +824,24 @@ function ClassManagementSection() {
     showToast(`Class "${cls}" deleted and students deactivated`)
   }
 
-  if (loading) return <Loading rows={4} />
+  if (loading) return <Loading kind="quiet" rows={4} />
 
   return (
     <div id="set-classes" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center gap-2 mb-4">
         <AlertTriangle size={18} className="text-warn" />
         <div>
-          <h3 className="font-display text-[22px] leading-none text-ink">Class Management</h3>
-          <p className="text-[12px] text-ink-3 mt-1">Delete non-core classes. Core classes (Lily-Snapdragon) cannot be deleted.</p>
+          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Class Management</h3>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">Delete non-core classes. Core classes (Lily-Snapdragon) cannot be deleted.</p>
         </div>
       </div>
       <div className="border border-rule-2 rounded-md overflow-hidden">
-        <table className="w-full text-[13px]">
+        <table className="w-full text-[length:calc(13px*var(--ts))]">
           <thead>
             <tr className="bg-paper-2">
-              <th className="text-left px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
-              <th className="text-right px-4 py-2.5 text-[10px] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
+              <th className="text-left px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
+              <th className="text-center px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
+              <th className="text-right px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -850,19 +850,19 @@ function ClassManagementSection() {
               return (
                 <tr key={cls.english_class} className="border-t border-border">
                   <td className="px-4 py-2.5">
-                    <span className="font-semibold text-[13px] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls.english_class as EnglishClass), color: classToTextColor(cls.english_class as EnglishClass) }}>
+                    <span className="font-semibold text-[length:calc(13px*var(--ts))] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls.english_class as EnglishClass), color: classToTextColor(cls.english_class as EnglishClass) }}>
                       {cls.english_class}
                     </span>
-                    {isCore && <span className="text-[9px] text-text-tertiary ml-2">Core</span>}
+                    {isCore && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary ml-2">Core</span>}
                   </td>
                   <td className="text-center px-4 py-2.5 font-medium">{cls.count}</td>
                   <td className="text-right px-4 py-2.5">
                     {!isCore ? (
                       <button onClick={() => handleDeleteClass(cls.english_class)} disabled={deleting === cls.english_class}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40">
                         {deleting === cls.english_class ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
                       </button>
-                    ) : <span className="text-[10px] text-text-tertiary">Protected</span>}
+                    ) : <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">Protected</span>}
                   </td>
                 </tr>
               )
@@ -939,8 +939,8 @@ function AssessmentWeightsSection() {
         <div className="flex items-center gap-3 mb-2">
           <Scale size={18} className="text-ink-3" />
           <div className="flex-1">
-            <h3 className="font-display text-[22px] leading-none text-ink">Assessment Weights</h3>
-            <p className="text-[12px] text-text-secondary">How formative, summative, and performance task grades are weighted. Weights must sum to 100%.</p>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Assessment Weights</h3>
+            <p className="text-[length:calc(12px*var(--ts))] text-text-secondary">How formative, summative, and performance task grades are weighted. Weights must sum to 100%.</p>
           </div>
         </div>
 
@@ -948,14 +948,14 @@ function AssessmentWeightsSection() {
         <div className="grid grid-cols-3 gap-2 mb-4 mt-3">
           {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
             <div key={type} className="bg-surface-alt/50 rounded-lg px-3 py-2">
-              <p className="text-[11px] font-semibold text-navy">{typeLabels[type]}</p>
-              <p className="text-[9px] text-text-tertiary mt-0.5">{typeDescs[type]}</p>
+              <p className="text-[length:calc(11px*var(--ts))] font-semibold text-navy">{typeLabels[type]}</p>
+              <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-0.5">{typeDescs[type]}</p>
             </div>
           ))}
         </div>
 
         {/* Grade-level defaults */}
-        <p className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Default Weights by Grade</p>
+        <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Default Weights by Grade</p>
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map(grade => {
             const key = String(grade)
@@ -964,20 +964,20 @@ function AssessmentWeightsSection() {
             const isValid = total === 100
             return (
               <div key={grade} className={`flex items-center gap-4 px-4 py-2.5 rounded-lg border ${isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
-                <span className="text-[13px] font-bold text-navy w-16">Grade {grade}</span>
+                <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy w-16">Grade {grade}</span>
                 {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                   <div key={type} className="flex items-center gap-1.5">
-                    <label className="text-[10px] text-text-secondary w-20">{typeLabels[type]}</label>
+                    <label className="text-[length:calc(10px*var(--ts))] text-text-secondary w-20">{typeLabels[type]}</label>
                     {isAdmin ? (
                       <input type="number" min={0} max={100} value={w[type]}
                         onChange={e => update(key, type, Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
-                        className="w-14 px-2 py-1 border border-border rounded-lg text-center text-[12px] outline-none focus:border-navy" />
+                        className="w-14 px-2 py-1 border border-border rounded-lg text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
                     ) : (
-                      <span className="text-[13px] font-semibold text-navy w-14 text-center">{w[type]}%</span>
+                      <span className="text-[length:calc(13px*var(--ts))] font-semibold text-navy w-14 text-center">{w[type]}%</span>
                     )}
                   </div>
                 ))}
-                <span className={`text-[11px] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-[length:calc(11px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>
                   {total}%{!isValid && ' (must be 100)'}
                 </span>
               </div>
@@ -988,18 +988,18 @@ function AssessmentWeightsSection() {
         {/* Class-specific overrides */}
         <div className="mt-4">
           <button onClick={() => setShowClassOverrides(!showClassOverrides)}
-            className="text-[11px] font-medium text-navy hover:underline flex items-center gap-1">
+            className="text-[length:calc(11px*var(--ts))] font-medium text-navy hover:underline flex items-center gap-1">
             <ChevronDown size={12} className={`transition-transform ${showClassOverrides ? 'rotate-180' : ''}`} />
             {showClassOverrides ? 'Hide' : 'Show'} class-specific overrides
           </button>
-          <p className="text-[9px] text-text-tertiary mt-1">Override weights for specific class+grade combos (e.g. Lily Grade 1 vs Snapdragon Grade 1)</p>
+          <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-1">Override weights for specific class+grade combos (e.g. Lily Grade 1 vs Snapdragon Grade 1)</p>
         </div>
 
         {showClassOverrides && (
           <div className="mt-3 space-y-4">
             {[1, 2, 3, 4, 5].map(grade => (
               <div key={grade}>
-                <p className="text-[11px] font-semibold text-navy mb-1.5">Grade {grade} — Class Overrides</p>
+                <p className="text-[length:calc(11px*var(--ts))] font-semibold text-navy mb-1.5">Grade {grade} — Class Overrides</p>
                 <div className="space-y-1.5">
                   {classes.map(cls => {
                     const key = `${grade}-${cls}`
@@ -1009,10 +1009,10 @@ function AssessmentWeightsSection() {
                     const isValid = total === 100
                     return (
                       <div key={cls} className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${!hasOverride ? 'border-border/50 bg-surface-alt/20 opacity-60' : isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
-                        <span className="text-[11px] font-medium w-24" style={{ color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
+                        <span className="text-[length:calc(11px*var(--ts))] font-medium w-24" style={{ color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
                         {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                           <div key={type} className="flex items-center gap-1">
-                            <label className="text-[9px] text-text-tertiary w-14">{typeLabels[type]}</label>
+                            <label className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary w-14">{typeLabels[type]}</label>
                             {isAdmin ? (
                               <input type="number" min={0} max={100} value={hasOverride ? w[type] : ''}
                                 placeholder={String(getWeight(String(grade))[type])}
@@ -1032,14 +1032,14 @@ function AssessmentWeightsSection() {
                                     }
                                   }
                                 }}
-                                className="w-12 px-1.5 py-1 border border-border rounded text-center text-[11px] outline-none focus:border-navy" />
+                                className="w-12 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
                             ) : (
-                              <span className="text-[11px] font-medium w-12 text-center">{hasOverride ? w[type] + '%' : '—'}</span>
+                              <span className="text-[length:calc(11px*var(--ts))] font-medium w-12 text-center">{hasOverride ? w[type] + '%' : '—'}</span>
                             )}
                           </div>
                         ))}
-                        {hasOverride && <span className={`text-[10px] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>{total}%</span>}
-                        {!hasOverride && <span className="text-[9px] text-text-tertiary ml-auto italic">using default</span>}
+                        {hasOverride && <span className={`text-[length:calc(10px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>{total}%</span>}
+                        {!hasOverride && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary ml-auto italic">using default</span>}
                       </div>
                     )
                   })}
@@ -1052,7 +1052,7 @@ function AssessmentWeightsSection() {
         {isAdmin && (
           <div className="flex justify-end mt-4">
             <button onClick={handleSave} disabled={saving}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
               {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Weights
             </button>
           </div>
@@ -1096,14 +1096,14 @@ function SchoolInfoSection() {
     setSaving(false)
   }
 
-  if (loading) return <Loading rows={4} />
+  if (loading) return <Loading kind="quiet" rows={4} />
   if (!settings) return null
 
   return (
     <div id="set-school" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-center gap-2 mb-4">
         <School size={18} className="text-ink-3" />
-        <h3 className="font-display text-[22px] leading-none text-ink">
+        <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
           {language === 'ko' ? '학교 정보' : 'School Information'}
         </h3>
       </div>
@@ -1111,43 +1111,43 @@ function SchoolInfoSection() {
       <div className="border-t border-rule-2 pt-5">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님' : 'Principal'}
             </label>
             <input value={settings.principal_name || ''} onChange={(e: any) => setSettings({ ...settings, principal_name: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님 (한글)' : 'Principal (Korean)'}
             </label>
             <input value={settings.principal_name_ko || ''} onChange={(e: any) => setSettings({ ...settings, principal_name_ko: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '팀 매니저' : 'Team Manager'}
             </label>
             <input value={settings.team_manager || ''} onChange={(e: any) => setSettings({ ...settings, team_manager: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '학년도' : 'Academic Year'}
             </label>
             <input value={settings.academic_year || ''} onChange={(e: any) => setSettings({ ...settings, academic_year: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div className="col-span-2">
-            <label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '프로그램 부제' : 'Program Subtitle'}
             </label>
             <input value={settings.program_subtitle || ''} onChange={(e: any) => setSettings({ ...settings, program_subtitle: e.target.value })}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
         </div>
         <button onClick={handleSave} disabled={saving}
-          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[13px] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+          className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {language === 'ko' ? '저장' : 'Save Changes'}
         </button>
@@ -1179,13 +1179,13 @@ function ScheduleRulesSection() {
     <div id="set-schedule" className="mb-10 scroll-mt-[140px]">
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-2 mb-3">
         <div>
-          <h3 className="font-display text-[22px] leading-none text-ink">{language === 'ko' ? '수업 없는 요일' : 'Days with no class'}</h3>
-          <p className="text-[12.5px] text-ink-3 mt-1">{language === 'ko' ? '체크된 요일은 수업 계획에서 회색으로 표시되고 출석에서 건너뜁니다.' : 'A checked day is greyed in the lesson planner and skipped in attendance for that grade.'}</p>
+          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{language === 'ko' ? '수업 없는 요일' : 'Days with no class'}</h3>
+          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-1">{language === 'ko' ? '체크된 요일은 수업 계획에서 회색으로 표시되고 출석에서 건너뜁니다.' : 'A checked day is greyed in the lesson planner and skipped in attendance for that grade.'}</p>
         </div>
-        {dirty && <button onClick={save} disabled={saving} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60">{language === 'ko' ? '저장' : 'Save'}</button>}
+        {dirty && <button onClick={save} disabled={saving} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60">{language === 'ko' ? '저장' : 'Save'}</button>}
       </div>
       {loading ? null : (
-        <table className="text-[13px] tabular-nums">
+        <table className="text-[length:calc(13px*var(--ts))] tabular-nums">
           <thead><tr><th className="text-left pr-4 py-1 eyebrow font-semibold">{language === 'ko' ? '학년' : 'Grade'}</th>{[1, 2, 3, 4, 5].map(w => <th key={w} className="px-3 py-1 eyebrow font-semibold">{WEEKDAY_LABELS[w]}</th>)}</tr></thead>
           <tbody className="divide-y divide-rule">
             {[1, 2, 3, 4, 5].map(g => (
@@ -1193,7 +1193,7 @@ function ScheduleRulesSection() {
                 {[1, 2, 3, 4, 5].map(w => (
                   <td key={w} className="px-3 py-1.5 text-center">
                     <button onClick={() => toggle(g, w)} disabled={!canEdit} title={on(g, w) ? (language === 'ko' ? '수업 없음' : 'No class') : (language === 'ko' ? '수업 있음' : 'Class as usual')}
-                      className={`w-8 h-7 rounded border text-[11px] font-bold ${on(g, w) ? 'bg-ink text-paper border-ink' : 'bg-surface border-rule-2 text-ink-3 hover:border-ink-3'} disabled:cursor-default`}>{on(g, w) ? '—' : ''}</button>
+                      className={`w-8 h-7 rounded border text-[length:calc(11px*var(--ts))] font-bold ${on(g, w) ? 'bg-ink text-paper border-ink' : 'bg-surface border-rule-2 text-ink-3 hover:border-ink-3'} disabled:cursor-default`}>{on(g, w) ? '—' : ''}</button>
                   </td>
                 ))}
               </tr>
@@ -1201,7 +1201,7 @@ function ScheduleRulesSection() {
           </tbody>
         </table>
       )}
-      {!canEdit && <p className="text-[11.5px] text-ink-3 mt-2">{language === 'ko' ? '관리자 또는 스냅드래곤 교사만 변경할 수 있습니다.' : 'Admin or the Snapdragon teacher can change these.'}</p>}
+      {!canEdit && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{language === 'ko' ? '관리자 또는 스냅드래곤 교사만 변경할 수 있습니다.' : 'Admin or the Snapdragon teacher can change these.'}</p>}
     </div>
   )
 }
@@ -1227,21 +1227,21 @@ function BehaviorLadderSection() {
     setSaving(false)
     if (err) showToast(`Error: ${err}`); else { showToast(ko ? '행동 단계 저장됨' : 'Behavior ladder saved'); logActivity('settings', 'Behavior ladder') }
   }
-  const field = 'h-8 px-2.5 bg-surface border border-rule-2 rounded text-[12.5px] text-ink disabled:opacity-60'
+  const field = 'h-8 px-2.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink disabled:opacity-60'
   return (
     <section id="set-ladder" className="mb-12 scroll-mt-[140px]">
       <div className="flex items-end justify-between gap-4 mb-3 flex-wrap">
         <div>
-          <h2 className="font-display text-[22px] leading-none text-ink">{ko ? '행동 단계' : 'Behavior ladder'}</h2>
-          <p className="text-[12.5px] text-ink-2 mt-1.5 max-w-2xl">{ko
+          <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '행동 단계' : 'Behavior ladder'}</h2>
+          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1.5 max-w-2xl">{ko
             ? '우려·부정 기록이 기준 수에 이르면 사례가 열리고, 관리자와 담임에게 긴급 공지가 갑니다. 조치를 기록하면 사례가 닫히고 학생 기록에 학부모 연락으로 남으며, 그때부터 다시 셉니다. 교사가 직접 표시한 기록은 즉시 사례를 엽니다.'
             : 'When a student reaches the number of concern or negative notes on a step, a case opens: the notes bundled together on the admin dashboard, with no dismiss, and an urgent notice to every admin and the class teacher. Recording the step’s action closes the case, writes a parent-contact entry on the student’s log, and restarts the count. A note a teacher flags by hand opens a case at once.'}</p>
         </div>
-        {isAdmin && <button onClick={save} disabled={saving || !loaded} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving && <Loader2 size={13} className="animate-spin" />}{ko ? '저장' : 'Save'}</button>}
+        {isAdmin && <button onClick={save} disabled={saving || !loaded} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving && <Loader2 size={13} className="animate-spin" />}{ko ? '저장' : 'Save'}</button>}
       </div>
       <div className="border border-rule-2 rounded-lg overflow-hidden">
-        <table className="w-full text-[12.5px]">
-          <thead><tr className="bg-paper-2 text-[10px] uppercase tracking-wider text-ink-3">
+        <table className="w-full text-[length:calc(12.5px*var(--ts))]">
+          <thead><tr className="bg-paper-2 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-ink-3">
             <th className="text-left px-4 py-2 w-16">{ko ? '단계' : 'Step'}</th><th className="text-left px-3 py-2 w-28">{ko ? '기록 수' : 'Notes to open'}</th><th className="text-left px-3 py-2">{ko ? '관리자가 하는 일' : 'What admin does'}</th><th className="text-left px-3 py-2 w-56">{ko ? '종료 조치 (버튼 이름)' : 'Action that closes it (button)'}</th><th className="w-10" />
           </tr></thead>
           <tbody className="divide-y divide-rule">
@@ -1256,12 +1256,12 @@ function BehaviorLadderSection() {
             ))}
           </tbody>
         </table>
-        <div className="px-4 py-2.5 bg-paper-2/60 border-t border-rule-2 flex items-center gap-4 flex-wrap text-[12.5px] text-ink-2">
+        <div className="px-4 py-2.5 bg-paper-2/60 border-t border-rule-2 flex items-center gap-4 flex-wrap text-[length:calc(12.5px*var(--ts))] text-ink-2">
           {isAdmin && <button onClick={() => setS(prev => ({ ...prev, steps: [...prev.steps, { threshold: 3, label: '', action: '' }] }))} className="text-accent hover:underline">+ {ko ? '단계 추가' : 'Add a step'}</button>}
           <label className="inline-flex items-center gap-2 ml-auto">{ko ? '다음 수업일까지 확인하지 않으면 빨간 띠:' : 'Red bar on every admin page after'}<input type="number" min={0} value={s.overdue_days} disabled={!isAdmin} onChange={e => setS(prev => ({ ...prev, overdue_days: Number(e.target.value) }))} className={`${field} w-16 text-center tabular-nums`} />{ko ? '수업일' : 'school days unread'}</label>
         </div>
       </div>
-      <p className="text-[11.5px] text-ink-3 mt-2">{ko ? '다음 단계는 이전 사례가 종료된 뒤 그 시점부터 센 기록 수로 열립니다. 마지막 단계는 반복됩니다.' : 'The next step starts counting from the moment the previous case was closed. The last step repeats. Needs supabase/migration-behavior-ladder.sql.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{ko ? '다음 단계는 이전 사례가 종료된 뒤 그 시점부터 센 기록 수로 열립니다. 마지막 단계는 반복됩니다.' : 'The next step starts counting from the moment the previous case was closed. The last step repeats. Needs supabase/migration-behavior-ladder.sql.'}</p>
     </section>
   )
 }

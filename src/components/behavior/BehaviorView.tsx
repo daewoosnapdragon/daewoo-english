@@ -106,21 +106,21 @@ export default function BehaviorView() {
     load()
   }
 
-  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[12px] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
-  const sel = 'h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink'
-  const btn = 'h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5'
+  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const sel = 'h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
+  const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5'
 
   return (
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{allClasses ? (ko ? '모든 반' : 'Every class') : own}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '행동' : 'Behavior'}</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '행동' : 'Behavior'}</h1>
         </div>
         <button onClick={load} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
       </div>
 
-      {missing && <p className="mb-4 text-[12.5px] text-warn">{ko ? 'supabase/migration-behavior-ladder.sql을 먼저 실행하세요.' : 'The behavior ladder tables are missing. Run supabase/migration-behavior-ladder.sql first.'}</p>}
+      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-behavior-ladder.sql을 먼저 실행하세요.' : 'The behavior ladder tables are missing. Run supabase/migration-behavior-ladder.sql first.'}</p>}
 
       <div className="flex items-center gap-3 flex-wrap mb-5">
         {allClasses && (
@@ -129,13 +129,13 @@ export default function BehaviorView() {
             {classes.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
-        <span className="text-[12px] text-ink-3">{ko ? '사례와 기록 모두에 적용됩니다' : 'applies to the cases and the notes'}</span>
+        <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '사례와 기록 모두에 적용됩니다' : 'applies to the cases and the notes'}</span>
       </div>
 
       {/* ── Cases ── */}
       <section className="mb-10">
         <div className="flex items-baseline justify-between gap-3 flex-wrap border-b border-rule-2 pb-2 mb-3">
-          <h2 className="font-display text-[22px] leading-none text-ink">{ko ? '행동 단계 사례' : 'Ladder cases'} <span className="text-ink-3 text-[14px] font-sans">· {needsCount} {ko ? '건 진행 중' : needsCount === 1 ? 'needs action' : 'need action'}</span></h2>
+          <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '행동 단계 사례' : 'Ladder cases'} <span className="text-ink-3 text-[length:calc(14px*var(--ts))] font-sans">· {needsCount} {ko ? '건 진행 중' : needsCount === 1 ? 'needs action' : 'need action'}</span></h2>
           <div className="flex gap-1.5">
             <button onClick={() => setCaseState('needs')} className={chip(caseState === 'needs')}>{ko ? '진행 중' : 'Needs action'}</button>
             <button onClick={() => setCaseState('closed')} className={chip(caseState === 'closed')}>{ko ? '종결' : 'Closed'}</button>
@@ -143,7 +143,7 @@ export default function BehaviorView() {
           </div>
         </div>
         {loading ? <Loading rows={4} />
-        : visibleCases.length === 0 ? <p className="text-[13px] text-ink-3 py-4">{ko ? '해당하는 사례가 없습니다.' : 'No cases here.'}</p>
+        : visibleCases.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-4">{ko ? '해당하는 사례가 없습니다.' : 'No cases here.'}</p>
         : (
           <div className="divide-y divide-rule border-t border-b border-rule">
             {visibleCases.map(c => {
@@ -165,14 +165,14 @@ export default function BehaviorView() {
                 <div key={c.id} className={`py-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] items-start ${overdue && c.status !== 'closed' ? 'bg-bad-soft/30 -mx-3 px-3' : ''}`}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <button onClick={() => setDetail(c)} className="text-[14px] font-semibold text-ink hover:underline">{c.students?.english_name}<span className="text-ink-3 font-normal text-[12px] ml-1.5">{c.students?.korean_name}</span></button>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class} · G{c.students?.grade}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
-                      {c.status === 'closed' ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-good-soft text-good font-semibold">{ko ? '종결' : 'closed'}</span>
-                        : c.status === 'acknowledged' ? <span className="text-[10px] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '읽음 · 조치 대기' : 'read · waiting for action'}</span>
-                        : <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${overdue ? 'bg-bad text-white' : 'bg-warn-soft text-warn'}`}>{ko ? `관리자 대기 ${waiting}일` : `waiting on admin · ${waiting} school ${waiting === 1 ? 'day' : 'days'}`}</span>}
+                      <button onClick={() => setDetail(c)} className="text-[length:calc(14px*var(--ts))] font-semibold text-ink hover:underline">{c.students?.english_name}<span className="text-ink-3 font-normal text-[length:calc(12px*var(--ts))] ml-1.5">{c.students?.korean_name}</span></button>
+                      <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class} · G{c.students?.grade}</span>
+                      <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
+                      {c.status === 'closed' ? <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-good-soft text-good font-semibold">{ko ? '종결' : 'closed'}</span>
+                        : c.status === 'acknowledged' ? <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '읽음 · 조치 대기' : 'read · waiting for action'}</span>
+                        : <span className={`text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded font-bold ${overdue ? 'bg-bad text-white' : 'bg-warn-soft text-warn'}`}>{ko ? `관리자 대기 ${waiting}일` : `waiting on admin · ${waiting} school ${waiting === 1 ? 'day' : 'days'}`}</span>}
                     </div>
-                    <ol className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1 text-[12px]">
+                    <ol className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1 text-[length:calc(12px*var(--ts))]">
                       {steps.map((st, i) => (
                         <li key={i} className={`inline-flex items-center gap-2 ${st.tone === 'good' ? 'text-good' : st.tone === 'warn' ? 'text-warn' : st.tone === 'bad' ? 'text-bad' : 'text-ink-2'}`}>
                           {i > 0 && <span className="text-ink-3">→</span>}<span>{st.text}</span>
@@ -198,23 +198,23 @@ export default function BehaviorView() {
       {/* ── Notes ── */}
       <section>
         <div className="flex items-baseline justify-between gap-3 flex-wrap border-b border-rule-2 pb-2 mb-3">
-          <h2 className="font-display text-[22px] leading-none text-ink">{ko ? '행동 기록' : 'Behavior notes'} <span className="text-ink-3 text-[14px] font-sans">· {visibleLogs.length}</span></h2>
+          <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '행동 기록' : 'Behavior notes'} <span className="text-ink-3 text-[length:calc(14px*var(--ts))] font-sans">· {visibleLogs.length}</span></h2>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex gap-1.5">{[30, 60, 180].map(d => <button key={d} onClick={() => setDays(d)} className={chip(days === d)}>{ko ? `${d}일` : `${d} days`}</button>)}</div>
             <select value={type} onChange={e => setType(e.target.value)} className={sel}><option value="all">{ko ? '모든 종류' : 'All kinds'}</option>{types.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}</select>
-            <label className="inline-flex items-center gap-1.5 text-[12px] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={flaggedOnly} onChange={e => setFlaggedOnly(e.target.checked)} /> {ko ? '표시된 것만' : 'flagged only'}</label>
-            <input value={q} onChange={e => setQ(e.target.value)} placeholder={ko ? '학생 찾기' : 'Find a student'} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[12.5px] text-ink w-[150px]" />
+            <label className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={flaggedOnly} onChange={e => setFlaggedOnly(e.target.checked)} /> {ko ? '표시된 것만' : 'flagged only'}</label>
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder={ko ? '학생 찾기' : 'Find a student'} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink w-[150px]" />
           </div>
         </div>
-        {loading ? null : visibleLogs.length === 0 ? <p className="text-[13px] text-ink-3 py-4">{ko ? '기록이 없습니다.' : 'No notes in this window.'}</p> : (
+        {loading ? null : visibleLogs.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-4">{ko ? '기록이 없습니다.' : 'No notes in this window.'}</p> : (
           <div className="divide-y divide-rule border-t border-b border-rule">
             {visibleLogs.map(r => (
-              <div key={r.id} className="grid grid-cols-[72px_190px_110px_minmax(0,1fr)_110px] gap-3 items-baseline py-2 text-[12.5px]">
+              <div key={r.id} className="grid grid-cols-[72px_190px_110px_minmax(0,1fr)_110px] gap-3 items-baseline py-2 text-[length:calc(12.5px*var(--ts))]">
                 <span className="text-ink-3 tabular-nums">{fmtDay(r.date, ko)}</span>
-                <span className="min-w-0 truncate"><span className="font-medium text-ink">{r.students?.english_name}</span><span className="text-ink-3 ml-1.5 text-[11px]">{r.students?.english_class}</span></span>
-                <span><span className={`text-[10.5px] px-1.5 py-0.5 rounded font-semibold ${TYPE_TONE[r.type] || 'bg-paper-2 text-ink-2'}`}>{r.type.replace('_', ' ')}</span>{r.is_flagged && <Flag size={11} className="inline ml-1.5 text-bad" />}</span>
+                <span className="min-w-0 truncate"><span className="font-medium text-ink">{r.students?.english_name}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{r.students?.english_class}</span></span>
+                <span><span className={`text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${TYPE_TONE[r.type] || 'bg-paper-2 text-ink-2'}`}>{r.type.replace('_', ' ')}</span>{r.is_flagged && <Flag size={11} className="inline ml-1.5 text-bad" />}</span>
                 <span className="text-ink-2 whitespace-pre-wrap break-words">{r.note}</span>
-                <span className="text-ink-3 text-[11.5px] truncate">{r.teachers?.name || nameOf(r.teacher_id)}</span>
+                <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))] truncate">{r.teachers?.name || nameOf(r.teacher_id)}</span>
               </div>
             ))}
           </div>
@@ -222,7 +222,7 @@ export default function BehaviorView() {
       </section>
 
       {detail && <CaseModal c={detail} teachers={teachers} seenLabel={seenPhrase(detail.notice_id)?.text || ''} onClose={() => setDetail(null)} onChanged={load} />}
-      {!allClasses && <p className="text-[11px] text-ink-3 mt-6 inline-flex items-center gap-1.5"><AlertTriangle size={11} />{ko ? '내 반의 사례와 기록만 보입니다.' : 'You see your own class. Admin and the Snapdragon teacher see every class.'}</p>}
+      {!allClasses && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-6 inline-flex items-center gap-1.5"><AlertTriangle size={11} />{ko ? '내 반의 사례와 기록만 보입니다.' : 'You see your own class. Admin and the Snapdragon teacher see every class.'}</p>}
     </div>
   )
 }

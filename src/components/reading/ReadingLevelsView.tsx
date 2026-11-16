@@ -128,10 +128,10 @@ export default function ReadingLevelsView() {
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`} · {students.length} {lang === 'ko' ? '명' : 'students'}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
         </div>
         <button data-guide="reading.add" onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
-          className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[13px] font-semibold bg-accent text-white hover:bg-accent-hover">
+          className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
           <Plus size={15} /> {lang === 'ko' ? '읽기 기록 추가' : 'Add reading record'}
         </button>
       </div>
@@ -144,7 +144,7 @@ export default function ReadingLevelsView() {
           { id: 'passages', label: lang === 'ko' ? '지문 라이브러리' : 'Passage library' },
         ] as const).map((tab) => (
           <button key={tab.id} onClick={() => setSubView(tab.id)} data-guide={`reading.tab.${tab.id}`}
-            className={`relative px-4 h-10 text-[13.5px] font-medium ${subView === tab.id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
+            className={`relative px-4 h-10 text-[length:calc(13.5px*var(--ts))] font-medium ${subView === tab.id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
             {tab.label}{subView === tab.id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
           </button>
         ))}
@@ -153,17 +153,17 @@ export default function ReadingLevelsView() {
         {subView === 'phonics' && <>
           <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.scope">
             {([['class', lang === 'ko' ? '이 반' : 'This class'], ['grade', lang === 'ko' ? '학년 전체' : 'Whole grade'], ['all', lang === 'ko' ? '전 학년' : 'All grades']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => { setPhonicsScope(id); setPhonicsStudentId(null) }} className={`px-3 h-7 rounded text-[12px] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
+              <button key={id} onClick={() => { setPhonicsScope(id); setPhonicsStudentId(null) }} className={`px-3 h-7 rounded text-[length:calc(12px*var(--ts))] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
             ))}
           </div>
           {phonicsScope !== 'all' && <span className="w-px h-6 bg-rule" />}
         </>}
-        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
+        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
         {!(subView === 'phonics' && phonicsScope !== 'class') && <>
         <span className="w-px h-6 bg-rule" />
         {availableClasses.length > 1
-          ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
-          : <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
+          ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          : <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
         </>}
       </div>
       <div>
@@ -261,7 +261,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
     <div>
       {/* Benchmark legend */}
       <div className="mb-3">
-        <div className="flex items-center gap-4 text-[11.5px] text-ink-2 flex-wrap">
+        <div className="flex items-center gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-2 flex-wrap">
           <span className="eyebrow">{englishClass} · {lang === 'ko' ? `${grade}학년 기준` : `Grade ${grade} benchmarks`}{dbBench ? '' : (lang === 'ko' ? ' (기본값)' : ' (defaults)')}</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-bad-soft border border-bad/40" />Below &lt;{bench.approaching}</span>
           <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-warn-soft border border-warn/40" />Approaching {bench.approaching}–{bench.proficient - 1}</span>
@@ -275,7 +275,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                 const band = r?.cwpm != null ? getBand(r.cwpm) : null
                 return [s.english_name, s.korean_name, r?.cwpm != null ? Math.round(r.cwpm) : '', band?.label || '', r?.accuracy_rate?.toFixed(1) || '', r?.reading_level || '', r?.date || '']
               }))
-          }} className="ml-auto inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink">
+          }} className="ml-auto inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink">
             <Download size={11} /> CSV
           </button>
           <button onClick={() => {
@@ -287,28 +287,28 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
             }).join('')
             pw.document.write(`<html><head><title>Reading Report - ${englishClass} Gr ${grade}</title><style>body{font-family:'Segoe UI',sans-serif;padding:24px}table{width:100%;border-collapse:collapse;margin-top:12px}th{background:#f1f5f9;padding:8px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #cbd5e1}@media print{body{padding:12px}}</style></head><body><h2 style="color:#647FBC;font-size:18px;margin:0">${englishClass} Grade ${grade} -- Reading Fluency Report</h2><p style="color:#94a3b8;font-size:11px;margin-top:4px">Benchmarks: Below &lt;${bench.approaching} | Approaching ${bench.approaching}-${bench.proficient - 1} | Proficient ${bench.proficient}-${bench.advanced - 1} | Advanced ${bench.advanced}+</p><table><thead><tr><th style="text-align:left">Student</th><th>CWPM</th><th>Band</th><th>Accuracy</th><th>Lexile</th></tr></thead><tbody>${rows}</tbody></table><p style="color:#94a3b8;font-size:10px;margin-top:16px;text-align:center">Printed ${new Date().toLocaleDateString()}</p></body></html>`)
             pw.document.close(); pw.print()
-          }} className="inline-flex items-center gap-1 text-[12px] text-ink-3 hover:text-ink">
+          }} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink">
             <Printer size={11} /> Print
           </button>
         </div>
-        {canEditBench && !editBench && <button onClick={openBenchEditor} className="text-[12px] text-accent hover:underline mt-1">{lang === 'ko' ? '이 반의 목표 수정' : dbBench ? 'Edit these targets' : 'Set targets for this class and grade'}</button>}
+        {canEditBench && !editBench && <button onClick={openBenchEditor} className="text-[length:calc(12px*var(--ts))] text-accent hover:underline mt-1">{lang === 'ko' ? '이 반의 목표 수정' : dbBench ? 'Edit these targets' : 'Set targets for this class and grade'}</button>}
         {editBench && (
           <div className="mt-2 flex flex-wrap items-end gap-3 border border-rule-2 rounded p-3 bg-paper-2">
             {([['cwpm_mid', lang === 'ko' ? '중간 CWPM' : 'Mid-semester CWPM'], ['cwpm_end', lang === 'ko' ? '학기말 CWPM' : 'End-of-semester CWPM'], ['lexile_min', 'Lexile min'], ['lexile_max', 'Lexile max']] as const).map(([k, l]) => (
-              <label key={k} className="grid gap-1"><span className="eyebrow">{l}</span><input type="number" value={(benchForm as any)[k]} onChange={e => setBenchForm(f => ({ ...f, [k]: e.target.value }))} className="h-8 w-28 px-2 bg-surface border border-rule-2 rounded text-[13px] tabular-nums text-ink" /></label>
+              <label key={k} className="grid gap-1"><span className="eyebrow">{l}</span><input type="number" value={(benchForm as any)[k]} onChange={e => setBenchForm(f => ({ ...f, [k]: e.target.value }))} className="h-8 w-28 px-2 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] tabular-nums text-ink" /></label>
             ))}
             <div className="flex gap-2">
-              <button onClick={saveBench} disabled={savingBench} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-60">{lang === 'ko' ? '저장' : 'Save'}</button>
-              <button onClick={() => setEditBench(false)} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
+              <button onClick={saveBench} disabled={savingBench} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60">{lang === 'ko' ? '저장' : 'Save'}</button>
+              <button onClick={() => setEditBench(false)} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
             </div>
-            <span className="text-[11px] text-ink-3 basis-full">{lang === 'ko' ? '설정 > 프로그램 기준과 같은 값입니다.' : 'The same targets as Settings > Program benchmarks; changing them here changes them there.'}</span>
+            <span className="text-[length:calc(11px*var(--ts))] text-ink-3 basis-full">{lang === 'ko' ? '설정 > 프로그램 기준과 같은 값입니다.' : 'The same targets as Settings > Program benchmarks; changing them here changes them there.'}</span>
           </div>
         )}
-        {dbBench && <p className="text-[11px] text-ink-3 mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
+        {dbBench && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
       </div>
 
       <div className="border-t border-rule-2">
-        <table className="w-full text-[13px] tabular-nums">
+        <table className="w-full text-[length:calc(13px*var(--ts))] tabular-nums">
           <thead><tr>
             <th className="text-left px-2 py-2 eyebrow font-semibold w-8 border-b border-rule">#</th>
             <th className="text-left px-2 py-2 eyebrow font-semibold border-b border-rule">Student</th>
@@ -326,12 +326,12 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
               return (
                 <tr key={s.id} className="hover:bg-paper-2/60 cursor-pointer" onClick={() => onSelectStudent(s.id)}>
                   <td className="px-2 py-2 text-ink-3">{i + 1}</td>
-                  <td className="px-2 py-2"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[12px]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
-                  <td className="px-2 py-2 text-right font-display text-[18px] text-ink">{rec?.cwpm != null ? Math.round(rec.cwpm) : <span className="text-ink-3 font-sans text-[13px]">—</span>}</td>
+                  <td className="px-2 py-2"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
+                  <td className="px-2 py-2 text-right font-display text-[length:calc(18px*var(--ts))] text-ink">{rec?.cwpm != null ? Math.round(rec.cwpm) : <span className="text-ink-3 font-sans text-[length:calc(13px*var(--ts))]">—</span>}</td>
                   <td className="px-3 py-2">
-                    {band ? <span className={`inline-block px-2 py-0.5 rounded-full text-[10.5px] font-semibold ${band.color}`}>{band.label}</span> : <span className="text-ink-3">—</span>}
+                    {band ? <span className={`inline-block px-2 py-0.5 rounded-full text-[length:calc(10.5px*var(--ts))] font-semibold ${band.color}`}>{band.label}</span> : <span className="text-ink-3">—</span>}
                   </td>
-                  <td className="px-2 py-2 text-[12px] text-ink-2">{rec?.reading_level || '—'}</td>
+                  <td className="px-2 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">{rec?.reading_level || '—'}</td>
                   <td className="px-2 py-2 text-right">
                     {rec?.accuracy_rate != null ? (() => {
                       const acc = rec.accuracy_rate
@@ -339,13 +339,13 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                       const lColor = acc >= 96 ? 'text-good' : acc >= 90 ? 'text-warn' : 'text-bad'
                       return (
                         <span className={`font-semibold ${lColor}`} title={`${level} level (${acc >= 96 ? '96%+ accuracy' : acc >= 90 ? '90-95% accuracy' : '<90% accuracy'})`}>
-                          {acc.toFixed(1)}%<span className="block text-[10px] font-normal text-ink-3">{level}</span>
+                          {acc.toFixed(1)}%<span className="block text-[length:calc(10px*var(--ts))] font-normal text-ink-3">{level}</span>
                         </span>
                       )
                     })() : '—'}
                   </td>
-                  <td className="px-3 py-2 text-[12px] text-ink-3">
-                    {rec?.date ? new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}{(rec as any)?.is_level_test ? <span className="block text-[10px] text-info">level test</span> : null}
+                  <td className="px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-3">
+                    {rec?.date ? new Date(rec.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}{(rec as any)?.is_level_test ? <span className="block text-[length:calc(10px*var(--ts))] text-info">level test</span> : null}
                   </td>
                   <td className="px-2 py-2">
                     {rec?.cwpm != null && bench.proficient > 0 ? (() => {
@@ -365,7 +365,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
                           <div className="absolute -top-[3px] h-[14px] w-px" style={{ left: `${endPct}%`, background: 'rgb(var(--ink))' }} />
                         </div>
                       )
-                    })() : <span className="text-ink-3 text-[11px]">—</span>}
+                    })() : <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">—</span>}
                   </td>
                 </tr>
               )
@@ -484,23 +484,23 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-1.5">
-        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`px-2.5 h-7 rounded-full border text-[12px] font-medium ${selectedStudentId === s.id ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{s.english_name}</button>)}
+        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedStudentId === s.id ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{s.english_name}</button>)}
       </div>
 
       {selected && !loading && (
         <div>
           <div className="flex items-end justify-between gap-3 border-b border-rule-2 pb-2 mb-4">
             <div>
-              <h3 className="font-display text-[26px] leading-none text-ink">{selected.english_name}<span className="font-sans text-ink-3 ml-2 text-[13px]">{selected.korean_name}</span></h3>
-              <p className="text-[12px] text-ink-3 mt-1.5">{records.length} {lang === 'ko' ? '개 기록' : records.length === 1 ? 'reading record' : 'reading records'}{classBench && <span> · {selected.english_class} {lang === 'ko' ? '목표' : 'target'} {classBench.cwpm_end} cwpm</span>}</p>
+              <h3 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{selected.english_name}<span className="font-sans text-ink-3 ml-2 text-[length:calc(13px*var(--ts))]">{selected.korean_name}</span></h3>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1.5">{records.length} {lang === 'ko' ? '개 기록' : records.length === 1 ? 'reading record' : 'reading records'}{classBench && <span> · {selected.english_class} {lang === 'ko' ? '목표' : 'target'} {classBench.cwpm_end} cwpm</span>}</p>
             </div>
-            <div className="flex items-center gap-2"><Link href={`/students/${selected.id}`} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center">{lang === 'ko' ? '학생 페이지' : 'Student page'}</Link><button onClick={() => onAddRecord(selected.id)} className="inline-flex items-center gap-1 h-8 px-3 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover"><Plus size={12} /> {lang === 'ko' ? '기록 추가' : 'Add record'}</button></div>
+            <div className="flex items-center gap-2"><Link href={`/students/${selected.id}`} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center">{lang === 'ko' ? '학생 페이지' : 'Student page'}</Link><button onClick={() => onAddRecord(selected.id)} className="inline-flex items-center gap-1 h-8 px-3 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover"><Plus size={12} /> {lang === 'ko' ? '기록 추가' : 'Add record'}</button></div>
           </div>
 
           {records.length > 0 ? (
             <>
               {growthSentence && (
-                <div className={`mb-4 text-[13px] leading-relaxed ${growthSentence.onTrack ? 'text-good' : 'text-warn'}`}>
+                <div className={`mb-4 text-[length:calc(13px*var(--ts))] leading-relaxed ${growthSentence.onTrack ? 'text-good' : 'text-warn'}`}>
                   <span className="font-semibold">{selected.english_name}</span> has gained <span className="font-bold">{growthSentence.gain > 0 ? '+' : ''}{growthSentence.gain} CWPM</span> over {growthSentence.assessments} assessments ({growthSentence.perMonth}/month).
                   {growthSentence.current >= growthSentence.target
                     ? <span> Already at or above the <span className="font-semibold">{selected.english_class}</span> end-of-semester target of {growthSentence.target} CWPM.</span>
@@ -526,14 +526,14 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                     { level: 4, label: 'Level 4', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', desc: 'Reads in meaningful phrases with expression and conversational pace. Smooth, expressive, and well-paced throughout. Sounds like natural speech.' },
                   ].map(n => (
                     <div key={n.level} className="rounded border border-rule-2 p-2.5">
-                      <span className="text-[12px] font-semibold text-ink">{n.label}</span>
-                      <p className="text-[11.5px] leading-snug mt-1 text-ink-2">{n.desc}</p>
+                      <span className="text-[length:calc(12px*var(--ts))] font-semibold text-ink">{n.label}</span>
+                      <p className="text-[length:calc(11.5px*var(--ts))] leading-snug mt-1 text-ink-2">{n.desc}</p>
                     </div>
                   ))}
                 </div>
               </details>
 
-              <table className="w-full text-[12.5px] tabular-nums border-t border-rule-2">
+              <table className="w-full text-[length:calc(12.5px*var(--ts))] tabular-nums border-t border-rule-2">
                 <thead><tr className="eyebrow">
                   <th className="text-left px-2 py-2 font-semibold border-b border-rule">Date</th>
                   <th className="text-left px-3 py-2">Passage</th>
@@ -552,7 +552,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                     <tr key={r.id} className="border-t border-rule hover:bg-paper-2/60 group cursor-pointer" onClick={() => setDetailRecord(r)}>
                       <td className="px-2 py-2 text-ink-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td className="px-3 py-2 font-medium">
-                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[9.5px] font-bold uppercase tracking-wide bg-info-soft text-info mr-1.5">Level test</span>}
+                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[length:max(10px,calc(9.5px*var(--ts)))] font-bold uppercase tracking-wide bg-info-soft text-info mr-1.5">Level test</span>}
                         {r.passage_title || '—'}
                       </td>
                       <td className="px-2 py-2 text-center text-ink-2">{r.reading_level || '—'}</td>
@@ -565,10 +565,10 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                           const acc = r.accuracy_rate
                           const level = acc >= 96 ? 'Indep' : acc >= 90 ? 'Instr' : 'Frust'
                           const lColor = acc >= 96 ? 'text-good' : acc >= 90 ? 'text-warn' : 'text-bad'
-                          return <span className={`font-semibold ${lColor}`}>{acc.toFixed(1)}% <span className="text-[10px] font-normal text-ink-3">{level}</span></span>
+                          return <span className={`font-semibold ${lColor}`}>{acc.toFixed(1)}% <span className="text-[length:calc(10px*var(--ts))] font-normal text-ink-3">{level}</span></span>
                         })() : '—'}
                       </td>
-                      <td className="px-2 py-2 text-center text-[11px] text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
+                      <td className="px-2 py-2 text-center text-[length:calc(11px*var(--ts))] text-text-secondary">{r.naep_fluency ? `L${r.naep_fluency}` : '—'}</td>
                       <td className="px-3 py-2 text-text-tertiary truncate max-w-[120px]">{r.notes || ''}</td>
                       <td className="px-2 py-2 text-center">
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -584,7 +584,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               </table>
             </>
           ) : (
-            <p className="py-8 text-ink-3 text-[13px]">{lang === 'ko' ? '아직 읽기 기록이 없습니다.' : 'No reading records yet.'}</p>
+            <p className="py-8 text-ink-3 text-[length:calc(13px*var(--ts))]">{lang === 'ko' ? '아직 읽기 기록이 없습니다.' : 'No reading records yet.'}</p>
           )}
         </div>
       )}
@@ -598,53 +598,53 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
         <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetailRecord(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-rule flex items-center justify-between">
-              <h3 className="font-display text-[22px] leading-none text-ink">
+              <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
                 {detailRecord.is_level_test ? (lang === 'ko' ? '레벨 테스트 읽기' : 'Level test reading') : (lang === 'ko' ? '읽기 기록' : 'Reading record')}
               </h3>
               <button onClick={() => setDetailRecord(null)} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-[13px]">
-                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Date</span><span className="font-medium">{new Date(detailRecord.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span></div>
-                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Passage</span><span className="font-medium">{detailRecord.passage_title || '—'}</span></div>
-                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Lexile</span><span className="font-medium text-purple-600">{detailRecord.reading_level || '—'}</span></div>
-                <div><span className="text-text-tertiary block text-[11px] mb-0.5">Word Count</span><span className="font-medium">{detailRecord.word_count || '—'}</span></div>
+              <div className="grid grid-cols-2 gap-4 text-[length:calc(13px*var(--ts))]">
+                <div><span className="text-text-tertiary block text-[length:calc(11px*var(--ts))] mb-0.5">Date</span><span className="font-medium">{new Date(detailRecord.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11px*var(--ts))] mb-0.5">Passage</span><span className="font-medium">{detailRecord.passage_title || '—'}</span></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11px*var(--ts))] mb-0.5">Lexile</span><span className="font-medium text-purple-600">{detailRecord.reading_level || '—'}</span></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11px*var(--ts))] mb-0.5">Word Count</span><span className="font-medium">{detailRecord.word_count || '—'}</span></div>
               </div>
               <div className="border-t border-b border-rule-2 py-3">
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-text-tertiary uppercase">Time</p>
-                    <p className="font-display text-[24px] text-ink">{detailRecord.time_seconds ? `${Math.floor(detailRecord.time_seconds / 60)}:${String(detailRecord.time_seconds % 60).padStart(2, '0')}` : '—'}</p>
+                    <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Time</p>
+                    <p className="font-display text-[length:calc(24px*var(--ts))] text-ink">{detailRecord.time_seconds ? `${Math.floor(detailRecord.time_seconds / 60)}:${String(detailRecord.time_seconds % 60).padStart(2, '0')}` : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-text-tertiary uppercase">Errors</p>
-                    <p className="font-display text-[24px] text-bad">{detailRecord.errors ?? '—'}</p>
+                    <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Errors</p>
+                    <p className="font-display text-[length:calc(24px*var(--ts))] text-bad">{detailRecord.errors ?? '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-text-tertiary uppercase">CWPM</p>
-                    <p className="font-display text-[24px] text-ink">{detailRecord.cwpm != null ? Math.round(detailRecord.cwpm) : '—'}</p>
+                    <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">CWPM</p>
+                    <p className="font-display text-[length:calc(24px*var(--ts))] text-ink">{detailRecord.cwpm != null ? Math.round(detailRecord.cwpm) : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-text-tertiary uppercase">Accuracy</p>
-                    <p className={`font-display text-[24px] ${detailRecord.accuracy_rate >= 96 ? 'text-good' : detailRecord.accuracy_rate >= 90 ? 'text-warn' : 'text-bad'}`}>
+                    <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Accuracy</p>
+                    <p className={`font-display text-[length:calc(24px*var(--ts))] ${detailRecord.accuracy_rate >= 96 ? 'text-good' : detailRecord.accuracy_rate >= 90 ? 'text-warn' : 'text-bad'}`}>
                       {detailRecord.accuracy_rate != null ? `${detailRecord.accuracy_rate.toFixed(1)}%` : '—'}
                     </p>
                   </div>
                 </div>
               </div>
               {detailRecord.self_corrections > 0 && (
-                <div className="text-[13px]"><span className="text-text-tertiary">Self-corrections:</span> <span className="font-medium">{detailRecord.self_corrections}</span></div>
+                <div className="text-[length:calc(13px*var(--ts))]"><span className="text-text-tertiary">Self-corrections:</span> <span className="font-medium">{detailRecord.self_corrections}</span></div>
               )}
               {detailRecord.naep_fluency && (
-                <div className="text-[13px]"><span className="text-text-tertiary">NAEP Fluency:</span> <span className="font-medium">Level {detailRecord.naep_fluency}</span></div>
+                <div className="text-[length:calc(13px*var(--ts))]"><span className="text-text-tertiary">NAEP Fluency:</span> <span className="font-medium">Level {detailRecord.naep_fluency}</span></div>
               )}
               {detailRecord.notes && (
-                <div><span className="text-text-tertiary block text-[11px] mb-1">Notes</span><p className="text-[13px] text-ink-2 border-l-2 border-rule-2 pl-3">{detailRecord.notes}</p></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11px*var(--ts))] mb-1">Notes</span><p className="text-[length:calc(13px*var(--ts))] text-ink-2 border-l-2 border-rule-2 pl-3">{detailRecord.notes}</p></div>
               )}
               {!detailRecord.is_level_test && (
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => { setDetailRecord(null); setEditRecord(detailRecord) }}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-medium border border-border hover:bg-surface-alt">
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-border hover:bg-surface-alt">
                     <Pencil size={13} /> Edit Record
                   </button>
                 </div>
@@ -683,37 +683,37 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-[15px] font-semibold text-navy">Edit Reading Record</h3>
+          <h3 className="font-display text-[length:calc(15px*var(--ts))] font-semibold text-navy">Edit Reading Record</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
-              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
+              <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
-          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
-            <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+          <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
+            <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words</label>
-              <input type="number" value={form.word_count} onChange={e => set('word_count', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec)</label>
-              <input type="number" value={form.time_seconds} onChange={e => set('time_seconds', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
-              <input type="number" value={form.errors} onChange={e => set('errors', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
-              <input type="number" value={form.self_corrections} onChange={e => set('self_corrections', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words</label>
+              <input type="number" value={form.word_count} onChange={e => set('word_count', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec)</label>
+              <input type="number" value={form.time_seconds} onChange={e => set('time_seconds', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
+              <input type="number" value={form.errors} onChange={e => set('errors', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+              <input type="number" value={form.self_corrections} onChange={e => set('self_corrections', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           {(previewCwpm != null || previewAcc != null) && (
-            <div className="flex gap-4 p-3 bg-accent-light rounded-lg text-[12px]">
+            <div className="flex gap-4 p-3 bg-accent-light rounded-lg text-[length:calc(12px*var(--ts))]">
               {previewCwpm != null && <span>CWPM: <b className="text-navy">{Math.round(previewCwpm)}</b></span>}
               {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 96 ? 'text-green-600' : previewAcc >= 90 ? 'text-amber-600' : 'text-red-600'}>{previewAcc.toFixed(1)}%</b></span>}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
-              <input value={form.reading_level} onChange={e => set('reading_level', e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[9px] text-text-tertiary">(1-4)</span></label>
-              <select value={form.naep_fluency} onChange={e => set('naep_fluency', e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
+              <input value={form.reading_level} onChange={e => set('reading_level', e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">(1-4)</span></label>
+              <select value={form.naep_fluency} onChange={e => set('naep_fluency', e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy bg-surface">
                 <option value="">--</option>
                 <option value="1">1 - Word by word</option>
                 <option value="2">2 - Mostly word by word</option>
@@ -721,12 +721,12 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
                 <option value="4">4 - Phrased, expressive</option>
               </select></div>
           </div>
-          <div><label className="text-[10px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
-            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+          <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
+            <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-none" /></div>
         </div>
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-surface-alt">Cancel</button>
-          <button onClick={() => onSave({ id: record.id, ...form })} className="px-4 py-1.5 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">Save Changes</button>
+          <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium hover:bg-surface-alt">Cancel</button>
+          <button onClick={() => onSave({ id: record.id, ...form })} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">Save Changes</button>
         </div>
       </div>
     </div>
@@ -748,7 +748,7 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
   return (
     <div>
       <LineChart points={points} band={band} height={220} />
-      <p className="text-[11px] text-ink-3 mt-1">Dot colour is accuracy: green 96%+, amber 90–95%, red below. Hover a dot for the passage level.</p>
+      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">Dot colour is accuracy: green 96%+, amber 90–95%, red below. Hover a dot for the passage level.</p>
     </div>
   )
 }
@@ -789,7 +789,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
     })()
   }, [students, selectedClass, grade])
 
-  if (loading || loadingRecords) return <Loading rows={5} />
+  if (loading || loadingRecords) return <Loading kind="quiet" rows={5} />
 
   const addSubgroup = async (band: string) => {
     if (!newGroupName.trim()) return
@@ -851,7 +851,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
 
   return (
     <div className="space-y-4">
-      <p className="text-[13px] text-text-secondary">Students grouped by latest CWPM. Create subgroups within each band for small group planning.</p>
+      <p className="text-[length:calc(13px*var(--ts))] text-text-secondary">Students grouped by latest CWPM. Create subgroups within each band for small group planning.</p>
       {groupConfig.map((g) => {
         const bandStudents = groups[g.key] || []
         const bandSubgroups = subgroups.filter(sg => sg.band === g.key)
@@ -859,20 +859,20 @@ function FluencyGroups({ students, loading, lang, grade }: {
           <div key={g.key} className={`border rounded-xl overflow-hidden ${g.color}`}>
             <div className="px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-lg text-[12px] font-bold ${g.badge}`}>{g.label}</span>
-                <span className="text-[12px] text-text-secondary">{g.desc}</span>
+                <span className={`px-2.5 py-1 rounded-lg text-[length:calc(12px*var(--ts))] font-bold ${g.badge}`}>{g.label}</span>
+                <span className="text-[length:calc(12px*var(--ts))] text-text-secondary">{g.desc}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[13px] font-bold">{bandStudents.length} students</span>
+                <span className="text-[length:calc(13px*var(--ts))] font-bold">{bandStudents.length} students</span>
                 {addingBand === g.key ? (
                   <div className="flex gap-1">
                     <input value={newGroupName} onChange={e => setNewGroupName(e.target.value)} placeholder="Group name"
-                      className="px-2 py-1 text-[11px] border border-border rounded-lg w-28" autoFocus
+                      className="px-2 py-1 text-[length:calc(11px*var(--ts))] border border-border rounded-lg w-28" autoFocus
                       onKeyDown={e => { if (e.key === 'Enter') addSubgroup(g.key); if (e.key === 'Escape') setAddingBand(null) }} />
-                    <button onClick={() => addSubgroup(g.key)} className="px-2 py-1 rounded-lg bg-navy text-white text-[9px]">Add</button>
+                    <button onClick={() => addSubgroup(g.key)} className="px-2 py-1 rounded-lg bg-navy text-white text-[length:max(10px,calc(9px*var(--ts)))]">Add</button>
                   </div>
                 ) : (
-                  <button onClick={() => { setAddingBand(g.key); setNewGroupName('') }} className="text-[10px] text-text-tertiary hover:text-navy font-medium"><Plus size={11} className="inline" /> Subgroup</button>
+                  <button onClick={() => { setAddingBand(g.key); setNewGroupName('') }} className="text-[length:calc(10px*var(--ts))] text-text-tertiary hover:text-navy font-medium"><Plus size={11} className="inline" /> Subgroup</button>
                 )}
               </div>
             </div>
@@ -887,13 +887,13 @@ function FluencyGroups({ students, loading, lang, grade }: {
                         <div key={sg.id} className="bg-white/60 rounded-lg border border-border/40 p-3">
                           <div className="flex items-center justify-between mb-2">
                             {editingGroup === sg.id ? (
-                              <input value={editName} onChange={e => setEditName(e.target.value)} className="px-2 py-0.5 text-[12px] border border-navy rounded font-semibold" autoFocus
+                              <input value={editName} onChange={e => setEditName(e.target.value)} className="px-2 py-0.5 text-[length:calc(12px*var(--ts))] border border-navy rounded font-semibold" autoFocus
                                 onKeyDown={e => { if (e.key === 'Enter') renameSubgroup(sg.id); if (e.key === 'Escape') setEditingGroup(null) }} />
                             ) : (
-                              <span className="text-[12px] font-semibold text-navy cursor-pointer hover:underline" onClick={() => { setEditingGroup(sg.id); setEditName(sg.name) }}>{sg.name}</span>
+                              <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy cursor-pointer hover:underline" onClick={() => { setEditingGroup(sg.id); setEditName(sg.name) }}>{sg.name}</span>
                             )}
                             <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-text-tertiary">{sgStudents.length}</span>
+                              <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{sgStudents.length}</span>
                               <button onClick={() => deleteSubgroup(sg.id)} className="p-0.5 text-text-tertiary hover:text-red-500"><Trash2 size={11} /></button>
                             </div>
                           </div>
@@ -901,10 +901,10 @@ function FluencyGroups({ students, loading, lang, grade }: {
                             {sgStudents.map((item: any) => (
                               <div key={item.student.id} className="bg-surface rounded px-2 py-1.5 border border-border/40 flex items-center justify-between">
                                 <div>
-                                  <p className="text-[11px] font-medium truncate">{item.student.english_name}</p>
-                                  {item.rec && <p className="text-[10px] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</p>}
+                                  <p className="text-[length:calc(11px*var(--ts))] font-medium truncate">{item.student.english_name}</p>
+                                  {item.rec && <p className="text-[length:calc(10px*var(--ts))] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</p>}
                                 </div>
-                                <button onClick={() => assignStudent(item.student.id, null)} className="text-[9px] text-text-tertiary hover:text-red-500" title="Remove from group">x</button>
+                                <button onClick={() => assignStudent(item.student.id, null)} className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary hover:text-red-500" title="Remove from group">x</button>
                               </div>
                             ))}
                           </div>
@@ -915,21 +915,21 @@ function FluencyGroups({ students, loading, lang, grade }: {
                 )}
                 {/* Unassigned students in this band */}
                 <div>
-                  {bandSubgroups.length > 0 && <p className="text-[10px] text-text-tertiary font-semibold mb-1.5 uppercase tracking-wider">Unassigned</p>}
+                  {bandSubgroups.length > 0 && <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary font-semibold mb-1.5 uppercase tracking-wider">Unassigned</p>}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {bandStudents.filter(item => !members[item.student.id] || !bandSubgroups.find(sg => sg.id === members[item.student.id])).map((item: any) => (
                       <div key={item.student.id} className="bg-surface rounded-lg border border-border/60 px-3 py-2">
-                        <p className="text-[12px] font-medium truncate">{item.student.english_name}</p>
-                        <p className="text-[10px] text-text-tertiary">{item.student.korean_name}</p>
+                        <p className="text-[length:calc(12px*var(--ts))] font-medium truncate">{item.student.english_name}</p>
+                        <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{item.student.korean_name}</p>
                         {item.rec && (
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[13px] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</span>
-                            {item.rec.reading_level && <span className="text-[9px] bg-surface-alt px-1.5 py-0.5 rounded text-text-tertiary">{item.rec.reading_level}</span>}
+                            <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</span>
+                            {item.rec.reading_level && <span className="text-[length:max(10px,calc(9px*var(--ts)))] bg-surface-alt px-1.5 py-0.5 rounded text-text-tertiary">{item.rec.reading_level}</span>}
                           </div>
                         )}
                         {bandSubgroups.length > 0 && (
                           <select value="" onChange={e => { if (e.target.value) assignStudent(item.student.id, e.target.value) }}
-                            className="mt-1.5 w-full px-1.5 py-1 border border-border rounded text-[10px] bg-surface">
+                            className="mt-1.5 w-full px-1.5 py-1 border border-border rounded text-[length:calc(10px*var(--ts))] bg-surface">
                             <option value="">Assign to group...</option>
                             {bandSubgroups.map(sg => <option key={sg.id} value={sg.id}>{sg.name}</option>)}
                           </select>
@@ -1186,8 +1186,8 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>
           <div className="flex items-center gap-2">
             <div className="flex gap-1 bg-surface-alt rounded-lg p-0.5">
-              <button onClick={() => setMode('single')} className={`px-3 py-1 rounded-md text-[11px] font-medium ${mode === 'single' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Single</button>
-              <button onClick={() => setMode('batch')} className={`px-3 py-1 rounded-md text-[11px] font-medium ${mode === 'batch' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Batch</button>
+              <button onClick={() => setMode('single')} className={`px-3 py-1 rounded-md text-[length:calc(11px*var(--ts))] font-medium ${mode === 'single' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Single</button>
+              <button onClick={() => setMode('batch')} className={`px-3 py-1 rounded-md text-[length:calc(11px*var(--ts))] font-medium ${mode === 'batch' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Batch</button>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
           </div>
@@ -1198,20 +1198,20 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           {/* Digital Running Record option */}
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowPassagePicker(!showPassagePicker)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
               <BookOpen size={13} /> {selectedPassage ? `${selectedPassage.title}` : 'Use Saved Passage'}
             </button>
             <button onClick={() => setShowPassageUploader(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-medium text-text-secondary hover:bg-surface-alt border border-border">
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt border border-border">
               <Upload size={12} /> New Passage
             </button>
             {selectedPassage && mode === 'single' && (
               <button onClick={() => { if (!selStudent) { showToast('Select a student first'); return } setShowRunningRecord(true) }}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[11px] font-semibold bg-green-600 text-white hover:bg-green-700">
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold bg-green-600 text-white hover:bg-green-700">
                 ▶ Open Digital Running Record
               </button>
             )}
-            {selectedPassage && <button onClick={() => { setSelectedPassage(null); setPassageTitle('') }} className="text-[10px] text-red-500 hover:text-red-700">Clear</button>}
+            {selectedPassage && <button onClick={() => { setSelectedPassage(null); setPassageTitle('') }} className="text-[length:calc(10px*var(--ts))] text-red-500 hover:text-red-700">Clear</button>}
           </div>
 
           {/* Passage picker dropdown */}
@@ -1225,59 +1225,59 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           />
 
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
-              <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
-              <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Difficulty</label>
-              <select value={passageDifficulty} onChange={(e: any) => setPassageDifficulty(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+            <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
+              <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
+              <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+            <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Difficulty</label>
+              <select value={passageDifficulty} onChange={(e: any) => setPassageDifficulty(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy bg-surface">
                 {DIFFICULTY_OPTIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
               </select>
-              <p className="text-[8px] text-text-tertiary mt-0.5">Note if passage was appropriate so you can choose better next time</p>
+              <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary mt-0.5">Note if passage was appropriate so you can choose better next time</p>
             </div>
           </div>
         </div>
 
         {mode === 'single' ? (
           <div className="p-6 space-y-4">
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
-              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy">
+            <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
+              <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy">
                 <option value="">Select...</option>
                 {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
               </select></div>
             <div className="grid grid-cols-4 gap-3">
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
-                <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
-                Time * <button onClick={() => { setTimeMode(timeMode === 'sec' ? 'minsec' : 'sec'); setTimeSeconds(''); setTimeMin(''); setTimeSec('') }} className="text-[9px] text-navy hover:underline ml-1 normal-case">({timeMode === 'sec' ? 'switch to min:sec' : 'switch to seconds'})</button></label>
+              <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
+                <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+              <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+                Time * <button onClick={() => { setTimeMode(timeMode === 'sec' ? 'minsec' : 'sec'); setTimeSeconds(''); setTimeMin(''); setTimeSec('') }} className="text-[length:max(10px,calc(9px*var(--ts)))] text-navy hover:underline ml-1 normal-case">({timeMode === 'sec' ? 'switch to min:sec' : 'switch to seconds'})</button></label>
                 {timeMode === 'sec' ? (
-                  <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} placeholder="seconds" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" />
+                  <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} placeholder="seconds" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
                 ) : (
                   <div className="flex gap-1 items-center">
-                    <input type="number" min={0} value={timeMin} onChange={(e: any) => { setTimeMin(e.target.value); const m = parseInt(e.target.value) || 0; const s = parseInt(timeSec) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="min" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy text-center" />
+                    <input type="number" min={0} value={timeMin} onChange={(e: any) => { setTimeMin(e.target.value); const m = parseInt(e.target.value) || 0; const s = parseInt(timeSec) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="min" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy text-center" />
                     <span className="text-text-tertiary font-bold">:</span>
-                    <input type="number" min={0} max={59} value={timeSec} onChange={(e: any) => { setTimeSec(e.target.value); const m = parseInt(timeMin) || 0; const s = parseInt(e.target.value) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="sec" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy text-center" />
+                    <input type="number" min={0} max={59} value={timeSec} onChange={(e: any) => { setTimeSec(e.target.value); const m = parseInt(timeMin) || 0; const s = parseInt(e.target.value) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="sec" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy text-center" />
                   </div>
                 )}</div>
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
-                <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
-                <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
+              <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
+                <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+              <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+                <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
             </div>
             {wc > 0 && ts > 0 && (
               <div className="bg-accent-light rounded-lg p-4 grid grid-cols-2 gap-4">
-                <div><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</span>
+                <div><span className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</span>
                   <p className="text-2xl font-display font-bold text-navy">{Math.round(cwpm)}</p></div>
-                <div><span className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold">Accuracy</span>
+                <div><span className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Accuracy</span>
                   <p className={`text-2xl font-display font-bold ${accuracy >= 96 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
-                  <p className="text-[9px] text-text-tertiary">{accuracy >= 96 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration'}</p></div>
+                  <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{accuracy >= 96 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration'}</p></div>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
-                <input value={lexile} onChange={(e: any) => setLexile(e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy" /></div>
-              <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[9px] text-text-tertiary">(1-4)</span></label>
-                <select value={naepScore} onChange={(e: any) => setNaepScore(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy bg-surface">
+              <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
+                <input value={lexile} onChange={(e: any) => setLexile(e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
+              <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">(1-4)</span></label>
+                <select value={naepScore} onChange={(e: any) => setNaepScore(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy bg-surface">
                   <option value="">--</option>
                   <option value="1">1 - Word by word</option>
                   <option value="2">2 - Mostly word by word, some phrasing</option>
@@ -1285,23 +1285,23 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   <option value="4">4 - Phrased, expressive, natural</option>
                 </select></div>
             </div>
-            <div><label className="text-[11px] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
-              <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[13px] outline-none focus:border-navy resize-none" /></div>
+            <div><label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
+              <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-none" /></div>
           </div>
         ) : (
           <div className="flex-1 overflow-auto p-4">
-            <p className="text-[11px] text-text-tertiary mb-3">Enter word count and time for each student who read this passage. Leave blank to skip.</p>
-            <table className="w-full text-[12px]">
+            <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mb-3">Enter word count and time for each student who read this passage. Leave blank to skip.</p>
+            <table className="w-full text-[length:calc(12px*var(--ts))]">
               <thead><tr className="border-b border-border">
-                <th className="text-left py-2 px-2 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-36">Student</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-8"></th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Words</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[8px] normal-case">(m:ss or sec)</span></th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
-                <th className="text-center py-2 px-1 text-[10px] uppercase tracking-wider text-text-secondary font-semibold w-14">NAEP</th>
+                <th className="text-left py-2 px-2 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-36">Student</th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8"></th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Words</th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[length:max(10px,calc(8px*var(--ts)))] normal-case">(m:ss or sec)</span></th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
+                <th className="text-center py-2 px-1 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">NAEP</th>
               </tr></thead>
               <tbody>
                 {students.map((s: any) => {
@@ -1312,34 +1312,34 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   const alreadySaved = savedBatchIds.has(s.id)
                   return (
                     <tr key={s.id} className={`border-b border-border/50 ${alreadySaved ? 'bg-blue-50/50' : filled ? 'bg-green-50/50' : ''}`}>
-                      <td className="py-1.5 px-2 text-[12px] font-medium">
+                      <td className="py-1.5 px-2 text-[length:calc(12px*var(--ts))] font-medium">
                         {s.english_name}
-                        {alreadySaved && <span className="ml-1 text-[8px] text-blue-500 font-bold">SAVED</span>}
+                        {alreadySaved && <span className="ml-1 text-[length:max(10px,calc(8px*var(--ts)))] text-blue-500 font-bold">SAVED</span>}
                       </td>
                       <td className="py-1.5 px-1 text-center">
                         {selectedPassage ? (
                           <button onClick={() => { setBatchRunningStudentId(s.id); setShowRunningRecord(true) }}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold transition-all shadow-sm ${
+                            className={`w-8 h-8 rounded-full flex items-center justify-center text-[length:calc(13px*var(--ts))] font-bold transition-all shadow-sm ${
                               filled ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-200' : 'bg-green-100 text-green-700 hover:bg-green-200 border-2 border-green-300'
                             }`} title={`Open running record for ${s.english_name}`}>
                             {filled ? '✓' : '▶'}
                           </button>
                         ) : (
-                          <span className="text-[9px] text-text-tertiary">—</span>
+                          <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">—</span>
                         )}
                       </td>
-                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.wc} onChange={e => setBatchField(s.id, 'wc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.wc} onChange={e => setBatchField(s.id, 'wc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input value={b.ts} onChange={e => {
                         const v = e.target.value
                         if (v.includes(':')) { const parts = v.split(':'); setBatchField(s.id, 'ts', String((parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0))) }
                         else { setBatchField(s.id, 'ts', v) }
-                      }} placeholder="60 or 1:00" className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy"
+                      }} placeholder="60 or 1:00" className="w-full text-center px-1 py-1 border border-border rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy"
                         onBlur={e => { const v = e.target.value; if (v.includes(':')) { const parts = v.split(':'); setBatchField(s.id, 'ts', String((parseInt(parts[0]) || 0) * 60 + (parseInt(parts[1]) || 0))) } }} /></td>
-                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
-                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[12px] outline-none focus:border-navy" /></td>
-                      <td className="py-1.5 px-1 text-center text-[12px] font-bold text-navy">{filled ? bCwpm : ''}</td>
-                      <td className={`py-1.5 px-1 text-center text-[12px] font-bold ${bAcc >= 96 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
-                      <td className="py-1.5 px-1"><select value={b.naep || ''} onChange={e => setBatchField(s.id, 'naep', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[11px] outline-none focus:border-navy bg-surface">
+                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></td>
+                      <td className="py-1.5 px-1 text-center text-[length:calc(12px*var(--ts))] font-bold text-navy">{filled ? bCwpm : ''}</td>
+                      <td className={`py-1.5 px-1 text-center text-[length:calc(12px*var(--ts))] font-bold ${bAcc >= 96 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
+                      <td className="py-1.5 px-1"><select value={b.naep || ''} onChange={e => setBatchField(s.id, 'naep', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[length:calc(11px*var(--ts))] outline-none focus:border-navy bg-surface">
                         <option value="">--</option>
                         <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
                       </select></td>
@@ -1352,9 +1352,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         )}
 
         <div className="px-6 py-4 border-t border-border flex items-center justify-between">
-          <span className="text-[11px] text-text-tertiary">{mode === 'batch' ? `${batchFilled} new${batchSavedCount > 0 ? `, ${batchSavedCount} already saved` : ''} · ${students.length} students` : ''}</span>
+          <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{mode === 'batch' ? `${batchFilled} new${batchSavedCount > 0 ? `, ${batchSavedCount} already saved` : ''} · ${students.length} students` : ''}</span>
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-surface-alt">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium hover:bg-surface-alt">Cancel</button>
             {mode === 'single' && (
               <button onClick={async () => {
                 if (!selStudent || !wordCount || !timeSeconds) { showToast('Enter all required fields'); return }
@@ -1374,12 +1374,12 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 // Reset passage fields but keep student and date
                 setPassageTitle(''); setPassageDifficulty(''); setWordCount(''); setTimeSeconds(''); setTimeMin(''); setTimeSec(''); setErrors(0); setSelfCorrections(0); setNotes('')
               }} disabled={saving || !selStudent || !wordCount || !timeSeconds}
-                className="px-4 py-2 rounded-lg text-[13px] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
+                className="px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
                 {saving && <Loader2 size={14} className="animate-spin" />} Save & Add Another
               </button>
             )}
             <button onClick={handleSave} disabled={saving || (mode === 'single' ? (!selStudent || !wordCount || !timeSeconds) : batchFilled === 0)}
-              className="px-5 py-2 rounded-lg text-[13px] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
+              className="px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
               {saving && <Loader2 size={14} className="animate-spin" />} {mode === 'batch' ? `Save ${batchFilled} Records` : 'Save & Close'}
             </button>
           </div>
@@ -1461,16 +1461,16 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
   if (loading) return <Loading rows={5} />
 
   if (data.length === 0) return (
-    <div className="py-12 text-center text-text-tertiary text-[13px]">
+    <div className="py-12 text-center text-text-tertiary text-[length:calc(13px*var(--ts))]">
       <FileText size={32} className="mx-auto mb-2 opacity-30" />
       <p>No reading assessments yet for {englishClass}.</p>
-      <p className="text-[11px] mt-1">Use the "Add ORF Record" button to start assessing students.</p>
+      <p className="text-[length:calc(11px*var(--ts))] mt-1">Use the "Add ORF Record" button to start assessing students.</p>
     </div>
   )
 
   return (
     <div className="space-y-3">
-      <p className="text-[13px] text-text-secondary">{data.length} passages used with {englishClass}. Click to expand and see individual student results.</p>
+      <p className="text-[length:calc(13px*var(--ts))] text-text-secondary">{data.length} passages used with {englishClass}. Click to expand and see individual student results.</p>
 
       <div className="space-y-2">
         {data.map(item => {
@@ -1486,21 +1486,21 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                 <div className="flex items-center gap-3 min-w-0">
                   <ChevronDown size={14} className={`text-text-tertiary transition-transform shrink-0 ${isExpanded ? '' : '-rotate-90'}`} />
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-navy truncate">{item.title}</p>
-                    <p className="text-[10px] text-text-tertiary mt-0.5">
+                    <p className="text-[length:calc(13px*var(--ts))] font-semibold text-navy truncate">{item.title}</p>
+                    <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-0.5">
                       Last used: {item.latestDate} · {item.studentCount}/{students.length} students assessed
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-5 shrink-0 text-[11px]">
-                  <div className="text-center"><span className="text-[16px] font-bold text-navy block">{item.avgCwpm}</span><span className="text-text-tertiary text-[9px]">avg CWPM</span></div>
-                  <div className="text-center"><span className={`text-[16px] font-bold block ${item.avgAcc >= 96 ? 'text-green-600' : item.avgAcc >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[9px]">avg Acc</span></div>
+                <div className="flex items-center gap-5 shrink-0 text-[length:calc(11px*var(--ts))]">
+                  <div className="text-center"><span className="text-[length:calc(16px*var(--ts))] font-bold text-navy block">{item.avgCwpm}</span><span className="text-text-tertiary text-[length:max(10px,calc(9px*var(--ts)))]">avg CWPM</span></div>
+                  <div className="text-center"><span className={`text-[length:calc(16px*var(--ts))] font-bold block ${item.avgAcc >= 96 ? 'text-green-600' : item.avgAcc >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[length:max(10px,calc(9px*var(--ts)))]">avg Acc</span></div>
                   {/* Progress bar */}
                   <div className="w-20">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(item.studentCount / students.length) * 100}%` }} />
                     </div>
-                    <p className="text-[9px] text-text-tertiary text-center mt-0.5">{item.studentCount}/{students.length}</p>
+                    <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary text-center mt-0.5">{item.studentCount}/{students.length}</p>
                   </div>
                 </div>
               </button>
@@ -1508,17 +1508,17 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
               {/* Expanded detail */}
               {isExpanded && (
                 <div className="border-t border-border">
-                  <table className="w-full text-[11px]">
+                  <table className="w-full text-[length:calc(11px*var(--ts))]">
                     <thead>
                       <tr className="bg-surface-alt/50 border-b border-border">
-                        <th className="text-left px-5 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Words</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Time</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Errors</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">Accuracy</th>
-                        <th className="text-center px-2 py-2 text-[9px] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
+                        <th className="text-left px-5 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">Words</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">Time</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">Errors</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">Accuracy</th>
+                        <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1544,8 +1544,8 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                   {/* Not yet assessed */}
                   {notAssessed.length > 0 && (
                     <div className="px-5 py-3 bg-amber-50/50 border-t border-border">
-                      <p className="text-[10px] text-amber-700 font-medium mb-1">Not yet assessed ({notAssessed.length}):</p>
-                      <p className="text-[10px] text-amber-600">{notAssessed.map((s: any) => s.english_name).join(', ')}</p>
+                      <p className="text-[length:calc(10px*var(--ts))] text-amber-700 font-medium mb-1">Not yet assessed ({notAssessed.length}):</p>
+                      <p className="text-[length:calc(10px*var(--ts))] text-amber-600">{notAssessed.map((s: any) => s.english_name).join(', ')}</p>
                     </div>
                   )}
                 </div>
@@ -1686,10 +1686,10 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[13px] text-text-secondary">{filteredPassages.length}{filteredPassages.length !== passages.length ? ` of ${passages.length}` : ''} passages saved. Click to expand and view the full text.</p>
+          <p className="text-[length:calc(13px*var(--ts))] text-text-secondary">{filteredPassages.length}{filteredPassages.length !== passages.length ? ` of ${passages.length}` : ''} passages saved. Click to expand and view the full text.</p>
         </div>
         <button onClick={() => setShowAdd(!showAdd)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">
           <Plus size={14} /> Add Passage
         </button>
       </div>
@@ -1699,19 +1699,19 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
         <div className="relative flex-1 min-w-[180px]">
           <input value={searchText} onChange={e => setSearchText(e.target.value)}
             placeholder="Search by title or source..."
-            className="w-full pl-3 pr-3 py-2 border border-border rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+            className="w-full pl-3 pr-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-text-secondary font-medium">Lexile</span>
+          <span className="text-[length:calc(11px*var(--ts))] text-text-secondary font-medium">Lexile</span>
           <select value={lexMinFilter} onChange={e => setLexMinFilter(Number(e.target.value))}
-            className="px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+            className="px-2 py-2 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none focus:border-navy bg-white">
             {LEXILE_OPTS.filter(o => o.value <= lexMaxFilter || o.value === -9999).map(o => (
               <option key={`lmin-${o.value}`} value={o.value}>{o.label}</option>
             ))}
           </select>
-          <span className="text-[11px] text-text-tertiary">to</span>
+          <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">to</span>
           <select value={lexMaxFilter} onChange={e => setLexMaxFilter(Number(e.target.value))}
-            className="px-2 py-2 border border-border rounded-lg text-[11px] outline-none focus:border-navy bg-white">
+            className="px-2 py-2 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none focus:border-navy bg-white">
             {LEXILE_OPTS.filter(o => o.value >= lexMinFilter || o.value === 9999).map(o => (
               <option key={`lmax-${o.value}`} value={o.value}>{o.label}</option>
             ))}
@@ -1719,52 +1719,52 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
         </div>
         {(searchText || lexMinFilter > -9999 || lexMaxFilter < 9999) && (
           <button onClick={() => { setSearchText(''); setLexMinFilter(-9999); setLexMaxFilter(9999) }}
-            className="text-[10px] text-blue-600 hover:text-blue-800 underline">Clear Filters</button>
+            className="text-[length:calc(10px*var(--ts))] text-blue-600 hover:text-blue-800 underline">Clear Filters</button>
         )}
       </div>
 
       {/* Add new passage form */}
       {showAdd && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
-          <p className="text-[12px] font-semibold text-blue-800">New Passage</p>
+          <p className="text-[length:calc(12px*var(--ts))] font-semibold text-blue-800">New Passage</p>
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-2">
-              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title *</label>
-              <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+              <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title *</label>
+              <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
-              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+              <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
+              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div>
-              <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
-              <input value={newForm.grade_range} onChange={e => setNewForm(f => ({ ...f, grade_range: e.target.value }))} placeholder="e.g. 1-2" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+              <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+              <input value={newForm.grade_range} onChange={e => setNewForm(f => ({ ...f, grade_range: e.target.value }))} placeholder="e.g. 1-2" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
           </div>
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
-            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Reading A-Z" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+            <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Reading A-Z" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
           </div>
           <div>
-            <label className="text-[10px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text * <span className="normal-case text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
-            <textarea value={newForm.text} onChange={e => setNewForm(f => ({ ...f, text: e.target.value }))} rows={6} placeholder="Paste or type the full passage text here..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[12px] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
+            <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text * <span className="normal-case text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
+            <textarea value={newForm.text} onChange={e => setNewForm(f => ({ ...f, text: e.target.value }))} rows={6} placeholder="Paste or type the full passage text here..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={saving} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Passage'}</button>
-            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+            <button onClick={handleAdd} disabled={saving} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Passage'}</button>
+            <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
           </div>
         </div>
       )}
 
       {/* Passage cards */}
       {passages.length === 0 ? (
-        <div className="py-12 text-center text-text-tertiary text-[13px]">
+        <div className="py-12 text-center text-text-tertiary text-[length:calc(13px*var(--ts))]">
           <FileText size={32} className="mx-auto mb-2 opacity-30" />
           <p>No passages saved yet. Add your first passage above.</p>
-          <p className="text-[11px] mt-1">Passages are shared across all teachers and can be used for running records.</p>
+          <p className="text-[length:calc(11px*var(--ts))] mt-1">Passages are shared across all teachers and can be used for running records.</p>
         </div>
       ) : filteredPassages.length === 0 ? (
-        <div className="py-8 text-center text-text-tertiary text-[13px]">
+        <div className="py-8 text-center text-text-tertiary text-[length:calc(13px*var(--ts))]">
           <p>No passages match your filters.</p>
         </div>
       ) : (
@@ -1779,29 +1779,29 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                 <div key={p.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
                   <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-2">
-                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title</label>
-                      <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                      <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title</label>
+                      <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
-                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
-                      <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                      <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
+                      <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
-                      <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
-                      <input value={editForm.grade_range} onChange={e => setEditForm((f: any) => ({ ...f, grade_range: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                      <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+                      <input value={editForm.grade_range} onChange={e => setEditForm((f: any) => ({ ...f, grade_range: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
-                    <input value={editForm.source} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white" />
+                    <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+                    <input value={editForm.source} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                   </div>
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
-                    <textarea value={editForm.text} onChange={e => setEditForm((f: any) => ({ ...f, text: e.target.value }))} rows={8} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-[12px] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
+                    <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
+                    <textarea value={editForm.text} onChange={e => setEditForm((f: any) => ({ ...f, text: e.target.value }))} rows={8} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[12px] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
-                    <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg text-[12px] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
+                    <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
+                    <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
                   </div>
                 </div>
               )
@@ -1813,20 +1813,20 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                   <ChevronDown size={14} className={`text-text-tertiary transition-transform ${isExpanded ? 'rotate-0' : '-rotate-90'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold text-navy">{p.title}</span>
-                      {p.level && <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${lc}`}>{p.level}</span>}
-                      {p.grade_range && <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-surface-alt text-text-secondary">G{p.grade_range}</span>}
+                      <span className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">{p.title}</span>
+                      {p.level && <span className={`text-[length:max(10px,calc(9px*var(--ts)))] font-bold px-2 py-0.5 rounded-full ${lc}`}>{p.level}</span>}
+                      {p.grade_range && <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-medium px-2 py-0.5 rounded-full bg-surface-alt text-text-secondary">G{p.grade_range}</span>}
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
-                      <span className="text-[10px] text-text-tertiary">{p.word_count || 0} words</span>
-                      {p.source && <span className="text-[10px] text-text-tertiary">{p.source}</span>}
-                      <span className="text-[10px] text-text-tertiary">{new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{p.word_count || 0} words</span>
+                      {p.source && <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{p.source}</span>}
+                      <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                     {/* Usage tags */}
                     {passageUsage[p.id]?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {passageUsage[p.id].map((u: any, ui: number) => (
-                          <span key={ui} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-medium bg-green-50 text-green-700 border border-green-200">
+                          <span key={ui} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[length:max(10px,calc(8px*var(--ts)))] font-medium bg-green-50 text-green-700 border border-green-200">
                             {u.english_class} G{u.grade} {u.academic_year}
                             {u.median_cwpm != null && <span className="font-bold">· {Math.round(u.median_cwpm)} CWPM</span>}
                             <span className="opacity-60">({u.assessment_count}×)</span>
@@ -1843,9 +1843,9 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                 {isExpanded && p.text && (
                   <div className="px-5 pb-4 pt-1 border-t border-border/50">
                     <div className="bg-amber-50/50 rounded-lg p-4 border border-amber-100">
-                      <p className="text-[12px] leading-[1.8] font-serif text-gray-800 whitespace-pre-wrap">{p.text}</p>
+                      <p className="text-[length:calc(12px*var(--ts))] leading-[1.8] font-serif text-gray-800 whitespace-pre-wrap">{p.text}</p>
                     </div>
-                    <p className="text-[9px] text-text-tertiary mt-2 text-right">{p.text.trim().split(/\s+/).length} words</p>
+                    <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-2 text-right">{p.text.trim().split(/\s+/).length} words</p>
                   </div>
                 )}
               </div>
@@ -1896,8 +1896,8 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
     })()
   }, [students])
 
-  if (loading || loadingData) return <Loading rows={5} />
-  if (points.length < 2) return <div className="p-12 text-center text-text-tertiary text-[13px]">Need at least 2 students with both CWPM and grade data.</div>
+  if (loading || loadingData) return <Loading kind="quiet" rows={5} />
+  if (points.length < 2) return <div className="p-12 text-center text-text-tertiary text-[length:calc(13px*var(--ts))]">Need at least 2 students with both CWPM and grade data.</div>
 
   const W = 500, H = 340, PAD = 50
   const maxCwpm = Math.max(...points.map(p => p.cwpm)) * 1.1
@@ -1927,15 +1927,15 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
       <div className="bg-surface border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-[14px] font-semibold text-navy">Reading Fluency vs Grade Average</h3>
-            <p className="text-[11px] text-text-secondary">Each dot is a student. Trend line shows correlation strength.</p>
+            <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Reading Fluency vs Grade Average</h3>
+            <p className="text-[length:calc(11px*var(--ts))] text-text-secondary">Each dot is a student. Trend line shows correlation strength.</p>
           </div>
           <div className="text-right">
-            <span className="text-[11px] text-text-secondary">Correlation: </span>
-            <span className={`text-[14px] font-bold ${Math.abs(r) > 0.6 ? 'text-green-600' : Math.abs(r) > 0.3 ? 'text-amber-600' : 'text-text-tertiary'}`}>
+            <span className="text-[length:calc(11px*var(--ts))] text-text-secondary">Correlation: </span>
+            <span className={`text-[length:calc(14px*var(--ts))] font-bold ${Math.abs(r) > 0.6 ? 'text-green-600' : Math.abs(r) > 0.3 ? 'text-amber-600' : 'text-text-tertiary'}`}>
               r = {r.toFixed(2)}
             </span>
-            <span className="text-[10px] text-text-tertiary block">
+            <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary block">
               {Math.abs(r) > 0.7 ? 'Strong' : Math.abs(r) > 0.4 ? 'Moderate' : Math.abs(r) > 0.2 ? 'Weak' : 'Very weak'} correlation
             </span>
           </div>
@@ -1971,7 +1971,7 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
             const count = points.filter(p => p.cls === cls).length
             if (count === 0) return null
             return (
-              <span key={cls} className="inline-flex items-center gap-1 text-[9px]">
+              <span key={cls} className="inline-flex items-center gap-1 text-[length:max(10px,calc(9px*var(--ts)))]">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: classToColor(cls), border: `1.5px solid ${classToTextColor(cls)}` }} />
                 {cls} ({count})
               </span>
@@ -1979,7 +1979,7 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
           })}
         </div>
         {/* Insight */}
-        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-[10px] text-blue-800">
+        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-[length:calc(10px*var(--ts))] text-blue-800">
           {Math.abs(r) > 0.5
             ? `Strong positive relationship: students who read more fluently tend to score higher across all domains. This suggests reading fluency is a good predictor of overall academic performance.`
             : Math.abs(r) > 0.25
@@ -2052,15 +2052,15 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
     }
   }
 
-  if (loading) return <Loading rows={5} />
+  if (loading) return <Loading kind="quiet" rows={5} />
 
   return (
     <div className="px-10 py-6 space-y-4">
       <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-[13px] font-semibold text-navy mb-3">Generate Student Groups</h3>
+        <h3 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">Generate Student Groups</h3>
         <div className="flex items-end gap-4">
           <div>
-            <label className="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Grouping Strategy</label>
+            <label className="text-[length:calc(10px*var(--ts))] font-semibold text-text-secondary uppercase block mb-1">Grouping Strategy</label>
             <div className="flex gap-1">
               {[
                 { id: 'homogeneous', label: 'Same Level', desc: 'Students with similar CWPM together' },
@@ -2068,7 +2068,7 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
                 { id: 'random', label: 'Random', desc: 'Random assignment' },
               ].map(m => (
                 <button key={m.id} onClick={() => setMode(m.id as any)}
-                  className={`px-3 py-1.5 rounded-lg text-[11px] font-medium ${mode === m.id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}
+                  className={`px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium ${mode === m.id ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary border border-border'}`}
                   title={m.desc}>
                   {m.label}
                 </button>
@@ -2076,13 +2076,13 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-semibold text-text-secondary uppercase block mb-1">Group Size</label>
+            <label className="text-[length:calc(10px*var(--ts))] font-semibold text-text-secondary uppercase block mb-1">Group Size</label>
             <select value={groupSize} onChange={e => setGroupSize(+e.target.value)}
-              className="px-3 py-1.5 border border-border rounded-lg text-[11px] bg-surface outline-none">
+              className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] bg-surface outline-none">
               {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} students</option>)}
             </select>
           </div>
-          <button onClick={generateGroups} className="px-4 py-2 rounded-lg text-[12px] font-medium bg-navy text-white hover:bg-navy-dark">
+          <button onClick={generateGroups} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">
             Generate Groups
           </button>
         </div>
@@ -2092,10 +2092,10 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
         <div className="grid grid-cols-3 gap-3">
           {groups.map(g => (
             <div key={g.name} className="bg-surface border border-border rounded-xl p-4">
-              <h4 className="text-[12px] font-bold text-navy mb-2">{g.name}</h4>
+              <h4 className="text-[length:calc(12px*var(--ts))] font-bold text-navy mb-2">{g.name}</h4>
               <div className="space-y-1">
                 {g.students.map(s => (
-                  <div key={s.id} className="flex items-center justify-between text-[11px]">
+                  <div key={s.id} className="flex items-center justify-between text-[length:calc(11px*var(--ts))]">
                     <span className="text-text-primary">{s.name}</span>
                     <span className={`font-medium ${s.cwpm != null ? 'text-navy' : 'text-text-tertiary'}`}>
                       {s.cwpm != null ? `${Math.round(s.cwpm)} cwpm` : '--'}
@@ -2104,7 +2104,7 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
                 ))}
               </div>
               {g.students.some(s => s.cwpm != null) && (
-                <div className="mt-2 pt-2 border-t border-border/50 text-[9px] text-text-tertiary">
+                <div className="mt-2 pt-2 border-t border-border/50 text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">
                   Avg: {Math.round(g.students.filter(s => s.cwpm != null).reduce((s, x) => s + (x.cwpm || 0), 0) / g.students.filter(s => s.cwpm != null).length)} cwpm
                   {' | '}Range: {Math.round(Math.min(...g.students.filter(s => s.cwpm != null).map(s => s.cwpm!)))}-{Math.round(Math.max(...g.students.filter(s => s.cwpm != null).map(s => s.cwpm!)))}
                 </div>

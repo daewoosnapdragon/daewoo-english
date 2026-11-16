@@ -67,17 +67,17 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
   return (
     <div className="p-4">
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-        <span className="text-[13px] text-ink-2 tabular-nums">{doneCount} / {students.length} {ko ? '완료' : 'done'} · {assessment.rubric.name} · {criteria.length} {ko ? '기준' : 'criteria'}</span>
-        <button onClick={() => onOpen(firstOpen < 0 ? 0 : firstOpen)} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5">
+        <span className="text-[length:calc(13px*var(--ts))] text-ink-2 tabular-nums">{doneCount} / {students.length} {ko ? '완료' : 'done'} · {assessment.rubric.name} · {criteria.length} {ko ? '기준' : 'criteria'}</span>
+        <button onClick={() => onOpen(firstOpen < 0 ? 0 : firstOpen)} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover inline-flex items-center gap-1.5">
           <ClipboardEdit size={13} />{doneCount < students.length ? (ko ? '루브릭으로 채점' : 'Score with the rubric') : (ko ? '루브릭 시트 열기' : 'Open the rubric sheet')}
         </button>
       </div>
       <div className="border border-rule-2 rounded-lg overflow-x-auto">
-        <table className="w-full text-[12.5px]">
+        <table className="w-full text-[length:calc(12.5px*var(--ts))]">
           <thead>
-            <tr className="bg-paper-2 text-[10.5px] uppercase tracking-wider text-ink-3">
+            <tr className="bg-paper-2 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3">
               <th className="text-left px-3 py-2 font-semibold">{ko ? '학생' : 'Student'}</th>
-              {criteria.map(c => <th key={c.key} className="px-2 py-2 font-semibold text-center" title={c.standard || undefined}><span className="block truncate max-w-[120px] mx-auto">{c.label}</span>{c.standard && <span className="block text-[9.5px] text-info normal-case tracking-normal">{c.standard}</span>}</th>)}
+              {criteria.map(c => <th key={c.key} className="px-2 py-2 font-semibold text-center" title={c.standard || undefined}><span className="block truncate max-w-[120px] mx-auto">{c.label}</span>{c.standard && <span className="block text-[length:max(10px,calc(9.5px*var(--ts)))] text-info normal-case tracking-normal">{c.standard}</span>}</th>)}
               <th className="text-right px-3 py-2 font-semibold whitespace-nowrap">/{assessment.max_score}</th>
             </tr>
           </thead>
@@ -88,10 +88,10 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
               const sc = scoreOf(s.id)
               return (
                 <tr key={s.id} onClick={() => onOpen(i)} className="border-t border-rule cursor-pointer hover:bg-paper-2/60" title={ko ? '클릭하면 루브릭 시트에서 채점' : 'Click to mark on the rubric sheet'}>
-                  <td className="px-3 py-1.5 whitespace-nowrap"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[11.5px]">{s.korean_name}</span></td>
+                  <td className="px-3 py-1.5 whitespace-nowrap"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span></td>
                   {criteria.map(c => {
                     const v = levels[s.id]?.[c.key]
-                    return <td key={c.key} className="px-2 py-1.5 text-center">{fl ? <span className="text-ink-3">—</span> : v == null ? <span className="text-ink-3">·</span> : <span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[11px] font-bold ${tone(v)}`}>{v}</span>}</td>
+                    return <td key={c.key} className="px-2 py-1.5 text-center">{fl ? <span className="text-ink-3">—</span> : v == null ? <span className="text-ink-3">·</span> : <span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[length:calc(11px*var(--ts))] font-bold ${tone(v)}`}>{v}</span>}</td>
                   })}
                   <td className={`px-3 py-1.5 text-right tabular-nums whitespace-nowrap ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : started(s.id) ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${fmt(sc)} ✓` : started(s.id) && sc != null ? `${fmt(sc)} ~` : ''}</td>
                 </tr>
@@ -99,7 +99,7 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
             })}
           </tbody>
           <tfoot>
-            <tr className="bg-paper-2 border-t border-rule-2 text-[11.5px]">
+            <tr className="bg-paper-2 border-t border-rule-2 text-[length:calc(11.5px*var(--ts))]">
               <td className="px-3 py-1.5 text-ink-2">{ko ? '반 평균' : 'Class average'}</td>
               {classAvg.map((v, i) => <td key={i} className="px-2 py-1.5 text-center tabular-nums text-ink-2">{v != null ? v.toFixed(1) : '—'}</td>)}
               <td className="px-3 py-1.5 text-right tabular-nums text-ink-2">{classScore != null ? fmt(Math.round(classScore * 10) / 10) : '—'}</td>
@@ -107,7 +107,7 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
           </tfoot>
         </table>
       </div>
-      <p className="text-[11px] text-ink-3 mt-2">{ko ? '학생을 클릭하면 전체 화면 루브릭 시트에서 채점합니다. 0–4 단계, 기준당 4점.' : 'Click a student to mark their work on the full-screen rubric sheet. Levels 0–4, 4 points per criterion.'}</p>
+      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-2">{ko ? '학생을 클릭하면 전체 화면 루브릭 시트에서 채점합니다. 0–4 단계, 기준당 4점.' : 'Click a student to mark their work on the full-screen rubric sheet. Levels 0–4, 4 points per criterion.'}</p>
     </div>
   )
 }

@@ -61,9 +61,9 @@ export default function ConfirmDialog({ request, onResolve }: {
             </span>
           )}
           <div className="flex-1 min-w-0">
-            <h3 id="dlg-title" className="text-[15px] font-semibold text-text-primary leading-snug">{request.title}</h3>
+            <h3 id="dlg-title" className="text-[length:calc(15px*var(--ts))] font-semibold text-text-primary leading-snug">{request.title}</h3>
             {request.message && (
-              <p className="text-[13px] text-text-secondary mt-1.5 leading-relaxed whitespace-pre-line">{request.message}</p>
+              <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1.5 leading-relaxed whitespace-pre-line">{request.message}</p>
             )}
           </div>
           <button onClick={cancel} aria-label="Close" className="p-1 -mt-1 -mr-1 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-alt transition-colors shrink-0">
@@ -79,7 +79,7 @@ export default function ConfirmDialog({ request, onResolve }: {
               onChange={e => setText(e.target.value)}
               placeholder={request.placeholder}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); accept() } }}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[13px] bg-surface text-text-primary outline-none focus:border-navy"
+              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface text-text-primary outline-none focus:border-navy"
             />
           </div>
         )}
@@ -87,13 +87,13 @@ export default function ConfirmDialog({ request, onResolve }: {
         <div className="px-5 py-4 flex items-center justify-end gap-2">
           <button
             onClick={cancel}
-            className="px-3.5 py-2 rounded-lg text-[13px] font-medium text-text-secondary hover:bg-surface-alt transition-colors"
+            className="px-3.5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt transition-colors"
           >{request.cancelLabel || 'Cancel'}</button>
           <button
             ref={confirmRef}
             onClick={accept}
             disabled={request.kind === 'prompt' && !text.trim()}
-            className={`px-3.5 py-2 rounded-lg text-[13px] font-semibold text-white transition-colors disabled:opacity-40 ${
+            className={`px-3.5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-semibold text-white transition-colors disabled:opacity-40 ${
               request.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-navy hover:bg-navy-dark'
             }`}
           >{request.confirmLabel || (request.danger ? 'Delete' : 'Confirm')}</button>

@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight, Loader2, Printer, RefreshCw } from 'lucide-r
 // a quick pick or two dates in any months, beside a preview of every
 // teacher's sheet, a page each, and the Excel export follows the same dates.
 
-const btnS = 'h-7 px-2.5 rounded border border-rule-2 text-[11.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const btnS = 'h-7 px-2.5 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
 const iconBtn = 'w-7 h-7 rounded hover:bg-paper-2 text-ink-3 hover:text-ink inline-flex items-center justify-center'
 
 interface Props {
@@ -49,32 +49,32 @@ export default function AdminMonth({ staff, settings, month, setMonth, onOpen }:
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '전체 교사' : 'All teachers'}</p>
-          <h1 className="font-display text-[34px] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1">
             <button onClick={() => setMonth(shiftMonth(month, -1))} className={iconBtn} aria-label={ko ? '지난달' : 'Previous month'}><ChevronLeft size={15} /></button>
-            <span className="text-[14px] font-semibold text-ink min-w-[130px] text-center">{monthLabel(month, ko)}</span>
+            <span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink min-w-[130px] text-center">{monthLabel(month, ko)}</span>
             <button onClick={() => setMonth(shiftMonth(month, 1))} className={iconBtn} aria-label={ko ? '다음 달' : 'Next month'}><ChevronRight size={15} /></button>
             {!isCurrent && <button onClick={() => setMonth(getKSTDateString().slice(0, 7))} className={`${btnS} ml-1`}>{ko ? '이번 달' : 'This month'}</button>}
             <button onClick={m.reload} className={`${iconBtn} ml-1`} title={ko ? '새로고침' : 'Refresh'} aria-label={ko ? '새로고침' : 'Refresh'}><RefreshCw size={13} /></button>
           </div>
-          <button onClick={() => setPrinting('all')} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-2">
+          <button onClick={() => setPrinting('all')} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover inline-flex items-center gap-2">
             <Printer size={14} />{ko ? '인쇄 또는 내보내기' : 'Print or export'}
           </button>
         </div>
       </div>
 
-      <p className="text-[12.5px] text-ink-2 mb-4 tabular-nums">
+      <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mb-4 tabular-nums">
         {monthLabel(month, ko)} · <span className="font-semibold text-ink">{fmtMinutes(all.minutes, ko)}</span> · {fmtWon(all.won, ko)} · {withEntries} {ko ? '명' : withEntries === 1 ? 'teacher' : 'teachers'}
         <span className="text-ink-3"> · {ko ? `시간당 ${fmtWon(settings.rate, true)}` : `${fmtWon(settings.rate)} an hour`}</span>
       </p>
 
-      {m.loading ? <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : (
+      {m.loading ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p> : (
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-ink-3 border-b border-rule-2">
+              <tr className="text-left text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-ink-3 border-b border-rule-2">
                 <th className="py-2 pr-3 font-semibold">{ko ? '교사' : 'Teacher'}</th>
                 <th className="py-2 pr-3 font-semibold">{ko ? '반' : 'Class'}</th>
                 <th className="py-2 pr-3 font-semibold text-right">{ko ? '기록' : 'Entries'}</th>
@@ -108,7 +108,7 @@ export default function AdminMonth({ staff, settings, month, setMonth, onOpen }:
               </tr>
             </tbody>
           </table>
-          {staff.length === 0 && <p className="text-[12.5px] text-ink-3 mt-3">{ko ? '교사가 없습니다.' : 'No teachers yet.'}</p>}
+          {staff.length === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-3">{ko ? '교사가 없습니다.' : 'No teachers yet.'}</p>}
         </div>
       )}
     </div>

@@ -2,54 +2,31 @@
 
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import ClassFlower, { flowerForClass } from './ClassFlower'
 
 // ─── Loading ─────────────────────────────────────────────────────
-// Ruled lines, with the signed-in teacher's class flower drawing itself in
-// one pen line on top of them. The whole flower is always there in faint
-// ink underneath, so a load that ends mid-stroke still shows a finished
-// flower, never half of one. Nothing shows for the first 250 ms, so a fast
-// load never flashes a loader. With reduced motion the flower is simply there.
+// Two kinds, chosen by what is about to appear:
+//   lines  — for lists and tables: ruled lines in the shape of the rows to
+//            come, with a soft light passing across. Nothing for 250 ms.
+//   quiet  — for everything else (calendars, report cards, charts, forms):
+//            the space is kept and nothing shows; only a load that takes
+//            longer than a second gets a small grey “Loading…”.
+// Neither animates toward a finish, so a quick load never looks cut off.
 
-const DRAW = 2200, HOLD = 650, FADE = 420
-
-function useReducedMotion() {
-  const [reduce, setReduce] = useState(false)
-  useEffect(() => {
-    const m = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setReduce(m.matches)
-    const on = () => setReduce(m.matches)
-    m.addEventListener?.('change', on)
-    return () => m.removeEventListener?.('change', on)
-  }, [])
-  return reduce
-}
-
-export default function Loading({ rows = 5, label, className = '' }: { rows?: number; label?: string; className?: string }) {
-  const { currentTeacher, language } = useApp()
-  const name = flowerForClass(currentTeacher?.english_class)
-  const reduce = useReducedMotion()
+export default function Loading({ rows = 5, kind = 'lines', label, className = '' }: { rows?: number; kind?: 'lines' | 'quiet'; label?: string; className?: string }) {
+  const { language } = useApp()
   const [shown, setShown] = useState(false)
-  const [cycle, setCycle] = useState(0)
-  useEffect(() => { const t = setTimeout(() => setShown(true), 250); return () => clearTimeout(t) }, [])
-  useEffect(() => {
-    if (!shown || reduce) return
-    const t = setTimeout(() => setCycle(c => c + 1), DRAW + HOLD + FADE)
-    return () => clearTimeout(t)
-  }, [shown, cycle, reduce])
-  const size = Math.max(48, Math.min(96, rows * 34 - 20))
+  useEffect(() => { const t = setTimeout(() => setShown(true), kind === 'quiet' ? 1000 : 250); return () => clearTimeout(t) }, [kind])
   const text = label || (language === 'ko' ? '불러오는 중' : 'Loading')
+  if (kind === 'quiet') {
+    return (
+      <div role="status" aria-live="polite" className={`quiet-wait ${className}`} style={{ minHeight: rows * 34 }}>
+        <span className={`quiet-wait-text${shown ? ' is-shown' : ''}`}>{text}…</span>
+      </div>
+    )
+  }
   return (
     <div role="status" aria-live="polite" className={`ruled-wait${shown ? ' is-shown' : ''} ${className}`}>
       {Array.from({ length: rows }, (_, i) => <div key={i} className="ruled-wait-line" />)}
-      <div className="ruled-wait-center">
-        {shown && (
-          <span className="ruled-wait-flower" style={{ ['--cycle' as any]: `${DRAW + HOLD + FADE}ms` }}>
-            <ClassFlower name={name} size={size} line={1.2} className="flower-base" />
-            {!reduce && <span key={cycle} className="flower-pen"><ClassFlower name={name} size={size} line={1.2} draw duration={DRAW} /></span>}
-          </span>
-        )}
-      </div>
       <span className="sr-only">{text}</span>
     </div>
   )

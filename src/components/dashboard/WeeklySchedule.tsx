@@ -124,7 +124,7 @@ export default function WeeklySchedule({ onCollapse, onPickPeriod }: { onCollaps
   return (
     <div className="flex flex-col">
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-1">
-        <h3 className="font-display text-[18px] leading-none text-ink">Weekly schedule</h3>
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">Weekly schedule</h3>
         <div className="flex items-center gap-2">
           {isToday && <span className="eyebrow">{now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Seoul' })}</span>}
           {onCollapse && (
@@ -142,7 +142,7 @@ export default function WeeklySchedule({ onCollapse, onPickPeriod }: { onCollaps
           const isDayToday = isWeekday && i === kstDay - 1
           return (
             <button key={day} onClick={() => setSelectedDay(i)}
-              className={`flex-1 py-1.5 text-[11px] font-semibold relative ${isSelected ? 'text-ink' : 'text-ink-3 hover:text-ink-2'}`}>
+              className={`flex-1 py-1.5 text-[length:calc(11px*var(--ts))] font-semibold relative ${isSelected ? 'text-ink' : 'text-ink-3 hover:text-ink-2'}`}>
               {DAY_LABELS[i]}
               {isSelected && <span className="absolute left-2 right-2 bottom-0 h-[2px] bg-accent" />}
               {isDayToday && !isSelected && <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-accent" />}
@@ -165,19 +165,19 @@ export default function WeeklySchedule({ onCollapse, onPickPeriod }: { onCollaps
             <Row key={period.time} onClick={clickable ? () => onPickPeriod!(gradeNum!) : undefined}
               title={clickable ? 'Mark attendance for this class' : undefined}
               className={`w-full text-left grid grid-cols-[44px_1fr] gap-2 items-center py-1.5 px-1 -mx-1 ${isActive ? 'bg-accent-soft' : ''} ${clickable ? 'hover:bg-paper-2 rounded cursor-pointer' : ''}`}>
-              <span className={`text-[11px] tabular-nums text-right ${isActive ? 'text-accent font-semibold' : 'text-ink-3'}`}>{startTime}</span>
+              <span className={`text-[length:calc(11px*var(--ts))] tabular-nums text-right ${isActive ? 'text-accent font-semibold' : 'text-ink-3'}`}>{startTime}</span>
               <span className="flex items-center gap-2 min-w-0">
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${gradeDot(slot.label)}`} />
-                <span className={`text-[13px] ${isActive ? 'font-semibold text-ink' : slot.label === 'Prep' || slot.label === 'Lunch' ? 'text-ink-3' : 'text-ink'}`}>{slot.label}</span>
+                <span className={`text-[length:calc(13px*var(--ts))] ${isActive ? 'font-semibold text-ink' : slot.label === 'Prep' || slot.label === 'Lunch' ? 'text-ink-3' : 'text-ink'}`}>{slot.label}</span>
                 {isActive && <span className="eyebrow eyebrow-accent">now</span>}
                 {isNext && !isActive && <span className="eyebrow">next</span>}
-                {slot.note && <span className="text-[10.5px] text-accent ml-auto flex-shrink-0">{slot.note}</span>}
+                {slot.note && <span className="text-[length:calc(10.5px*var(--ts))] text-accent ml-auto flex-shrink-0">{slot.note}</span>}
               </span>
             </Row>
           )
         })}
       </div>
-      {onPickPeriod && isToday && <p className="text-[11px] text-ink-3 pt-2">Click a class to mark its attendance.</p>}
+      {onPickPeriod && isToday && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-2">Click a class to mark its attendance.</p>}
     </div>
   )
 }

@@ -35,13 +35,13 @@ export default function OvertimeView() {
     <div className="px-8 py-6 animate-fade-in max-w-[1100px]">
       {probe.missing ? (
         <div>
-          <h1 className="font-display text-[34px] leading-none text-ink mb-4">{ko ? '초과근무' : 'Overtime'}</h1>
-          <p className="text-[13px] text-ink-2">{isAdmin
+          <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink mb-4">{ko ? '초과근무' : 'Overtime'}</h1>
+          <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{isAdmin
             ? (ko ? 'supabase/migration-overtime.sql을 Supabase SQL Editor에서 한 번 실행하세요.' : 'Run supabase/migration-overtime.sql once in the Supabase SQL Editor.')
             : (ko ? '아직 준비되지 않았습니다.' : 'Not set up yet.')}</p>
         </div>
       ) : !loaded || probe.loading || (isAdmin && teachersLoading) ? (
-        <p className="text-[12.5px] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
+        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 inline-flex items-center gap-2"><Loader2 size={13} className="animate-spin" />{ko ? '불러오는 중' : 'Loading'}</p>
       ) : isAdmin ? (
         open
           ? <TeacherMonth key={open.id} teacher={open} settings={settings} asAdmin initialMonth={month} onBack={() => setOpen(null)} />

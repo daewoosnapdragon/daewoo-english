@@ -9,7 +9,7 @@ import { loadLadderSettings, isOverdue } from '@/lib/behaviorLadder'
 import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath } from '@/lib/routes'
 import { logActivity, logPageOpen, canViewActivity } from '@/lib/activity'
 import { isSchoolDayOff } from '@/lib/calendarDays'
-import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet, Clock } from 'lucide-react'
+import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet, Clock, Type } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 import { FlowerAvatar, flowerForClass } from '@/components/brand/ClassFlower'
@@ -102,7 +102,7 @@ function StudentFinder() {
   const { language } = useApp()
   return (
     <button data-guide="find" onClick={() => window.dispatchEvent(new Event('daewoo:open-palette'))}
-      className="relative w-[220px] h-8 pl-8 pr-2 text-left text-[12.5px] bg-paper-2 border border-rule-2 rounded text-ink-3 hover:border-ink-3">
+      className="relative w-[220px] h-8 pl-8 pr-2 text-left text-[length:calc(12.5px*var(--ts))] bg-paper-2 border border-rule-2 rounded text-ink-3 hover:border-ink-3">
       <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
       {language === 'ko' ? '학생, 페이지, 동작…  ⌘K' : 'Find anything…  ⌘K'}
     </button>
@@ -115,13 +115,25 @@ function UserMenu() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const { unseen } = useWhatsNew()
+  // Text size: Standard, Larger, Largest. Every font size follows it (globals.css --ts).
+  const SIZES = ['standard', 'larger', 'largest'] as const
+  const [textSize, setTextSize] = useState<typeof SIZES[number]>('standard')
+  useEffect(() => { const t = document.documentElement.dataset.text; if (t === 'larger' || t === 'largest') setTextSize(t) }, [])
+  const nextTextSize = () => {
+    const next = SIZES[(SIZES.indexOf(textSize) + 1) % SIZES.length]
+    setTextSize(next)
+    if (next === 'standard') delete document.documentElement.dataset.text; else document.documentElement.dataset.text = next
+    try { localStorage.setItem('daewoo_text', next) } catch {}
+    window.dispatchEvent(new Event('resize'))
+  }
+  const sizeLabel = language === 'ko' ? { standard: '보통', larger: '크게', largest: '아주 크게' }[textSize] : { standard: 'Standard', larger: 'Larger', largest: 'Largest' }[textSize]
   if (!currentTeacher) return null
   const signOut = () => { logActivity('logout'); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
-  const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-[13px] text-ink-2 hover:bg-paper-2 hover:text-ink text-left'
+  const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:bg-paper-2 hover:text-ink text-left'
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)} aria-expanded={open}
-        className="flex items-center gap-2 h-9 pl-0.5 pr-2 rounded border border-transparent hover:border-rule-2 text-[13px]">
+        className="flex items-center gap-2 h-9 pl-0.5 pr-2 rounded border border-transparent hover:border-rule-2 text-[length:calc(13px*var(--ts))]">
         <FlowerAvatar name={flowerForClass(currentTeacher.english_class)} size={30} />
         <span className="font-medium text-ink">{currentTeacher.name}</span>
         {unseen.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-accent" title="Something new" />}
@@ -135,6 +147,9 @@ function UserMenu() {
             <button className={item} onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
               {theme === 'dark' ? (language === 'ko' ? '라이트 모드' : 'Light mode') : (language === 'ko' ? '다크 모드' : 'Dark mode')}
+            </button>
+            <button className={item} onClick={nextTextSize}>
+              <Type size={14} />{language === 'ko' ? '글자 크기' : 'Text size'}<span className="ml-auto text-ink-3">{sizeLabel}</span>
             </button>
             <button className={item} onClick={() => setLanguage(language === 'en' ? 'ko' : 'en')}>
               <Globe size={14} />{language === 'en' ? '한국어' : 'English'}
@@ -161,7 +176,7 @@ function UserMenu() {
             )}
             <div className="border-t border-rule my-1" />
             <Link href="/whats-new" className={item} onClick={() => setOpen(false)}>
-              <Sparkles size={14} />{language === 'ko' ? '새로운 기능' : 'What’s new'}{unseen.length > 0 && <span className="ml-auto text-[10.5px] font-semibold text-white bg-accent rounded-full px-1.5">{unseen.length}</span>}
+              <Sparkles size={14} />{language === 'ko' ? '새로운 기능' : 'What’s new'}{unseen.length > 0 && <span className="ml-auto text-[length:calc(10.5px*var(--ts))] font-semibold text-white bg-accent rounded-full px-1.5">{unseen.length}</span>}
             </Link>
             <Link href="/guide" className={item} onClick={() => setOpen(false)}>
               <BookOpen size={14} />{language === 'ko' ? '사용 안내' : 'How to use this app'}
@@ -274,14 +289,14 @@ function NavLinks({ active, signals, label, className = '' }: { active: string; 
     timers.current.push(setTimeout(() => { if (pending.current === id) { pending.current = null; settle(true) } }, 10000))
   }
 
-  const linkClass = (on: boolean) => `relative flex flex-none items-center gap-1.5 px-3 h-10 text-[13.5px] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const linkClass = (on: boolean) => `relative flex flex-none items-center gap-1.5 px-3 h-10 text-[length:calc(13.5px*var(--ts))] font-medium whitespace-nowrap transition-colors ${on ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const marks = (id: string) => {
     const badge = id === 'dashboard' ? (signals.cases || signals.flagged) : 0
     const dot = id === 'attendance' && signals.attendanceIncomplete
     const done = id === 'attendance' && signals.attendanceDone
     return (
       <>
-        {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[10px] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {language === 'ko' ? '건 확인 필요' : 'need a look'}</span></span> : null}
+        {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-bad text-white text-[length:calc(10px*var(--ts))] font-bold flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {language === 'ko' ? '건 확인 필요' : 'need a look'}</span></span> : null}
         {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}><span className="sr-only">{language === 'ko' ? '오늘 출석 미완료' : "Today's attendance is not finished"}</span></span> : null}
         {done ? <span title={language === 'ko' ? '오늘 출석 완료' : 'All marked today'} className="inline-flex"><DrawnCheck size={12} /><span className="sr-only">{language === 'ko' ? '오늘 출석 완료' : 'All marked today'}</span></span> : null}
       </>
@@ -311,7 +326,7 @@ function NavLinks({ active, signals, label, className = '' }: { active: string; 
                 onKeyDown={e => { if (e.key === 'Escape') setMenuOpen(false) }}>
                 {hiddenIds.map(id => (
                   <Link key={id} role="menuitem" href={VIEW_PATHS[id]} onClick={e => go(id, e)} aria-current={active === id ? 'page' : undefined}
-                    className={`flex items-center gap-2 px-3 py-2 text-[13px] ${active === id ? 'text-ink font-semibold bg-paper-2' : 'text-ink-2 hover:bg-paper-2 hover:text-ink'}`}>
+                    className={`flex items-center gap-2 px-3 py-2 text-[length:calc(13px*var(--ts))] ${active === id ? 'text-ink font-semibold bg-paper-2' : 'text-ink-2 hover:bg-paper-2 hover:text-ink'}`}>
                     {label(id)}{marks(id)}
                   </Link>
                 ))}
@@ -373,14 +388,14 @@ export default function Masthead() {
     <>
       {signals.overdue > 0 && (
         <Link href="/dashboard" className="block bg-bad border-t border-bad">
-          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-white">
+          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[length:calc(12.5px*var(--ts))] font-semibold text-white">
             <AlertTriangle size={13} />{language === 'ko' ? `행동 사례 ${signals.overdue}건이 처리되지 않고 기다리고 있습니다` : `${signals.overdue} behavior ${signals.overdue === 1 ? 'case has' : 'cases have'} been waiting for your action for days`}
           </div>
         </Link>
       )}
       {signals.reminder && (
         <Link href="/attendance" className="block bg-warn-soft border-t border-rule">
-          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[12.5px] font-semibold text-warn">
+          <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-2 text-[length:calc(12.5px*var(--ts))] font-semibold text-warn">
             <Bell size={13} />{language === 'ko' ? '오늘 출석을 확인하셨나요?' : 'Did you mark attendance today?'}
           </div>
         </Link>
@@ -400,7 +415,7 @@ export default function Masthead() {
     return (
       <header className="sticky top-0 z-40 bg-surface border-b border-rule-2 no-print">
         <div className="mx-auto max-w-[1440px] px-6 grid grid-cols-[auto_1fr_auto] items-center gap-4">
-          <Link href="/dashboard" className="font-display text-[18px] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
+          <Link href="/dashboard" className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
           <NavLinks active={active} signals={signals} label={label} />
           <div className="flex items-center gap-2"><UserMenu />{toggle}</div>
         </div>
@@ -416,7 +431,7 @@ export default function Masthead() {
         {/* Row 1: find · brand · user */}
         <div className="grid grid-cols-[1fr_auto_1fr] items-center pt-3 pb-2">
           <div className="justify-self-start"><StudentFinder /></div>
-          <Link href="/dashboard" className="justify-self-center font-display text-[26px] leading-none text-ink tracking-tight">
+          <Link href="/dashboard" className="justify-self-center font-display text-[length:calc(26px*var(--ts))] leading-none text-ink tracking-tight">
             Daewoo English
           </Link>
           <div className="justify-self-end flex items-center gap-2"><UserMenu />{toggle}</div>
@@ -426,14 +441,14 @@ export default function Masthead() {
       </div>
       {/* Row 3: context */}
       <div className="bg-paper-2 border-t border-rule">
-        <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-5 text-[12px] text-ink-2">
+        <div className="mx-auto max-w-[1440px] px-6 h-8 flex items-center justify-center gap-5 text-[length:calc(12px*var(--ts))] text-ink-2">
           <span className="font-semibold text-ink">{activeSemester ? (language === 'ko' ? activeSemester.name_ko || activeSemester.name : activeSemester.name) : (language === 'ko' ? '학기 없음' : 'No active semester')}</span>
           <span className="flex items-center gap-1.5">
             <span className={`w-2 h-2 rounded-full ${CLASS_DOT[currentTeacher.english_class] || 'bg-ink-3'}`} />
             <span className="font-semibold text-ink">{currentTeacher.role === 'admin' ? 'Admin' : currentTeacher.english_class}</span>
           </span>
           <span className="tabular-nums">{dateStr}</span>
-          {term && <span className="font-display italic text-[13px] text-ink">{language === 'ko' ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`}</span>}
+          {term && <span className="font-display italic text-[length:calc(13px*var(--ts))] text-ink">{language === 'ko' ? `${term.weeks}주 중 ${term.week}주차` : `Week ${term.week} of ${term.weeks}`}</span>}
         </div>
       </div>
       {termLine}

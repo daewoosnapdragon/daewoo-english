@@ -190,26 +190,26 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
       {printing && <RubricPrintDialog rubric={assessment.rubric} title={assessment.name} students={students.map(s => ({ id: s.id, name: s.english_name }))} scored={printScored} maxScore={assessment.max_score} onClose={() => setPrinting(false)} />}
       {/* Top bar */}
       <div className="h-12 px-5 border-b border-rule-2 bg-surface flex items-center gap-4 flex-shrink-0">
-        <button onClick={exit} className="inline-flex items-center gap-1.5 text-[12.5px] text-ink-2 hover:text-ink"><X size={14} />{lang === 'ko' ? '나가기' : 'Exit'}</button>
-        <span className="font-display text-[18px] leading-none text-ink truncate">{assessment.name}</span>
-        <span className="text-[12px] text-ink-3 truncate">{assessment.rubric.name} · {criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{assessment.max_score}</span>
-        <span className="ml-auto text-[12.5px] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
-        {dirty.size > 0 && <span className="text-[12px] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
-        <button onClick={() => setPrinting(true)} title={lang === 'ko' ? '루브릭을 빈 양식으로, 학생별로, 또는 채점 결과와 함께 인쇄' : 'Print the rubric blank, one per student, or with the marked levels'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '인쇄' : 'Print'}</button>
-        <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 단계와 점수를 지웁니다' : 'Remove every level and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5"><Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>
-        <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[12.5px] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
+        <button onClick={exit} className="inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink"><X size={14} />{lang === 'ko' ? '나가기' : 'Exit'}</button>
+        <span className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink truncate">{assessment.name}</span>
+        <span className="text-[length:calc(12px*var(--ts))] text-ink-3 truncate">{assessment.rubric.name} · {criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · /{assessment.max_score}</span>
+        <span className="ml-auto text-[length:calc(12.5px*var(--ts))] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
+        {dirty.size > 0 && <span className="text-[length:calc(12px*var(--ts))] text-warn">{dirty.size} {lang === 'ko' ? '명 미저장' : 'unsaved'}</span>}
+        <button onClick={() => setPrinting(true)} title={lang === 'ko' ? '루브릭을 빈 양식으로, 학생별로, 또는 채점 결과와 함께 인쇄' : 'Print the rubric blank, one per student, or with the marked levels'} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Printer size={13} />{lang === 'ko' ? '인쇄' : 'Print'}</button>
+        <button onClick={clearAll} disabled={saving || !students.some(s => hasAnything(s.id))} title={lang === 'ko' ? '반 전체의 단계와 점수를 지웁니다' : 'Remove every level and score for the whole class'} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-2 disabled:hover:border-rule-2 inline-flex items-center gap-1.5"><Eraser size={13} />{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>
+        <button onClick={saveAll} disabled={saving || dirty.size === 0} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? '모두 저장' : 'Save all'}</button>
       </div>
 
-      {loading ? <Loading rows={5} /> : (
+      {loading ? <Loading kind="quiet" rows={5} /> : (
         <div className="flex-1 min-h-0 grid grid-cols-[210px_minmax(0,1fr)_230px]">
           {/* Students */}
           <div className="border-r border-rule-2 bg-paper-2 overflow-y-auto">
             {students.map((s, i) => {
               const fl = flags[s.id]; const done = complete(s.id); const part = !done && marked(s.id) > 0; const sc = scoreOf(s.id)
               return (
-                <button key={s.id} onClick={() => goTo(i)} className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[12.5px] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
+                <button key={s.id} onClick={() => goTo(i)} className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[length:calc(12.5px*var(--ts))] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
                   <span className="truncate text-ink">{s.english_name}</span>
-                  <span className={`tabular-nums text-[11.5px] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${sc} ✓` : part ? `${sc ?? ''} ~` : ''}</span>
+                  <span className={`tabular-nums text-[length:calc(11.5px*var(--ts))] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${sc} ✓` : part ? `${sc ?? ''} ~` : ''}</span>
                 </button>
               )
             })}
@@ -220,16 +220,16 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
             {active && (
               <>
                 <div className="flex items-center justify-between gap-3 mb-3 flex-shrink-0">
-                  <h3 className="font-display text-[26px] leading-none text-ink">{active.english_name} <span className="font-sans text-[12px] text-ink-3 ml-1">{active.korean_name}</span></h3>
+                  <h3 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{active.english_name} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3 ml-1">{active.korean_name}</span></h3>
                   <div className="flex items-center gap-3">
-                    <span className="font-display text-[24px] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[12px] text-ink-3">/ {assessment.max_score}</span></span>
-                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
-                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[11px] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
-                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 단계와 점수를 지웁니다' : 'Remove every level and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[11px] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
+                    <span className="font-display text-[length:calc(24px*var(--ts))] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3">/ {assessment.max_score}</span></span>
+                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
+                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 단계와 점수를 지웁니다' : 'Remove every level and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
                   </div>
                 </div>
                 {isOff ? (
-                  <p className="text-[13px] text-ink-3 py-6">{lang === 'ko' ? '결석/면제 처리됨. 점수를 표시하면 다시 채점됩니다.' : 'Marked absent or exempt. Choosing a level clears it.'}</p>
+                  <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6">{lang === 'ko' ? '결석/면제 처리됨. 점수를 표시하면 다시 채점됩니다.' : 'Marked absent or exempt. Choosing a level clears it.'}</p>
                 ) : (
                   <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 pr-1">
                     {criteria.map((c, i) => {
@@ -238,9 +238,9 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                       return (
                         <div key={c.key} onClick={() => setRow(i)} className={`rounded-md px-3 py-2.5 -mx-3 border ${current ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
                           <div className="flex items-baseline gap-2 mb-2">
-                            <span className="text-[15px] font-semibold text-ink">{c.label}</span>
-                            {c.standard && <span className="text-[11px] text-info">{c.standard}</span>}
-                            {v != null && <span className="ml-auto text-[11.5px] text-ink-3">{labels[v]}</span>}
+                            <span className="text-[length:calc(15px*var(--ts))] font-semibold text-ink">{c.label}</span>
+                            {c.standard && <span className="text-[length:calc(11px*var(--ts))] text-info">{c.standard}</span>}
+                            {v != null && <span className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-3">{labels[v]}</span>}
                           </div>
                           <div className="grid grid-cols-[76px_repeat(4,minmax(0,1fr))] gap-2">
                             {[0, 1, 2, 3, 4].map(n => {
@@ -248,9 +248,9 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                               return (
                                 <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }} title={n === 0 ? zeroText : undefined}
                                   className={`text-left rounded-md border px-3 py-2.5 flex flex-col gap-1 transition-colors ${n === 0 ? 'items-center justify-center' : ''} ${on ? tone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
-                                  <span className="flex items-baseline gap-2"><span className="font-display text-[22px] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[10.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span>}</span>
-                                  {n === 0 ? <span className={`text-[10.5px] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[0]}</span>
-                                    : <span className={`text-[12.5px] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
+                                  <span className="flex items-baseline gap-2"><span className="font-display text-[length:calc(22px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span>}</span>
+                                  {n === 0 ? <span className={`text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[0]}</span>
+                                    : <span className={`text-[length:calc(12.5px*var(--ts))] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
                                 </button>
                               )
                             })}
@@ -261,16 +261,16 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-3 mt-3 border-t border-rule flex-shrink-0">
-                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[12.5px] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
-                  <span className="text-[11.5px] text-ink-3">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓ · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'} · Esc {lang === 'ko' ? '나가기' : 'exit'}</span>
-                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[12.5px] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
+                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓ · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'} · Esc {lang === 'ko' ? '나가기' : 'exit'}</span>
+                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
                 </div>
               </>
             )}
           </div>
 
           {/* Rail */}
-          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[12px] overflow-y-auto">
+          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[length:calc(12px*var(--ts))] overflow-y-auto">
             <div>
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '반 평균 (기준별)' : 'Class average so far'}</p>
               {classAvg.map(c => (

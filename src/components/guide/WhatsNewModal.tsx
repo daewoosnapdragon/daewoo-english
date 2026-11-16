@@ -69,36 +69,36 @@ export default function WhatsNewModal() {
             </div>
             <div className="px-6 py-5">
               <p className="eyebrow eyebrow-accent mb-1.5">What’s new</p>
-              <h2 className="font-display text-[26px] leading-tight text-ink">{e.title}</h2>
-              <p className="text-[14px] text-ink-2 leading-relaxed mt-2">{e.body}</p>
-              <p className="text-[13.5px] text-ink leading-relaxed mt-2"><span className="font-semibold">To use it:</span> {e.highlight!.how}</p>
+              <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink">{e.title}</h2>
+              <p className="text-[length:calc(14px*var(--ts))] text-ink-2 leading-relaxed mt-2">{e.body}</p>
+              <p className="text-[length:calc(13.5px*var(--ts))] text-ink leading-relaxed mt-2"><span className="font-semibold">To use it:</span> {e.highlight!.how}</p>
             </div>
           </>
         ) : (
           <div className="px-6 py-5">
             <p className="eyebrow eyebrow-accent mb-1.5">What’s new</p>
-            <h2 className="font-display text-[26px] leading-tight text-ink">And also</h2>
+            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink">And also</h2>
             <ul className="mt-3 grid gap-2">
               {rest.map(r => (
-                <li key={r.id} className="grid grid-cols-[6px_minmax(0,1fr)] gap-3 text-[13.5px]">
+                <li key={r.id} className="grid grid-cols-[6px_minmax(0,1fr)] gap-3 text-[length:calc(13.5px*var(--ts))]">
                   <span className="mt-2 w-1.5 h-1.5 rounded-full bg-accent" />
                   <span className="text-ink-2"><span className="font-semibold text-ink">{r.title}.</span> {r.body}{r.path && <> <Link href={r.path} onClick={later} className="text-accent hover:underline whitespace-nowrap">Open →</Link></>}</span>
                 </li>
               ))}
             </ul>
-            <p className="text-[12.5px] text-ink-3 mt-4">The full list, and how each page works, stay under your name at the top right.</p>
+            <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-4">The full list, and how each page works, stay under your name at the top right.</p>
           </div>
         )}
         </div>
         <div className="shrink-0 px-6 py-3 border-t border-rule-2 bg-paper-2/60 flex items-center gap-3">
-          <span className="text-[12px] text-ink-3 tabular-nums">{i + 1} / {cards}</span>
-          <button onClick={later} className="text-[12.5px] text-ink-3 hover:text-ink inline-flex items-center gap-1"><X size={12} />Later</button>
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums">{i + 1} / {cards}</span>
+          <button onClick={later} className="text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink inline-flex items-center gap-1"><X size={12} />Later</button>
           <div className="ml-auto flex items-center gap-2">
-            {e && (e.tour || e.path) && <button onClick={() => tryIt(e)} className="h-9 px-3.5 rounded border border-rule-2 text-[13px] text-ink hover:border-ink-3">Try it</button>}
+            {e && (e.tour || e.path) && <button onClick={() => tryIt(e)} className="h-9 px-3.5 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink hover:border-ink-3">Try it</button>}
             {i > 0 && <button onClick={() => setI(i - 1)} className="h-9 w-9 rounded border border-rule-2 text-ink-2 hover:text-ink flex items-center justify-center"><ChevronLeft size={14} /></button>}
             {last
-              ? <button onClick={done} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover">Done</button>
-              : <button onClick={() => setI(i + 1)} className="h-9 px-4 rounded bg-accent text-white text-[13px] font-semibold hover:bg-accent-hover inline-flex items-center gap-1">Next <ChevronRight size={14} /></button>}
+              ? <button onClick={done} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover">Done</button>
+              : <button onClick={() => setI(i + 1)} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover inline-flex items-center gap-1">Next <ChevronRight size={14} /></button>}
           </div>
         </div>
       </div>

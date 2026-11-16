@@ -43,7 +43,7 @@ export function UnitInput({ value, books, linkedName, placeholder, onChange, onP
         }}
         placeholder={placeholder}
         role="combobox" aria-expanded={open} aria-autocomplete="list"
-        className="lp-field w-full text-[13.5px] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1.5 placeholder:text-text-tertiary/40"
+        className="lp-field w-full text-[length:calc(13.5px*var(--ts))] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1.5 placeholder:text-text-tertiary/40"
       />
       {open && (
         <ul role="listbox" className="absolute left-0 right-0 top-full mt-1 z-30 bg-surface border border-border rounded-lg shadow-lg py-1 max-h-[260px] overflow-y-auto">
@@ -51,10 +51,10 @@ export function UnitInput({ value, books, linkedName, placeholder, onChange, onP
             <li key={m.book.placement_id + m.unit.id} role="option" aria-selected={i === active}
               onMouseDown={e => { e.preventDefault(); pick(m) }}
               onMouseEnter={() => setActive(i)}
-              className={`px-3 py-1.5 cursor-pointer flex items-center gap-2 text-[13px] ${i === active ? 'bg-surface-alt' : ''}`}>
+              className={`px-3 py-1.5 cursor-pointer flex items-center gap-2 text-[length:calc(13px*var(--ts))] ${i === active ? 'bg-surface-alt' : ''}`}>
               <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: m.book.color }} />
               <span className="text-text-primary font-medium truncate">{m.unit.name}</span>
-              <span className="ml-auto shrink-0 text-[11.5px] text-text-tertiary">{[several ? m.book.name : '', m.unit.badge].filter(Boolean).join(' · ')}</span>
+              <span className="ml-auto shrink-0 text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{[several ? m.book.name : '', m.unit.badge].filter(Boolean).join(' · ')}</span>
             </li>
           ))}
         </ul>
