@@ -292,6 +292,44 @@ export function adminAccounts<T extends { role?: string; english_class?: string;
   return [snap, admin].filter((t): t is T => !!t)
 }
 
+// ─── The board ───────────────────────────────────────────────────
+
+export type BoardSection = 'working' | 'week' | 'soon' | 'later' | 'someday'
+export const BOARD_SECTION_LABELS: Record<BoardSection, { en: string; ko: string }> = {
+  working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, soon: { en: 'Coming up', ko: '다가오는' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' },
+}
+/** A dated job within this many days is Coming up; further out it sits on the Later shelf. */
+export const BOARD_HORIZON_DAYS = 28
+
+/**
+ * Where an open job sits on the board. Started jobs come first whatever
+ * their date. Then this week, then the next four weeks. Everything further
+ * out, and every long-term goal until its last two weeks, is on the Later
+ * shelf under the columns; undated jobs are Whenever, at the shelf's end.
+ */
+export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date'>, today: string): BoardSection | null {
+  if (job.status === 'done') return null
+  if (job.status === 'in_progress' || job.status === 'waiting') return 'working'
+  const u = urgency(job, today)
+  if (u === 'someday') return 'someday'
+  if (u === 'overdue' || u === 'today' || u === 'week') return 'week'
+  if (job.due_kind !== 'date') return 'later'
+  return daysBetween(today, job.due_date!) <= BOARD_HORIZON_DAYS ? 'soon' : 'later'
+}
+
+/** The Later shelf: far-off jobs by month, then Whenever, each sorted by date. */
+export function shelf(jobs: AdminJob[], today: string): { key: string; jobs: AdminJob[] }[] {
+  const out: Record<string, AdminJob[]> = {}
+  jobs.filter(j => !j.parent_id).forEach(j => {
+    const s = boardSection(j, today)
+    if (s === 'later') (out[j.due_date!.slice(0, 7)] ||= []).push(j)
+    else if (s === 'someday') (out['someday'] ||= []).push(j)
+  })
+  const keys = Object.keys(out).filter(k => k !== 'someday').sort()
+  if (out.someday) keys.push('someday')
+  return keys.map(key => ({ key, jobs: out[key].sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at)) }))
+}
+
 /** A question and its answer as one step, so the how-to grows: "Q: … → A: …". */
 export const answerStepText = (question: string, answer: string) => `${question.trim()} → ${answer.trim()}`
 

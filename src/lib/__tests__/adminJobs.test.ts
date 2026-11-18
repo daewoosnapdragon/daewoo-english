@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, type AdminJob } from '@/lib/adminJobs'
+import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, type AdminJob } from '@/lib/adminJobs'
 
 const job = (over: Partial<AdminJob> = {}): AdminJob => ({
   id: 'j', title: 'Send comment template', category: 'Report cards', size: 'S', status: 'scheduled', due_kind: 'date', due_date: '2026-11-26', semester_id: null,
@@ -147,5 +147,32 @@ describe('the steps box', () => {
   it('names the two accounts in order', () => {
     const ts = [{ id: 'v', role: 'admin', english_class: 'Admin' }, { id: 't', role: 'teacher', english_class: 'Lily' }, { id: 'k', role: 'teacher', english_class: 'Snapdragon' }]
     expect(adminAccounts(ts).map(t => t.id)).toEqual(['k', 'v'])
+  })
+})
+
+describe('the board', () => {
+  it('puts each open job in its column section or on the shelf', () => {
+    expect(boardSection(job({ status: 'in_progress', due_kind: 'someday', due_date: null }), today)).toBe('working')
+    expect(boardSection(job({ status: 'waiting', due_date: '2027-03-01' }), today)).toBe('working')
+    expect(boardSection(job({ due_date: '2026-11-10' }), today)).toBe('week')
+    expect(boardSection(job({ due_date: '2026-11-25' }), today)).toBe('week')
+    expect(boardSection(job({ due_date: '2026-12-10' }), today)).toBe('soon')
+    expect(boardSection(job({ due_date: '2027-01-05' }), today)).toBe('later')
+    expect(boardSection(job({ due_kind: 'someday', due_date: null }), today)).toBe('someday')
+    expect(boardSection(job({ status: 'done' }), today)).toBeNull()
+  })
+  it('keeps a long-term goal on the shelf until its last two weeks', () => {
+    const goal = job({ due_kind: 'semester', due_date: '2027-01-08' })
+    expect(boardSection(goal, '2026-11-19')).toBe('later')
+    expect(boardSection(goal, '2026-12-20')).toBe('later')
+    expect(boardSection(goal, '2026-12-28')).toBe('week')
+    expect(boardSection({ ...goal, status: 'in_progress' }, '2026-11-19')).toBe('working')
+  })
+  it('groups the shelf by month with Whenever last', () => {
+    const s = shelf([
+      job({ id: 'a', due_date: '2027-02-03' }), job({ id: 'b', due_kind: 'someday', due_date: null }), job({ id: 'c', due_date: '2027-01-20' }),
+      job({ id: 'd', due_date: '2027-01-04' }), job({ id: 'e', due_date: today }), job({ id: 'f', due_date: '2027-01-30', parent_id: 'a' }),
+    ], today)
+    expect(s.map(g => [g.key, g.jobs.map(j => j.id)])).toEqual([['2027-01', ['d', 'c']], ['2027-02', ['a']], ['someday', ['b']]])
   })
 })
