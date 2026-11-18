@@ -349,8 +349,9 @@ function SemesterSection() {
     const { data, error } = await supabase.from('semesters').insert({
       name: newSem.name, name_ko: newSem.name_ko, academic_year: newSem.academic_year,
       type: newSem.type, start_date: newSem.start_date || null, end_date: newSem.end_date || null,
-      grades_due_date: newSem.midterm_cutoff_date || null,
-      comments_due_date: newSem.report_card_cutoff_date || null, is_active: false,
+      // The same columns the edit form and the dashboard read.
+      midterm_cutoff_date: newSem.midterm_cutoff_date || null,
+      report_card_cutoff_date: newSem.report_card_cutoff_date || null, is_active: false,
     }).select().single()
     if (error) showToast(`Error: ${error.message}`)
     else { logActivity('settings', `Semester added: ${newSem.name}`); setSemesters((prev: any) => [data, ...prev]); setAdding(false); setNewSem({ name: '', name_ko: '', academic_year: '2025-2026', type: 'spring', start_date: '', end_date: '', midterm_cutoff_date: '', report_card_cutoff_date: '' }); showToast('Semester added') }
