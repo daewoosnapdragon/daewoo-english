@@ -16,6 +16,7 @@ import WeeklySchedule from './WeeklySchedule'
 import OfficeJobs from './OfficeJobs'
 import SuppliesCard from './SuppliesCard'
 import OvertimeLine from './OvertimeLine'
+import AdminJobsCard from './AdminJobsCard'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
 import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
 
@@ -242,6 +243,9 @@ export default function DashboardView() {
       </div>
 
       <WhatsNewModal />
+
+      {/* ─── Jobs: the two admin accounts see their office work first ─── */}
+      <AdminJobsCard />
 
       {/* ─── Behavior ladder: admin sees every case that needs an action, with no dismiss; a teacher sees their class's ─── */}
       <BehaviorLadderPanel mode={isAdmin ? 'admin' : 'teacher'} onChanged={() => window.dispatchEvent(new Event('daewoo:ladder-changed'))} />

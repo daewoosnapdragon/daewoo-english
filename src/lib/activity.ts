@@ -17,13 +17,13 @@ import { supabase } from '@/lib/supabase'
 // its own, so the log says "Grades · Snapdragon · Grade 4 · Unit 3 Quiz
 // score sheet" rather than "Opened Grades".
 
-export type ActivityAction = 'login' | 'logout' | 'visit' | 'scored' | 'saved' | 'created' | 'edited' | 'deleted' | 'printed' | 'posted' | 'settings'
+export type ActivityAction = 'login' | 'logout' | 'visit' | 'scored' | 'saved' | 'created' | 'edited' | 'deleted' | 'printed' | 'posted' | 'settings' | 'done'
 
 export const ACTION_LABELS: Record<ActivityAction, { en: string; ko: string }> = {
   login: { en: 'Signed in', ko: '로그인' }, logout: { en: 'Signed out', ko: '로그아웃' }, visit: { en: 'Opened', ko: '열람' },
   scored: { en: 'Scored', ko: '채점' }, saved: { en: 'Saved', ko: '저장' }, created: { en: 'Created', ko: '생성' },
   edited: { en: 'Edited', ko: '수정' }, deleted: { en: 'Deleted', ko: '삭제' }, printed: { en: 'Printed', ko: '인쇄' },
-  posted: { en: 'Posted', ko: '게시' }, settings: { en: 'Changed settings', ko: '설정 변경' },
+  posted: { en: 'Posted', ko: '게시' }, settings: { en: 'Changed settings', ko: '설정 변경' }, done: { en: 'Finished a job', ko: '업무 완료' },
 }
 
 /** Only the Snapdragon teacher's account can read the log. */

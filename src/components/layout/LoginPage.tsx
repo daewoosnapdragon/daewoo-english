@@ -4,6 +4,7 @@ import { requestWelcome } from '@/lib/welcome'
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity, setActivityActor } from '@/lib/activity'
+import { signInAdmin } from '@/lib/adminAuth'
 import { Teacher } from '@/types'
 import { Lock, Globe, ArrowRight } from 'lucide-react'
 
@@ -21,11 +22,21 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
     }
   }, [teachers, setCurrentTeacher])
 
-  const handleLogin = () => {
+  const [busy, setBusy] = useState(false)
+  const handleLogin = async () => {
     setLoginError('')
     const teacher = teachers.find(t => t.id === selectedTeacherId)
     if (!teacher) { setLoginError(language === 'ko' ? '이름을 선택하세요' : 'Please select your name'); return }
-    if (teacher.password && teacher.password !== password) {
+    if (teacher.auth_email) {
+      // An admin account: the password is checked by Supabase Auth, which
+      // also unlocks the admin jobs tables for this browser.
+      setBusy(true)
+      const err = await signInAdmin(teacher.auth_email, password)
+      setBusy(false)
+      // Until the Supabase user exists, the old password still opens the app
+      // (without the admin jobs), so a half-finished setup locks nobody out.
+      if (err && !(teacher.password && teacher.password === password)) { setLoginError(language === 'ko' ? '비밀번호가 틀렸습니다' : 'Incorrect password'); return }
+    } else if (teacher.password && teacher.password !== password) {
       setLoginError(language === 'ko' ? '비밀번호가 틀렸습니다' : 'Incorrect password')
       return
     }
@@ -76,8 +87,8 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
               <span className="w-1.5 h-1.5 rounded-full bg-bad" />{loginError}
             </p>
           )}
-          <button onClick={handleLogin}
-            className="w-full h-11 bg-accent hover:bg-accent-hover text-white rounded text-[length:calc(14px*var(--ts))] font-semibold flex items-center justify-center gap-2 group">
+          <button onClick={handleLogin} disabled={busy}
+            className="w-full h-11 disabled:opacity-60 bg-accent hover:bg-accent-hover text-white rounded text-[length:calc(14px*var(--ts))] font-semibold flex items-center justify-center gap-2 group">
             {language === 'ko' ? '로그인' : 'Log in'}
             <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
           </button>

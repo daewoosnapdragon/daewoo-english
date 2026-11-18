@@ -512,11 +512,33 @@ export const ADMIN_SECTIONS: GuideSection[] = [
     rules: ['No feature ships without its guide section updated in the same change.', 'Turning an entry off hides it; the feature itself is unchanged.'],
     watchOut: ['Moving a batch earlier than a teacher’s last “Got it” means that teacher gets no popup for it; it is still on the page.'],
   },
+  {
+    id: 'jobs', title: 'Jobs', updated: '2026-11-19',
+    purpose: 'The office and admin work, for the admin account and the Snapdragon teacher only: what needs doing, by when, who owns it, how it is done, and who did it. Opened from the user menu; the dashboard shows your own jobs due this week at the top every day.',
+    screen: [
+      'Dashboard: Your jobs. Your overdue, today and this-week jobs in large type with a tick to mark each done, long-term goals you have not started, and how many jobs have no owner. All jobs opens the page.',
+      'Jobs page, the add line: a title, when (a day, by the end of a month, by the end of the semester, or when there is time), category, size (XS to L, a feel for how big, not hours), owner and who asked. Only the title is needed. Enter adds.',
+      'Up next: every open job in sections: Overdue, Today, This week, Coming up, By the end of the month, By the end of the semester, Later, When there is time. A month or semester goal joins This week in its last two weeks and says Not started if it is still Scheduled with a month to go.',
+      'A row: the status tag (click it to change: Scheduled, In progress, Waiting with one line on what for, Done), the title, the due, category, size with steps done, owner. The arrow opens the job.',
+      'Inside a job: the steps as a checklist with who ticked each one, the parts (child jobs with their own owner and date), Stuck (ask a question; the answer becomes a step on this job and on the routine it came from), owner, requested by, size, category, due, notes, a link to the page in the app where the work happens, who created and finished it, and the history of every change.',
+      'By category and By owner regroup the same open jobs. Everyone, Mine and No owner filter all three lists.',
+      'Routines: the yearly templates. Each has jobs at day offsets from the event (28 days before, on the day), with a default owner, size and steps. Set the date for a term and every job is made at once; the dates already set are listed with a way to remove one and its unfinished jobs.',
+      'Done: every finished job by the day it was finished, with who did it. This term: a count per person, by size and by category, for the active semester.',
+    ],
+    tasks: [
+      { title: 'Add a job quickly', steps: ['Type the title in the add line, pick when, and press Enter. Leave the owner empty if nobody has agreed to it yet; it shows under No owner.'] },
+      { title: 'Split a big job', steps: ['Open the job. Under Parts, add each piece with its own owner and date. The row shows parts done out of parts.'] },
+      { title: 'Set a routine for the term', steps: ['Routines → the routine → Set the date for a term. Pick the semester; if the routine follows a Settings date (report card grades due), it is filled in. Make the jobs.', 'Every template job appears on Up next, dated from the event, owned by its default owner.'] },
+      { title: 'Ask when stuck', steps: ['Open the job → Stuck → type the question → Ask. The other account sees a question mark on the row and a count in the header.', 'Answering writes the question and answer as a step on the job and on its routine, so it is there next time.'] },
+    ],
+    rules: ['Nothing is owned by default. A job with no owner shows on both dashboards until someone takes it.', 'The tables are locked in the database to the two signed-in admin accounts (Supabase Auth); teachers cannot read them with the shared key.', 'Marking a job done writes to the activity log as “Finished a job”.'],
+    watchOut: ['If the page says this browser is not signed in to Supabase Auth, sign out and back in with the Supabase password; the setup steps are at the end of supabase/migration-admin-jobs.sql.'],
+  },
 ]
 
 export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
 /** The guide section for a view id, for “How this page works”. */
 export const SECTION_FOR_VIEW: Record<string, string> = {
   dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', behavior: 'behavior', supplies: 'supplies', budget: 'budget', overtime: 'overtime', planner: 'bookshelf',
+  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', jobs: 'jobs', behavior: 'behavior', supplies: 'supplies', budget: 'budget', overtime: 'overtime', planner: 'bookshelf',
 }
