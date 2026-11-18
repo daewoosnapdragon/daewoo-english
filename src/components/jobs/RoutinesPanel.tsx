@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useApp } from '@/lib/context'
-import { ANCHOR_LABELS, SIZES, SIZE_LABELS, anchorDate, offsetLabel, fmtDay, type AdminEvent, type AdminRoutine, type AdminRoutineJob, type JobSize, type RoutineAnchor } from '@/lib/adminJobs'
+import { ANCHOR_LABELS, SIZES, SIZE_LABELS, adminAccounts, anchorDate, offsetLabel, fmtDay, type AdminEvent, type AdminRoutine, type AdminRoutineJob, type JobSize, type RoutineAnchor } from '@/lib/adminJobs'
 import { createEvent, deleteEvent, deleteRoutine, saveRoutine, saveRoutineJob, deleteRoutineJob } from '@/lib/adminJobsData'
 import { field } from './AddJob'
 import type { Semester, Teacher } from '@/types'
@@ -134,7 +134,7 @@ function TemplateRow({ t, ko, teachers, act, isNew }: { t: AdminRoutineJob; ko: 
         {(openSteps || steps) && <textarea value={steps} onChange={e => setSteps(e.target.value)} rows={Math.max(2, steps.split('\n').length)} placeholder={ko ? '단계, 한 줄에 하나' : 'Steps, one per line'} className="mt-1 w-full px-2 py-1.5 bg-surface border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))] text-ink leading-snug resize-y" />}
         {!openSteps && !steps && <button onClick={() => setOpenSteps(true)} className="text-[length:calc(10.5px*var(--ts))] text-ink-3 hover:text-ink mt-0.5">{ko ? '+ 단계' : '+ steps'}</button>}
       </div>
-      <select value={d.default_owner_id || ''} onChange={e => setD({ ...d, default_owner_id: e.target.value || null })} className={`${field} w-full`}><option value="">{ko ? '담당 없음' : 'No owner'}</option>{teachers.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+      <select value={d.default_owner_id || ''} onChange={e => setD({ ...d, default_owner_id: e.target.value || null })} className={`${field} w-full`}><option value="">{ko ? '담당 없음' : 'Nobody yet'}</option>{adminAccounts(teachers).map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
       <select value={d.size} onChange={e => setD({ ...d, size: e.target.value as JobSize })} className={`${field} w-full`} title={SIZE_LABELS[d.size][ko ? 'ko' : 'en']}>{SIZES.map(s => <option key={s} value={s}>{s}</option>)}</select>
       <span className="flex items-center gap-1 h-8">
         {(dirty || isNew) && <button onClick={save} disabled={!d.title.trim()} className="h-7 px-2 rounded bg-accent text-white text-[length:calc(11px*var(--ts))] font-semibold disabled:opacity-40">{isNew ? (ko ? '추가' : 'Add') : (ko ? '저장' : 'Save')}</button>}

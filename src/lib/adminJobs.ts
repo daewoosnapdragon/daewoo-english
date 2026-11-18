@@ -273,6 +273,25 @@ export function jobsForEvent(routine: AdminRoutine, template: AdminRoutineJob[],
   }))
 }
 
+/** Lines typed or pasted into the steps box, one step per line; numbering, dashes and bullets are stripped. */
+export function parseStepLines(text: string): string[] {
+  return text.split('\n').map(l => l.replace(/^\s*(?:[-*•·]|\d+[.)]|step\s*\d+[:.])\s*/i, '').trim()).filter(Boolean)
+}
+
+/** The Friday of this week, or next Friday when today is Friday or the weekend. */
+export function thisFriday(today: string): string {
+  const dow = new Date(today + 'T12:00:00Z').getUTCDay()
+  const ahead = (5 - dow + 7) % 7
+  return addDays(today, ahead === 0 ? 7 : ahead)
+}
+
+/** The two accounts that own jobs: the Snapdragon teacher and the admin account, in that order. */
+export function adminAccounts<T extends { role?: string; english_class?: string; is_active?: boolean }>(teachers: T[]): T[] {
+  const snap = teachers.find(t => t.english_class === 'Snapdragon' && t.is_active !== false)
+  const admin = teachers.find(t => t.role === 'admin' && t.is_active !== false)
+  return [snap, admin].filter((t): t is T => !!t)
+}
+
 /** A question and its answer as one step, so the how-to grows: "Q: … → A: …". */
 export const answerStepText = (question: string, answer: string) => `${question.trim()} → ${answer.trim()}`
 

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { logActivity } from '@/lib/activity'
-import { answerStepText, jobsForEvent, newId, parseJob, parseRoutineJob, type AdminEvent, type AdminJob, type AdminJobHistory, type AdminJobQuestion, type AdminRoutine, type AdminRoutineJob, type JobDraft, type JobStatus, type JobStep } from '@/lib/adminJobs'
+import { answerStepText, jobsForEvent, newId, parseJob, parseRoutineJob, parseStepLines, type AdminEvent, type AdminJob, type AdminJobHistory, type AdminJobQuestion, type AdminRoutine, type AdminRoutineJob, type JobDraft, type JobStatus, type JobStep } from '@/lib/adminJobs'
 
 // ─── Admin jobs: reading and writing ─────────────────────────────
 // Every write also leaves a line in admin_job_history (who did what to the
@@ -73,9 +73,10 @@ export async function toggleStep(job: AdminJob, stepId: string, who: Who): Promi
   return saveSteps(job, steps, who, s ? `${s.done ? 'unticked' : 'ticked'}: ${s.text}` : '')
 }
 
-export async function addStep(job: AdminJob, text: string, who: Who): Promise<string | null> {
-  const t = text.trim(); if (!t) return null
-  return saveSteps(job, [...job.steps, { id: newId(), text: t, done: false, done_by_id: null, done_at: null }], who, `added: ${t}`)
+/** One step per line; a pasted numbered list becomes several steps. */
+export async function addSteps(job: AdminJob, text: string, who: Who): Promise<string | null> {
+  const lines = parseStepLines(text); if (!lines.length) return null
+  return saveSteps(job, [...job.steps, ...lines.map(t => ({ id: newId(), text: t, done: false, done_by_id: null, done_at: null }))], who, lines.length === 1 ? `added: ${lines[0]}` : `added ${lines.length} steps`)
 }
 
 export async function deleteJob(job: AdminJob, who: Who): Promise<string | null> {

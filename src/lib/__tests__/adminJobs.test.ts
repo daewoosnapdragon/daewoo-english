@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, type AdminJob } from '@/lib/adminJobs'
+import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, type AdminJob } from '@/lib/adminJobs'
 
 const job = (over: Partial<AdminJob> = {}): AdminJob => ({
   id: 'j', title: 'Send comment template', category: 'Report cards', size: 'S', status: 'scheduled', due_kind: 'date', due_date: '2026-11-26', semester_id: null,
@@ -131,5 +131,21 @@ describe('parsing', () => {
       { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null }])
     const j = parseJob({ id: '1', title: 'T', size: 'XL', status: 'odd', due_kind: 'weird', steps: 'no' })
     expect([j.size, j.status, j.due_kind, j.steps]).toEqual(['S', 'scheduled', 'someday', []])
+  })
+})
+
+describe('the steps box', () => {
+  it('turns pasted lines into steps without their numbering', () => {
+    expect(parseStepLines('1. Open Drive\n- Make a folder\n• Share it\nStep 4: Tell everyone\n\n  \n2) Last')).toEqual(['Open Drive', 'Make a folder', 'Share it', 'Tell everyone', 'Last'])
+    expect(parseStepLines('just one')).toEqual(['just one'])
+  })
+  it('finds this week’s Friday', () => {
+    expect(thisFriday('2026-11-19')).toBe('2026-11-20')
+    expect(thisFriday('2026-11-20')).toBe('2026-11-27')
+    expect(thisFriday('2026-11-22')).toBe('2026-11-27')
+  })
+  it('names the two accounts in order', () => {
+    const ts = [{ id: 'v', role: 'admin', english_class: 'Admin' }, { id: 't', role: 'teacher', english_class: 'Lily' }, { id: 'k', role: 'teacher', english_class: 'Snapdragon' }]
+    expect(adminAccounts(ts).map(t => t.id)).toEqual(['k', 'v'])
   })
 })
