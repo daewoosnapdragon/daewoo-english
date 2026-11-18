@@ -5,9 +5,8 @@ import { answerStepText, jobsForEvent, newId, parseJob, parseRoutineJob, type Ad
 // ─── Admin jobs: reading and writing ─────────────────────────────
 // Every write also leaves a line in admin_job_history (who did what to the
 // job) and, for the things that matter to the rest of the staff, a row in
-// the shared activity log. The tables answer only a signed-in Supabase Auth
-// user (see supabase/migration-admin-jobs.sql); with no session they look
-// empty and writes fail, so the page checks the session first.
+// the shared activity log. The pages are for the two admin accounts; the
+// app gates by account (src/lib/adminAuth.ts).
 
 export const isAdminJobsMissing = (message: string | null | undefined) => !!message && /admin_jobs|admin_routines/.test(message)
 const nowIso = () => new Date().toISOString()

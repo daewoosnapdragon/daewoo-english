@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { loadLadderSettings, isOverdue } from '@/lib/behaviorLadder'
 import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath } from '@/lib/routes'
 import { logActivity, logPageOpen, canViewActivity } from '@/lib/activity'
-import { canSeeAdminJobs, signOutAdmin } from '@/lib/adminAuth'
+import { canSeeAdminJobs } from '@/lib/adminAuth'
 import { isSchoolDayOff } from '@/lib/calendarDays'
 import { Search, Moon, Sun, Globe, Settings, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Activity, Package, Wallet, Clock, Type, ClipboardList } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
@@ -133,7 +133,7 @@ function UserMenu() {
   const nextTextSize = () => setTextSize(TEXT_SIZES[(TEXT_SIZES.indexOf(textSize) + 1) % TEXT_SIZES.length])
   const sizeLabel = language === 'ko' ? { standard: '보통', larger: '크게', largest: '아주 크게' }[textSize] : { standard: 'Standard', larger: 'Larger', largest: 'Largest' }[textSize]
   if (!currentTeacher) return null
-  const signOut = () => { logActivity('logout'); signOutAdmin(); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
+  const signOut = () => { logActivity('logout'); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
   const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:bg-paper-2 hover:text-ink text-left'
   return (
     <div className="relative">

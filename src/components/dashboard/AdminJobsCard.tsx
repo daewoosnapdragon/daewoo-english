@@ -18,7 +18,7 @@ export default function AdminJobsCard() {
   const { currentTeacher, language, showToast } = useApp()
   const ko = language === 'ko'
   const d = useAdminJobs()
-  if (!canSeeAdminJobs(currentTeacher) || d.loading || d.missing || d.noSession) return null
+  if (!canSeeAdminJobs(currentTeacher) || d.loading || d.missing) return null
   const { mine, notStartedGoals, unowned } = attention(d.jobs, d.today, currentTeacher?.id || null)
   const who = currentTeacher ? { id: currentTeacher.id, name: currentTeacher.name } : null
   const tick = async (j: AdminJob) => { const e = await setStatus(j, 'done', who); if (e) showToast(`Error: ${e}`); else { showToast(ko ? `완료: ${j.title}` : `Done: ${j.title}`); d.reload() } }

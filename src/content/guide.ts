@@ -531,8 +531,8 @@ export const ADMIN_SECTIONS: GuideSection[] = [
       { title: 'Set a routine for the term', steps: ['Routines → the routine → Set the date for a term. Pick the semester; if the routine follows a Settings date (report card grades due), it is filled in. Make the jobs.', 'Every template job appears on Up next, dated from the event, owned by its default owner.'] },
       { title: 'Ask when stuck', steps: ['Open the job → Stuck → type the question → Ask. The other account sees a question mark on the row and a count in the header.', 'Answering writes the question and answer as a step on the job and on its routine, so it is there next time.'] },
     ],
-    rules: ['Nothing is owned by default. A job with no owner shows on both dashboards until someone takes it.', 'The tables are locked in the database to the two signed-in admin accounts (Supabase Auth); teachers cannot read them with the shared key.', 'Marking a job done writes to the activity log as “Finished a job”.'],
-    watchOut: ['If the page says this browser is not signed in to Supabase Auth, sign out and back in with the Supabase password; the setup steps are at the end of supabase/migration-admin-jobs.sql.'],
+    rules: ['Nothing is owned by default. A job with no owner shows on both dashboards until someone takes it.', 'Only the admin account and the Snapdragon teacher see the card, the menu link and the page.', 'Marking a job done writes to the activity log as “Finished a job”.'],
+    watchOut: ['If the page says to run the migration, supabase/migration-admin-jobs.sql has not been run in the Supabase SQL Editor yet.'],
   },
 ]
 

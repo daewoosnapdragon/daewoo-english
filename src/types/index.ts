@@ -75,8 +75,6 @@ export interface Teacher {
   password?: string;
   is_head_teacher?: boolean;
   photo_url?: string;
-  /** Supabase Auth email for the two admin accounts; everyone else has none. */
-  auth_email?: string | null;
 }
 
 export interface SchoolSettings {

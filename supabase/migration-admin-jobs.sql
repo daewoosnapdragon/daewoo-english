@@ -4,10 +4,9 @@
 --
 -- The office and admin work, made explicit: what needs doing, by when, who
 -- owns it, how to do it, and who did it. Seen by two accounts only: the
--- Snapdragon teacher and the admin account. The restriction is in the
--- database, not only in the app: these tables have no policy for the anon
--- key every browser carries, only for a signed-in Supabase Auth user, and
--- only those two accounts have one (see the setup notes at the end).
+-- Snapdragon teacher and the admin account. The app hides the pages and the
+-- dashboard card from everyone else (src/lib/adminAuth.ts); the tables have
+-- the same open policy as every other table here.
 --
 -- A job is one line of work. It can have steps (a checklist), a parent job
 -- (a big job split into pieces), and a due date that is a day, "by the end
@@ -120,11 +119,7 @@ CREATE TABLE IF NOT EXISTS admin_job_questions (
 );
 CREATE INDEX IF NOT EXISTS idx_admin_job_questions_job ON admin_job_questions(job_id, created_at);
 
--- The Supabase Auth account a teacher row signs in with, for the two admin
--- accounts only. Everyone else keeps the name-and-password sign-in.
-ALTER TABLE teachers ADD COLUMN IF NOT EXISTS auth_email TEXT;
-
--- ── Access: signed-in Supabase Auth users only. No policy for anon. ─────────
+-- ── Access: the same open policy as every other table; the app gates by account.
 ALTER TABLE admin_routines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_routine_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_events ENABLE ROW LEVEL SECURITY;
@@ -132,27 +127,17 @@ ALTER TABLE admin_jobs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_job_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admin_job_questions ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "admin_routines_signed_in" ON admin_routines;
-CREATE POLICY "admin_routines_signed_in" ON admin_routines FOR ALL TO authenticated USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "admin_routine_jobs_signed_in" ON admin_routine_jobs;
-CREATE POLICY "admin_routine_jobs_signed_in" ON admin_routine_jobs FOR ALL TO authenticated USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "admin_events_signed_in" ON admin_events;
-CREATE POLICY "admin_events_signed_in" ON admin_events FOR ALL TO authenticated USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "admin_jobs_signed_in" ON admin_jobs;
-CREATE POLICY "admin_jobs_signed_in" ON admin_jobs FOR ALL TO authenticated USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "admin_job_history_signed_in" ON admin_job_history;
-CREATE POLICY "admin_job_history_signed_in" ON admin_job_history FOR ALL TO authenticated USING (true) WITH CHECK (true);
-DROP POLICY IF EXISTS "admin_job_questions_signed_in" ON admin_job_questions;
-CREATE POLICY "admin_job_questions_signed_in" ON admin_job_questions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_routines_all" ON admin_routines;
+CREATE POLICY "admin_routines_all" ON admin_routines FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_routine_jobs_all" ON admin_routine_jobs;
+CREATE POLICY "admin_routine_jobs_all" ON admin_routine_jobs FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_events_all" ON admin_events;
+CREATE POLICY "admin_events_all" ON admin_events FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_jobs_all" ON admin_jobs;
+CREATE POLICY "admin_jobs_all" ON admin_jobs FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_job_history_all" ON admin_job_history;
+CREATE POLICY "admin_job_history_all" ON admin_job_history FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "admin_job_questions_all" ON admin_job_questions;
+CREATE POLICY "admin_job_questions_all" ON admin_job_questions FOR ALL USING (true) WITH CHECK (true);
 
 NOTIFY pgrst, 'reload schema';
-
--- ── Setup, once, by hand ────────────────────────────────────────────────────
--- 1. Supabase Dashboard → Authentication → Users → Add user → Create new
---    user: an email and a password for each of the two accounts, with
---    "Auto Confirm User" ticked. Nobody else gets one.
--- 2. Tell the app which teacher rows they are:
---    UPDATE teachers SET auth_email = 'kyla@example.com' WHERE english_class = 'Snapdragon' AND is_active;
---    UPDATE teachers SET auth_email = 'victoria@example.com' WHERE role = 'admin' AND is_active;
--- 3. On the login page those two pick their name as before and type the
---    Supabase password. Everyone else is unchanged.

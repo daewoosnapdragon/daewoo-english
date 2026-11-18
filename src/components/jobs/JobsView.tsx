@@ -64,11 +64,6 @@ export default function JobsView() {
 
       {d.missing ? (
         <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{ko ? 'supabase/migration-admin-jobs.sql을 Supabase SQL Editor에서 한 번 실행하세요.' : 'Run supabase/migration-admin-jobs.sql once in the Supabase SQL Editor.'}</p>
-      ) : d.noSession ? (
-        <div className="text-[length:calc(13px*var(--ts))] text-ink-2 max-w-[640px] leading-relaxed">
-          <p>{ko ? '이 브라우저는 Supabase Auth에 로그인되어 있지 않아 업무 표가 비어 보입니다.' : 'This browser is not signed in to Supabase Auth, so the jobs tables answer nothing.'}</p>
-          <p className="mt-2 text-ink-3">{ko ? '설정 순서: Supabase 대시보드 → Authentication → Users에서 두 계정을 만들고, teachers.auth_email을 채운 뒤, 로그아웃하고 그 비밀번호로 다시 로그인하세요. 자세한 내용은 migration-admin-jobs.sql 끝에 있습니다.' : 'Set up once: make the two users under Authentication → Users in the Supabase dashboard, fill teachers.auth_email, then sign out and back in with that password. The steps are at the end of migration-admin-jobs.sql.'}</p>
-        </div>
       ) : d.loading ? <Loading rows={6} /> : (
         <>
           {tab !== 'routines' && tab !== 'done' && tab !== 'term' && (
