@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
 import { canSeeAdminJobs } from '@/lib/adminAuth'
-import { attention, dueLabel, percent, urgency, type AdminJob } from '@/lib/adminJobs'
-import { setStatus, toggleStep } from '@/lib/adminJobsData'
+import { afterStepChange, attention, dueLabel, percent, urgency, type AdminJob } from '@/lib/adminJobs'
+import { setStatus, stepsAfterTick, toggleStep } from '@/lib/adminJobsData'
 import { useAdminJobs } from '@/components/jobs/useAdminJobs'
 import { ArrowRight, Check } from 'lucide-react'
+import SizeMark from '@/components/jobs/SizeMark'
 
 // ─── Jobs on the dashboard ───────────────────────────────────────
 // For the two admin accounts, at the top of the page every day: the
@@ -22,10 +23,10 @@ export default function AdminJobsCard() {
   if (!canSeeAdminJobs(currentTeacher) || d.loading || d.missing) return null
   const { mine, myBites, notStartedGoals, unowned, shared } = attention(d.jobs, d.today, currentTeacher?.id || null)
   const who = currentTeacher ? { id: currentTeacher.id, name: currentTeacher.name } : null
-  const tick = async (j: AdminJob) => { const e = await setStatus(j, 'done', who); if (e) showToast(`Error: ${e}`); else { showToast(ko ? `완료: ${j.title}` : `Done: ${j.title}`); d.reload() } }
+  const tick = async (j: AdminJob) => { d.patchJob(j.id, { status: 'done', completed_at: new Date().toISOString() }); const e = await setStatus(j, 'done', who); if (e) showToast(`Error: ${e}`); else showToast(ko ? `완료: ${j.title}` : `Done: ${j.title}`); d.reload() }
   const tone = (j: AdminJob) => { const u = urgency(j, d.today); return u === 'overdue' ? 'text-bad' : u === 'today' ? 'text-accent' : 'text-ink-3' }
   const rows = [...mine, ...notStartedGoals].slice(0, 8)
-  const tickStep = async (b: typeof myBites[number]) => { const e = await toggleStep(b.job, b.step.id, who); if (e) showToast(`Error: ${e}`); else { showToast(ko ? `완료: ${b.step.text}` : `Done: ${b.step.text}`); d.reload() } }
+  const tickStep = async (b: typeof myBites[number]) => { d.patchJob(b.job.id, j => afterStepChange(j, stepsAfterTick(j, b.step.id, who), new Date().toISOString())); const e = await toggleStep(b.job, b.step.id, who); if (e) showToast(`Error: ${e}`); else showToast(ko ? `완료: ${b.step.text}` : `Done: ${b.step.text}`); d.reload() }
 
   return (
     <div className="border-t border-b border-rule-2 py-4">
@@ -44,7 +45,7 @@ export default function AdminJobsCard() {
                 <button onClick={() => tick(j)} className="w-7 h-7 rounded-full border border-rule-2 hover:border-good hover:text-good text-transparent flex items-center justify-center shrink-0" aria-label={ko ? '완료' : 'Done'} title={ko ? '완료로 표시' : 'Mark done'}><Check size={14} /></button>
                 <Link href="/jobs" className="flex-1 min-w-0">
                   <span className="block font-display text-[length:calc(19px*var(--ts))] leading-tight text-ink truncate">{j.title}</span>
-                  <span className={`block text-[length:calc(11.5px*var(--ts))] ${tone(j)}`}>{dueLabel(j, d.today, ko, d.semesterName(j.semester_id), d.semesterStart(j.semester_id))}{j.status === 'scheduled' && j.due_kind !== 'date' ? (ko ? ' · 아직 시작 안 함' : ' · not started') : ''}{j.category ? ` · ${j.category}` : ''}{steps ? ` · ${steps}` : ''}{j.status === 'waiting' && j.waiting_on ? ` · ${ko ? '대기' : 'waiting on'} ${j.waiting_on}` : ''}</span>
+                  <span className={`block text-[length:calc(11.5px*var(--ts))] ${tone(j)}`}>{dueLabel(j, d.today, ko, d.semesterName(j.semester_id), d.semesterStart(j.semester_id))}{j.status === 'scheduled' && j.due_kind !== 'date' ? (ko ? ' · 아직 시작 안 함' : ' · not started') : ''}{j.category ? ` · ${j.category}` : ''}{steps ? ` · ${steps}` : ''} · <SizeMark size={j.size} ko={ko} />{j.status === 'waiting' && j.waiting_on ? ` · ${ko ? '대기' : 'waiting on'} ${j.waiting_on}` : ''}</span>
                 </Link>
               </li>
             )

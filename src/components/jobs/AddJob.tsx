@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { SIZES, SIZE_LABELS, endOfMonth, nextMonthKey, nextSemester, thisFriday, type DueKind, type JobDraft, type JobSize } from '@/lib/adminJobs'
 import type { Semester, Teacher } from '@/types'
 import { Calendar, Plus } from 'lucide-react'
+import SizeMark from './SizeMark'
 
 // ─── Add a job in one line ───────────────────────────────────────
 // A title, when (today, this week, a month by name meaning by its end,
@@ -66,9 +67,9 @@ export default function AddJob({ ko, today, activeSemester, semesters, me, onAdd
             <input type="date" value={day} onChange={e => { setDay(e.target.value); if (e.target.value) setWhen('day') }} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" aria-label={ko ? '날짜' : 'Day'} />
           </label>
         </div>
-        <select value={size} onChange={e => setSize(e.target.value as JobSize)} className={field} aria-label={ko ? '크기' : 'Size'} title={SIZE_LABELS[size][ko ? 'ko' : 'en']}>
-          {SIZES.map(z => <option key={z} value={z}>{z} · {SIZE_LABELS[z][ko ? 'ko' : 'en']}</option>)}
-        </select>
+        <span className="inline-flex gap-1" role="radiogroup" aria-label={ko ? '크기' : 'Size'}>
+          {SIZES.map(z => <button key={z} onClick={() => setSize(z)} role="radio" aria-checked={size === z} title={SIZE_LABELS[z][ko ? 'ko' : 'en']} className={`h-7 px-2 rounded-full border ${size === z ? 'border-ink' : 'border-rule-2 opacity-60 hover:opacity-100'}`}><SizeMark size={z} ko={ko} word={size === z} className="text-[length:calc(11px*var(--ts))]" /></button>)}
+        </span>
         <button onClick={save} disabled={!title.trim() || busy} className="h-8 px-3 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1"><Plus size={13} />{ko ? '추가' : 'Add'}</button>
       </div>
       {err && <p className="text-[length:calc(11.5px*var(--ts))] text-bad mt-1.5">{err}</p>}

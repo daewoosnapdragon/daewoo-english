@@ -34,11 +34,13 @@ export function useAdminJobs(opts: { routines?: boolean } = {}) {
     setLoading(false)
   }, [opts.routines])
   useEffect(() => { reload() }, [reload])
+  /** Show a change at once; the save and the reload follow. */
+  const patchJob = useCallback((id: string, patch: Partial<AdminJob> | ((j: AdminJob) => AdminJob)) => setJobs(prev => prev.map(j => j.id === id ? (typeof patch === 'function' ? patch(j) : { ...j, ...patch }) : j)), [])
 
   const nameOf = useCallback((id: string | null | undefined) => id ? (teachers.find(t => t.id === id)?.name || '—') : '—', [teachers])
   const semesterName = useCallback((id: string | null | undefined) => id ? (semesters.find(s => s.id === id)?.name || null) : null, [semesters])
   const semesterStart = useCallback((id: string | null | undefined) => id ? (semesters.find(s => s.id === id)?.start_date || null) : null, [semesters])
   const childrenOf = useMemo(() => { const m: Record<string, AdminJob[]> = {}; jobs.forEach(j => { if (j.parent_id) (m[j.parent_id] ||= []).push(j) }); return m }, [jobs])
 
-  return { jobs, routines, template, events, questions, loading, missing, error, reload, today, teachers, nameOf, semesterName, semesterStart, childrenOf, me: currentTeacher, activeSemester, semesters }
+  return { jobs, routines, template, events, questions, loading, missing, error, reload, patchJob, today, teachers, nameOf, semesterName, semesterStart, childrenOf, me: currentTeacher, activeSemester, semesters }
 }

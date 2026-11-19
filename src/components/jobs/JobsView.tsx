@@ -5,10 +5,11 @@ import { useCallback, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
 import { canSeeAdminJobs } from '@/lib/adminAuth'
-import { BOARD_SECTION_LABELS, adminAccounts, bites, boardSection, categoriesInUse, daysSinceTouched, dueLabel, nextStep, pace, percent, progress, shelf, urgency, type AdminJob, type Bite, type BoardSection, type JobDraft } from '@/lib/adminJobs'
+import { BOARD_SECTION_LABELS, adminAccounts, afterStepChange, bites, boardSection, categoriesInUse, daysSinceTouched, dueLabel, nextStep, pace, percent, progress, shelf, urgency, type AdminJob, type Bite, type BoardSection, type JobDraft } from '@/lib/adminJobs'
 import StatusTag from './StatusTag'
+import SizeMark from './SizeMark'
 import { setStatus } from '@/lib/adminJobsData'
-import { toggleStep } from '@/lib/adminJobsData'
+import { stepsAfterTick, toggleStep } from '@/lib/adminJobsData'
 import { urgencyTone } from './JobCard'
 import { addJob } from '@/lib/adminJobsData'
 import { useAdminJobs } from './useAdminJobs'
@@ -64,7 +65,7 @@ export default function JobsView() {
   const who = { id: currentTeacher.id, name: currentTeacher.name }
   // A new job lands under Nobody yet and opens at once, details showing, so the steps and the rest are filled in while it is in mind.
   const onAdd = async (draft: JobDraft) => { const r = await addJob(draft, who); if (!r.error && r.job) { await d.reload(); setFreshId(r.job.id); setOpenId(r.job.id) } return r.error }
-  const ctx: DrawerCtx = { ko, today: d.today, me: d.me, teachers: d.teachers, accounts, categories, activeSemester: d.activeSemester, nameOf: d.nameOf, semesterName: d.semesterName, semesterStart: d.semesterStart, childrenOf: d.childrenOf, reload: d.reload }
+  const ctx: DrawerCtx = { ko, today: d.today, me: d.me, teachers: d.teachers, accounts, categories, activeSemester: d.activeSemester, nameOf: d.nameOf, semesterName: d.semesterName, semesterStart: d.semesterStart, childrenOf: d.childrenOf, reload: d.reload, patchJob: d.patchJob }
   const tabs: [Tab, string][] = [['board', ko ? '보드' : 'Board'], ['year', ko ? '연간' : 'The year'], ['done', ko ? '완료 기록' : 'Done'], ['term', ko ? '이번 학기' : 'This term']]
 
   // The viewer's column first, then nobody, then the other account; anyone else who owns a job gets a column too.
@@ -122,7 +123,7 @@ export default function JobsView() {
                             <p className={`eyebrow mb-1.5 ${sec === 'working' ? 'eyebrow-accent' : sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {cards.length + bs.length}</span></p>
                             <div className="grid gap-2">
                               {cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}
-                              {bs.map(b => <BiteLine key={`${b.job.id}-${b.step.id}`} bite={b} ko={ko} today={d.today} who={who} reload={d.reload} onOpen={() => setOpenId(b.job.id)} />)}
+                              {bs.map(b => <BiteLine key={`${b.job.id}-${b.step.id}`} bite={b} ko={ko} today={d.today} who={who} reload={d.reload} patchJob={d.patchJob} onOpen={() => setOpenId(b.job.id)} />)}
                             </div>
                           </div>
                         ))}
@@ -189,17 +190,17 @@ function LaterShelf({ jobs, ko, today, activeSemesterId, me, nameOf, semesterNam
 // One dated step, shown as a slim line in the section its day falls in:
 // the job's name, which step it is, and a tick. The whole job stays
 // wherever it lives (the shelf, usually) with its percent.
-function BiteLine({ bite, ko, today, who, reload, onOpen }: { bite: Bite; ko: boolean; today: string; who: { id: string; name: string }; reload: () => Promise<void>; onOpen: () => void }) {
+function BiteLine({ bite, ko, today, who, reload, patchJob, onOpen }: { bite: Bite; ko: boolean; today: string; who: { id: string; name: string }; reload: () => Promise<void>; patchJob: (id: string, f: (j: AdminJob) => AdminJob) => void; onOpen: () => void }) {
   const { showToast } = useApp()
   const { job, step } = bite
   const n = job.steps.findIndex(s => s.id === step.id) + 1
   const u = urgency({ status: 'scheduled', due_kind: 'date', due_date: step.due_date! }, today)
-  const tick = async () => { const e = await toggleStep(job, step.id, who); if (e) showToast(`Error: ${e}`); else { showToast(ko ? `완료: ${step.text}` : `Done: ${step.text}`); await reload() } }
+  const tick = async () => { patchJob(job.id, j => afterStepChange(j, stepsAfterTick(j, step.id, who), new Date().toISOString())); const e = await toggleStep(job, step.id, who); if (e) showToast(`Error: ${e}`); else showToast(ko ? `완료: ${step.text}` : `Done: ${step.text}`); await reload() }
   return (
     <div className="flex items-start gap-2 border-l-2 border-rule-2 pl-2.5 py-1">
       <input type="checkbox" checked={false} onChange={tick} className="mt-1 rounded border-rule-2" aria-label={step.text} />
       <button onClick={onOpen} className="min-w-0 text-left flex-1">
-        <span className="block text-[length:calc(12.5px*var(--ts))] text-ink leading-snug truncate">{step.text}</span>
+        <span className="block text-[length:calc(12.5px*var(--ts))] text-ink leading-snug truncate">{step.text}{step.doing ? <span className="text-accent font-semibold"> · {ko ? '진행 중' : 'working on it'}</span> : null}{step.note ? <span className="text-ink-2 italic"> · {step.note}</span> : null}</span>
         <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 truncate"><span className={urgencyTone(u)}>{dueLabel({ status: 'scheduled', due_kind: 'date', due_date: step.due_date }, today, ko)}</span> · {job.title} · {ko ? `${n}/${job.steps.length} 단계` : `step ${n} of ${job.steps.length}`}{percent(job) !== null ? ` · ${percent(job)}%` : ''}</span>
       </button>
     </div>
@@ -231,7 +232,7 @@ function GoalsBand({ jobs, ko, today, me, nameOf, semesterName, semesterStart, w
               <button onClick={() => onOpen(j)} className="text-left">
                 <span className="block font-display text-[length:calc(21px*var(--ts))] leading-tight text-ink">{j.title}</span>
                 <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">
-                  {j.is_shared ? <span className="text-accent font-semibold">{ko ? '함께' : 'Shared'}</span> : nameOf(j.owner_id)} · {dueLabel(j, today, ko, semesterName(j.semester_id), semesterStart(j.semester_id))}{j.category ? ` · ${j.category}` : ''} · {j.size}
+                  {j.is_shared ? <span className="text-accent font-semibold">{ko ? '함께' : 'Shared'}</span> : nameOf(j.owner_id)} · {dueLabel(j, today, ko, semesterName(j.semester_id), semesterStart(j.semester_id))}{j.category ? ` · ${j.category}` : ''} · <SizeMark size={j.size} ko={ko} />
                 </span>
               </button>
               <div>
@@ -244,7 +245,7 @@ function GoalsBand({ jobs, ko, today, me, nameOf, semesterName, semesterStart, w
                   {e !== null && <span className={`absolute -top-[3px] w-px h-[12px] ${behind ? 'bg-warn' : 'bg-ink-3'}`} style={{ left: `${e}%` }} />}
                 </span>
               </div>
-              {nx && <p className="text-[length:calc(12.5px*var(--ts))] text-ink leading-snug"><span className="text-ink-3">{ko ? '다음' : 'Next'}: </span>{nx.text}{nx.owner_id ? <span className="text-ink-3"> · {nameOf(nx.owner_id)}</span> : null}</p>}
+              {nx && <p className="text-[length:calc(12.5px*var(--ts))] text-ink leading-snug"><span className={nx.doing ? 'text-accent font-semibold' : 'text-ink-3'}>{nx.doing ? (ko ? '진행 중' : 'Working on') : (ko ? '다음' : 'Next')}: </span>{nx.text}{nx.owner_id ? <span className="text-ink-3"> · {nameOf(nx.owner_id)}</span> : null}{nx.note ? <span className="block text-ink-2 italic text-[length:calc(11.5px*var(--ts))]">{nx.note}</span> : null}</p>}
               <div className="flex items-center justify-between gap-2 text-[length:calc(11.5px*var(--ts))] text-ink-3">
                 <span>{since === null ? (ko ? '아직 손대지 않음' : 'not touched yet') : since === 0 ? (ko ? '오늘 작업' : 'touched today') : (ko ? `${since}일 전 작업` : `touched ${since} days ago`)}{myOpen ? <span className="text-accent"> · {myOpen} {ko ? '내 단계' : myOpen === 1 ? 'step for you' : 'steps for you'}</span> : null}</span>
                 <StatusTag status={j.status} waitingOn={j.waiting_on} ko={ko} small onChange={async (st, w) => { const er = await setStatus(j, st, who, w); if (er) showToast(`Error: ${er}`); await reload() }} />

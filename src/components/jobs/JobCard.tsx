@@ -1,6 +1,7 @@
 'use client'
 
-import { daysSinceTouched, dueLabel, notStarted, pace, percent, progress, urgency, type AdminJob } from '@/lib/adminJobs'
+import { daysSinceTouched, doingStep, dueLabel, notStarted, pace, percent, progress, urgency, type AdminJob } from '@/lib/adminJobs'
+import SizeMark from './SizeMark'
 
 // ─── One job on the board ────────────────────────────────────────
 // Title, when, category, size, steps done, the first line of the note in
@@ -14,6 +15,7 @@ export default function JobCard({ job, ko, today, semesterName, semesterStart, m
   const pct = percent(job)
   const expected = pace(job, today)
   const since = daysSinceTouched(job, today)
+  const now = doingStep(job)
   // Steps given to the viewer on someone else's job, so a shared job shows your share.
   const mine = me && (job.is_shared || job.owner_id !== me) ? job.steps.filter(s => s.owner_id === me && !s.done).length : 0
   const u = urgency(job, today)
@@ -28,11 +30,12 @@ export default function JobCard({ job, ko, today, semesterName, semesterStart, m
         {ownerName !== undefined && <span className={job.is_shared ? 'text-accent font-semibold' : job.owner_id ? 'text-ink' : 'text-warn font-semibold'}>· {job.is_shared ? (ko ? '함께' : 'Shared') : job.owner_id ? ownerName : (ko ? '담당 없음' : 'Nobody yet')}</span>}
         {ownerName === undefined && job.is_shared && <span className="text-ink-2">· {ko ? '함께' : 'shared'}</span>}
         {job.category && <span>· {job.category}</span>}
-        <span>· {job.size}</span>
+        <span className="inline-flex items-center gap-1">· <SizeMark size={job.size} ko={ko} /></span>
         {prog && <span>· {prog.done}/{prog.total} · {pct}%</span>}
         {since !== null && job.status !== 'done' && <span>· {since === 0 ? (ko ? '오늘 작업' : 'touched today') : since === 1 ? (ko ? '어제 작업' : 'touched yesterday') : (ko ? `${since}일 전 작업` : `touched ${since} days ago`)}</span>}
         {mine > 0 && <span className="text-accent">· {mine} {ko ? '내 단계' : mine === 1 ? 'step for you' : 'steps for you'}</span>}
       </span>
+      {now && job.status !== 'done' && <span className="block text-[length:calc(11.5px*var(--ts))] text-ink truncate"><span className="text-accent font-semibold">{ko ? '진행 중' : 'Working on'}:</span> {now.text}{now.note ? <span className="text-ink-2 italic"> · {now.note}</span> : null}</span>}
       {job.notes.trim() && job.status !== 'done' && <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-2 italic truncate">{job.notes.trim().split('\n')[0]}</span>}
       {pct !== null && job.status !== 'done' && (
         <span className="block relative h-[3px] bg-paper-2 rounded" title={expected !== null ? (ko ? `${pct}% 완료 · 기간의 ${expected}% 경과` : `${pct}% done · ${expected}% of the time gone`) : `${pct}%`}>

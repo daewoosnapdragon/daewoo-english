@@ -13,7 +13,7 @@ export type JobStatus = 'scheduled' | 'in_progress' | 'waiting' | 'done'
 export type DueKind = 'date' | 'month' | 'semester' | 'someday'
 export type RoutineAnchor = 'date' | 'semester_start' | 'midterm_cutoff' | 'report_card_cutoff' | 'semester_end'
 
-export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null; /** Who this step is for, when a job is shared; null means whoever owns the job. */ owner_id?: string | null; /** A day this step is for, so a long job surfaces a bite at a time. */ due_date?: string | null }
+export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null; /** Who this step is for, when a job is shared; null means whoever owns the job. */ owner_id?: string | null; /** A day this step is for, so a long job surfaces a bite at a time. */ due_date?: string | null; /** Started but not finished. */ doing?: boolean; /** Where it is up to, in a few words. */ note?: string | null }
 
 export interface AdminJob {
   id: string
@@ -86,6 +86,7 @@ export function parseSteps(raw: unknown): JobStep[] {
     id: typeof s.id === 'string' && s.id ? s.id : `s${i + 1}`, text: String(s.text), done: !!s.done,
     done_by_id: typeof s.done_by_id === 'string' ? s.done_by_id : null, done_at: typeof s.done_at === 'string' ? s.done_at : null,
     owner_id: typeof s.owner_id === 'string' ? s.owner_id : null, due_date: typeof s.due_date === 'string' && s.due_date ? s.due_date : null,
+    doing: !!s.doing && !s.done, note: typeof s.note === 'string' && s.note.trim() ? s.note.trim() : null,
   }))
 }
 /** Template steps: text only, in order. */
@@ -159,7 +160,20 @@ export function progress(job: Pick<AdminJob, 'steps'>): { done: number; total: n
 /** The first step not done yet, for the viewer first when one is theirs. */
 export function nextStep(job: Pick<AdminJob, 'steps'>, viewerId: string | null = null): JobStep | null {
   const open = job.steps.filter(s => !s.done)
-  return open.find(s => viewerId && s.owner_id === viewerId) || open[0] || null
+  const mine = (s: JobStep) => !!viewerId && s.owner_id === viewerId
+  return open.find(s => s.doing && mine(s)) || open.find(s => s.doing) || open.find(mine) || open[0] || null
+}
+
+/** The step being worked on right now, if any. */
+export const doingStep = (job: Pick<AdminJob, 'steps'>): JobStep | null => job.steps.find(s => s.doing && !s.done) || null
+
+/**
+ * The job after a step changes: ticking or starting a step means the job
+ * is in progress (unless it was waiting) and was worked on today.
+ */
+export function afterStepChange(job: AdminJob, steps: JobStep[], now: string): AdminJob {
+  const status = job.status === 'scheduled' ? 'in_progress' : job.status
+  return { ...job, steps, status, touched_at: now }
 }
 
 /** Steps done as a whole percent; null when there are no steps. */
@@ -329,7 +343,7 @@ export function jobsForEvent(routine: AdminRoutine, template: AdminRoutineJob[],
     title: t.title, category: routine.category, size: t.size, status: 'scheduled' as JobStatus,
     due_kind: 'date' as DueKind, due_date: addDays(event.event_date, t.offset_days), semester_id: event.semester_id,
     owner_id: t.default_owner_id, is_shared: false, requested_by_id: null, created_by_id: createdBy, completed_by_id: null, completed_at: null,
-    waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null })),
+    waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null, doing: false, note: null })),
     notes: '', done_note: '', touched_at: null, touch_count: 0, link_path: t.link_path, parent_id: null, event_id: event.id, routine_job_id: t.id,
   }))
 }

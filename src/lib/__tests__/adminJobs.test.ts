@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, schoolYear, spanFraction, endOfNextMonth, percent, pace, bites, daysSinceTouched, type AdminJob } from '@/lib/adminJobs'
+import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, schoolYear, spanFraction, endOfNextMonth, percent, pace, bites, daysSinceTouched, nextStep, afterStepChange, type AdminJob } from '@/lib/adminJobs'
 
 const job = (over: Partial<AdminJob> = {}): AdminJob => ({
   id: 'j', title: 'Send comment template', category: 'Report cards', size: 'S', status: 'scheduled', due_kind: 'date', due_date: '2026-11-26', semester_id: null,
@@ -124,7 +124,7 @@ describe('routines', () => {
     ]
     const made = jobsForEvent(routine, template, { id: 'ev', event_date: '2026-12-24', semester_id: 'sem' }, 'kyla')
     expect(made.map(j => [j.title, j.due_date, j.owner_id])).toEqual([['Send comment template', '2026-11-26', 'victoria'], ['Grades in', '2026-12-24', null]])
-    expect(made[0].steps).toEqual([{ id: 's1', text: 'Open the bank', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }, { id: 's2', text: 'Post a notice', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }])
+    expect(made[0].steps).toEqual([{ id: 's1', text: 'Open the bank', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null, doing: false, note: null }, { id: 's2', text: 'Post a notice', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null, doing: false, note: null }])
     expect(made[0].routine_job_id).toBe('t1'); expect(made[0].event_id).toBe('ev'); expect(made[0].due_kind).toBe('date')
   })
 })
@@ -132,7 +132,7 @@ describe('routines', () => {
 describe('parsing', () => {
   it('reads steps and rows tolerantly', () => {
     expect(parseSteps([{ text: 'a' }, { id: 'x', text: 'b', done: 1, owner_id: 'v' }, { text: '' }, null])).toEqual([
-      { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null, owner_id: 'v', due_date: null }])
+      { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null, doing: false, note: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null, owner_id: 'v', due_date: null, doing: false, note: null }])
     const j = parseJob({ id: '1', title: 'T', size: 'XL', status: 'odd', due_kind: 'weird', steps: 'no' })
     expect([j.size, j.status, j.due_kind, j.steps]).toEqual(['S', 'scheduled', 'someday', []])
   })
@@ -244,5 +244,20 @@ describe('long jobs', () => {
   it('days since touched', () => {
     expect(daysSinceTouched(job(), today)).toBeNull()
     expect(daysSinceTouched(job({ touched_at: '2026-11-13T08:00:00Z' }), today)).toBe(6)
+  })
+})
+
+describe('working on a step', () => {
+  const st = (id: string, over: Partial<AdminJob['steps'][number]> = {}) => ({ id, text: id, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null, doing: false, note: null, ...over })
+  it('the next step is the one being worked on, yours first', () => {
+    const j = job({ steps: [st('a'), st('b', { doing: true, owner_id: 'victoria' }), st('c', { doing: true, owner_id: 'kyla' })] })
+    expect(nextStep(j, 'kyla')?.id).toBe('c')
+    expect(nextStep(j, 'victoria')?.id).toBe('b')
+    expect(nextStep(job({ steps: [st('a'), st('b', { owner_id: 'kyla' })] }), 'kyla')?.id).toBe('b')
+  })
+  it('a tick moves a scheduled job to in progress and stamps it', () => {
+    const j = afterStepChange(job({ status: 'scheduled' }), [st('a', { done: true })], '2026-11-19T10:00:00Z')
+    expect([j.status, j.touched_at]).toEqual(['in_progress', '2026-11-19T10:00:00Z'])
+    expect(afterStepChange(job({ status: 'waiting' }), [], 'x').status).toBe('waiting')
   })
 })
