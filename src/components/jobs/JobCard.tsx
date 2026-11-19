@@ -9,7 +9,7 @@ import { daysSinceTouched, dueLabel, notStarted, pace, percent, progress, urgenc
 
 export const urgencyTone = (u: string) => u === 'overdue' ? 'text-bad' : u === 'today' ? 'text-accent font-semibold' : u === 'week' ? 'text-ink' : 'text-ink-3'
 
-export default function JobCard({ job, ko, today, semesterName, semesterStart, me, onOpen }: { job: AdminJob; ko: boolean; today: string; semesterName: string | null; semesterStart: string | null; me: string | null; onOpen: () => void }) {
+export default function JobCard({ job, ko, today, semesterName, semesterStart, me, ownerName, onOpen }: { job: AdminJob; ko: boolean; today: string; semesterName: string | null; semesterStart: string | null; me: string | null; /** Shown when the card is outside its owner's column. */ ownerName?: string | null; onOpen: () => void }) {
   const prog = progress(job)
   const pct = percent(job)
   const expected = pace(job, today)
@@ -25,7 +25,8 @@ export default function JobCard({ job, ko, today, semesterName, semesterStart, m
         {job.status === 'in_progress' && <span className="text-accent">· {ko ? '진행 중' : 'in progress'}</span>}
         {job.status === 'waiting' && <span className="text-warn">· {ko ? '대기' : 'waiting'}{job.waiting_on ? `: ${job.waiting_on}` : ''}</span>}
         {notStarted(job, today) && <span className="text-warn">· {ko ? '아직 시작 안 함' : 'not started'}</span>}
-        {job.is_shared && <span className="text-ink-2">· {ko ? '함께' : 'shared'}</span>}
+        {ownerName !== undefined && <span className={job.is_shared ? 'text-accent font-semibold' : job.owner_id ? 'text-ink' : 'text-warn font-semibold'}>· {job.is_shared ? (ko ? '함께' : 'Shared') : job.owner_id ? ownerName : (ko ? '담당 없음' : 'Nobody yet')}</span>}
+        {ownerName === undefined && job.is_shared && <span className="text-ink-2">· {ko ? '함께' : 'shared'}</span>}
         {job.category && <span>· {job.category}</span>}
         <span>· {job.size}</span>
         {prog && <span>· {prog.done}/{prog.total} · {pct}%</span>}

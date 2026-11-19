@@ -138,7 +138,7 @@ export default function JobsView() {
                   )
                 })}
               </div>
-              <LaterShelf jobs={open} ko={ko} today={d.today} activeSemesterId={semId} nameOf={d.nameOf} semesterName={d.semesterName} semesterStart={d.semesterStart} onOpen={j => setOpenId(j.id)} />
+              <LaterShelf jobs={open} ko={ko} today={d.today} activeSemesterId={semId} me={currentTeacher.id} nameOf={d.nameOf} semesterName={d.semesterName} semesterStart={d.semesterStart} onOpen={j => setOpenId(j.id)} />
             </>
           )}
           {tab === 'year' && (
@@ -159,32 +159,25 @@ export default function JobsView() {
 const addDaysIso = (iso: string, n: number) => { const t = new Date(iso + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10) }
 
 // ─── The Later shelf ─────────────────────────────────────────────
-// Everything further off than a month, by month, then Whenever: one grey
-// line each, with the owner, so the columns stay this month's work. A
-// job comes up into its column on its own as its date nears, or as soon
-// as someone sets it to In progress.
-function LaterShelf({ jobs, ko, today, activeSemesterId, nameOf, semesterName, semesterStart, onOpen }: { jobs: AdminJob[]; ko: boolean; today: string; activeSemesterId: string | null; nameOf: (id: string | null | undefined) => string; semesterName: (id: string | null | undefined) => string | null; semesterStart: (id: string | null | undefined) => string | null; onOpen: (j: AdminJob) => void }) {
+// Everything past next month, by month, then Whenever: the same full
+// cards as the columns, with the owner on each, so nothing down here is
+// small enough to pretend not to see. A job comes up into its column on
+// its own as its date nears, or as soon as someone sets it to In progress.
+function LaterShelf({ jobs, ko, today, activeSemesterId, me, nameOf, semesterName, semesterStart, onOpen }: { jobs: AdminJob[]; ko: boolean; today: string; activeSemesterId: string | null; me: string; nameOf: (id: string | null | undefined) => string; semesterName: (id: string | null | undefined) => string | null; semesterStart: (id: string | null | undefined) => string | null; onOpen: (j: AdminJob) => void }) {
   const groups = shelf(jobs, today, activeSemesterId)
   if (groups.length === 0) return null
   const monthName = (key: string) => key === 'someday' ? BOARD_SECTION_LABELS.someday[ko ? 'ko' : 'en'] : key.startsWith('sem:') ? (semesterName(key.slice(4)) || (ko ? '학기' : 'Semester')) : ko ? `${Number(key.slice(5, 7))}월` : `${MONTH_EN[Number(key.slice(5, 7)) - 1]}${key.slice(0, 4) !== today.slice(0, 4) ? ` ${key.slice(0, 4)}` : ''}`
   const total = groups.reduce((n, g) => n + g.jobs.length, 0)
   return (
-    <section className="mt-8 border-t border-rule-2 pt-3 text-ink-3">
-      <p className="eyebrow mb-2">{BOARD_SECTION_LABELS.later[ko ? 'ko' : 'en']} <span className="normal-case tracking-normal">· {total} · {ko ? '때가 되면 위로 올라옵니다' : 'comes up by itself when its time is near'}</span></p>
-      <div className="grid gap-x-8 gap-y-3 md:grid-cols-3">
+    <section className="mt-10 border-t border-rule-2 pt-4">
+      <p className="eyebrow mb-3">{BOARD_SECTION_LABELS.later[ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {total} · {ko ? '때가 되면 위로 올라옵니다' : 'each comes up into its column when its time is near'}</span></p>
+      <div className="grid gap-6">
         {groups.map(g => (
-          <div key={g.key} className="min-w-0">
-            <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-0.5">{monthName(g.key)}</p>
-            <ul>
-              {g.jobs.map(j => (
-                <li key={j.id}>
-                  <button onClick={() => onOpen(j)} className="w-full text-left py-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink flex justify-between gap-3">
-                    <span className="truncate">{j.title}<span className="text-ink-3"> · {j.is_shared ? (ko ? '함께' : 'shared') : j.owner_id ? nameOf(j.owner_id) : (ko ? '담당 없음' : 'nobody yet')}{percent(j) !== null ? ` · ${percent(j)}%` : ''}</span></span>
-                    <span className={`shrink-0 tabular-nums ${urgencyTone(urgency(j, today))}`}>{g.key === 'someday' ? '' : dueLabel(j, today, ko, semesterName(j.semester_id), semesterStart(j.semester_id))}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+          <div key={g.key}>
+            <h2 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink border-b border-rule pb-2 mb-3 flex items-baseline justify-between"><span>{monthName(g.key)}</span><span className="font-body text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums">{g.jobs.length}</span></h2>
+            <div className="grid gap-2 md:grid-cols-3">
+              {g.jobs.map(j => <JobCard key={j.id} job={j} ko={ko} today={today} semesterName={semesterName(j.semester_id)} semesterStart={semesterStart(j.semester_id)} me={me} ownerName={nameOf(j.owner_id)} onOpen={() => onOpen(j)} />)}
+            </div>
           </div>
         ))}
       </div>
