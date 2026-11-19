@@ -237,14 +237,14 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       {/* ─── Classes compared ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
       <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
-        ? `각 칸: 그 시트를 점검한 학생 중 완성한(최근 점검 90% 이상) 학생 수. 5/8은 점검한 8명 중 5명. 색은 비율을 따릅니다. 테두리 칸은 그 반의 경계: 완성 ${EDGE_PCT}% 미만인 첫 시트입니다.`
-        : `Each cell: how many of the students checked on that sheet have mastered it (90% or more on their latest check), so 5/8 is five of the eight checked. Colour follows the share. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}% mastered.`}</p>
+        ? `각 칸은 완성/점검: 그 시트를 점검한 학생 중 완성한(최근 점검 90% 이상) 학생 수. 5/8은 점검한 8명 중 5명. 색은 비율을 따릅니다. 테두리 칸은 그 반의 경계: 완성 ${EDGE_PCT}% 미만인 첫 시트입니다.`
+        : `Each cell is mastered / checked: how many of the students checked on that sheet have mastered it (90% or more on their latest check), so 5/8 is five of the eight checked. Colour follows the share. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}% mastered.`}</p>
       <div className="border border-rule-2 rounded-md overflow-x-auto mb-8">
-        <table className="w-full min-w-[980px] table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
+        <table className="w-full min-w-[1504px] table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: 168 }} />
             <col style={{ width: 66 }} />
-            <col style={{ width: 120 }} />
+            <col style={{ width: 150 }} />
             {PHONICS_SKILLS.map(s => <col key={s.id} />)}
           </colgroup>
           <SheetHeader lang={lang} lead={[lang === 'ko' ? '반' : 'Class', lang === 'ko' ? '점검/전체' : 'Tested', lang === 'ko' ? '중앙 위치' : 'Median position']} />
@@ -265,8 +265,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                   return (
                     <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                       <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of the ${st.tested} checked have mastered it, 90% or more on their latest check (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${st.thin && st.tested ? ' · too few to compare on' : ''}${edge ? ' · the class’s edge' : ''}`}
-                        className={`w-full h-8 rounded-sm font-semibold flex flex-col items-center justify-center leading-none ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
-                        {st.pct == null ? <span className="text-[length:calc(10.5px*var(--ts))]">·</span> : <><span className="text-[length:calc(11px*var(--ts))]">{st.meeting}/{st.tested}</span><span className="text-[length:max(10px,calc(8.5px*var(--ts)))] font-normal opacity-75 mt-[2px] whitespace-nowrap">{lang === 'ko' ? '완성' : 'mastered'}</span></>}
+                        className={`w-full h-9 rounded-sm font-semibold flex items-center justify-center leading-none whitespace-nowrap ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
+                        {st.pct == null ? <span className="text-[length:calc(10.5px*var(--ts))]">·</span> : <span className="text-[length:calc(12px*var(--ts))]">{st.meeting}/{st.tested}</span>}
                       </div>
                     </td>
                   )
