@@ -37,6 +37,7 @@ export default function JobsView() {
   const d = useAdminJobs({ routines: true })
   const [tab, setTab] = useState<Tab>('board')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [freshId, setFreshId] = useState<string | null>(null)
   useViewLog(allowed ? `Jobs · ${tab}` : null)
 
   const categories = useMemo(() => categoriesInUse(d.jobs, d.routines), [d.jobs, d.routines])
@@ -44,14 +45,15 @@ export default function JobsView() {
   const open = useMemo(() => d.jobs.filter(j => j.status !== 'done' && !j.parent_id), [d.jobs])
   const overdue = open.filter(j => j.due_date && j.due_date < d.today).length
   const unowned = open.filter(j => !j.owner_id).length
-  const close = useCallback(() => setOpenId(null), [])
+  const close = useCallback(() => { setOpenId(null); setFreshId(null) }, [])
   const openJob = d.jobs.find(j => j.id === openId) || null
 
   if (!currentTeacher) return null
   if (!allowed) return <div className="px-8 py-6"><p className="text-[length:calc(13px*var(--ts))] text-ink-3">{ko ? '이 페이지는 볼 수 없습니다.' : 'This page is not for your account.'}</p></div>
 
   const who = { id: currentTeacher.id, name: currentTeacher.name }
-  const onAdd = async (draft: JobDraft) => { const r = await addJob(draft, who); if (!r.error) await d.reload(); return r.error }
+  // A new job lands under Nobody yet and opens at once, details showing, so the steps and the rest are filled in while it is in mind.
+  const onAdd = async (draft: JobDraft) => { const r = await addJob(draft, who); if (!r.error && r.job) { await d.reload(); setFreshId(r.job.id); setOpenId(r.job.id) } return r.error }
   const ctx: DrawerCtx = { ko, today: d.today, me: d.me, teachers: d.teachers, accounts, categories, activeSemester: d.activeSemester, nameOf: d.nameOf, semesterName: d.semesterName, childrenOf: d.childrenOf, reload: d.reload }
   const tabs: [Tab, string][] = [['board', ko ? '보드' : 'Board'], ['routines', ko ? '루틴' : 'Routines'], ['done', ko ? '완료 기록' : 'Done'], ['term', ko ? '이번 학기' : 'This term']]
 
@@ -104,7 +106,7 @@ export default function JobsView() {
                             <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} parts={d.childrenOf[j.id] || []} onOpen={() => setOpenId(j.id)} />)}</div>
                           </div>
                         ))}
-                        {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : onShelf ? (ko ? '이번 달에는 없음.' : 'Nothing this month.') : (ko ? '없음.' : 'Nothing here.')}</p>}
+                        {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{onShelf ? (ko ? '이번 달에는 없음. 아래 나중에 목록에 있습니다.' : 'Nothing this month; see Later below.') : c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : (ko ? '없음.' : 'Nothing here.')}</p>}
                       </div>
                       {done.length > 0 && (
                         <div className="mt-4">
@@ -124,7 +126,7 @@ export default function JobsView() {
           {tab === 'term' && <TermSummary jobs={d.jobs} ko={ko} teachers={d.teachers} semester={d.activeSemester} nameOf={d.nameOf} />}
         </>
       )}
-      {openJob && <JobDrawer job={openJob} ctx={ctx} onClose={close} onOpen={j => setOpenId(j.id)} />}
+      {openJob && <JobDrawer key={openJob.id} job={openJob} ctx={ctx} fresh={openJob.id === freshId} onClose={close} onOpen={j => setOpenId(j.id)} />}
     </div>
   )
 }

@@ -525,7 +525,7 @@ export const ADMIN_SECTIONS: GuideSection[] = [
       'Done: every finished job by the day it was finished, with who did it. This term: a count per person, by size and by category, for the active semester.',
     ],
     tasks: [
-      { title: 'Add a job quickly', steps: ['Type the title in the add line, tap when, press Enter. It lands under Nobody yet until someone takes it.'] },
+      { title: 'Add a job', steps: ['Type the title in the add line, tap when, press Enter. It lands under Nobody yet and opens at once with its details showing: add the steps, the category, who asked, and take it or leave it for the other account.', 'A job dated past four weeks goes to the Later shelf under the columns; the column header counts it as “+ 1 later”.'] },
       { title: 'Take a job', steps: ['Open the card and tap your name. Hand to passes it to the other account.'] },
       { title: 'Give a job its steps', steps: ['Open the card. Type a step and press Enter, or paste a whole list into the box and press Add: each line becomes a step.', 'A big job can also be split under Parts, each part with its own owner and date.'] },
       { title: 'Set a routine for the term', steps: ['Routines → the routine → Set the date for a term. Pick the semester; if the routine follows a Settings date (report card grades due), it is filled in. Make the jobs.', 'Every template job appears on the board, dated from the event, owned by its default owner.'] },

@@ -21,7 +21,7 @@ export interface DrawerCtx {
   childrenOf: Record<string, AdminJob[]>; reload: () => Promise<void>
 }
 
-export default function JobDrawer({ job, ctx, onClose, onOpen }: { job: AdminJob; ctx: DrawerCtx; onClose: () => void; onOpen: (j: AdminJob) => void }) {
+export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: { job: AdminJob; ctx: DrawerCtx; fresh?: boolean; onClose: () => void; onOpen: (j: AdminJob) => void }) {
   const { ko, me, teachers, accounts, nameOf } = ctx
   const { showToast, confirmDialog } = useApp()
   const who = me ? { id: me.id, name: me.name } : null
@@ -35,7 +35,8 @@ export default function JobDrawer({ job, ctx, onClose, onOpen }: { job: AdminJob
   const [questions, setQuestions] = useState<AdminJobQuestion[]>([])
   const [hist, setHist] = useState<AdminJobHistory[]>([])
   const [showHist, setShowHist] = useState(false)
-  const [showMore, setShowMore] = useState(false)
+  // A just-added job opens with its details showing, so nothing is skipped.
+  const [showMore, setShowMore] = useState(fresh)
   useEffect(() => { fetchQuestions(job.id).then(setQuestions) }, [job.id, job.updated_at])
   useEffect(() => { if (showHist) fetchHistory(job.id).then(setHist) }, [showHist, job.id, job.updated_at])
   useEffect(() => { setNotes(job.notes); setLink(job.link_path); setTitle(job.title) }, [job.notes, job.link_path, job.title])
@@ -63,6 +64,7 @@ export default function JobDrawer({ job, ctx, onClose, onOpen }: { job: AdminJob
         <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded text-ink-3 hover:text-ink hover:bg-paper-2 flex items-center justify-center" aria-label={ko ? '닫기' : 'Close'}><X size={16} /></button>
 
         <div className="pr-8">
+          {fresh && <p className="eyebrow eyebrow-accent mb-1">{ko ? '추가됨 · 담당 없음 · 단계와 세부 내용을 적어 두세요' : 'Added · nobody yet · add the steps and details while it is in mind'}</p>}
           <p className="eyebrow mb-1">{job.category || (ko ? '분류 없음' : 'No category')} · {job.size} · <span>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id))}</span></p>
           <input value={title} onChange={e => setTitle(e.target.value)} onBlur={() => title.trim() && saveField({ title: title.trim() })} className="w-full bg-transparent font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink border-b border-transparent hover:border-rule-2 focus:border-rule-2 outline-none" aria-label={ko ? '제목' : 'Title'} />
         </div>
