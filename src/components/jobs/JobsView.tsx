@@ -5,7 +5,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
 import { canSeeAdminJobs } from '@/lib/adminAuth'
-import { BOARD_SECTION_LABELS, adminAccounts, boardSection, categoriesInUse, dueLabel, shelf, urgency, type AdminJob, type BoardSection, type JobDraft } from '@/lib/adminJobs'
+import { BOARD_SECTION_LABELS, adminAccounts, bites, boardSection, categoriesInUse, dueLabel, percent, shelf, urgency, type AdminJob, type Bite, type BoardSection, type JobDraft } from '@/lib/adminJobs'
+import { toggleStep } from '@/lib/adminJobsData'
 import { urgencyTone } from './JobCard'
 import { addJob } from '@/lib/adminJobsData'
 import { useAdminJobs } from './useAdminJobs'
@@ -47,8 +48,9 @@ export default function JobsView() {
   const accounts = useMemo(() => adminAccounts(d.teachers), [d.teachers])
   const open = useMemo(() => d.jobs.filter(j => j.status !== 'done' && !j.parent_id), [d.jobs])
   const overdue = open.filter(j => j.due_date && j.due_date < d.today).length
-  const unowned = open.filter(j => !j.owner_id).length
+  const unowned = open.filter(j => !j.owner_id && !j.is_shared).length
   const close = useCallback(() => { setOpenId(null); setFreshId(null) }, [])
+  const allBites = useMemo(() => bites(d.jobs, d.today), [d.jobs, d.today])
   const openJob = d.jobs.find(j => j.id === openId) || null
 
   if (!currentTeacher) return null
@@ -64,13 +66,14 @@ export default function JobsView() {
   const byUrg = (a: AdminJob, b: AdminJob) => ORDER[urgency(a, d.today)] - ORDER[urgency(b, d.today)] || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at)
   const mineFirst = [...accounts].sort((a, b) => (a.id === currentTeacher.id ? -1 : 0) - (b.id === currentTeacher.id ? -1 : 0))
   const others = d.teachers.filter(t => !accounts.some(a => a.id === t.id) && d.jobs.some(j => j.owner_id === t.id && j.status !== 'done'))
+  const recentDoneOf = (key: string | null, j: AdminJob) => j.owner_id === key || (key !== null && j.is_shared && accounts.some(a => a.id === key))
   const columns: { key: string | null; name: string; tone?: string }[] = [
     ...(mineFirst[0] ? [{ key: mineFirst[0].id, name: mineFirst[0].name }] : []),
     { key: null, name: ko ? '담당 없음' : 'Nobody yet', tone: 'text-warn' },
     ...mineFirst.slice(1).map(a => ({ key: a.id, name: a.name })),
     ...others.map((t: Teacher) => ({ key: t.id, name: t.name })),
   ]
-  const recentDone = (key: string | null) => d.jobs.filter(j => j.status === 'done' && !j.parent_id && j.owner_id === key && j.completed_at && j.completed_at.slice(0, 10) >= addDaysIso(d.today, -DONE_SHOWN_DAYS)).sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
+  const recentDone = (key: string | null) => d.jobs.filter(j => j.status === 'done' && !j.parent_id && recentDoneOf(key, j) && j.completed_at && j.completed_at.slice(0, 10) >= addDaysIso(d.today, -DONE_SHOWN_DAYS)).sort((a, b) => (b.completed_at || '').localeCompare(a.completed_at || ''))
 
   return (
     <div className="px-8 py-6 animate-fade-in max-w-[1280px]">
@@ -94,8 +97,13 @@ export default function JobsView() {
               <div className="mb-6"><AddJob ko={ko} today={d.today} activeSemester={d.activeSemester} semesters={d.semesters} me={d.me} onAdd={onAdd} /></div>
               <div className="grid gap-6 md:grid-cols-3">
                 {columns.map(c => {
-                  const mine = open.filter(j => j.owner_id === c.key)
-                  const sections = COLUMN_SECTIONS.map(sec => ({ sec, cards: mine.filter(j => boardSection(j, d.today) === sec).sort(byUrg) })).filter(x => x.cards.length)
+                  const mine = open.filter(j => j.owner_id === c.key || (c.key !== null && j.is_shared && accounts.some(a => a.id === c.key)))
+                  // A bite rides in the section its day falls in, under the cards, unless the whole job is already a card there.
+                  const sections = COLUMN_SECTIONS.map(sec => {
+                    const cards = mine.filter(j => boardSection(j, d.today) === sec).sort(byUrg)
+                    const bs = allBites.filter(b => (b.ownerId === c.key || (b.shared && c.key !== null && accounts.some(a => a.id === c.key))) && b.section === sec && !cards.includes(b.job))
+                    return { sec, cards, bites: bs }
+                  }).filter(x => x.cards.length || x.bites.length)
                   const onBoard = sections.reduce((n, x) => n + x.cards.length, 0)
                   const onShelf = mine.length - onBoard
                   const done = recentDone(c.key)
@@ -103,10 +111,13 @@ export default function JobsView() {
                     <section key={c.key || 'none'} className="min-w-0">
                       <h2 className={`font-display text-[length:calc(22px*var(--ts))] leading-none border-b border-rule-2 pb-2 mb-3 flex items-baseline justify-between gap-2 ${c.tone || 'text-ink'}`}>{c.name}<span className="font-body text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums">{onBoard}{onShelf ? ` + ${onShelf} ${ko ? '나중에' : 'later'}` : ''}</span></h2>
                       <div className="grid gap-4">
-                        {sections.map(({ sec, cards }) => (
+                        {sections.map(({ sec, cards, bites: bs }) => (
                           <div key={sec}>
-                            <p className={`eyebrow mb-1.5 ${sec === 'working' ? 'eyebrow-accent' : sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {cards.length}</span></p>
-                            <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
+                            <p className={`eyebrow mb-1.5 ${sec === 'working' ? 'eyebrow-accent' : sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {cards.length + bs.length}</span></p>
+                            <div className="grid gap-2">
+                              {cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}
+                              {bs.map(b => <BiteLine key={`${b.job.id}-${b.step.id}`} bite={b} ko={ko} today={d.today} who={who} reload={d.reload} onOpen={() => setOpenId(b.job.id)} />)}
+                            </div>
                           </div>
                         ))}
                         {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{onShelf ? (ko ? '두 달 안에는 없음. 아래 나중에 목록에 있습니다.' : 'Nothing in the next two months; see Later below.') : c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : (ko ? '없음.' : 'Nothing here.')}</p>}
@@ -162,7 +173,7 @@ function LaterShelf({ jobs, ko, today, nameOf, semesterName, semesterStart, onOp
               {g.jobs.map(j => (
                 <li key={j.id}>
                   <button onClick={() => onOpen(j)} className="w-full text-left py-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink flex justify-between gap-3">
-                    <span className="truncate">{j.title}<span className="text-ink-3"> · {j.owner_id ? nameOf(j.owner_id) : (ko ? '담당 없음' : 'nobody yet')}</span></span>
+                    <span className="truncate">{j.title}<span className="text-ink-3"> · {j.is_shared ? (ko ? '함께' : 'shared') : j.owner_id ? nameOf(j.owner_id) : (ko ? '담당 없음' : 'nobody yet')}{percent(j) !== null ? ` · ${percent(j)}%` : ''}</span></span>
                     <span className={`shrink-0 tabular-nums ${urgencyTone(urgency(j, today))}`}>{g.key === 'someday' ? '' : dueLabel(j, today, ko, semesterName(j.semester_id), semesterStart(j.semester_id))}</span>
                   </button>
                 </li>
@@ -172,5 +183,26 @@ function LaterShelf({ jobs, ko, today, nameOf, semesterName, semesterStart, onOp
         ))}
       </div>
     </section>
+  )
+}
+
+// ─── A bite of a long job ────────────────────────────────────────
+// One dated step, shown as a slim line in the section its day falls in:
+// the job's name, which step it is, and a tick. The whole job stays
+// wherever it lives (the shelf, usually) with its percent.
+function BiteLine({ bite, ko, today, who, reload, onOpen }: { bite: Bite; ko: boolean; today: string; who: { id: string; name: string }; reload: () => Promise<void>; onOpen: () => void }) {
+  const { showToast } = useApp()
+  const { job, step } = bite
+  const n = job.steps.findIndex(s => s.id === step.id) + 1
+  const u = urgency({ status: 'scheduled', due_kind: 'date', due_date: step.due_date! }, today)
+  const tick = async () => { const e = await toggleStep(job, step.id, who); if (e) showToast(`Error: ${e}`); else { showToast(ko ? `완료: ${step.text}` : `Done: ${step.text}`); await reload() } }
+  return (
+    <div className="flex items-start gap-2 border-l-2 border-rule-2 pl-2.5 py-1">
+      <input type="checkbox" checked={false} onChange={tick} className="mt-1 rounded border-rule-2" aria-label={step.text} />
+      <button onClick={onOpen} className="min-w-0 text-left flex-1">
+        <span className="block text-[length:calc(12.5px*var(--ts))] text-ink leading-snug truncate">{step.text}</span>
+        <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 truncate"><span className={urgencyTone(u)}>{dueLabel({ status: 'scheduled', due_kind: 'date', due_date: step.due_date }, today, ko)}</span> · {job.title} · {ko ? `${n}/${job.steps.length} 단계` : `step ${n} of ${job.steps.length}`}{percent(job) !== null ? ` · ${percent(job)}%` : ''}</span>
+      </button>
+    </div>
   )
 }

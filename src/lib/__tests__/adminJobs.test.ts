@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, schoolYear, spanFraction, endOfNextMonth, type AdminJob } from '@/lib/adminJobs'
+import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, schoolYear, spanFraction, endOfNextMonth, percent, pace, bites, daysSinceTouched, type AdminJob } from '@/lib/adminJobs'
 
 const job = (over: Partial<AdminJob> = {}): AdminJob => ({
   id: 'j', title: 'Send comment template', category: 'Report cards', size: 'S', status: 'scheduled', due_kind: 'date', due_date: '2026-11-26', semester_id: null,
-  owner_id: 'kyla', requested_by_id: null, created_by_id: 'kyla', completed_by_id: null, completed_at: null, waiting_on: '', steps: [], notes: '', link_path: '',
-  done_note: '', parent_id: null, event_id: null, routine_job_id: null, created_at: '2026-11-19T00:00:00Z', updated_at: '2026-11-19T00:00:00Z', ...over,
+  owner_id: 'kyla', is_shared: false, requested_by_id: null, created_by_id: 'kyla', completed_by_id: null, completed_at: null, waiting_on: '', steps: [], notes: '', link_path: '',
+  done_note: '', touched_at: null, touch_count: 0, parent_id: null, event_id: null, routine_job_id: null, created_at: '2026-11-19T00:00:00Z', updated_at: '2026-11-19T00:00:00Z', ...over,
 })
 const today = '2026-11-19'
 
@@ -96,6 +96,9 @@ describe('grouping', () => {
     expect(a.unowned.map(j => j.id)).toEqual(['f'])
     expect(attention(jobs, '2026-12-10', 'victoria').mine).toEqual([])
     expect(attention(jobs, today, 'kyla').notStartedGoals).toEqual([])
+    const sharedJob = job({ id: 'sh', owner_id: null, is_shared: true, due_date: today })
+    expect(attention([sharedJob], today, 'victoria').mine.map(j => j.id)).toEqual(['sh'])
+    expect(attention([sharedJob], today, 'victoria').unowned).toEqual([])
   })
   it('logs done jobs by the Korean day', () => {
     const log = doneByDay([...jobs, job({ id: 'i', status: 'done', completed_at: '2026-11-18T16:30:00Z' })])
@@ -121,7 +124,7 @@ describe('routines', () => {
     ]
     const made = jobsForEvent(routine, template, { id: 'ev', event_date: '2026-12-24', semester_id: 'sem' }, 'kyla')
     expect(made.map(j => [j.title, j.due_date, j.owner_id])).toEqual([['Send comment template', '2026-11-26', 'victoria'], ['Grades in', '2026-12-24', null]])
-    expect(made[0].steps).toEqual([{ id: 's1', text: 'Open the bank', done: false, done_by_id: null, done_at: null, owner_id: null }, { id: 's2', text: 'Post a notice', done: false, done_by_id: null, done_at: null, owner_id: null }])
+    expect(made[0].steps).toEqual([{ id: 's1', text: 'Open the bank', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }, { id: 's2', text: 'Post a notice', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }])
     expect(made[0].routine_job_id).toBe('t1'); expect(made[0].event_id).toBe('ev'); expect(made[0].due_kind).toBe('date')
   })
 })
@@ -129,7 +132,7 @@ describe('routines', () => {
 describe('parsing', () => {
   it('reads steps and rows tolerantly', () => {
     expect(parseSteps([{ text: 'a' }, { id: 'x', text: 'b', done: 1, owner_id: 'v' }, { text: '' }, null])).toEqual([
-      { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null, owner_id: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null, owner_id: 'v' }])
+      { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null, owner_id: 'v', due_date: null }])
     const j = parseJob({ id: '1', title: 'T', size: 'XL', status: 'odd', due_kind: 'weird', steps: 'no' })
     expect([j.size, j.status, j.due_kind, j.steps]).toEqual(['S', 'scheduled', 'someday', []])
   })
@@ -210,5 +213,27 @@ describe('the year', () => {
     expect(spanFraction('2027-03-01', '2026-03-01', '2027-02-28')).toBeNull()
     expect(endOfNextMonth('2026-11-19')).toBe('2026-12-31')
     expect(endOfNextMonth('2026-12-19')).toBe('2027-01-31')
+  })
+})
+
+describe('long jobs', () => {
+  const st = (id: string, over: Partial<AdminJob['steps'][number]> = {}) => ({ id, text: id, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null, ...over })
+  const long = job({ id: 'cab', due_kind: 'semester', due_date: '2027-01-08', created_at: '2026-11-01T00:00:00Z', steps: [st('a', { done: true }), st('b', { due_date: '2026-11-20' }), st('c', { due_date: '2026-12-10', owner_id: 'victoria' }), st('d'), st('e', { due_date: '2026-11-10', done: true })] })
+  it('percent and pace', () => {
+    expect(percent(long)).toBe(40)
+    expect(percent(job())).toBeNull()
+    // made 1 Nov, due 8 Jan: 68 days; today is day 18
+    expect(pace(long, '2026-11-19')).toBe(26)
+    expect(pace(long, '2027-02-01')).toBe(100)
+    expect(pace({ ...long, steps: [] }, today)).toBeNull()
+  })
+  it('a dated, undone step is a bite in its section for its person', () => {
+    const b = bites([long, job({ id: 'done', status: 'done', steps: [st('z', { due_date: today })] })], today)
+    expect(b.map(x => [x.step.id, x.section, x.ownerId, x.shared])).toEqual([['b', 'week', 'kyla', false], ['c', 'nextmonth', 'victoria', false]])
+    expect(bites([{ ...long, owner_id: null, is_shared: true }], today).map(x => [x.step.id, x.ownerId, x.shared])).toEqual([['b', null, true], ['c', 'victoria', false]])
+  })
+  it('days since touched', () => {
+    expect(daysSinceTouched(job(), today)).toBeNull()
+    expect(daysSinceTouched(job({ touched_at: '2026-11-13T08:00:00Z' }), today)).toBe(6)
   })
 })

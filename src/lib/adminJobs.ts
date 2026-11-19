@@ -13,7 +13,7 @@ export type JobStatus = 'scheduled' | 'in_progress' | 'waiting' | 'done'
 export type DueKind = 'date' | 'month' | 'semester' | 'someday'
 export type RoutineAnchor = 'date' | 'semester_start' | 'midterm_cutoff' | 'report_card_cutoff' | 'semester_end'
 
-export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null; /** Who this step is for, when a job is shared; null means whoever owns the job. */ owner_id?: string | null }
+export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null; /** Who this step is for, when a job is shared; null means whoever owns the job. */ owner_id?: string | null; /** A day this step is for, so a long job surfaces a bite at a time. */ due_date?: string | null }
 
 export interface AdminJob {
   id: string
@@ -25,6 +25,8 @@ export interface AdminJob {
   due_date: string | null
   semester_id: string | null
   owner_id: string | null
+  /** Both accounts own it; the steps say whose each piece is. Shows in both columns. */
+  is_shared: boolean
   requested_by_id: string | null
   created_by_id: string | null
   completed_by_id: string | null
@@ -34,6 +36,9 @@ export interface AdminJob {
   notes: string
   /** One line on what happened, written when it was marked done. */
   done_note: string
+  /** The last time someone worked on it, and how many stints so far. */
+  touched_at: string | null
+  touch_count: number
   link_path: string
   parent_id: string | null
   event_id: string | null
@@ -80,7 +85,7 @@ export function parseSteps(raw: unknown): JobStep[] {
   return raw.filter(s => s && typeof s.text === 'string' && s.text.trim()).map((s: any, i: number) => ({
     id: typeof s.id === 'string' && s.id ? s.id : `s${i + 1}`, text: String(s.text), done: !!s.done,
     done_by_id: typeof s.done_by_id === 'string' ? s.done_by_id : null, done_at: typeof s.done_at === 'string' ? s.done_at : null,
-    owner_id: typeof s.owner_id === 'string' ? s.owner_id : null,
+    owner_id: typeof s.owner_id === 'string' ? s.owner_id : null, due_date: typeof s.due_date === 'string' && s.due_date ? s.due_date : null,
   }))
 }
 /** Template steps: text only, in order. */
@@ -94,9 +99,9 @@ export function parseJob(r: any): AdminJob {
     id: String(r.id), title: String(r.title || ''), category: String(r.category || ''),
     size: SIZES.includes(r.size) ? r.size : 'S', status: STATUSES.includes(r.status) ? r.status : 'scheduled',
     due_kind: DUE_KINDS.includes(r.due_kind) ? r.due_kind : 'someday', due_date: r.due_date || null, semester_id: r.semester_id || null,
-    owner_id: r.owner_id || null, requested_by_id: r.requested_by_id || null, created_by_id: r.created_by_id || null,
+    owner_id: r.owner_id || null, is_shared: !!r.is_shared, requested_by_id: r.requested_by_id || null, created_by_id: r.created_by_id || null,
     completed_by_id: r.completed_by_id || null, completed_at: r.completed_at || null, waiting_on: String(r.waiting_on || ''),
-    steps: parseSteps(r.steps), notes: String(r.notes || ''), done_note: String(r.done_note || ''), link_path: String(r.link_path || ''),
+    steps: parseSteps(r.steps), notes: String(r.notes || ''), done_note: String(r.done_note || ''), touched_at: r.touched_at || null, touch_count: Number(r.touch_count) || 0, link_path: String(r.link_path || ''),
     parent_id: r.parent_id || null, event_id: r.event_id || null, routine_job_id: r.routine_job_id || null,
     created_at: String(r.created_at || ''), updated_at: String(r.updated_at || ''),
   }
@@ -149,6 +154,49 @@ export function notStarted(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date
 export function progress(job: Pick<AdminJob, 'steps'>): { done: number; total: number } | null {
   if (!job.steps.length) return null
   return { done: job.steps.filter(s => s.done).length, total: job.steps.length }
+}
+
+/** Steps done as a whole percent; null when there are no steps. */
+export function percent(job: Pick<AdminJob, 'steps'>): number | null {
+  const p = progress(job)
+  return p ? Math.round(100 * p.done / p.total) : null
+}
+
+/**
+ * Where the work should be by today if the steps were spread evenly from
+ * the day the job was made to its due date, as a percent; null when there
+ * is nothing to pace (no steps, no date, or not started yet).
+ */
+export function pace(job: Pick<AdminJob, 'steps' | 'due_date' | 'created_at' | 'status'>, today: string): number | null {
+  if (!job.steps.length || !job.due_date || !job.created_at || job.status === 'done') return null
+  const from = toKstDay(job.created_at)
+  const total = daysBetween(from, job.due_date)
+  if (total <= 0) return 100
+  return Math.max(0, Math.min(100, Math.round(100 * daysBetween(from, today) / total)))
+}
+
+/** How long since it was last worked on, in days; null if never. */
+export function daysSinceTouched(job: Pick<AdminJob, 'touched_at'>, today: string): number | null {
+  return job.touched_at ? daysBetween(toKstDay(job.touched_at), today) : null
+}
+
+/** A dated step on an open job: a bite of a long job, with where it sits on the board. */
+export interface Bite { job: AdminJob; step: JobStep; section: BoardSection; ownerId: string | null; /** On a shared job with no one named on the step: either person's. */ shared: boolean }
+
+/**
+ * Every undone step that has its own day, as a bite. A bite belongs to the
+ * step's own person when one is set, else the job's owner, and sits in the
+ * section its day falls in, so a semester-long job shows one piece this
+ * week while the whole stays on the shelf.
+ */
+export function bites(jobs: AdminJob[], today: string): Bite[] {
+  const out: Bite[] = []
+  jobs.filter(j => j.status !== 'done').forEach(job => job.steps.forEach(step => {
+    if (step.done || !step.due_date) return
+    const section = boardSection({ status: 'scheduled', due_kind: 'date', due_date: step.due_date }, today)
+    if (section) out.push({ job, step, section, ownerId: step.owner_id || job.owner_id, shared: job.is_shared && !step.owner_id })
+  }))
+  return out.sort((a, b) => a.step.due_date!.localeCompare(b.step.due_date!))
 }
 
 const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -209,13 +257,14 @@ export function groupOpen(jobs: AdminJob[], today: string): { section: Section; 
 }
 
 /** What the dashboard shows: the viewer's overdue, today and this-week jobs, then goals not started, then anyone's unowned. */
-export function attention(jobs: AdminJob[], today: string, viewerId: string | null): { mine: AdminJob[]; notStartedGoals: AdminJob[]; unowned: AdminJob[] } {
+export function attention(jobs: AdminJob[], today: string, viewerId: string | null): { mine: AdminJob[]; myBites: Bite[]; notStartedGoals: AdminJob[]; unowned: AdminJob[] } {
   const open = jobs.filter(j => j.status !== 'done')
   const pressing = (j: AdminJob) => ['overdue', 'today', 'week'].includes(urgency(j, today))
-  const mine = open.filter(j => j.owner_id === viewerId && pressing(j)).sort(byDue)
-  const notStartedGoals = open.filter(j => j.owner_id === viewerId && notStarted(j, today) && !pressing(j)).sort(byDue)
-  const unowned = open.filter(j => !j.owner_id && !j.parent_id).sort(byDue)
-  return { mine, notStartedGoals, unowned }
+  const mine = open.filter(j => (j.owner_id === viewerId || (j.is_shared && viewerId)) && pressing(j)).sort(byDue)
+  const myBites = bites(open, today).filter(b => (b.ownerId === viewerId || (b.shared && viewerId)) && b.section === 'week' && !mine.includes(b.job))
+  const notStartedGoals = open.filter(j => (j.owner_id === viewerId || (j.is_shared && viewerId)) && notStarted(j, today) && !pressing(j)).sort(byDue)
+  const unowned = open.filter(j => !j.owner_id && !j.is_shared && !j.parent_id).sort(byDue)
+  return { mine, myBites, notStartedGoals, unowned }
 }
 
 /** Done jobs by the day they were finished, newest day first. */
@@ -272,9 +321,9 @@ export function jobsForEvent(routine: AdminRoutine, template: AdminRoutineJob[],
   return [...template].sort((a, b) => a.sort_order - b.sort_order || a.offset_days - b.offset_days).map(t => ({
     title: t.title, category: routine.category, size: t.size, status: 'scheduled' as JobStatus,
     due_kind: 'date' as DueKind, due_date: addDays(event.event_date, t.offset_days), semester_id: event.semester_id,
-    owner_id: t.default_owner_id, requested_by_id: null, created_by_id: createdBy, completed_by_id: null, completed_at: null,
-    waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null, owner_id: null })),
-    notes: '', done_note: '', link_path: t.link_path, parent_id: null, event_id: event.id, routine_job_id: t.id,
+    owner_id: t.default_owner_id, is_shared: false, requested_by_id: null, created_by_id: createdBy, completed_by_id: null, completed_at: null,
+    waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null })),
+    notes: '', done_note: '', touched_at: null, touch_count: 0, link_path: t.link_path, parent_id: null, event_id: event.id, routine_job_id: t.id,
   }))
 }
 

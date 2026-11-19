@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { anchorDate, fmtDay, schoolYear, spanFraction, type AdminEvent, type AdminJob, type AdminRoutine } from '@/lib/adminJobs'
+import { anchorDate, fmtDay, percent, schoolYear, spanFraction, type AdminEvent, type AdminJob, type AdminRoutine } from '@/lib/adminJobs'
 import type { Semester } from '@/types'
 
 // ─── The year at a glance ────────────────────────────────────────
@@ -114,7 +114,7 @@ export default function YearView({ ko, today, routines, events, jobs, semesters,
               ))}
               {js.length > 0 && (
                 <ul className="border-t border-rule pt-1.5 grid gap-0.5">
-                  {js.map(j => <li key={j.id} className={`text-[length:calc(11.5px*var(--ts))] leading-snug truncate ${j.status === 'done' ? 'line-through text-ink-3' : 'text-ink-2'}`} title={j.title}>{fmtDay(j.due_date!, ko, false).replace(/^\w+ /, '')} {j.title}<span className="text-ink-3"> · {j.owner_id ? nameOf(j.owner_id) : '—'}</span></li>)}
+                  {js.map(j => <li key={j.id} className={`text-[length:calc(11.5px*var(--ts))] leading-snug truncate ${j.status === 'done' ? 'line-through text-ink-3' : 'text-ink-2'}`} title={j.title}>{fmtDay(j.due_date!, ko, false).replace(/^\w+ /, '')} {j.title}<span className="text-ink-3"> · {j.owner_id ? nameOf(j.owner_id) : '—'}{percent(j) !== null && j.status !== 'done' ? ` · ${percent(j)}%` : ''}</span></li>)}
                 </ul>
               )}
               {ms.length === 0 && ts.length === 0 && js.length === 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-3">—</p>}

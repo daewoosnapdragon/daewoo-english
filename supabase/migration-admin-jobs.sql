@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
   due_date DATE,
   semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL,
   owner_id UUID REFERENCES teachers(id) ON DELETE SET NULL,
+  is_shared BOOLEAN NOT NULL DEFAULT false,
   requested_by_id UUID REFERENCES teachers(id) ON DELETE SET NULL,
   created_by_id UUID REFERENCES teachers(id) ON DELETE SET NULL,
   completed_by_id UUID REFERENCES teachers(id) ON DELETE SET NULL,
@@ -79,6 +80,8 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
   steps JSONB NOT NULL DEFAULT '[]',
   notes TEXT NOT NULL DEFAULT '',
   done_note TEXT NOT NULL DEFAULT '',
+  touched_at TIMESTAMPTZ,
+  touch_count INTEGER NOT NULL DEFAULT 0,
   -- A page in the app where the job happens, e.g. /reports.
   link_path TEXT NOT NULL DEFAULT '',
   parent_id UUID REFERENCES admin_jobs(id) ON DELETE CASCADE,
@@ -89,6 +92,11 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
 );
 -- Added later: one line on what happened, written when the job is marked done.
 ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS done_note TEXT NOT NULL DEFAULT '';
+-- Added later: when it was last worked on, and how many stints.
+ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS touched_at TIMESTAMPTZ;
+ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS touch_count INTEGER NOT NULL DEFAULT 0;
+-- Added later: both accounts own it; the steps say whose each piece is.
+ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_status_due ON admin_jobs(status, due_date);
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_owner ON admin_jobs(owner_id);
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_parent ON admin_jobs(parent_id);

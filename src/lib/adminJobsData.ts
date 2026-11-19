@@ -54,11 +54,14 @@ export async function setStatus(job: AdminJob, status: JobStatus, who: Who, wait
   return null
 }
 
-export async function assignJob(job: AdminJob, toId: string | null, who: Who): Promise<string | null> {
-  if (toId === job.owner_id) return null
-  const { error } = await supabase.from('admin_jobs').update({ owner_id: toId, updated_at: nowIso() }).eq('id', job.id)
+/** Give the job to one account, to both ('shared'), or to nobody (null). */
+export async function assignJob(job: AdminJob, to: string | 'shared' | null, who: Who): Promise<string | null> {
+  const shared = to === 'shared', toId = shared ? null : to
+  if (toId === job.owner_id && shared === job.is_shared) return null
+  let { error } = await supabase.from('admin_jobs').update({ owner_id: toId, is_shared: shared, updated_at: nowIso() }).eq('id', job.id)
+  if (error && /is_shared/.test(error.message)) { if (shared) return 'Run the ALTER TABLE line for is_shared first.'; ({ error } = await supabase.from('admin_jobs').update({ owner_id: toId, updated_at: nowIso() }).eq('id', job.id)) }
   if (error) return error.message
-  await history(job.id, job.owner_id ? 'reassigned' : 'assigned', who, { from_id: job.owner_id, to_id: toId })
+  await history(job.id, job.owner_id || job.is_shared ? 'reassigned' : 'assigned', who, { from_id: job.owner_id, to_id: toId, note: shared ? 'shared' : '' })
   return null
 }
 
@@ -78,13 +81,29 @@ export async function toggleStep(job: AdminJob, stepId: string, who: Who): Promi
 /** One step per line; a pasted numbered list becomes several steps. */
 export async function addSteps(job: AdminJob, text: string, who: Who): Promise<string | null> {
   const lines = parseStepLines(text); if (!lines.length) return null
-  return saveSteps(job, [...job.steps, ...lines.map(t => ({ id: newId(), text: t, done: false, done_by_id: null, done_at: null, owner_id: null }))], who, lines.length === 1 ? `added: ${lines[0]}` : `added ${lines.length} steps`)
+  return saveSteps(job, [...job.steps, ...lines.map(t => ({ id: newId(), text: t, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }))], who, lines.length === 1 ? `added: ${lines[0]}` : `added ${lines.length} steps`)
 }
 
 /** Give one step to a person, or back to whoever owns the job. */
 export async function setStepOwner(job: AdminJob, stepId: string, ownerId: string | null, who: Who, ownerName = ''): Promise<string | null> {
   const s = job.steps.find(x => x.id === stepId)
   return saveSteps(job, job.steps.map(x => x.id === stepId ? { ...x, owner_id: ownerId } : x), who, s ? `${ownerId ? ownerName || 'someone' : 'nobody'}: ${s.text}` : '')
+}
+
+/** Give one step its own day, or take it away. */
+export async function setStepDue(job: AdminJob, stepId: string, date: string | null, who: Who): Promise<string | null> {
+  const s = job.steps.find(x => x.id === stepId)
+  return saveSteps(job, job.steps.map(x => x.id === stepId ? { ...x, due_date: date } : x), who, s ? `${date || 'no day'}: ${s.text}` : '')
+}
+
+/** A stint: worked on it today. Keeps the last time and the count. */
+export async function touchJob(job: AdminJob, who: Who): Promise<string | null> {
+  const now = nowIso()
+  const { error } = await supabase.from('admin_jobs').update({ touched_at: now, touch_count: job.touch_count + 1, status: job.status === 'scheduled' ? 'in_progress' : job.status, updated_at: now }).eq('id', job.id)
+  if (error) return /touched_at|touch_count/.test(error.message) ? 'Run the two ALTER TABLE lines for touched_at and touch_count first.' : error.message
+  await history(job.id, 'touched', who)
+  logActivity('saved', `Worked on: ${job.title}`, { key: `touch:${job.id}` })
+  return null
 }
 
 export async function deleteJob(job: AdminJob, who: Who): Promise<string | null> {
@@ -124,7 +143,7 @@ export async function answerQuestion(job: AdminJob, q: AdminJobQuestion, answer:
   const { error } = await supabase.from('admin_job_questions').update({ answer: a, answered_by_id: who?.id || null, answered_at: nowIso() }).eq('id', q.id)
   if (error) return error.message
   const text = answerStepText(q.question, a)
-  await saveSteps(job, [...job.steps, { id: newId(), text, done: false, done_by_id: null, done_at: null, owner_id: null }], who)
+  await saveSteps(job, [...job.steps, { id: newId(), text, done: false, done_by_id: null, done_at: null, owner_id: null, due_date: null }], who)
   if (job.routine_job_id) {
     const { data } = await supabase.from('admin_routine_jobs').select('steps').eq('id', job.routine_job_id).single()
     if (data) await supabase.from('admin_routine_jobs').update({ steps: [...parseRoutineJob({ ...data, id: job.routine_job_id, routine_id: '' }).steps, { text }], updated_at: nowIso() }).eq('id', job.routine_job_id)

@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { SIZE_LABELS, SIZES, dueLabel, fmtDay, type AdminJob, type AdminJobHistory, type AdminJobQuestion, type JobSize } from '@/lib/adminJobs'
-import { addSteps, answerQuestion, askQuestion, assignJob, deleteJob, fetchHistory, fetchQuestions, saveSteps, setStepOwner, setStatus, toggleStep, updateJob } from '@/lib/adminJobsData'
+import { SIZE_LABELS, SIZES, daysSinceTouched, dueLabel, fmtDay, pace, percent, type AdminJob, type AdminJobHistory, type AdminJobQuestion } from '@/lib/adminJobs'
+import { addSteps, answerQuestion, askQuestion, assignJob, deleteJob, fetchHistory, fetchQuestions, saveSteps, setStepDue, setStepOwner, setStatus, toggleStep, touchJob, updateJob } from '@/lib/adminJobsData'
 import StatusTag from './StatusTag'
 import { field } from './AddJob'
 import type { Semester, Teacher } from '@/types'
-import { Link as LinkIcon, Trash2, X } from 'lucide-react'
+import { Calendar, Link as LinkIcon, Trash2, X } from 'lucide-react'
 
 // ─── A job, opened ───────────────────────────────────────────────
 // Slides in from the right. Who owns it (one tap), the steps as a
@@ -52,7 +52,7 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
     if (ok) { await act(deleteJob(job, who)); onClose() }
   }
   const submitSteps = () => { if (stepText.trim()) { act(addSteps(job, stepText, who)); setStepText('') } }
-  const other = accounts.find(a => a.id !== job.owner_id && a.id !== me?.id) || accounts.find(a => a.id !== job.owner_id)
+  const other = accounts.find(a => a.id !== me?.id) || accounts.find(a => a.id !== job.owner_id)
   const fmtAt = (iso: string) => new Date(iso).toLocaleString(ko ? 'ko-KR' : 'en-US', { timeZone: 'Asia/Seoul', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
   const label = 'eyebrow mb-1.5'
   const small = 'text-[length:calc(11.5px*var(--ts))]'
@@ -74,9 +74,22 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
         {/* Owner */}
         <div className="flex flex-wrap items-center gap-2">
           <span className={`${small} text-ink-3 mr-1`}>{ko ? '담당' : 'Owner'}</span>
-          {accounts.map(a => <button key={a.id} onClick={() => act(assignJob(job, a.id, who))} className={chip(job.owner_id === a.id)}>{job.owner_id === a.id ? '✓ ' : ''}{a.name}</button>)}
-          <button onClick={() => act(assignJob(job, null, who))} className={chip(!job.owner_id)}>{!job.owner_id ? '✓ ' : ''}{ko ? '아직 없음' : 'Nobody yet'}</button>
+          {accounts.map(a => <button key={a.id} onClick={() => act(assignJob(job, a.id, who))} className={chip(job.owner_id === a.id && !job.is_shared)}>{job.owner_id === a.id && !job.is_shared ? '✓ ' : ''}{a.name}</button>)}
+          <button onClick={() => act(assignJob(job, 'shared', who))} className={chip(job.is_shared)} title={ko ? '둘 다 맡고, 단계마다 이름을 붙입니다' : 'Both of you; name each step'}>{job.is_shared ? '✓ ' : ''}{ko ? '함께' : 'Shared'}</button>
+          <button onClick={() => act(assignJob(job, null, who))} className={chip(!job.owner_id && !job.is_shared)}>{!job.owner_id && !job.is_shared ? '✓ ' : ''}{ko ? '아직 없음' : 'Nobody yet'}</button>
           <span className="ml-auto"><StatusTag status={job.status} waitingOn={job.waiting_on} ko={ko} onChange={(s, w) => act(setStatus(job, s, who, w))} /></span>
+        </div>
+        {/* Size, and how it is going */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`${small} text-ink-3 mr-1`}>{ko ? '크기' : 'Size'}</span>
+          {SIZES.map(z => <button key={z} onClick={() => saveField({ size: z })} className={chip(job.size === z)} title={SIZE_LABELS[z][ko ? 'ko' : 'en']}>{z}</button>)}
+          <span className={`${small} text-ink-3 ml-1`}>{SIZE_LABELS[job.size][ko ? 'ko' : 'en']}</span>
+          {job.status !== 'done' && (
+            <span className="ml-auto flex items-center gap-2">
+              {(() => { const d = daysSinceTouched(job, ctx.today); return <span className={`${small} text-ink-3`}>{d === null ? (ko ? '아직 손대지 않음' : 'not touched yet') : d === 0 ? (ko ? '오늘 작업함' : 'worked on today') : d === 1 ? (ko ? '어제 작업함' : 'worked on yesterday') : (ko ? `${d}일 전 작업` : `${d} days since last worked on`)}{job.touch_count ? ` · ${job.touch_count} ${ko ? '회' : job.touch_count === 1 ? 'stint' : 'stints'}` : ''}</span> })()}
+              <button onClick={() => act(touchJob(job, who))} className="h-7 px-2.5 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3">{ko ? '오늘 작업함' : 'Worked on it today'}</button>
+            </span>
+          )}
         </div>
 
         {/* Notes: what is in the way, what was agreed, where things are */}
@@ -85,12 +98,18 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
 
         {/* Steps */}
         <div>
-          <p className={label}>{ko ? '단계' : 'Steps'}{job.steps.length ? ` · ${stepsDone}/${job.steps.length}` : ''}</p>
+          <p className={label}>{ko ? '단계' : 'Steps'}{job.steps.length ? ` · ${stepsDone}/${job.steps.length} · ${percent(job)}%` : ''}{(() => { const e = pace(job, ctx.today); return e !== null ? <span className={`normal-case tracking-normal ${e > (percent(job) || 0) + 10 ? 'text-warn' : 'text-ink-3'}`}> · {ko ? `기간의 ${e}% 경과` : `${e}% of the time gone`}</span> : null })()}</p>
+          {percent(job) !== null && job.status !== 'done' && (() => { const e = pace(job, ctx.today), p = percent(job)!; return <span className="block relative h-[4px] bg-paper-2 rounded mb-2"><span className="block h-full bg-good rounded" style={{ width: `${p}%` }} />{e !== null && <span className={`absolute -top-[2px] w-px h-[8px] ${e > p + 10 ? 'bg-warn' : 'bg-ink-3'}`} style={{ left: `${e}%` }} />}</span> })()}
           <ul className="border-t border-rule">
             {job.steps.map(s => (
               <li key={s.id} className="flex items-start gap-2.5 py-2 border-b border-rule group">
                 <input type="checkbox" checked={s.done} onChange={() => act(toggleStep(job, s.id, who))} className="mt-1 rounded border-rule-2" aria-label={s.text} />
                 <span className={`flex-1 text-[length:calc(13.5px*var(--ts))] leading-snug ${s.done ? 'line-through text-ink-3' : 'text-ink'}`}>{s.text}{s.done && s.done_by_id ? <span className={`${small} text-ink-3`}> · {nameOf(s.done_by_id)}</span> : null}</span>
+                <span className="flex items-center gap-1 mt-0.5">
+                  {s.due_date
+                    ? <button onClick={() => act(setStepDue(job, s.id, null, who))} className={`${small} tabular-nums text-ink-2 hover:text-bad whitespace-nowrap`} title={ko ? '날짜 지우기' : 'Clear the day'}>{fmtDay(s.due_date, ko)}</button>
+                    : <label className="relative w-6 h-6 rounded text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-paper-2 flex items-center justify-center cursor-pointer" title={ko ? '이 단계의 날짜' : 'Give this step a day'}><Calendar size={12} /><input type="date" className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" onChange={e => e.target.value && act(setStepDue(job, s.id, e.target.value, who))} aria-label={ko ? '단계 날짜' : 'Step day'} /></label>}
+                </span>
                 <span className="flex items-center gap-0.5 mt-0.5" title={ko ? '이 단계는 누가' : 'Who does this step'}>
                   {accounts.map(a => <button key={a.id} onClick={() => act(setStepOwner(job, s.id, s.owner_id === a.id ? null : a.id, who, a.name))} className={`w-6 h-6 rounded-full text-[length:calc(10.5px*var(--ts))] font-semibold ${s.owner_id === a.id ? 'bg-ink text-paper' : 'text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-paper-2'}`} aria-label={a.name} aria-pressed={s.owner_id === a.id}>{a.name.slice(0, 1)}</button>)}
                 </span>
@@ -103,7 +122,7 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitSteps() } }}
             placeholder={ko ? '단계 추가 (한 줄에 하나, 목록을 붙여 넣어도 됩니다)' : 'Add a step, or paste a list: one per line'} className="mt-2 w-full px-2 py-1.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink leading-snug resize-none" />
           <div className="flex items-center justify-between mt-1">
-            <span className={`${small} text-ink-3`}>{ko ? 'Enter로 추가, Shift+Enter로 줄바꿈. 단계 옆 이니셜을 누르면 그 사람 몫이 됩니다.' : 'Enter adds. Shift+Enter for a new line. Tap an initial beside a step to make it theirs.'}</span>
+            <span className={`${small} text-ink-3`}>{ko ? 'Enter로 추가, Shift+Enter로 줄바꿈. 단계 옆 달력으로 날짜를, 이니셜로 담당을 정합니다. 날짜가 있는 단계는 그 주의 보드에 따로 나타납니다.' : 'Enter adds; Shift+Enter for a new line. The calendar beside a step gives it a day, the initial a person. A step with a day shows on the board that week on its own.'}</span>
             {stepText.trim() && <button onClick={submitSteps} className="h-7 px-2.5 rounded bg-accent text-white text-[length:calc(11.5px*var(--ts))] font-semibold">{ko ? '추가' : 'Add'}</button>}
           </div>
         </div>
@@ -142,7 +161,7 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
         )}
         <div className="flex flex-wrap gap-2 border-t border-rule-2 pt-4">
           <button onClick={() => { if (job.status === 'done') act(setStatus(job, 'scheduled', who)); else setFinishing(true) }} className={`h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold ${job.status === 'done' ? 'border border-rule-2 text-ink-2 hover:text-ink' : finishing ? 'border border-rule-2 text-ink-3' : 'bg-accent text-white hover:bg-accent-hover'}`} disabled={finishing && job.status !== 'done'}>{job.status === 'done' ? (ko ? '다시 열기' : 'Reopen') : (ko ? '완료' : 'Done')}</button>
-          {other && <button onClick={() => act(assignJob(job, other.id, who))} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{ko ? `${other.name}에게 넘기기` : `Hand to ${other.name}`}</button>}
+          {other && job.owner_id !== other.id && <button onClick={() => act(assignJob(job, other.id, who))} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{ko ? `${other.name}에게 넘기기` : `Hand to ${other.name}`}</button>}
           <button onClick={remove} className="h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-bad inline-flex items-center gap-1 ml-auto"><Trash2 size={13} />{ko ? '삭제' : 'Delete'}</button>
           <button onClick={() => setShowMore(m => !m)} className="h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink">{showMore ? (ko ? '간단히' : 'Less') : (ko ? '자세히' : 'Details')}</button>
         </div>
@@ -150,8 +169,6 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
         {showMore && (
           <div className="grid gap-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><p className={label}>{ko ? '크기' : 'Size'}</p>
-                <select value={job.size} onChange={e => saveField({ size: e.target.value as JobSize })} className={`${field} w-full`}>{SIZES.map(s => <option key={s} value={s}>{s} · {SIZE_LABELS[s][ko ? 'ko' : 'en']}</option>)}</select></div>
               <div><p className={label}>{ko ? '분류' : 'Category'}</p>
                 <input list="job-categories" defaultValue={job.category} onBlur={e => saveField({ category: e.target.value.trim() })} className={`${field} w-full`} />
                 <datalist id="job-categories">{ctx.categories.map(c => <option key={c} value={c} />)}</datalist></div>
