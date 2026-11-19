@@ -1,29 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { endOfMonth, thisFriday, type DueKind, type JobDraft } from '@/lib/adminJobs'
+import { endOfMonth, nextSemester, thisFriday, type DueKind, type JobDraft } from '@/lib/adminJobs'
 import type { Semester, Teacher } from '@/types'
 import { Plus } from 'lucide-react'
 
 // ─── Add a job in one line ───────────────────────────────────────
 // A title and when: today, this week, a day you pick, the end of the
-// month, the end of the semester, or whenever. Enter adds it with no
+// month, the end of the semester, next semester, or whenever. Enter adds it with no
 // owner; everything else is set on the card.
 
 export const field = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink placeholder:text-ink-3'
 const chip = (on: boolean) => `h-7 px-2.5 rounded-full border text-[length:calc(11.5px*var(--ts))] whitespace-nowrap ${on ? 'border-ink text-ink font-semibold' : 'border-rule-2 text-ink-3 hover:text-ink'}`
 
-type When = 'today' | 'week' | 'day' | 'month' | 'semester' | 'someday'
+type When = 'today' | 'week' | 'day' | 'month' | 'semester' | 'next' | 'someday'
 
-export default function AddJob({ ko, today, activeSemester, me, onAdd }: {
-  ko: boolean; today: string; activeSemester: Semester | null; me: Teacher | null; onAdd: (d: JobDraft) => Promise<string | null>
+export default function AddJob({ ko, today, activeSemester, semesters, me, onAdd }: {
+  ko: boolean; today: string; activeSemester: Semester | null; semesters: Semester[]; me: Teacher | null; onAdd: (d: JobDraft) => Promise<string | null>
 }) {
+  const next = nextSemester(semesters, today)
   const [title, setTitle] = useState('')
   const [when, setWhen] = useState<When>('week')
   const [day, setDay] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
-  const whens: [When, string][] = [['today', ko ? '오늘' : 'Today'], ['week', ko ? '이번 주' : 'This week'], ['day', ko ? '날짜' : 'A day'], ['month', ko ? '월말' : 'End of month'], ['semester', ko ? '학기말' : 'End of semester'], ['someday', ko ? '언제든' : 'Whenever']]
+  const whens: [When, string][] = [['today', ko ? '오늘' : 'Today'], ['week', ko ? '이번 주' : 'This week'], ['day', ko ? '날짜' : 'A day'], ['month', ko ? '월말' : 'End of month'], ['semester', ko ? '학기말' : 'End of semester'], ['next', ko ? '다음 학기' : 'Next semester'], ['someday', ko ? '언제든' : 'Whenever']]
 
   const save = async () => {
     const t = title.trim(); if (!t || busy) return
@@ -33,11 +34,12 @@ export default function AddJob({ ko, today, activeSemester, me, onAdd }: {
     else if (when === 'day') { if (!day) { setErr(ko ? '날짜를 고르세요.' : 'Pick a day.'); return } due_date = day }
     else if (when === 'month') { due_kind = 'month'; due_date = endOfMonth(today) }
     else if (when === 'semester') { if (!activeSemester?.end_date) { setErr(ko ? '학기 종료일이 설정에 없습니다.' : 'The semester has no end date in Settings.'); return } due_kind = 'semester'; due_date = activeSemester.end_date }
+    else if (when === 'next') { if (!next?.end_date) { setErr(ko ? '다음 학기가 설정에 없습니다 (시작일과 종료일).' : 'No next semester in Settings yet; add it with its start and end dates.'); return } due_kind = 'semester'; due_date = next.end_date }
     else { due_kind = 'someday' }
     setBusy(true); setErr('')
     const e = await onAdd({
       title: t, category: '', size: 'S', status: 'scheduled', due_kind, due_date,
-      semester_id: activeSemester?.id || null, owner_id: null, requested_by_id: null, created_by_id: me?.id || null,
+      semester_id: when === 'next' ? next!.id : activeSemester?.id || null, owner_id: null, requested_by_id: null, created_by_id: me?.id || null,
       completed_by_id: null, completed_at: null, waiting_on: '', steps: [], notes: '', link_path: '', parent_id: null, event_id: null, routine_job_id: null,
     })
     setBusy(false)

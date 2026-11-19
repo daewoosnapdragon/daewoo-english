@@ -42,7 +42,7 @@ export default function AdminJobsCard() {
                 <button onClick={() => tick(j)} className="w-7 h-7 rounded-full border border-rule-2 hover:border-good hover:text-good text-transparent flex items-center justify-center shrink-0" aria-label={ko ? '완료' : 'Done'} title={ko ? '완료로 표시' : 'Mark done'}><Check size={14} /></button>
                 <Link href="/jobs" className="flex-1 min-w-0">
                   <span className="block font-display text-[length:calc(19px*var(--ts))] leading-tight text-ink truncate">{j.title}</span>
-                  <span className={`block text-[length:calc(11.5px*var(--ts))] ${tone(j)}`}>{dueLabel(j, d.today, ko, d.semesterName(j.semester_id))}{j.status === 'scheduled' && j.due_kind !== 'date' ? (ko ? ' · 아직 시작 안 함' : ' · not started') : ''}{j.category ? ` · ${j.category}` : ''}{steps ? ` · ${steps}` : ''}{j.status === 'waiting' && j.waiting_on ? ` · ${ko ? '대기' : 'waiting on'} ${j.waiting_on}` : ''}</span>
+                  <span className={`block text-[length:calc(11.5px*var(--ts))] ${tone(j)}`}>{dueLabel(j, d.today, ko, d.semesterName(j.semester_id), d.semesterStart(j.semester_id))}{j.status === 'scheduled' && j.due_kind !== 'date' ? (ko ? ' · 아직 시작 안 함' : ' · not started') : ''}{j.category ? ` · ${j.category}` : ''}{steps ? ` · ${steps}` : ''}{j.status === 'waiting' && j.waiting_on ? ` · ${ko ? '대기' : 'waiting on'} ${j.waiting_on}` : ''}</span>
                 </Link>
               </li>
             )

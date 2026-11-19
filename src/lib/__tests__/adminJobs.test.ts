@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, type AdminJob } from '@/lib/adminJobs'
+import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, type AdminJob } from '@/lib/adminJobs'
 
 const job = (over: Partial<AdminJob> = {}): AdminJob => ({
   id: 'j', title: 'Send comment template', category: 'Report cards', size: 'S', status: 'scheduled', due_kind: 'date', due_date: '2026-11-26', semester_id: null,
@@ -59,7 +59,8 @@ describe('labels', () => {
     expect(dueLabel(job({ due_date: '2026-11-16' }), today, false)).toBe('3 days ago')
     expect(dueLabel(job({ due_kind: 'month', due_date: '2026-11-30' }), today, false)).toBe('By end of November')
     expect(dueLabel(job({ due_kind: 'month', due_date: '2026-10-31' }), today, false)).toBe('By end of October · passed')
-    expect(dueLabel(job({ due_kind: 'semester', due_date: '2027-01-08' }), today, false, 'Fall 2026')).toBe('By end of Fall 2026')
+    expect(dueLabel(job({ due_kind: 'semester', due_date: '2027-01-08' }), today, false, 'Fall 2026', '2026-08-17')).toBe('By end of Fall 2026')
+    expect(dueLabel(job({ due_kind: 'semester', due_date: '2027-08-01' }), today, false, 'Spring 2027', '2027-03-02')).toBe('Next semester · Spring 2027')
   })
   it('offsets in words', () => {
     expect(offsetLabel(-28, false)).toBe('28 days before')
@@ -174,5 +175,21 @@ describe('the board', () => {
       job({ id: 'd', due_date: '2027-01-04' }), job({ id: 'e', due_date: today }), job({ id: 'f', due_date: '2027-01-30', parent_id: 'a' }),
     ], today)
     expect(s.map(g => [g.key, g.jobs.map(j => j.id)])).toEqual([['2027-01', ['d', 'c']], ['2027-02', ['a']], ['someday', ['b']]])
+  })
+})
+
+describe('next semester', () => {
+  const sems = [{ id: 'f26', name: 'Fall 2026', start_date: '2026-08-17' }, { id: 's27', name: 'Spring 2027', start_date: '2027-03-02' }, { id: 'f27', name: 'Fall 2027', start_date: '2027-08-16' }, { id: 'old', name: 'Old', start_date: '2027-02-01', is_archived: true }]
+  it('is the earliest semester starting after today', () => {
+    expect(nextSemester(sems, '2026-11-19')?.id).toBe('s27')
+    expect(nextSemester(sems, '2027-03-02')?.id).toBe('f27')
+    expect(nextSemester(sems, '2027-09-01')).toBeNull()
+  })
+  it('shelves a next-semester goal under its semester, in date order with the months', () => {
+    const s = shelf([
+      job({ id: 'a', due_date: '2027-02-03' }), job({ id: 'b', due_kind: 'semester', due_date: '2027-08-01', semester_id: 's27' }),
+      job({ id: 'c', due_date: '2027-01-20' }), job({ id: 'd', due_kind: 'someday', due_date: null }),
+    ], '2026-11-19')
+    expect(s.map(g => [g.key, g.jobs.map(j => j.id)])).toEqual([['2027-01', ['c']], ['2027-02', ['a']], ['sem:s27', ['b']], ['someday', ['d']]])
   })
 })

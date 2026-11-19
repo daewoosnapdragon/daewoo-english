@@ -156,7 +156,7 @@ export function fmtDay(iso: string, ko: boolean, withWeekday = true): string {
 }
 
 /** The due, in words: "Today", "3 days ago", "Tue, Dec 2", "By end of November", "By end of Fall 2026", "When there is time". */
-export function dueLabel(job: Pick<AdminJob, 'due_kind' | 'due_date' | 'status'>, today: string, ko: boolean, semesterName?: string | null): string {
+export function dueLabel(job: Pick<AdminJob, 'due_kind' | 'due_date' | 'status'>, today: string, ko: boolean, semesterName?: string | null, semesterStart?: string | null): string {
   if (job.due_kind === 'someday' || !job.due_date) return ko ? '시간 날 때' : 'When there is time'
   const d = daysBetween(today, job.due_date)
   if (job.due_kind === 'month') {
@@ -165,6 +165,8 @@ export function dueLabel(job: Pick<AdminJob, 'due_kind' | 'due_date' | 'status'>
     return job.status !== 'done' && d < 0 ? (ko ? `${base} · 지남` : `${base} · passed`) : base
   }
   if (job.due_kind === 'semester') {
+    // A semester that has not started yet reads as "next semester", not as a deadline.
+    if (semesterStart && semesterStart > today) return ko ? `다음 학기 · ${semesterName || ''}`.trim() : `Next semester${semesterName ? ` · ${semesterName}` : ''}`
     const base = ko ? `${semesterName || '학기'} 말까지` : `By end of ${semesterName || 'the semester'}`
     return job.status !== 'done' && d < 0 ? (ko ? `${base} · 지남` : `${base} · passed`) : base
   }
@@ -286,6 +288,11 @@ export function thisFriday(today: string): string {
   return addDays(today, ahead === 0 ? 7 : ahead)
 }
 
+/** The semester after the one running now: the earliest that starts after today. */
+export function nextSemester<T extends { start_date?: string | null; is_archived?: boolean }>(semesters: T[], today: string): T | null {
+  return semesters.filter(s => s.start_date && s.start_date > today && !s.is_archived).sort((a, b) => a.start_date!.localeCompare(b.start_date!))[0] || null
+}
+
 /** The two accounts that own jobs: the Snapdragon teacher and the admin account, in that order. */
 export function adminAccounts<T extends { role?: string; english_class?: string; is_active?: boolean }>(teachers: T[]): T[] {
   const snap = teachers.find(t => t.english_class === 'Snapdragon' && t.is_active !== false)
@@ -320,15 +327,17 @@ export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_da
 
 /** The Later shelf: far-off jobs by month, then Whenever, each sorted by date. */
 export function shelf(jobs: AdminJob[], today: string): { key: string; jobs: AdminJob[] }[] {
+  // Keys: 'YYYY-MM' for dated jobs and month goals, 'sem:<id>' for semester goals, 'someday' last; groups in date order.
   const out: Record<string, AdminJob[]> = {}
   jobs.filter(j => !j.parent_id).forEach(j => {
     const s = boardSection(j, today)
-    if (s === 'later') (out[j.due_date!.slice(0, 7)] ||= []).push(j)
+    if (s === 'later') (out[j.due_kind === 'semester' && j.semester_id ? `sem:${j.semester_id}` : j.due_date!.slice(0, 7)] ||= []).push(j)
     else if (s === 'someday') (out['someday'] ||= []).push(j)
   })
-  const keys = Object.keys(out).filter(k => k !== 'someday').sort()
-  if (out.someday) keys.push('someday')
-  return keys.map(key => ({ key, jobs: out[key].sort((a, b) => (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at)) }))
+  const byDate = (a: AdminJob, b: AdminJob) => (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at)
+  const first = (k: string) => k === 'someday' ? '9999' : k.startsWith('sem:') ? (out[k].map(j => j.due_date || '9999').sort()[0]) : k
+  const keys = Object.keys(out).sort((a, b) => first(a).localeCompare(first(b)) || a.localeCompare(b))
+  return keys.map(key => ({ key, jobs: out[key].sort(byDate) }))
 }
 
 /** A question and its answer as one step, so the how-to grows: "Q: … → A: …". */

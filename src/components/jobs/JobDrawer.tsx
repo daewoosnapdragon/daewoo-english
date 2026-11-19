@@ -19,7 +19,7 @@ import { Link as LinkIcon, Trash2, X } from 'lucide-react'
 
 export interface DrawerCtx {
   ko: boolean; today: string; me: Teacher | null; teachers: Teacher[]; accounts: Teacher[]; categories: string[]; activeSemester: Semester | null
-  nameOf: (id: string | null | undefined) => string; semesterName: (id: string | null | undefined) => string | null
+  nameOf: (id: string | null | undefined) => string; semesterName: (id: string | null | undefined) => string | null; semesterStart: (id: string | null | undefined) => string | null
   childrenOf: Record<string, AdminJob[]>; reload: () => Promise<void>
 }
 
@@ -65,7 +65,7 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
 
         <div className="pr-8">
           {fresh && <p className="eyebrow eyebrow-accent mb-1">{ko ? '추가됨 · 담당 없음 · 단계와 세부 내용을 적어 두세요' : 'Added · nobody yet · add the steps and details while it is in mind'}</p>}
-          <p className="eyebrow mb-1">{job.category || (ko ? '분류 없음' : 'No category')} · {job.size} · <span>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id))}</span></p>
+          <p className="eyebrow mb-1">{job.category || (ko ? '분류 없음' : 'No category')} · {job.size} · <span>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id), ctx.semesterStart(job.semester_id))}</span></p>
           <input value={title} onChange={e => setTitle(e.target.value)} onBlur={() => title.trim() && saveField({ title: title.trim() })} className="w-full bg-transparent font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink border-b border-transparent hover:border-rule-2 focus:border-rule-2 outline-none" aria-label={ko ? '제목' : 'Title'} />
         </div>
 
@@ -76,6 +76,10 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
           <button onClick={() => act(assignJob(job, null, who))} className={chip(!job.owner_id)}>{!job.owner_id ? '✓ ' : ''}{ko ? '아직 없음' : 'Nobody yet'}</button>
           <span className="ml-auto"><StatusTag status={job.status} waitingOn={job.waiting_on} ko={ko} onChange={(s, w) => act(setStatus(job, s, who, w))} /></span>
         </div>
+
+        {/* Notes: what is in the way, what was agreed, where things are */}
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} onBlur={() => saveField({ notes })} rows={notes.includes('\n') ? Math.min(6, notes.split('\n').length + 1) : 1}
+          placeholder={ko ? '메모 · 예: 사무실에서 명단을 받기 전에는 끝낼 수 없음' : 'A note · e.g. can’t finish until the office sends the list'} className="w-full px-2 py-1.5 bg-transparent border-b border-rule-2 text-[length:calc(13px*var(--ts))] text-ink italic placeholder:not-italic placeholder:text-ink-3 leading-snug resize-none outline-none focus:border-ink-3" aria-label={ko ? '메모' : 'Notes'} />
 
         {/* Steps */}
         <div>
@@ -140,12 +144,10 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
                 <datalist id="job-categories">{ctx.categories.map(c => <option key={c} value={c} />)}</datalist></div>
               <div><p className={label}>{ko ? '기한' : 'Due'}</p>
                 <input type="date" value={job.due_date || ''} onChange={e => saveField(e.target.value ? { due_date: e.target.value, due_kind: 'date' } : { due_date: null, due_kind: 'someday' })} className={`${field} w-full`} />
-                {job.due_kind !== 'date' && job.due_date && <p className={`${small} text-ink-3 mt-1`}>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id))} · {fmtDay(job.due_date, ko)}</p>}</div>
+                {job.due_kind !== 'date' && job.due_date && <p className={`${small} text-ink-3 mt-1`}>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id), ctx.semesterStart(job.semester_id))} · {fmtDay(job.due_date, ko)}</p>}</div>
               <div><p className={label}>{ko ? '요청자' : 'Requested by'}</p>
                 <select value={job.requested_by_id || ''} onChange={e => saveField({ requested_by_id: e.target.value || null })} className={`${field} w-full`}><option value="">—</option>{teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}</select></div>
             </div>
-            <div><p className={label}>{ko ? '메모' : 'Notes'}</p>
-              <textarea value={notes} onChange={e => setNotes(e.target.value)} onBlur={() => saveField({ notes })} rows={3} className="w-full px-2 py-1.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink leading-snug resize-y" /></div>
             <div><p className={label}>{ko ? '앱 내 위치' : 'Where in the app'}</p>
               <div className="flex gap-2 items-center">
                 <input value={link} onChange={e => setLink(e.target.value)} onBlur={() => saveField({ link_path: link.trim() })} placeholder="/reports" className={`${field} flex-1`} />

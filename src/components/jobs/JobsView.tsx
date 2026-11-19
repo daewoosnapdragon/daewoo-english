@@ -54,7 +54,7 @@ export default function JobsView() {
   const who = { id: currentTeacher.id, name: currentTeacher.name }
   // A new job lands under Nobody yet and opens at once, details showing, so the steps and the rest are filled in while it is in mind.
   const onAdd = async (draft: JobDraft) => { const r = await addJob(draft, who); if (!r.error && r.job) { await d.reload(); setFreshId(r.job.id); setOpenId(r.job.id) } return r.error }
-  const ctx: DrawerCtx = { ko, today: d.today, me: d.me, teachers: d.teachers, accounts, categories, activeSemester: d.activeSemester, nameOf: d.nameOf, semesterName: d.semesterName, childrenOf: d.childrenOf, reload: d.reload }
+  const ctx: DrawerCtx = { ko, today: d.today, me: d.me, teachers: d.teachers, accounts, categories, activeSemester: d.activeSemester, nameOf: d.nameOf, semesterName: d.semesterName, semesterStart: d.semesterStart, childrenOf: d.childrenOf, reload: d.reload }
   const tabs: [Tab, string][] = [['board', ko ? '보드' : 'Board'], ['routines', ko ? '루틴' : 'Routines'], ['done', ko ? '완료 기록' : 'Done'], ['term', ko ? '이번 학기' : 'This term']]
 
   // The viewer's column first, then nobody, then the other account; anyone else who owns a job gets a column too.
@@ -88,7 +88,7 @@ export default function JobsView() {
           {d.error && <p className="text-[length:calc(12px*var(--ts))] text-bad mb-3">{d.error}</p>}
           {tab === 'board' && (
             <>
-              <div className="mb-6"><AddJob ko={ko} today={d.today} activeSemester={d.activeSemester} me={d.me} onAdd={onAdd} /></div>
+              <div className="mb-6"><AddJob ko={ko} today={d.today} activeSemester={d.activeSemester} semesters={d.semesters} me={d.me} onAdd={onAdd} /></div>
               <div className="grid gap-6 md:grid-cols-3">
                 {columns.map(c => {
                   const mine = open.filter(j => j.owner_id === c.key)
@@ -103,7 +103,7 @@ export default function JobsView() {
                         {sections.map(({ sec, cards }) => (
                           <div key={sec}>
                             <p className={`eyebrow mb-1.5 ${sec === 'working' ? 'eyebrow-accent' : sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {cards.length}</span></p>
-                            <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
+                            <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
                           </div>
                         ))}
                         {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{onShelf ? (ko ? '이번 달에는 없음. 아래 나중에 목록에 있습니다.' : 'Nothing this month; see Later below.') : c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : (ko ? '없음.' : 'Nothing here.')}</p>}
@@ -111,14 +111,14 @@ export default function JobsView() {
                       {done.length > 0 && (
                         <div className="mt-4">
                           <p className="eyebrow mb-2">{ko ? '완료' : 'Done'} <span className="normal-case tracking-normal">· {ko ? '최근 2주' : 'last two weeks'}</span></p>
-                          <div className="grid gap-2">{done.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
+                          <div className="grid gap-2">{done.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
                         </div>
                       )}
                     </section>
                   )
                 })}
               </div>
-              <LaterShelf jobs={open} ko={ko} today={d.today} nameOf={d.nameOf} semesterName={d.semesterName} onOpen={j => setOpenId(j.id)} />
+              <LaterShelf jobs={open} ko={ko} today={d.today} nameOf={d.nameOf} semesterName={d.semesterName} semesterStart={d.semesterStart} onOpen={j => setOpenId(j.id)} />
             </>
           )}
           {tab === 'routines' && <RoutinesPanel ko={ko} routines={d.routines} template={d.template} events={d.events} teachers={d.teachers} semesters={d.semesters} activeSemester={d.activeSemester} categories={categories} me={d.me} nameOf={d.nameOf} reload={d.reload} />}
@@ -138,10 +138,10 @@ const addDaysIso = (iso: string, n: number) => { const t = new Date(iso + 'T12:0
 // line each, with the owner, so the columns stay this month's work. A
 // job comes up into its column on its own as its date nears, or as soon
 // as someone sets it to In progress.
-function LaterShelf({ jobs, ko, today, nameOf, semesterName, onOpen }: { jobs: AdminJob[]; ko: boolean; today: string; nameOf: (id: string | null | undefined) => string; semesterName: (id: string | null | undefined) => string | null; onOpen: (j: AdminJob) => void }) {
+function LaterShelf({ jobs, ko, today, nameOf, semesterName, semesterStart, onOpen }: { jobs: AdminJob[]; ko: boolean; today: string; nameOf: (id: string | null | undefined) => string; semesterName: (id: string | null | undefined) => string | null; semesterStart: (id: string | null | undefined) => string | null; onOpen: (j: AdminJob) => void }) {
   const groups = shelf(jobs, today)
   if (groups.length === 0) return null
-  const monthName = (key: string) => key === 'someday' ? BOARD_SECTION_LABELS.someday[ko ? 'ko' : 'en'] : ko ? `${Number(key.slice(5, 7))}월` : `${MONTH_EN[Number(key.slice(5, 7)) - 1]}${key.slice(0, 4) !== today.slice(0, 4) ? ` ${key.slice(0, 4)}` : ''}`
+  const monthName = (key: string) => key === 'someday' ? BOARD_SECTION_LABELS.someday[ko ? 'ko' : 'en'] : key.startsWith('sem:') ? (semesterName(key.slice(4)) || (ko ? '학기' : 'Semester')) : ko ? `${Number(key.slice(5, 7))}월` : `${MONTH_EN[Number(key.slice(5, 7)) - 1]}${key.slice(0, 4) !== today.slice(0, 4) ? ` ${key.slice(0, 4)}` : ''}`
   const total = groups.reduce((n, g) => n + g.jobs.length, 0)
   return (
     <section className="mt-8 border-t border-rule-2 pt-3 text-ink-3">
@@ -155,7 +155,7 @@ function LaterShelf({ jobs, ko, today, nameOf, semesterName, onOpen }: { jobs: A
                 <li key={j.id}>
                   <button onClick={() => onOpen(j)} className="w-full text-left py-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink flex justify-between gap-3">
                     <span className="truncate">{j.title}<span className="text-ink-3"> · {j.owner_id ? nameOf(j.owner_id) : (ko ? '담당 없음' : 'nobody yet')}</span></span>
-                    <span className={`shrink-0 tabular-nums ${urgencyTone(urgency(j, today))}`}>{g.key === 'someday' ? '' : dueLabel(j, today, ko, semesterName(j.semester_id))}</span>
+                    <span className={`shrink-0 tabular-nums ${urgencyTone(urgency(j, today))}`}>{g.key === 'someday' ? '' : dueLabel(j, today, ko, semesterName(j.semester_id), semesterStart(j.semester_id))}</span>
                   </button>
                 </li>
               ))}
