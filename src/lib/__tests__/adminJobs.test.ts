@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, type AdminJob } from '@/lib/adminJobs'
+import { endOfMonth, dueDateFor, urgency, notStarted, dueLabel, sectionOf, groupOpen, attention, doneByDay, termSummary, jobsForEvent, parseSteps, parseJob, offsetLabel, parseStepLines, thisFriday, adminAccounts, boardSection, shelf, nextSemester, schoolYear, spanFraction, endOfNextMonth, type AdminJob } from '@/lib/adminJobs'
 
 const job = (over: Partial<AdminJob> = {}): AdminJob => ({
   id: 'j', title: 'Send comment template', category: 'Report cards', size: 'S', status: 'scheduled', due_kind: 'date', due_date: '2026-11-26', semester_id: null,
   owner_id: 'kyla', requested_by_id: null, created_by_id: 'kyla', completed_by_id: null, completed_at: null, waiting_on: '', steps: [], notes: '', link_path: '',
-  parent_id: null, event_id: null, routine_job_id: null, created_at: '2026-11-19T00:00:00Z', updated_at: '2026-11-19T00:00:00Z', ...over,
+  done_note: '', parent_id: null, event_id: null, routine_job_id: null, created_at: '2026-11-19T00:00:00Z', updated_at: '2026-11-19T00:00:00Z', ...over,
 })
 const today = '2026-11-19'
 
@@ -157,8 +157,12 @@ describe('the board', () => {
     expect(boardSection(job({ status: 'waiting', due_date: '2027-03-01' }), today)).toBe('working')
     expect(boardSection(job({ due_date: '2026-11-10' }), today)).toBe('week')
     expect(boardSection(job({ due_date: '2026-11-25' }), today)).toBe('week')
-    expect(boardSection(job({ due_date: '2026-12-10' }), today)).toBe('soon')
+    expect(boardSection(job({ due_date: '2026-11-28' }), today)).toBe('month')
+    expect(boardSection(job({ due_date: '2026-12-10' }), today)).toBe('nextmonth')
+    expect(boardSection(job({ due_kind: 'month', due_date: '2026-12-31' }), today)).toBe('nextmonth')
     expect(boardSection(job({ due_date: '2027-01-05' }), today)).toBe('later')
+    expect(boardSection(job({ due_date: '2027-01-05' }), '2026-12-30')).toBe('week')
+    expect(boardSection(job({ due_date: '2027-01-20' }), '2026-12-30')).toBe('nextmonth')
     expect(boardSection(job({ due_kind: 'someday', due_date: null }), today)).toBe('someday')
     expect(boardSection(job({ status: 'done' }), today)).toBeNull()
   })
@@ -191,5 +195,20 @@ describe('next semester', () => {
       job({ id: 'c', due_date: '2027-01-20' }), job({ id: 'd', due_kind: 'someday', due_date: null }),
     ], '2026-11-19')
     expect(s.map(g => [g.key, g.jobs.map(j => j.id)])).toEqual([['2027-01', ['c']], ['2027-02', ['a']], ['sem:s27', ['b']], ['someday', ['d']]])
+  })
+})
+
+describe('the year', () => {
+  it('runs March to February', () => {
+    expect(schoolYear('2026-11-19')).toEqual({ from: '2026-03-01', to: '2027-02-28', months: ['2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02'] })
+    expect(schoolYear('2027-02-10').from).toBe('2026-03-01')
+    expect(schoolYear('2027-03-01').from).toBe('2027-03-01')
+  })
+  it('places a date along the span', () => {
+    expect(spanFraction('2026-03-01', '2026-03-01', '2027-02-28')).toBe(0)
+    expect(spanFraction('2027-02-28', '2026-03-01', '2027-02-28')).toBe(1)
+    expect(spanFraction('2027-03-01', '2026-03-01', '2027-02-28')).toBeNull()
+    expect(endOfNextMonth('2026-11-19')).toBe('2026-12-31')
+    expect(endOfNextMonth('2026-12-19')).toBe('2027-01-31')
   })
 })

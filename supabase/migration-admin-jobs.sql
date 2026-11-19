@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
   -- [{"id": "...", "text": "...", "done": false, "done_by_id": null, "done_at": null}]
   steps JSONB NOT NULL DEFAULT '[]',
   notes TEXT NOT NULL DEFAULT '',
+  done_note TEXT NOT NULL DEFAULT '',
   -- A page in the app where the job happens, e.g. /reports.
   link_path TEXT NOT NULL DEFAULT '',
   parent_id UUID REFERENCES admin_jobs(id) ON DELETE CASCADE,
@@ -86,6 +87,8 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Added later: one line on what happened, written when the job is marked done.
+ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS done_note TEXT NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_status_due ON admin_jobs(status, due_date);
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_owner ON admin_jobs(owner_id);
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_parent ON admin_jobs(parent_id);

@@ -32,6 +32,8 @@ export interface AdminJob {
   waiting_on: string
   steps: JobStep[]
   notes: string
+  /** One line on what happened, written when it was marked done. */
+  done_note: string
   link_path: string
   parent_id: string | null
   event_id: string | null
@@ -94,7 +96,7 @@ export function parseJob(r: any): AdminJob {
     due_kind: DUE_KINDS.includes(r.due_kind) ? r.due_kind : 'someday', due_date: r.due_date || null, semester_id: r.semester_id || null,
     owner_id: r.owner_id || null, requested_by_id: r.requested_by_id || null, created_by_id: r.created_by_id || null,
     completed_by_id: r.completed_by_id || null, completed_at: r.completed_at || null, waiting_on: String(r.waiting_on || ''),
-    steps: parseSteps(r.steps), notes: String(r.notes || ''), link_path: String(r.link_path || ''),
+    steps: parseSteps(r.steps), notes: String(r.notes || ''), done_note: String(r.done_note || ''), link_path: String(r.link_path || ''),
     parent_id: r.parent_id || null, event_id: r.event_id || null, routine_job_id: r.routine_job_id || null,
     created_at: String(r.created_at || ''), updated_at: String(r.updated_at || ''),
   }
@@ -272,7 +274,7 @@ export function jobsForEvent(routine: AdminRoutine, template: AdminRoutineJob[],
     due_kind: 'date' as DueKind, due_date: addDays(event.event_date, t.offset_days), semester_id: event.semester_id,
     owner_id: t.default_owner_id, requested_by_id: null, created_by_id: createdBy, completed_by_id: null, completed_at: null,
     waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null, owner_id: null })),
-    notes: '', link_path: t.link_path, parent_id: null, event_id: event.id, routine_job_id: t.id,
+    notes: '', done_note: '', link_path: t.link_path, parent_id: null, event_id: event.id, routine_job_id: t.id,
   }))
 }
 
@@ -302,18 +304,22 @@ export function adminAccounts<T extends { role?: string; english_class?: string;
 
 // ─── The board ───────────────────────────────────────────────────
 
-export type BoardSection = 'working' | 'week' | 'soon' | 'later' | 'someday'
+export type BoardSection = 'working' | 'week' | 'month' | 'nextmonth' | 'later' | 'someday'
 export const BOARD_SECTION_LABELS: Record<BoardSection, { en: string; ko: string }> = {
-  working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, soon: { en: 'Coming up', ko: '다가오는' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' },
+  working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, month: { en: 'Later this month', ko: '이달 중' }, nextmonth: { en: 'Next month', ko: '다음 달' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' },
 }
-/** A dated job within this many days is Coming up; further out it sits on the Later shelf. */
-export const BOARD_HORIZON_DAYS = 28
+
+/** The YYYY-MM after a date's month. */
+export const nextMonthKey = (iso: string) => { const y = +iso.slice(0, 4), m = +iso.slice(5, 7); return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}` }
+/** The last day of the month after a date's month. */
+export const endOfNextMonth = (iso: string) => endOfMonth(nextMonthKey(iso) + '-01')
 
 /**
  * Where an open job sits on the board. Started jobs come first whatever
- * their date. Then this week, then the next four weeks. Everything further
- * out, and every long-term goal until its last two weeks, is on the Later
- * shelf under the columns; undated jobs are Whenever, at the shelf's end.
+ * their date. Then this week, the rest of this month, and next month.
+ * Everything further out, and every semester goal until its last two
+ * weeks, is on the Later shelf under the columns; undated jobs are
+ * Whenever, at the shelf's end. A by-end-of-month goal sits with its month.
  */
 export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date'>, today: string): BoardSection | null {
   if (job.status === 'done') return null
@@ -321,8 +327,29 @@ export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_da
   const u = urgency(job, today)
   if (u === 'someday') return 'someday'
   if (u === 'overdue' || u === 'today' || u === 'week') return 'week'
-  if (job.due_kind !== 'date') return 'later'
-  return daysBetween(today, job.due_date!) <= BOARD_HORIZON_DAYS ? 'soon' : 'later'
+  if (job.due_kind === 'semester') return 'later'
+  const key = job.due_date!.slice(0, 7)
+  if (key === today.slice(0, 7)) return 'month'
+  if (key === nextMonthKey(today)) return 'nextmonth'
+  return 'later'
+}
+
+// ─── The year ────────────────────────────────────────────────────
+
+/** The school year a date is in: March to the end of February. */
+export function schoolYear(today: string): { from: string; to: string; months: string[] } {
+  const y = +today.slice(0, 4), m = +today.slice(5, 7)
+  const start = m >= 3 ? y : y - 1
+  const months: string[] = []
+  for (let i = 0; i < 12; i++) { const mm = ((2 + i) % 12) + 1; months.push(`${mm < 3 ? start + 1 : start}-${String(mm).padStart(2, '0')}`) }
+  return { from: `${start}-03-01`, to: endOfMonth(`${start + 1}-02-01`), months }
+}
+
+/** Where a date falls across a span, 0 to 1; outside the span, null. */
+export function spanFraction(iso: string, from: string, to: string): number | null {
+  if (iso < from || iso > to) return null
+  const total = daysBetween(from, to)
+  return total <= 0 ? 0 : daysBetween(from, iso) / total
 }
 
 /** The Later shelf: far-off jobs by month, then Whenever, each sorted by date. */

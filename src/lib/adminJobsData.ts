@@ -41,12 +41,14 @@ export async function updateJob(job: AdminJob, patch: Partial<AdminJob>, who: Wh
   return null
 }
 
-export async function setStatus(job: AdminJob, status: JobStatus, who: Who, waitingOn = ''): Promise<string | null> {
+export async function setStatus(job: AdminJob, status: JobStatus, who: Who, waitingOn = '', doneNote = ''): Promise<string | null> {
   const done = status === 'done'
-  const patch: Partial<AdminJob> = { status, waiting_on: status === 'waiting' ? waitingOn : '', completed_by_id: done ? who?.id || null : null, completed_at: done ? nowIso() : null }
-  const { error } = await supabase.from('admin_jobs').update({ ...patch, updated_at: nowIso() }).eq('id', job.id)
+  const patch: Partial<AdminJob> = { status, waiting_on: status === 'waiting' ? waitingOn : '', completed_by_id: done ? who?.id || null : null, completed_at: done ? nowIso() : null, done_note: done ? doneNote.trim() : '' }
+  let { error } = await supabase.from('admin_jobs').update({ ...patch, updated_at: nowIso() }).eq('id', job.id)
+  // Before the done_note column is added, save without it rather than fail.
+  if (error && /done_note/.test(error.message)) { const { done_note, ...rest } = patch; void done_note; ({ error } = await supabase.from('admin_jobs').update({ ...rest, updated_at: nowIso() }).eq('id', job.id)) }
   if (error) return error.message
-  if (done) { await history(job.id, 'done', who); logActivity('done', `Job: ${job.title}${job.category ? ` · ${job.category}` : ''}`) }
+  if (done) { await history(job.id, 'done', who, { note: doneNote.trim() }); logActivity('done', `Job: ${job.title}${job.category ? ` · ${job.category}` : ''}${doneNote.trim() ? ` · ${doneNote.trim()}` : ''}`) }
   else if (job.status === 'done') await history(job.id, 'reopened', who)
   else await history(job.id, 'status', who, { note: status === 'waiting' && waitingOn ? `${status}: ${waitingOn}` : status })
   return null

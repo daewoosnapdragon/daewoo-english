@@ -38,6 +38,8 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
   const [showHist, setShowHist] = useState(false)
   // A just-added job opens with its details showing, so nothing is skipped.
   const [showMore, setShowMore] = useState(fresh)
+  const [finishing, setFinishing] = useState(false)
+  const [doneNote, setDoneNote] = useState('')
   useEffect(() => { fetchQuestions(job.id).then(setQuestions) }, [job.id, job.updated_at])
   useEffect(() => { if (showHist) fetchHistory(job.id).then(setHist) }, [showHist, job.id, job.updated_at])
   useEffect(() => { setNotes(job.notes); setLink(job.link_path); setTitle(job.title) }, [job.notes, job.link_path, job.title])
@@ -127,8 +129,19 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
         </div>
 
         {/* Done / hand over */}
+        {job.status === 'done' && job.done_note && <p className={`${small} text-ink-2 italic border-t border-rule-2 pt-3`}>{ko ? '완료 메모: ' : 'When it was done: '}{job.done_note}</p>}
+        {finishing && job.status !== 'done' && (
+          <div className="border-t border-rule-2 pt-4 grid gap-2">
+            <p className={label}>{ko ? '어떻게 됐나요? (선택)' : 'What happened? (optional)'}</p>
+            <input autoFocus value={doneNote} onChange={e => setDoneNote(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { act(setStatus(job, 'done', who, '', doneNote)); setFinishing(false) } if (e.key === 'Escape') setFinishing(false) }} placeholder={ko ? '예: 2026년 폴더로 보냈음, 이지가 리더 역할' : 'e.g. sent as the 2026 folder; Izzy ran the reading part'} className={`${field} w-full`} />
+            <div className="flex gap-2">
+              <button onClick={() => { act(setStatus(job, 'done', who, '', doneNote)); setFinishing(false) }} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover">{ko ? '완료로 표시' : 'Mark done'}</button>
+              <button onClick={() => setFinishing(false)} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{ko ? '취소' : 'Cancel'}</button>
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 border-t border-rule-2 pt-4">
-          <button onClick={() => act(setStatus(job, job.status === 'done' ? 'scheduled' : 'done', who))} className={`h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold ${job.status === 'done' ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>{job.status === 'done' ? (ko ? '다시 열기' : 'Reopen') : (ko ? '완료' : 'Done')}</button>
+          <button onClick={() => { if (job.status === 'done') act(setStatus(job, 'scheduled', who)); else setFinishing(true) }} className={`h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold ${job.status === 'done' ? 'border border-rule-2 text-ink-2 hover:text-ink' : finishing ? 'border border-rule-2 text-ink-3' : 'bg-accent text-white hover:bg-accent-hover'}`} disabled={finishing && job.status !== 'done'}>{job.status === 'done' ? (ko ? '다시 열기' : 'Reopen') : (ko ? '완료' : 'Done')}</button>
           {other && <button onClick={() => act(assignJob(job, other.id, who))} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{ko ? `${other.name}에게 넘기기` : `Hand to ${other.name}`}</button>}
           <button onClick={remove} className="h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-bad inline-flex items-center gap-1 ml-auto"><Trash2 size={13} />{ko ? '삭제' : 'Delete'}</button>
           <button onClick={() => setShowMore(m => !m)} className="h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink">{showMore ? (ko ? '간단히' : 'Less') : (ko ? '자세히' : 'Details')}</button>

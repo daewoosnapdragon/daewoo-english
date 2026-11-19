@@ -19,7 +19,7 @@ export function DoneLogList({ jobs, ko, nameOf }: { jobs: AdminJob[]; ko: boolea
           <ul className="divide-y divide-rule border-t border-b border-rule">
             {d.jobs.map(j => (
               <li key={j.id} className="grid grid-cols-[minmax(0,1fr)_110px_50px_120px] gap-3 py-1.5 text-[length:calc(12.5px*var(--ts))]">
-                <span className="text-ink truncate">{j.title}</span>
+                <span className="min-w-0"><span className="block text-ink truncate">{j.title}</span>{j.done_note && <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-2 italic truncate">{j.done_note}</span>}</span>
                 <span className="text-ink-3 truncate">{j.category || '—'}</span>
                 <span className="text-ink-3 tabular-nums">{j.size}</span>
                 <span className="text-ink-2 truncate text-right">{nameOf(j.completed_by_id)}</span>

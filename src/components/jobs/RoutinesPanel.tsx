@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { ANCHOR_LABELS, SIZES, SIZE_LABELS, adminAccounts, anchorDate, offsetLabel, fmtDay, type AdminEvent, type AdminRoutine, type AdminRoutineJob, type JobSize, type RoutineAnchor } from '@/lib/adminJobs'
 import { createEvent, deleteEvent, deleteRoutine, saveRoutine, saveRoutineJob, deleteRoutineJob } from '@/lib/adminJobsData'
 import { field } from './AddJob'
+import { routineColor } from './YearView'
 import type { Semester, Teacher } from '@/types'
 import { Plus, Trash2, X } from 'lucide-react'
 
@@ -13,29 +14,32 @@ import { Plus, Trash2, X } from 'lucide-react'
 // each with a default owner, a size and its steps. "Set the date" for a
 // term makes every job at once. The dates already set are listed under it.
 
-export default function RoutinesPanel({ ko, routines, template, events, teachers, semesters, activeSemester, categories, me, nameOf, reload }: {
+export default function RoutinesPanel({ ko, routines, template, events, teachers, semesters, activeSemester, categories, me, nameOf, reload, pick }: {
   ko: boolean; routines: AdminRoutine[]; template: AdminRoutineJob[]; events: AdminEvent[]; teachers: Teacher[]; semesters: Semester[]; activeSemester: Semester | null
   categories: string[]; me: Teacher | null; nameOf: (id: string | null | undefined) => string; reload: () => Promise<void>
+  /** A routine chosen on the year line: opens here and scrolls into view. */
+  pick?: { id: string; n: number } | null
 }) {
   const { showToast, confirmDialog } = useApp()
   const who = me ? { id: me.id, name: me.name } : null
   const [open, setOpen] = useState<string | null>(null)
+  useEffect(() => { if (pick) { setOpen(pick.id); setTimeout(() => document.getElementById(`routine-${pick.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50) } }, [pick])
   const [newName, setNewName] = useState('')
   const act = async (p: Promise<string | null>) => { const e = await p; if (e) showToast(`Error: ${e}`); await reload() }
   const add = async () => { if (!newName.trim()) return; const r = await saveRoutine({ name: newName, sort_order: routines.length }, who); if (r.error) showToast(`Error: ${r.error}`); else { setNewName(''); setOpen(r.routine?.id || null); await reload() } }
 
   return (
     <div className="grid gap-4">
-      <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '매년 반복되는 일. 날짜를 한 번 정하면 그 일의 모든 단계가 한꺼번에 만들어집니다.' : 'The work that comes round every year. Set the event date once for a term and every job appears, dated from it.'}</p>
+      <p className="eyebrow">{ko ? '루틴 (매년 반복)' : 'Routines'} <span className="text-ink-3 normal-case tracking-normal">· {ko ? '날짜를 한 번 정하면 그 일의 모든 단계가 한꺼번에 만들어집니다' : 'set the date once for a term and every job appears, dated from it'}</span></p>
       <div className="flex gap-2">
         <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') add() }} placeholder={ko ? '새 루틴 이름 (예: 성적표)' : 'New routine, e.g. Report cards'} className={`${field} flex-1 max-w-[360px]`} />
         <button onClick={add} disabled={!newName.trim()} className="h-8 px-3 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-40 inline-flex items-center gap-1"><Plus size={13} />{ko ? '추가' : 'Add'}</button>
       </div>
       <div className="border-t border-rule-2 divide-y divide-rule">
-        {routines.map(r => (
-          <div key={r.id} className="py-2">
+        {routines.map((r, i) => (
+          <div key={r.id} id={`routine-${r.id}`} className="py-2 scroll-mt-[140px]">
             <button onClick={() => setOpen(open === r.id ? null : r.id)} className="w-full flex items-baseline justify-between gap-3 text-left">
-              <span className="font-display text-[length:calc(18px*var(--ts))] text-ink">{r.name}</span>
+              <span className="font-display text-[length:calc(18px*var(--ts))] text-ink inline-flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: routineColor(i) }} />{r.name}</span>
               <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{r.category || '—'} · {template.filter(t => t.routine_id === r.id).length} {ko ? '개 일' : 'jobs'} · {ANCHOR_LABELS[r.anchor][ko ? 'ko' : 'en']}</span>
             </button>
             {open === r.id && <RoutineEditor ko={ko} r={r} template={template.filter(t => t.routine_id === r.id)} events={events.filter(e => e.routine_id === r.id)} teachers={teachers} semesters={semesters} activeSemester={activeSemester} categories={categories} nameOf={nameOf} who={who} act={act} reload={reload}

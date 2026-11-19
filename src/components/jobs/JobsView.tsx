@@ -13,21 +13,23 @@ import AddJob from './AddJob'
 import JobCard from './JobCard'
 import JobDrawer, { type DrawerCtx } from './JobDrawer'
 import RoutinesPanel from './RoutinesPanel'
+import YearView from './YearView'
 import { DoneLogList, TermSummary } from './DoneLog'
 import type { Teacher } from '@/types'
 
 // ─── Jobs: the office and admin work ─────────────────────────────
 // For the two admin accounts. The board is three columns: you, nobody
-// yet, the other account, each in three sections: Working on, This week,
-// Coming up. What is further off waits on the Later shelf under the
+// yet, the other account, each in sections: Working on, This week, Later
+// this month, Next month. What is further off waits on the Later shelf under the
 // columns, by month, with Whenever at the end, and comes up by itself.
-// Click a card to open it. Routines holds the yearly templates, Done the
-// log, This term the counts.
+// Click a card to open it. The year is one line of every routine's date
+// with month tiles and the routine templates under it, Done the log,
+// This term the counts.
 
-type Tab = 'board' | 'routines' | 'done' | 'term'
+type Tab = 'board' | 'year' | 'done' | 'term'
 const ORDER: Record<string, number> = { overdue: 0, today: 1, week: 2, soon: 3, later: 4, someday: 5, done: 6 }
 const DONE_SHOWN_DAYS = 14
-const COLUMN_SECTIONS: BoardSection[] = ['working', 'week', 'soon']
+const COLUMN_SECTIONS: BoardSection[] = ['working', 'week', 'month', 'nextmonth']
 const MONTH_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 export default function JobsView() {
@@ -36,6 +38,7 @@ export default function JobsView() {
   const allowed = canSeeAdminJobs(currentTeacher)
   const d = useAdminJobs({ routines: true })
   const [tab, setTab] = useState<Tab>('board')
+  const [pick, setPick] = useState<{ id: string; n: number } | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
   const [freshId, setFreshId] = useState<string | null>(null)
   useViewLog(allowed ? `Jobs · ${tab}` : null)
@@ -55,7 +58,7 @@ export default function JobsView() {
   // A new job lands under Nobody yet and opens at once, details showing, so the steps and the rest are filled in while it is in mind.
   const onAdd = async (draft: JobDraft) => { const r = await addJob(draft, who); if (!r.error && r.job) { await d.reload(); setFreshId(r.job.id); setOpenId(r.job.id) } return r.error }
   const ctx: DrawerCtx = { ko, today: d.today, me: d.me, teachers: d.teachers, accounts, categories, activeSemester: d.activeSemester, nameOf: d.nameOf, semesterName: d.semesterName, semesterStart: d.semesterStart, childrenOf: d.childrenOf, reload: d.reload }
-  const tabs: [Tab, string][] = [['board', ko ? '보드' : 'Board'], ['routines', ko ? '루틴' : 'Routines'], ['done', ko ? '완료 기록' : 'Done'], ['term', ko ? '이번 학기' : 'This term']]
+  const tabs: [Tab, string][] = [['board', ko ? '보드' : 'Board'], ['year', ko ? '연간' : 'The year'], ['done', ko ? '완료 기록' : 'Done'], ['term', ko ? '이번 학기' : 'This term']]
 
   // The viewer's column first, then nobody, then the other account; anyone else who owns a job gets a column too.
   const byUrg = (a: AdminJob, b: AdminJob) => ORDER[urgency(a, d.today)] - ORDER[urgency(b, d.today)] || (a.due_date || '9999').localeCompare(b.due_date || '9999') || a.created_at.localeCompare(b.created_at)
@@ -106,7 +109,7 @@ export default function JobsView() {
                             <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
                           </div>
                         ))}
-                        {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{onShelf ? (ko ? '이번 달에는 없음. 아래 나중에 목록에 있습니다.' : 'Nothing this month; see Later below.') : c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : (ko ? '없음.' : 'Nothing here.')}</p>}
+                        {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{onShelf ? (ko ? '두 달 안에는 없음. 아래 나중에 목록에 있습니다.' : 'Nothing in the next two months; see Later below.') : c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : (ko ? '없음.' : 'Nothing here.')}</p>}
                       </div>
                       {done.length > 0 && (
                         <div className="mt-4">
@@ -121,7 +124,12 @@ export default function JobsView() {
               <LaterShelf jobs={open} ko={ko} today={d.today} nameOf={d.nameOf} semesterName={d.semesterName} semesterStart={d.semesterStart} onOpen={j => setOpenId(j.id)} />
             </>
           )}
-          {tab === 'routines' && <RoutinesPanel ko={ko} routines={d.routines} template={d.template} events={d.events} teachers={d.teachers} semesters={d.semesters} activeSemester={d.activeSemester} categories={categories} me={d.me} nameOf={d.nameOf} reload={d.reload} />}
+          {tab === 'year' && (
+            <div className="grid gap-10">
+              <YearView ko={ko} today={d.today} routines={d.routines} events={d.events} jobs={d.jobs} semesters={d.semesters} nameOf={d.nameOf} onPick={id => setPick(p => ({ id, n: (p?.n || 0) + 1 }))} />
+              <RoutinesPanel ko={ko} routines={d.routines} template={d.template} events={d.events} teachers={d.teachers} semesters={d.semesters} activeSemester={d.activeSemester} categories={categories} me={d.me} nameOf={d.nameOf} reload={d.reload} pick={pick} />
+            </div>
+          )}
           {tab === 'done' && <DoneLogList jobs={d.jobs} ko={ko} nameOf={d.nameOf} />}
           {tab === 'term' && <TermSummary jobs={d.jobs} ko={ko} teachers={d.teachers} semester={d.activeSemester} nameOf={d.nameOf} />}
         </>
