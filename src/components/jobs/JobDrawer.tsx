@@ -138,7 +138,8 @@ export default function JobDrawer({ job, ctx, onClose, onOpen }: { job: AdminJob
         <div className="flex flex-wrap gap-2 border-t border-rule-2 pt-4">
           <button onClick={() => act(setStatus(job, job.status === 'done' ? 'scheduled' : 'done', who))} className={`h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold ${job.status === 'done' ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>{job.status === 'done' ? (ko ? '다시 열기' : 'Reopen') : (ko ? '완료' : 'Done')}</button>
           {other && <button onClick={() => act(assignJob(job, other.id, who))} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{ko ? `${other.name}에게 넘기기` : `Hand to ${other.name}`}</button>}
-          <button onClick={() => setShowMore(m => !m)} className={`h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink ml-auto`}>{showMore ? (ko ? '간단히' : 'Less') : (ko ? '자세히' : 'Details')}</button>
+          <button onClick={remove} className="h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-bad inline-flex items-center gap-1 ml-auto"><Trash2 size={13} />{ko ? '삭제' : 'Delete'}</button>
+          <button onClick={() => setShowMore(m => !m)} className="h-9 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink">{showMore ? (ko ? '간단히' : 'Less') : (ko ? '자세히' : 'Details')}</button>
         </div>
 
         {showMore && (
@@ -166,9 +167,8 @@ export default function JobDrawer({ job, ctx, onClose, onOpen }: { job: AdminJob
               {ko ? '만든 사람' : 'Created by'} {nameOf(job.created_by_id)}{job.created_at ? ` · ${fmtAt(job.created_at)}` : ''}
               {job.status === 'done' && <><br />{ko ? '완료' : 'Done by'} {nameOf(job.completed_by_id)}{job.completed_at ? ` · ${fmtAt(job.completed_at)}` : ''}</>}
             </p>
-            <div className="flex items-center justify-between">
+            <div>
               <button onClick={() => setShowHist(h => !h)} className={`${small} text-ink-3 hover:text-ink`}>{showHist ? (ko ? '기록 닫기' : 'Hide history') : (ko ? '기록' : 'History')}</button>
-              <button onClick={remove} className={`${small} text-ink-3 hover:text-bad inline-flex items-center gap-1`}><Trash2 size={12} />{ko ? '삭제' : 'Delete'}</button>
             </div>
             {showHist && (
               <ul className={`${small} divide-y divide-rule border-t border-rule`}>
