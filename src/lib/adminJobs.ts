@@ -13,7 +13,7 @@ export type JobStatus = 'scheduled' | 'in_progress' | 'waiting' | 'done'
 export type DueKind = 'date' | 'month' | 'semester' | 'someday'
 export type RoutineAnchor = 'date' | 'semester_start' | 'midterm_cutoff' | 'report_card_cutoff' | 'semester_end'
 
-export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null }
+export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null; /** Who this step is for, when a job is shared; null means whoever owns the job. */ owner_id?: string | null }
 
 export interface AdminJob {
   id: string
@@ -78,6 +78,7 @@ export function parseSteps(raw: unknown): JobStep[] {
   return raw.filter(s => s && typeof s.text === 'string' && s.text.trim()).map((s: any, i: number) => ({
     id: typeof s.id === 'string' && s.id ? s.id : `s${i + 1}`, text: String(s.text), done: !!s.done,
     done_by_id: typeof s.done_by_id === 'string' ? s.done_by_id : null, done_at: typeof s.done_at === 'string' ? s.done_at : null,
+    owner_id: typeof s.owner_id === 'string' ? s.owner_id : null,
   }))
 }
 /** Template steps: text only, in order. */
@@ -268,7 +269,7 @@ export function jobsForEvent(routine: AdminRoutine, template: AdminRoutineJob[],
     title: t.title, category: routine.category, size: t.size, status: 'scheduled' as JobStatus,
     due_kind: 'date' as DueKind, due_date: addDays(event.event_date, t.offset_days), semester_id: event.semester_id,
     owner_id: t.default_owner_id, requested_by_id: null, created_by_id: createdBy, completed_by_id: null, completed_at: null,
-    waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null })),
+    waiting_on: '', steps: t.steps.map((s, i) => ({ id: `s${i + 1}`, text: s.text, done: false, done_by_id: null, done_at: null, owner_id: null })),
     notes: '', link_path: t.link_path, parent_id: null, event_id: event.id, routine_job_id: t.id,
   }))
 }

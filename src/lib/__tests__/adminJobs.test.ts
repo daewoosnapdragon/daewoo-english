@@ -120,15 +120,15 @@ describe('routines', () => {
     ]
     const made = jobsForEvent(routine, template, { id: 'ev', event_date: '2026-12-24', semester_id: 'sem' }, 'kyla')
     expect(made.map(j => [j.title, j.due_date, j.owner_id])).toEqual([['Send comment template', '2026-11-26', 'victoria'], ['Grades in', '2026-12-24', null]])
-    expect(made[0].steps).toEqual([{ id: 's1', text: 'Open the bank', done: false, done_by_id: null, done_at: null }, { id: 's2', text: 'Post a notice', done: false, done_by_id: null, done_at: null }])
+    expect(made[0].steps).toEqual([{ id: 's1', text: 'Open the bank', done: false, done_by_id: null, done_at: null, owner_id: null }, { id: 's2', text: 'Post a notice', done: false, done_by_id: null, done_at: null, owner_id: null }])
     expect(made[0].routine_job_id).toBe('t1'); expect(made[0].event_id).toBe('ev'); expect(made[0].due_kind).toBe('date')
   })
 })
 
 describe('parsing', () => {
   it('reads steps and rows tolerantly', () => {
-    expect(parseSteps([{ text: 'a' }, { id: 'x', text: 'b', done: 1 }, { text: '' }, null])).toEqual([
-      { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null }])
+    expect(parseSteps([{ text: 'a' }, { id: 'x', text: 'b', done: 1, owner_id: 'v' }, { text: '' }, null])).toEqual([
+      { id: 's1', text: 'a', done: false, done_by_id: null, done_at: null, owner_id: null }, { id: 'x', text: 'b', done: true, done_by_id: null, done_at: null, owner_id: 'v' }])
     const j = parseJob({ id: '1', title: 'T', size: 'XL', status: 'odd', due_kind: 'weird', steps: 'no' })
     expect([j.size, j.status, j.due_kind, j.steps]).toEqual(['S', 'scheduled', 'someday', []])
   })

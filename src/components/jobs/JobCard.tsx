@@ -4,14 +4,16 @@ import { dueLabel, notStarted, progress, urgency, type AdminJob } from '@/lib/ad
 
 // ─── One job on the board ────────────────────────────────────────
 // Title, when, category, size, steps done, and a thin bar when there are
-// steps. Click opens it. Done cards are dimmed and struck through.
+// steps. A job owned by the other person that has steps for you says so.
+// Click opens it. Done cards are dimmed and struck through.
 
 export const urgencyTone = (u: string) => u === 'overdue' ? 'text-bad' : u === 'today' ? 'text-accent font-semibold' : u === 'week' ? 'text-ink' : 'text-ink-3'
 
-export default function JobCard({ job, ko, today, semesterName, parts, onOpen }: { job: AdminJob; ko: boolean; today: string; semesterName: string | null; parts: AdminJob[]; onOpen: () => void }) {
+export default function JobCard({ job, ko, today, semesterName, me, onOpen }: { job: AdminJob; ko: boolean; today: string; semesterName: string | null; me: string | null; onOpen: () => void }) {
   const prog = progress(job)
-  const partsDone = parts.filter(p => p.status === 'done').length
-  const pct = prog ? Math.round(100 * prog.done / prog.total) : parts.length ? Math.round(100 * partsDone / parts.length) : null
+  const pct = prog ? Math.round(100 * prog.done / prog.total) : null
+  // Steps given to the viewer on someone else's job, so a shared job shows your share.
+  const mine = me && job.owner_id !== me ? job.steps.filter(s => s.owner_id === me && !s.done).length : 0
   const u = urgency(job, today)
   return (
     <button onClick={onOpen} className={`w-full text-left border border-rule bg-surface rounded px-3 py-2.5 grid gap-1 hover:border-ink-3 ${job.status === 'done' ? 'opacity-55' : ''}`}>
@@ -24,7 +26,7 @@ export default function JobCard({ job, ko, today, semesterName, parts, onOpen }:
         {job.category && <span>· {job.category}</span>}
         <span>· {job.size}</span>
         {prog && <span>· {prog.done}/{prog.total}</span>}
-        {!prog && parts.length > 0 && <span>· {partsDone}/{parts.length} {ko ? '부분' : 'parts'}</span>}
+        {mine > 0 && <span className="text-accent">· {mine} {ko ? '내 단계' : mine === 1 ? 'step for you' : 'steps for you'}</span>}
       </span>
       {pct !== null && job.status !== 'done' && <span className="block h-[3px] bg-paper-2 rounded overflow-hidden"><span className="block h-full bg-good" style={{ width: `${pct}%` }} /></span>}
     </button>

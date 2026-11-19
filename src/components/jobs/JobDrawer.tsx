@@ -3,17 +3,19 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
-import { SIZE_LABELS, SIZES, dueLabel, fmtDay, type AdminJob, type AdminJobHistory, type AdminJobQuestion, type JobDraft, type JobSize } from '@/lib/adminJobs'
-import { addJob, addSteps, answerQuestion, askQuestion, assignJob, deleteJob, fetchHistory, fetchQuestions, saveSteps, setStatus, toggleStep, updateJob } from '@/lib/adminJobsData'
+import { SIZE_LABELS, SIZES, dueLabel, fmtDay, type AdminJob, type AdminJobHistory, type AdminJobQuestion, type JobSize } from '@/lib/adminJobs'
+import { addSteps, answerQuestion, askQuestion, assignJob, deleteJob, fetchHistory, fetchQuestions, saveSteps, setStepOwner, setStatus, toggleStep, updateJob } from '@/lib/adminJobsData'
 import StatusTag from './StatusTag'
-import AddJob, { field } from './AddJob'
+import { field } from './AddJob'
 import type { Semester, Teacher } from '@/types'
 import { Link as LinkIcon, Trash2, X } from 'lucide-react'
 
 // ─── A job, opened ───────────────────────────────────────────────
 // Slides in from the right. Who owns it (one tap), the steps as a
-// checklist with a box that takes one line or a whole pasted list, the
-// parts, a question box, and the details. Done and Hand over at the end.
+// checklist with a box that takes one line or a whole pasted list, a
+// question box, and the details. A step can be given to the other person
+// with a tap on their initial, so one job can be shared without becoming
+// two. Done, Hand to and Delete at the end.
 
 export interface DrawerCtx {
   ko: boolean; today: string; me: Teacher | null; teachers: Teacher[]; accounts: Teacher[]; categories: string[]; activeSemester: Semester | null
@@ -25,7 +27,6 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
   const { ko, me, teachers, accounts, nameOf } = ctx
   const { showToast, confirmDialog } = useApp()
   const who = me ? { id: me.id, name: me.name } : null
-  const kids = ctx.childrenOf[job.id] || []
   const [stepText, setStepText] = useState('')
   const [notes, setNotes] = useState(job.notes)
   const [link, setLink] = useState(job.link_path)
@@ -44,9 +45,8 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
 
   const act = async (p: Promise<string | null>) => { const e = await p; if (e) showToast(`Error: ${e}`); await ctx.reload() }
   const saveField = (patch: Partial<AdminJob>) => { if (Object.entries(patch).some(([k, v]) => (job as any)[k] !== v)) act(updateJob(job, patch, who)) }
-  const addChild = async (d: JobDraft) => { const r = await addJob({ ...d, parent_id: job.id, category: d.category || job.category }, who); if (!r.error) await ctx.reload(); return r.error }
   const remove = async () => {
-    const ok = await confirmDialog({ title: ko ? '이 일을 지울까요?' : 'Delete this job?', message: `${job.title}${kids.length ? (ko ? ` · 하위 ${kids.length}개도 함께` : ` · and its ${kids.length} parts`) : ''}`, confirmLabel: ko ? '삭제' : 'Delete', danger: true })
+    const ok = await confirmDialog({ title: ko ? '이 일을 지울까요?' : 'Delete this job?', message: job.title, confirmLabel: ko ? '삭제' : 'Delete', danger: true })
     if (ok) { await act(deleteJob(job, who)); onClose() }
   }
   const submitSteps = () => { if (stepText.trim()) { act(addSteps(job, stepText, who)); setStepText('') } }
@@ -85,6 +85,9 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
               <li key={s.id} className="flex items-start gap-2.5 py-2 border-b border-rule group">
                 <input type="checkbox" checked={s.done} onChange={() => act(toggleStep(job, s.id, who))} className="mt-1 rounded border-rule-2" aria-label={s.text} />
                 <span className={`flex-1 text-[length:calc(13.5px*var(--ts))] leading-snug ${s.done ? 'line-through text-ink-3' : 'text-ink'}`}>{s.text}{s.done && s.done_by_id ? <span className={`${small} text-ink-3`}> · {nameOf(s.done_by_id)}</span> : null}</span>
+                <span className="flex items-center gap-0.5 mt-0.5" title={ko ? '이 단계는 누가' : 'Who does this step'}>
+                  {accounts.map(a => <button key={a.id} onClick={() => act(setStepOwner(job, s.id, s.owner_id === a.id ? null : a.id, who, a.name))} className={`w-6 h-6 rounded-full text-[length:calc(10.5px*var(--ts))] font-semibold ${s.owner_id === a.id ? 'bg-ink text-paper' : 'text-ink-3 opacity-0 group-hover:opacity-100 hover:bg-paper-2'}`} aria-label={a.name} aria-pressed={s.owner_id === a.id}>{a.name.slice(0, 1)}</button>)}
+                </span>
                 <button onClick={() => act(saveSteps(job, job.steps.filter(x => x.id !== s.id), who, 'removed a step'))} className="opacity-0 group-hover:opacity-100 text-ink-3 hover:text-bad mt-1" aria-label={ko ? '단계 삭제' : 'Remove step'}><X size={12} /></button>
               </li>
             ))}
@@ -94,26 +97,9 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitSteps() } }}
             placeholder={ko ? '단계 추가 (한 줄에 하나, 목록을 붙여 넣어도 됩니다)' : 'Add a step, or paste a list: one per line'} className="mt-2 w-full px-2 py-1.5 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink leading-snug resize-none" />
           <div className="flex items-center justify-between mt-1">
-            <span className={`${small} text-ink-3`}>{ko ? 'Enter로 추가, Shift+Enter로 줄바꿈' : 'Enter adds. Shift+Enter for a new line.'}</span>
+            <span className={`${small} text-ink-3`}>{ko ? 'Enter로 추가, Shift+Enter로 줄바꿈. 단계 옆 이니셜을 누르면 그 사람 몫이 됩니다.' : 'Enter adds. Shift+Enter for a new line. Tap an initial beside a step to make it theirs.'}</span>
             {stepText.trim() && <button onClick={submitSteps} className="h-7 px-2.5 rounded bg-accent text-white text-[length:calc(11.5px*var(--ts))] font-semibold">{ko ? '추가' : 'Add'}</button>}
           </div>
-        </div>
-
-        {/* Parts */}
-        <div>
-          <p className={label}>{ko ? '부분' : 'Parts'}{kids.length ? ` · ${kids.filter(k => k.status === 'done').length}/${kids.length}` : ''}</p>
-          {kids.length > 0 && (
-            <ul className="border-t border-rule mb-2">
-              {kids.map(k => (
-                <li key={k.id} className="flex items-center gap-2.5 py-2 border-b border-rule">
-                  <input type="checkbox" checked={k.status === 'done'} onChange={() => act(setStatus(k, k.status === 'done' ? 'scheduled' : 'done', who))} className="rounded border-rule-2" aria-label={k.title} />
-                  <button onClick={() => onOpen(k)} className={`flex-1 text-left text-[length:calc(13.5px*var(--ts))] ${k.status === 'done' ? 'line-through text-ink-3' : 'text-ink hover:text-accent'}`}>{k.title}</button>
-                  <span className={`${small} text-ink-3`}>{k.owner_id ? nameOf(k.owner_id) : (ko ? '담당 없음' : 'no owner')} · {dueLabel(k, ctx.today, ko, ctx.semesterName(k.semester_id))}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <AddJob ko={ko} today={ctx.today} activeSemester={ctx.activeSemester} me={me} parentId={job.id} defaultCategory={job.category} onAdd={addChild} compact />
         </div>
 
         {/* Stuck */}

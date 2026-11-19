@@ -103,7 +103,7 @@ export default function JobsView() {
                         {sections.map(({ sec, cards }) => (
                           <div key={sec}>
                             <p className={`eyebrow mb-1.5 ${sec === 'working' ? 'eyebrow-accent' : sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {cards.length}</span></p>
-                            <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} parts={d.childrenOf[j.id] || []} onOpen={() => setOpenId(j.id)} />)}</div>
+                            <div className="grid gap-2">{cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
                           </div>
                         ))}
                         {onBoard === 0 && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-1">{onShelf ? (ko ? '이번 달에는 없음. 아래 나중에 목록에 있습니다.' : 'Nothing this month; see Later below.') : c.key === null ? (ko ? '모두 담당이 있습니다.' : 'Everything has an owner.') : (ko ? '없음.' : 'Nothing here.')}</p>}
@@ -111,7 +111,7 @@ export default function JobsView() {
                       {done.length > 0 && (
                         <div className="mt-4">
                           <p className="eyebrow mb-2">{ko ? '완료' : 'Done'} <span className="normal-case tracking-normal">· {ko ? '최근 2주' : 'last two weeks'}</span></p>
-                          <div className="grid gap-2">{done.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} parts={d.childrenOf[j.id] || []} onOpen={() => setOpenId(j.id)} />)}</div>
+                          <div className="grid gap-2">{done.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
                         </div>
                       )}
                     </section>
