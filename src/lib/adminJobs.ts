@@ -156,6 +156,12 @@ export function progress(job: Pick<AdminJob, 'steps'>): { done: number; total: n
   return { done: job.steps.filter(s => s.done).length, total: job.steps.length }
 }
 
+/** The first step not done yet, for the viewer first when one is theirs. */
+export function nextStep(job: Pick<AdminJob, 'steps'>, viewerId: string | null = null): JobStep | null {
+  const open = job.steps.filter(s => !s.done)
+  return open.find(s => viewerId && s.owner_id === viewerId) || open[0] || null
+}
+
 /** Steps done as a whole percent; null when there are no steps. */
 export function percent(job: Pick<AdminJob, 'steps'>): number | null {
   const p = progress(job)
@@ -193,7 +199,7 @@ export function bites(jobs: AdminJob[], today: string): Bite[] {
   const out: Bite[] = []
   jobs.filter(j => j.status !== 'done').forEach(job => job.steps.forEach(step => {
     if (step.done || !step.due_date) return
-    const section = boardSection({ status: 'scheduled', due_kind: 'date', due_date: step.due_date }, today)
+    const section = boardSection({ status: 'scheduled', due_kind: 'date', due_date: step.due_date, semester_id: null, is_shared: false }, today)
     if (section) out.push({ job, step, section, ownerId: step.owner_id || job.owner_id, shared: job.is_shared && !step.owner_id })
   }))
   return out.sort((a, b) => a.step.due_date!.localeCompare(b.step.due_date!))
@@ -257,14 +263,15 @@ export function groupOpen(jobs: AdminJob[], today: string): { section: Section; 
 }
 
 /** What the dashboard shows: the viewer's overdue, today and this-week jobs, then goals not started, then anyone's unowned. */
-export function attention(jobs: AdminJob[], today: string, viewerId: string | null): { mine: AdminJob[]; myBites: Bite[]; notStartedGoals: AdminJob[]; unowned: AdminJob[] } {
+export function attention(jobs: AdminJob[], today: string, viewerId: string | null): { mine: AdminJob[]; myBites: Bite[]; notStartedGoals: AdminJob[]; unowned: AdminJob[]; shared: AdminJob[] } {
   const open = jobs.filter(j => j.status !== 'done')
   const pressing = (j: AdminJob) => ['overdue', 'today', 'week'].includes(urgency(j, today))
   const mine = open.filter(j => (j.owner_id === viewerId || (j.is_shared && viewerId)) && pressing(j)).sort(byDue)
   const myBites = bites(open, today).filter(b => (b.ownerId === viewerId || (b.shared && viewerId)) && b.section === 'week' && !mine.includes(b.job))
   const notStartedGoals = open.filter(j => (j.owner_id === viewerId || (j.is_shared && viewerId)) && notStarted(j, today) && !pressing(j)).sort(byDue)
   const unowned = open.filter(j => !j.owner_id && !j.is_shared && !j.parent_id).sort(byDue)
-  return { mine, myBites, notStartedGoals, unowned }
+  const shared = open.filter(j => j.is_shared && !mine.includes(j) && !notStartedGoals.includes(j)).sort(byDue)
+  return { mine, myBites, notStartedGoals, unowned, shared }
 }
 
 /** Done jobs by the day they were finished, newest day first. */
@@ -353,9 +360,9 @@ export function adminAccounts<T extends { role?: string; english_class?: string;
 
 // ─── The board ───────────────────────────────────────────────────
 
-export type BoardSection = 'working' | 'week' | 'month' | 'nextmonth' | 'later' | 'someday'
+export type BoardSection = 'goal' | 'working' | 'week' | 'month' | 'nextmonth' | 'later' | 'someday'
 export const BOARD_SECTION_LABELS: Record<BoardSection, { en: string; ko: string }> = {
-  working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, month: { en: 'Later this month', ko: '이달 중' }, nextmonth: { en: 'Next month', ko: '다음 달' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' },
+  goal: { en: 'Big jobs', ko: '큰 일' }, working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, month: { en: 'Later this month', ko: '이달 중' }, nextmonth: { en: 'Next month', ko: '다음 달' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' },
 }
 
 /** The YYYY-MM after a date's month. */
@@ -364,14 +371,17 @@ export const nextMonthKey = (iso: string) => { const y = +iso.slice(0, 4), m = +
 export const endOfNextMonth = (iso: string) => endOfMonth(nextMonthKey(iso) + '-01')
 
 /**
- * Where an open job sits on the board. Started jobs come first whatever
+ * Where an open job sits on the board. This semester's long jobs are a
+ * band of their own above the columns. Started jobs come first whatever
  * their date. Then this week, the rest of this month, and next month.
  * Everything further out, and every semester goal until its last two
  * weeks, is on the Later shelf under the columns; undated jobs are
  * Whenever, at the shelf's end. A by-end-of-month goal sits with its month.
  */
-export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date'>, today: string): BoardSection | null {
+export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date' | 'semester_id' | 'is_shared'>, today: string, activeSemesterId: string | null = null): BoardSection | null {
   if (job.status === 'done') return null
+  // The big ones, their own band at the top whatever their status: this semester's long jobs, and anything shared.
+  if (job.is_shared || (job.due_kind === 'semester' && job.semester_id && job.semester_id === activeSemesterId)) return 'goal'
   if (job.status === 'in_progress' || job.status === 'waiting') return 'working'
   const u = urgency(job, today)
   if (u === 'someday') return 'someday'
@@ -402,11 +412,11 @@ export function spanFraction(iso: string, from: string, to: string): number | nu
 }
 
 /** The Later shelf: far-off jobs by month, then Whenever, each sorted by date. */
-export function shelf(jobs: AdminJob[], today: string): { key: string; jobs: AdminJob[] }[] {
-  // Keys: 'YYYY-MM' for dated jobs and month goals, 'sem:<id>' for semester goals, 'someday' last; groups in date order.
+export function shelf(jobs: AdminJob[], today: string, activeSemesterId: string | null = null): { key: string; jobs: AdminJob[] }[] {
+  // Keys: 'YYYY-MM' for dated jobs and month goals, 'sem:<id>' for next-semester goals, 'someday' last; groups in date order.
   const out: Record<string, AdminJob[]> = {}
   jobs.filter(j => !j.parent_id).forEach(j => {
-    const s = boardSection(j, today)
+    const s = boardSection(j, today, activeSemesterId)
     if (s === 'later') (out[j.due_kind === 'semester' && j.semester_id ? `sem:${j.semester_id}` : j.due_date!.slice(0, 7)] ||= []).push(j)
     else if (s === 'someday') (out['someday'] ||= []).push(j)
   })

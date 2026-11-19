@@ -169,7 +169,16 @@ describe('the board', () => {
     expect(boardSection(job({ due_kind: 'someday', due_date: null }), today)).toBe('someday')
     expect(boardSection(job({ status: 'done' }), today)).toBeNull()
   })
-  it('keeps a long-term goal on the shelf until its last two weeks', () => {
+  it('this semester’s goals are a band of their own; next semester’s wait on the shelf', () => {
+    const goal = job({ due_kind: 'semester', due_date: '2027-01-08', semester_id: 'f26' })
+    expect(boardSection(goal, '2026-11-19', 'f26')).toBe('goal')
+    expect(boardSection({ ...goal, status: 'in_progress' }, '2026-11-19', 'f26')).toBe('goal')
+    expect(boardSection(goal, '2026-11-19', 's27')).toBe('later')
+    expect(boardSection(job({ is_shared: true, owner_id: null, due_date: '2027-02-01' }), '2026-11-19')).toBe('goal')
+    expect(shelf([goal], '2026-11-19', 'f26')).toEqual([])
+    expect(shelf([goal], '2026-11-19', 's27').map(g => g.key)).toEqual(['sem:f26'])
+  })
+  it('keeps a goal with no active semester on the shelf until its last two weeks', () => {
     const goal = job({ due_kind: 'semester', due_date: '2027-01-08' })
     expect(boardSection(goal, '2026-11-19')).toBe('later')
     expect(boardSection(goal, '2026-12-20')).toBe('later')

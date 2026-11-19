@@ -20,7 +20,7 @@ export default function AdminJobsCard() {
   const ko = language === 'ko'
   const d = useAdminJobs()
   if (!canSeeAdminJobs(currentTeacher) || d.loading || d.missing) return null
-  const { mine, myBites, notStartedGoals, unowned } = attention(d.jobs, d.today, currentTeacher?.id || null)
+  const { mine, myBites, notStartedGoals, unowned, shared } = attention(d.jobs, d.today, currentTeacher?.id || null)
   const who = currentTeacher ? { id: currentTeacher.id, name: currentTeacher.name } : null
   const tick = async (j: AdminJob) => { const e = await setStatus(j, 'done', who); if (e) showToast(`Error: ${e}`); else { showToast(ko ? `완료: ${j.title}` : `Done: ${j.title}`); d.reload() } }
   const tone = (j: AdminJob) => { const u = urgency(j, d.today); return u === 'overdue' ? 'text-bad' : u === 'today' ? 'text-accent' : 'text-ink-3' }
@@ -33,7 +33,7 @@ export default function AdminJobsCard() {
         <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '내 업무' : 'Your jobs'}</h2>
         <Link href="/jobs" className="text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink inline-flex items-center gap-1">{ko ? '전체 보기' : 'All jobs'}<ArrowRight size={12} /></Link>
       </div>
-      {rows.length === 0 && myBites.length === 0 ? (
+      {rows.length === 0 && myBites.length === 0 && shared.length === 0 ? (
         <p className="text-[length:calc(13px*var(--ts))] text-ink-3">{ko ? '이번 주에 기한인 일이 없습니다.' : 'Nothing due this week.'}</p>
       ) : (
         <ul className="divide-y divide-rule">
@@ -62,6 +62,17 @@ export default function AdminJobsCard() {
               </Link>
             </li>
           ))}
+        </ul>
+      )}
+      {shared.length > 0 && (
+        <ul className="divide-y divide-rule border-t border-rule">
+          {shared.map(j => { const myOpen = j.steps.filter(s => s.owner_id === currentTeacher?.id && !s.done).length; return (
+            <li key={j.id} className="py-2">
+              <Link href="/jobs" className="block min-w-0">
+                <span className="block text-[length:calc(15px*var(--ts))] leading-tight text-ink truncate"><span className="text-accent font-semibold">{ko ? '함께' : 'Shared'}</span> · {j.title}</span>
+                <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">{dueLabel(j, d.today, ko, d.semesterName(j.semester_id), d.semesterStart(j.semester_id))}{percent(j) !== null ? ` · ${percent(j)}%` : ''}{myOpen ? ` · ${myOpen} ${ko ? '내 단계' : myOpen === 1 ? 'step for you' : 'steps for you'}` : ''}</span>
+              </Link>
+            </li>) })}
         </ul>
       )}
       {unowned.length > 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-warn mt-2"><Link href="/jobs" className="hover:underline">{unowned.length} {ko ? '개 일에 담당이 없습니다' : `job${unowned.length === 1 ? ' has' : 's have'} no owner`}</Link>{unowned.slice(0, 2).map(j => <span key={j.id} className="text-ink-3"> · {j.title}</span>)}</p>}
