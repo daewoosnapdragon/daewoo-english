@@ -15,7 +15,7 @@ import SizeMark from './SizeMark'
 export const field = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink placeholder:text-ink-3'
 const chip = (on: boolean) => `h-7 px-2.5 rounded-full border text-[length:calc(11.5px*var(--ts))] whitespace-nowrap ${on ? 'border-ink text-ink font-semibold' : 'border-rule-2 text-ink-3 hover:text-ink'}`
 
-type When = 'today' | 'week' | 'day' | 'semester' | 'next' | 'someday' | `m:${string}`
+type When = 'today' | 'week' | 'day' | 'semester' | 'next' | 'someday' | 'oneday' | `m:${string}`
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 /** This month and the next few, as chips: a job "for December" is due by its end. */
 const MONTH_CHIPS = 6
@@ -33,7 +33,7 @@ export default function AddJob({ ko, today, activeSemester, semesters, me, onAdd
   const months: string[] = []
   for (let k = today.slice(0, 7), i = 0; i < MONTH_CHIPS; k = nextMonthKey(k + '-01'), i++) months.push(k)
   const monthName = (k: string) => { const m = Number(k.slice(5, 7)); return ko ? `${m}월` : `${MONTHS_EN[m - 1]}${m === 1 ? ` ${k.slice(0, 4)}` : ''}` }
-  const whens: [When, string][] = [['today', ko ? '오늘' : 'Today'], ['week', ko ? '이번 주' : 'This week'], ...months.map(k => [`m:${k}` as When, monthName(k)] as [When, string]), ['semester', ko ? '학기말' : 'End of semester'], ['next', ko ? '다음 학기' : 'Next semester'], ['someday', ko ? '언제든' : 'Whenever']]
+  const whens: [When, string][] = [['today', ko ? '오늘' : 'Today'], ['week', ko ? '이번 주' : 'This week'], ...months.map(k => [`m:${k}` as When, monthName(k)] as [When, string]), ['semester', ko ? '학기말' : 'End of semester'], ['next', ko ? '다음 학기' : 'Next semester'], ['someday', ko ? '언제든' : 'Whenever'], ['oneday', ko ? '언젠가' : 'One day']]
 
   const save = async () => {
     const t = title.trim(); if (!t || busy) return
@@ -44,6 +44,7 @@ export default function AddJob({ ko, today, activeSemester, semesters, me, onAdd
     else if (when.startsWith('m:')) { due_kind = 'month'; due_date = endOfMonth(when.slice(2) + '-01') }
     else if (when === 'semester') { if (!activeSemester?.end_date) { setErr(ko ? '학기 종료일이 설정에 없습니다.' : 'The semester has no end date in Settings.'); return } due_kind = 'semester'; due_date = activeSemester.end_date }
     else if (when === 'next') { if (!next?.end_date) { setErr(ko ? '다음 학기가 설정에 없습니다 (시작일과 종료일).' : 'No next semester in Settings yet; add it with its start and end dates.'); return } due_kind = 'semester'; due_date = next.end_date }
+    else if (when === 'oneday') { due_kind = 'oneday' }
     else { due_kind = 'someday' }
     setBusy(true); setErr('')
     const e = await onAdd({

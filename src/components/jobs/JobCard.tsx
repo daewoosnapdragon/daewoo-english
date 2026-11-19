@@ -27,7 +27,7 @@ export default function JobCard({ job, ko, today, semesterName, semesterStart, m
         {job.status === 'in_progress' && <span className="text-accent">· {ko ? '진행 중' : 'in progress'}</span>}
         {job.status === 'waiting' && <span className="text-warn">· {ko ? '대기' : 'waiting'}{job.waiting_on ? `: ${job.waiting_on}` : ''}</span>}
         {notStarted(job, today) && <span className="text-warn">· {ko ? '아직 시작 안 함' : 'not started'}</span>}
-        {ownerName !== undefined && <span className={job.is_shared ? 'text-accent font-semibold' : job.owner_id ? 'text-ink' : 'text-warn font-semibold'}>· {job.is_shared ? (ko ? '함께' : 'Shared') : job.owner_id ? ownerName : (ko ? '담당 없음' : 'Nobody yet')}</span>}
+        {ownerName !== undefined && (job.due_kind !== 'oneday' || job.owner_id || job.is_shared) && <span className={job.is_shared ? 'text-accent font-semibold' : job.owner_id ? 'text-ink' : 'text-warn font-semibold'}>· {job.is_shared ? (ko ? '함께' : 'Shared') : job.owner_id ? ownerName : (ko ? '담당 없음' : 'Nobody yet')}</span>}
         {ownerName === undefined && job.is_shared && <span className="text-ink-2">· {ko ? '함께' : 'shared'}</span>}
         {job.category && <span>· {job.category}</span>}
         <span className="inline-flex items-center gap-1">· <SizeMark size={job.size} ko={ko} /></span>

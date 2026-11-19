@@ -64,8 +64,9 @@ CREATE TABLE IF NOT EXISTS admin_jobs (
   status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in_progress', 'waiting', 'done')),
   -- 'date': due on due_date. 'month': by the end of the month, due_date is
   -- its last day. 'semester': by the end of the semester, due_date is its
-  -- end date. 'someday': no date; due_date is null.
-  due_kind TEXT NOT NULL DEFAULT 'someday' CHECK (due_kind IN ('date', 'month', 'semester', 'someday')),
+  -- end date. 'someday': no date; due_date is null. 'oneday': a wish, if
+  -- there were time; never due, never on the dashboard.
+  due_kind TEXT NOT NULL DEFAULT 'someday' CHECK (due_kind IN ('date', 'month', 'semester', 'someday', 'oneday')),
   due_date DATE,
   semester_id UUID REFERENCES semesters(id) ON DELETE SET NULL,
   owner_id UUID REFERENCES teachers(id) ON DELETE SET NULL,
@@ -97,6 +98,9 @@ ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS touched_at TIMESTAMPTZ;
 ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS touch_count INTEGER NOT NULL DEFAULT 0;
 -- Added later: both accounts own it; the steps say whose each piece is.
 ALTER TABLE admin_jobs ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT false;
+-- Added later: 'oneday', the wishes: if there were time. Re-made so an older table takes it.
+ALTER TABLE admin_jobs DROP CONSTRAINT IF EXISTS admin_jobs_due_kind_check;
+ALTER TABLE admin_jobs ADD CONSTRAINT admin_jobs_due_kind_check CHECK (due_kind IN ('date', 'month', 'semester', 'someday', 'oneday'));
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_status_due ON admin_jobs(status, due_date);
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_owner ON admin_jobs(owner_id);
 CREATE INDEX IF NOT EXISTS idx_admin_jobs_parent ON admin_jobs(parent_id);

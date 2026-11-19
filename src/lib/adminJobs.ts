@@ -10,7 +10,7 @@ import { addDays } from '@/lib/officeJobs'
 
 export type JobSize = 'XS' | 'S' | 'M' | 'L'
 export type JobStatus = 'scheduled' | 'in_progress' | 'waiting' | 'done'
-export type DueKind = 'date' | 'month' | 'semester' | 'someday'
+export type DueKind = 'date' | 'month' | 'semester' | 'someday' | 'oneday'
 export type RoutineAnchor = 'date' | 'semester_start' | 'midterm_cutoff' | 'report_card_cutoff' | 'semester_end'
 
 export interface JobStep { id: string; text: string; done: boolean; done_by_id?: string | null; done_at?: string | null; /** Who this step is for, when a job is shared; null means whoever owns the job. */ owner_id?: string | null; /** A day this step is for, so a long job surfaces a bite at a time. */ due_date?: string | null; /** Started but not finished. */ doing?: boolean; /** Where it is up to, in a few words. */ note?: string | null }
@@ -62,9 +62,9 @@ export const STATUSES: JobStatus[] = ['scheduled', 'in_progress', 'waiting', 'do
 export const STATUS_LABELS: Record<JobStatus, { en: string; ko: string }> = {
   scheduled: { en: 'Scheduled', ko: '예정' }, in_progress: { en: 'In progress', ko: '진행 중' }, waiting: { en: 'Waiting', ko: '대기' }, done: { en: 'Done', ko: '완료' },
 }
-export const DUE_KINDS: DueKind[] = ['date', 'month', 'semester', 'someday']
+export const DUE_KINDS: DueKind[] = ['date', 'month', 'semester', 'someday', 'oneday']
 export const DUE_KIND_LABELS: Record<DueKind, { en: string; ko: string }> = {
-  date: { en: 'On a day', ko: '날짜' }, month: { en: 'By the end of a month', ko: '월말까지' }, semester: { en: 'By the end of the semester', ko: '학기말까지' }, someday: { en: 'When there is time', ko: '시간 날 때' },
+  date: { en: 'On a day', ko: '날짜' }, month: { en: 'By the end of a month', ko: '월말까지' }, semester: { en: 'By the end of the semester', ko: '학기말까지' }, someday: { en: 'When there is time', ko: '시간 날 때' }, oneday: { en: 'One day, if there were time', ko: '언젠가, 여유가 생기면' },
 }
 export const ANCHOR_LABELS: Record<RoutineAnchor, { en: string; ko: string }> = {
   date: { en: 'A date you type', ko: '직접 입력' }, semester_start: { en: 'First day of the semester', ko: '학기 시작일' }, midterm_cutoff: { en: 'Midterm cutoff', ko: '중간 마감' }, report_card_cutoff: { en: 'Report card grades due', ko: '성적표 마감' }, semester_end: { en: 'Last day of the semester', ko: '학기 종료일' },
@@ -137,7 +137,7 @@ export type Urgency = 'overdue' | 'today' | 'week' | 'soon' | 'later' | 'someday
 /** How pressing a job is today. Long-term goals count as 'week' for their last two weeks. */
 export function urgency(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date'>, today: string): Urgency {
   if (job.status === 'done') return 'done'
-  if (job.due_kind === 'someday' || !job.due_date) return 'someday'
+  if (job.due_kind === 'someday' || job.due_kind === 'oneday' || !job.due_date) return 'someday'
   const d = daysBetween(today, job.due_date)
   if (d < 0) return 'overdue'
   if (job.due_kind === 'date') return d === 0 ? 'today' : d <= 7 ? 'week' : d <= 28 ? 'soon' : 'later'
@@ -227,6 +227,7 @@ export function fmtDay(iso: string, ko: boolean, withWeekday = true): string {
 
 /** The due, in words: "Today", "3 days ago", "Tue, Dec 2", "By end of November", "By end of Fall 2026", "When there is time". */
 export function dueLabel(job: Pick<AdminJob, 'due_kind' | 'due_date' | 'status'>, today: string, ko: boolean, semesterName?: string | null, semesterStart?: string | null): string {
+  if (job.due_kind === 'oneday') return ko ? '언젠가' : 'One day'
   if (job.due_kind === 'someday' || !job.due_date) return ko ? '시간 날 때' : 'When there is time'
   const d = daysBetween(today, job.due_date)
   if (job.due_kind === 'month') {
@@ -283,7 +284,7 @@ export function attention(jobs: AdminJob[], today: string, viewerId: string | nu
   const mine = open.filter(j => (j.owner_id === viewerId || (j.is_shared && viewerId)) && pressing(j)).sort(byDue)
   const myBites = bites(open, today).filter(b => (b.ownerId === viewerId || (b.shared && viewerId)) && b.section === 'week' && !mine.includes(b.job))
   const notStartedGoals = open.filter(j => (j.owner_id === viewerId || (j.is_shared && viewerId)) && notStarted(j, today) && !pressing(j)).sort(byDue)
-  const unowned = open.filter(j => !j.owner_id && !j.is_shared && !j.parent_id).sort(byDue)
+  const unowned = open.filter(j => !j.owner_id && !j.is_shared && !j.parent_id && j.due_kind !== 'oneday').sort(byDue)
   const shared = open.filter(j => j.is_shared && !mine.includes(j) && !notStartedGoals.includes(j)).sort(byDue)
   return { mine, myBites, notStartedGoals, unowned, shared }
 }
@@ -374,9 +375,9 @@ export function adminAccounts<T extends { role?: string; english_class?: string;
 
 // ─── The board ───────────────────────────────────────────────────
 
-export type BoardSection = 'goal' | 'working' | 'week' | 'month' | 'nextmonth' | 'later' | 'someday'
+export type BoardSection = 'goal' | 'working' | 'week' | 'month' | 'nextmonth' | 'later' | 'someday' | 'oneday'
 export const BOARD_SECTION_LABELS: Record<BoardSection, { en: string; ko: string }> = {
-  goal: { en: 'Big jobs', ko: '큰 일' }, working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, month: { en: 'Later this month', ko: '이달 중' }, nextmonth: { en: 'Next month', ko: '다음 달' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' },
+  goal: { en: 'Big jobs', ko: '큰 일' }, working: { en: 'Working on', ko: '진행 중' }, week: { en: 'This week', ko: '이번 주' }, month: { en: 'Later this month', ko: '이달 중' }, nextmonth: { en: 'Next month', ko: '다음 달' }, later: { en: 'Later', ko: '나중에' }, someday: { en: 'Whenever', ko: '언제든' }, oneday: { en: 'One day', ko: '언젠가' },
 }
 
 /** The YYYY-MM after a date's month. */
@@ -394,6 +395,8 @@ export const endOfNextMonth = (iso: string) => endOfMonth(nextMonthKey(iso) + '-
  */
 export function boardSection(job: Pick<AdminJob, 'status' | 'due_kind' | 'due_date' | 'semester_id' | 'is_shared'>, today: string, activeSemesterId: string | null = null): BoardSection | null {
   if (job.status === 'done') return null
+  // Wishes live at the bottom, whatever else is true of them.
+  if (job.due_kind === 'oneday') return 'oneday'
   // The big ones, their own band at the top whatever their status: this semester's long jobs, and anything shared.
   if (job.is_shared || (job.due_kind === 'semester' && job.semester_id && job.semester_id === activeSemesterId)) return 'goal'
   if (job.status === 'in_progress' || job.status === 'waiting') return 'working'

@@ -261,3 +261,15 @@ describe('working on a step', () => {
     expect(afterStepChange(job({ status: 'waiting' }), [], 'x').status).toBe('waiting')
   })
 })
+
+describe('one day', () => {
+  it('is never due, never pressing, and sits at the bottom of the board', () => {
+    const wish = job({ due_kind: 'oneday', due_date: null, owner_id: null })
+    expect(urgency(wish, today)).toBe('someday')
+    expect(dueLabel(wish, today, false)).toBe('One day')
+    expect(boardSection(wish, today, 'f26')).toBe('oneday')
+    expect(boardSection({ ...wish, is_shared: true }, today)).toBe('oneday')
+    expect(shelf([wish], today)).toEqual([])
+    expect(attention([wish], today, 'kyla').unowned).toEqual([])
+  })
+})

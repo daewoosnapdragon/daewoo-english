@@ -99,6 +99,15 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
           )}
         </div>
 
+        {job.due_kind === 'oneday' && job.status !== 'done' && (
+          <div className="flex flex-wrap items-center gap-2 text-[length:calc(12.5px*var(--ts))] text-ink-2">
+            <span>{ko ? '언젠가 할 일입니다. 진짜 일로 만들려면:' : 'A one-day wish. To make it a real job:'}</span>
+            <button onClick={() => saveField({ due_kind: 'someday', due_date: null })} className="h-7 px-2.5 rounded-full border border-rule-2 hover:border-ink">{ko ? '언제든' : 'Whenever'}</button>
+            {ctx.activeSemester?.end_date && <button onClick={() => saveField({ due_kind: 'semester', due_date: ctx.activeSemester!.end_date, semester_id: ctx.activeSemester!.id })} className="h-7 px-2.5 rounded-full border border-rule-2 hover:border-ink">{ko ? '이번 학기' : 'This semester'}</button>}
+            <label className="relative h-7 px-2.5 rounded-full border border-rule-2 hover:border-ink inline-flex items-center gap-1 cursor-pointer"><Calendar size={12} />{ko ? '날짜' : 'A day'}<input type="date" className="absolute inset-0 opacity-0 w-full h-full cursor-pointer" onChange={e => e.target.value && saveField({ due_kind: 'date', due_date: e.target.value })} aria-label={ko ? '날짜' : 'Day'} /></label>
+          </div>
+        )}
+
         {/* Notes: what is in the way, what was agreed, where things are */}
         <textarea value={notes} onChange={e => setNotes(e.target.value)} onBlur={() => saveField({ notes })} rows={notes.includes('\n') ? Math.min(6, notes.split('\n').length + 1) : 1}
           placeholder={ko ? '메모 · 예: 사무실에서 명단을 받기 전에는 끝낼 수 없음' : 'A note · e.g. can’t finish until the office sends the list'} className="w-full px-2 py-1.5 bg-transparent border-b border-rule-2 text-[length:calc(13px*var(--ts))] text-ink italic placeholder:not-italic placeholder:text-ink-3 leading-snug resize-none outline-none focus:border-ink-3" aria-label={ko ? '메모' : 'Notes'} />

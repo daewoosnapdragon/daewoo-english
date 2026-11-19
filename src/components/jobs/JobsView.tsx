@@ -140,6 +140,7 @@ export default function JobsView() {
                 })}
               </div>
               <LaterShelf jobs={open} ko={ko} today={d.today} activeSemesterId={semId} me={currentTeacher.id} nameOf={d.nameOf} semesterName={d.semesterName} semesterStart={d.semesterStart} onOpen={j => setOpenId(j.id)} />
+              <OneDay jobs={open.filter(j => j.due_kind === 'oneday')} ko={ko} today={d.today} me={currentTeacher.id} nameOf={d.nameOf} onOpen={j => setOpenId(j.id)} />
             </>
           )}
           {tab === 'year' && (
@@ -253,6 +254,28 @@ function GoalsBand({ jobs, ko, today, me, nameOf, semesterName, semesterStart, w
             </div>
           )
         })}
+      </div>
+    </section>
+  )
+}
+
+// ─── One day ─────────────────────────────────────────────────────
+// The wishes: what would get done if there were time. Full cards, at the
+// very bottom, dashed, with no date and no owner needed. Never on the
+// dashboard, never overdue. Give one a date in its panel and it becomes
+// a real job.
+function OneDay({ jobs, ko, today, me, nameOf, onOpen }: { jobs: AdminJob[]; ko: boolean; today: string; me: string; nameOf: (id: string | null | undefined) => string; onOpen: (j: AdminJob) => void }) {
+  if (jobs.length === 0) return null
+  return (
+    <section className="mt-10 border-t border-dashed border-rule-2 pt-4">
+      <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink mb-1">{ko ? '언젠가' : 'One day'}</h2>
+      <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mb-3">{ko ? '여유가 생기면 하고 싶은 일. 기한도, 담당도 없어도 됩니다. 날짜를 주면 진짜 일이 됩니다.' : 'If there were time. No date, no owner needed. Give one a date in its panel and it becomes a real job.'}</p>
+      <div className="grid gap-2 md:grid-cols-3">
+        {jobs.sort((a, b) => a.created_at.localeCompare(b.created_at)).map(j => (
+          <div key={j.id} className="rounded border border-dashed border-rule-2">
+            <JobCard job={j} ko={ko} today={today} semesterName={null} semesterStart={null} me={me} ownerName={j.owner_id ? nameOf(j.owner_id) : ''} onOpen={() => onOpen(j)} />
+          </div>
+        ))}
       </div>
     </section>
   )
