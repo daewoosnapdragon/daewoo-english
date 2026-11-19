@@ -4,7 +4,7 @@ import { Fragment, useState } from 'react'
 import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import {
-  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
+  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SHEET_COUNT, PHONICS_BAND_LABELS, sheetError, PATTERN_PREFIX,
   phonicsSkill, phonicsBand, scoreText, type LatestBySkill, type PhonicsCheckRow,
 } from '@/lib/phonics'
 import type { LevelFlag, MasteryPosition } from '@/lib/phonicsCompare'
@@ -32,15 +32,16 @@ export default function PhonicsStudentCompare({ students, latestByStudent, check
   const checkedBySomeone = (id: string) => students.some(s => latestByStudent[s.id]?.[id])
   const sheets = allSheets ? PHONICS_SKILLS : PHONICS_SKILLS.filter(s => checkedBySomeone(s.id))
 
-  // How each student decoded: the teacher checkboxes on their latest result for each sheet, counted.
+  // What went wrong: the error boxes on each student's latest result for each sheet, in sheet order.
   const howBy = Object.fromEntries(students.map(s => {
-    const counts: Record<string, number> = {}
+    const out: [string, string][] = []
     const latest = latestByStudent[s.id] || {}
-    Object.entries(latest).forEach(([sk, l]) => {
-      (checksById[l.checkId]?.observations?.[sk] || []).forEach(o => { if (!o.startsWith(PATTERN_PREFIX)) counts[o] = (counts[o] || 0) + 1 })
+    PHONICS_SKILLS.forEach(({ id: sk }) => {
+      const l = latest[sk]; if (!l) return
+      ;(checksById[l.checkId]?.observations?.[sk] || []).forEach(o => { if (!o.startsWith(PATTERN_PREFIX)) out.push([sk, o]) })
     })
-    return [s.id, Object.entries(counts).sort((a, b) => b[1] - a[1])]
-  })) as Record<string, [string, number][]>
+    return [s.id, out]
+  })) as Record<string, [string, string][]>
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
@@ -77,7 +78,7 @@ export default function PhonicsStudentCompare({ students, latestByStudent, check
                       <span className="flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-ink-2 mt-1"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</span>
                       {p?.tested ? (
                         <span className="block text-[length:calc(11px*var(--ts))] text-ink mt-1" title={p.through ? `Mastered through ${phonicsSkill(p.through)?.label}` : ''}>
-                          <span className="font-semibold">{p.position}</span>/20 {p.through ? phonicsSkill(p.through)?.short : ''}
+                          <span className="font-semibold">{p.position}</span>/{PHONICS_SHEET_COUNT} {p.through ? phonicsSkill(p.through)?.short : ''}
                           {p.gaps.length > 0 && <AlertTriangle size={10} className="inline text-warn ml-1" />}
                           <span className="text-ink-3"> · {lang === 'ko' ? `${p.testedThrough}번까지` : `to ${p.testedThrough}`}</span>
                         </span>
@@ -120,13 +121,12 @@ export default function PhonicsStudentCompare({ students, latestByStudent, check
                 )
               })}
               <tr className="border-t-2 border-rule-2 align-top">
-                <td className="px-4 py-2 text-ink font-semibold">{lang === 'ko' ? '해독 방식' : 'How they decoded'}<span className="block text-[length:calc(10.5px*var(--ts))] font-normal text-ink-3">{lang === 'ko' ? '시트 수' : 'sheets ticked'}</span></td>
+                <td className="px-4 py-2 text-ink font-semibold">{lang === 'ko' ? '오류' : 'What went wrong'}<span className="block text-[length:calc(10.5px*var(--ts))] font-normal text-ink-3">{lang === 'ko' ? '최근 점검 기준' : 'on their latest checks'}</span></td>
                 {students.map(s => (
                   <td key={s.id} className="px-2 py-2 border-l border-rule text-[length:calc(11px*var(--ts))] leading-snug">
-                    {howBy[s.id].length === 0 ? <span className="text-ink-3">—</span> : howBy[s.id].map(([o, n]) => {
-                      const d = DECODING_OBSERVATIONS.find(x => x.id === o)
-                      const tone = o === 'guessing' || o === 'omitted' || o === 'vowel_confusion' ? 'text-bad' : o === 'automatic' || o === 'flexible' ? 'text-good' : 'text-ink-2'
-                      return <span key={o} className={`block ${tone}`}>{d ? (lang === 'ko' ? d.label_ko : d.label) : o} <span className="text-ink-3">×{n}</span></span>
+                    {howBy[s.id].length === 0 ? <span className="text-ink-3">—</span> : howBy[s.id].map(([sk, o]) => {
+                      const d = sheetError(sk, o)
+                      return <span key={`${sk}|${o}`} className="block text-ink-2"><span className="text-ink-3">{phonicsSkill(sk)?.short} · </span>{d ? (lang === 'ko' ? d.label_ko : d.label) : o}</span>
                     })}
                   </td>
                 ))}

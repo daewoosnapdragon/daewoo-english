@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activity'
 import { ENGLISH_CLASS_ORDER } from '@/lib/rosterSort'
 import { PHONICS_GROUPS, PHONICS_SKILLS, phonicsSkill, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
 import { nextToTeach, teachingGroups, troubleCounts, missedWords, splitPatternKey, type GroupBy, type TeachGroup } from '@/lib/phonicsPatterns'
+import { printWordSheet } from '@/lib/phonicsPrint'
 import { Printer } from 'lucide-react'
 
 // ─── Teaching groups across classes ──────────────────────────────
@@ -41,7 +42,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
   }, [students, off, latestByStudent, by])
 
   const title = (g: TeachGroup) => {
-    if (g.key === 'done') return lang === 'ko' ? '스무 시트 모두 완료' : 'All twenty sheets'
+    if (g.key === 'done') return lang === 'ko' ? '모든 시트 완료' : 'Every sheet mastered'
     if (g.key === 'unchecked') return lang === 'ko' ? '아직 점검 안 함' : 'Not checked yet'
     if (by === 'sheet') { const sk = phonicsSkill(g.key)!; return `${PHONICS_SKILLS.indexOf(sk) + 1} · ${lang === 'ko' ? sk.label_ko : sk.label}` }
     const fam = PHONICS_GROUPS.find(f => f.id === g.key)!
@@ -73,6 +74,14 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
     </style></head><body>${body}</body></html>`)
     pw.document.close(); pw.print()
     logActivity('printed', 'Phonics groups', { path: '/reading' })
+  }
+
+  // A word sheet for the group to read from: every word any of them missed on
+  // the group's sheets, most missed first, under each sheet's name.
+  const printGroupWords = (g: TeachGroup) => {
+    const missed = missedWords(g.studentIds, latestByStudent, checksById, { sheets: g.sheets, min: 1 })
+    const sections = g.sheets.map(id => { const sk = phonicsSkill(id); return { label: sk?.label || id, words: missed.filter(w => w.sheet === id).map(w => w.word), columns: sk?.columns ? 8 : 4 } })
+    printWordSheet(`${title(g)} · ${lang === 'ko' ? '틀린 단어' : 'words to practise'}`, sections, `Phonics group words: ${title(g)}`)
   }
 
   const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
@@ -130,6 +139,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
                   </div>
                   {f.patterns.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '어려움: ' : 'Trouble: '}</span>{f.patterns.map(([p, n]) => `${p}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>}
                   {f.words.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '틀린 단어: ' : 'Missed: '}</span>{f.words.join(', ')}</p>}
+                  {f.words.length > 0 && <button onClick={() => printGroupWords(g)} className="mt-1.5 inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink"><Printer size={10} /> {lang === 'ko' ? '단어 시트 인쇄' : 'Print their missed words'}</button>}
                 </div>
               )
             })}

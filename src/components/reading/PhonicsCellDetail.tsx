@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import {
-  PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
+  PHONICS_BAND_LABELS, sheetError, PATTERN_PREFIX,
   phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, wordHistory, scoreText, isMiss,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
@@ -34,8 +34,9 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
   const marks = showing.results[skill] || {}
   const heard = showing.heard?.[skill] || {}
   const obs = showing.observations?.[skill] || []
-  const how = obs.filter(o => !o.startsWith(PATTERN_PREFIX)).map(o => DECODING_OBSERVATIONS.find(d => d.id === o)).filter(Boolean)
+  const how = obs.filter(o => !o.startsWith(PATTERN_PREFIX)).map(o => sheetError(skill, o)).filter(Boolean)
   const trouble = obs.filter(o => o.startsWith(PATTERN_PREFIX)).map(o => o.slice(PATTERN_PREFIX.length))
+  const carried = showing.carried?.[skill]
   const words = wordHistory(history, skill)
   const attemptsAsc = [...history].reverse()
 
@@ -80,10 +81,13 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
           </div>
           {(how.length > 0 || trouble.length > 0) && (
             <div className="text-[length:calc(12.5px*var(--ts))] text-ink-2 space-y-1">
-              {how.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '해독 방식' : 'How they decoded'}</span>{how.map(d => lang === 'ko' ? d!.label_ko : d!.label).join(' · ')}</p>}
+              {how.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '오류' : 'What went wrong'}</span>{how.map(d => lang === 'ko' ? d!.label_ko : d!.label).join(' · ')}</p>}
               {trouble.length > 0 && <p><span className="eyebrow mr-1.5">{lang === 'ko' ? '어려운 패턴' : 'Trouble with'}</span>{trouble.join(', ')}</p>}
             </div>
           )}
+          {carried && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko'
+            ? `틀린 단어 다시 읽기: ${carried.rechecked.length}개를 ${fmtShort(showing.date, lang)}에 다시 읽음, 나머지는 ${fmtShort(carried.date, lang)} 점검에서 이어짐.`
+            : `Missed before: ${carried.rechecked.length} ${carried.rechecked.length === 1 ? 'word' : 'words'} read again on ${fmtShort(showing.date, lang)}, the rest carried from ${fmtShort(carried.date, lang)}.`}</p>}
           {showing.notes && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 italic">“{showing.notes}”</p>}
 
           {/* Which words keep tripping the student, across every attempt. */}

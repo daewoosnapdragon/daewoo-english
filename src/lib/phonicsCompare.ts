@@ -1,6 +1,6 @@
 // ─── Phonics across classes and grades ───────────────────────────
 // Reading → Phonics → Whole grade / All grades. The arithmetic for comparing
-// where students and whole classes sit on the packet's twenty sheets, for
+// where students and whole classes sit on the sheets, alphabet to two-syllable, for
 // leveling: a student's mastery position, each class's share of students
 // who have mastered each sheet, and the first sheet a class has not got yet.
 // Mastered is 90% or more on the latest check of the sheet.
@@ -18,11 +18,11 @@ export const EDGE_PCT = 70
 export interface MasteryPosition {
   /** The furthest sheet, in packet order, that is mastered; null when none is. */
   through: string | null
-  /** 1–20 for `through`, 0 when nothing is mastered. */
+  /** 1–PHONICS_SHEET_COUNT for `through`, 0 when nothing is mastered. */
   position: number
   /** Sheets before `through` that were tested and are under 90%: real holes under the position. */
   gaps: string[]
-  /** 1–20: the furthest sheet tested at all, 0 when never checked. */
+  /** 1–PHONICS_SHEET_COUNT: the furthest sheet tested at all, 0 when never checked. */
   testedThrough: number
   tested: number
 }

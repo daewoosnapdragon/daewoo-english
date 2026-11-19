@@ -45,17 +45,35 @@ puts them (kept as reference text; the screen itself shows no panel):
   seconds. No modelling or correcting during the check.
 - On an error, the pencil on the tile records what the student said (the
   packet's "write what they read next to the word").
-- Under each sheet, the packet's teacher-page checkboxes: how the student
-  decoded (struggled to blend, sound by sound, onset and rime, stretched,
-  syllable parts, some whole, automatic, guessing, omitted a sound,
-  short/long confusion, flexible) and the patterns that gave trouble.
+- Before the packet's CVC sheet, an alphabet sheet of our own: 26 capitals
+  then 26 lowercase, each in mixed order, 13 to a row; the student names
+  each letter. It is sheet 1 on every grid, so positions run 0–21 and CVC is
+  2. A student checked on words but never on letters is not sent back to the
+  alphabet by Groups. Its error boxes are its own (sound not name, look-alike
+  letters, sang the alphabet).
+- Under each sheet, always open, the sheet's own error boxes (`SHEET_ERRORS`
+  in `src/lib/phonics.ts`, two to four per sheet with an example from its
+  words), then the ones every word sheet shares (couldn't blend, slow sound
+  by sound, guessed from the first letter) and, on two-syllable sheets, a
+  wrong split and losing the second syllable. Then the patterns that gave
+  trouble. Errors only, for grouping students: strengths go in Notes. Boxes
+  from the first version (onset and rime, automatic, flexible…) still read
+  on old checks but are no longer offered. Error patterns counts them per
+  sheet.
 - Stop a sheet after five errors in a row. Untouched words are saved as *not
   read*, not as errors.
 
-The teacher picks any set of sheets: one, several, or all twenty. The set is
+The teacher picks any set of sheets: one, several, or all of them. The set is
 remembered in the browser so a class can be run on the same sheets without
 re-ticking. *Not yet proficient* selects what the student did not get last
-time; *Not checked yet* selects what has never been checked. *Rest correct*
+time; *Not checked yet* selects what has never been checked. *Missed
+before* puts every word missed (error or partly) on the latest check of each
+sheet on one card, ×2 on a word missed on two or more checks. The words read
+again replace their old marks and the rest carry over, so each sheet is saved
+whole and scored again; the check's `carried` column records the check it
+built on and the words read again (a recheck counts only those as missed
+again). *Print for the student* prints the words; Groups prints a group's
+missed words the same way. *Rest correct*
 marks the untouched words correct, for the teacher who only taps the errors.
 *Save and next student* keeps the sheets and moves down the roster.
 
@@ -88,7 +106,7 @@ The packet's rubric. Accuracy is words correct over words on the sheet.
   the check screen on them.
 - **Leveling meeting**: the hover card on a student's name shows the strip
   and the working-on sheet beside the level test numbers.
-- **CSV** exports the heat map; **Word sheets** prints the twenty sheets in
+- **CSV** exports the heat map; **Word sheets** prints every sheet in
   large type, one a page.
 
 ## Data

@@ -14,19 +14,19 @@ describe('masteryPosition', () => {
   })
 
   it('is the furthest mastered sheet in packet order, with earlier weak sheets as gaps', () => {
-    // cvc (1) mastered, digraphs (2) developing, silent_e (7) mastered, vowel_teams (9) beginning
+    // after the alphabet (1): cvc (2) mastered, digraphs (3) developing, silent_e (8) mastered, vowel_teams (10) beginning
     const l = latest(sc('cvc', 100), sc('digraphs', 75), sc('silent_e', 95), sc('vowel_teams', 40))
     const p = masteryPosition(l)
     expect(p.through).toBe('silent_e')
-    expect(p.position).toBe(7)
+    expect(p.position).toBe(8)
     expect(p.gaps).toEqual(['digraphs'])
-    expect(p.testedThrough).toBe(9)
+    expect(p.testedThrough).toBe(10)
     expect(p.tested).toBe(4)
   })
 
   it('any sheet at 90% or more is mastered; 89 is a gap below the position', () => {
-    expect(masteryPosition(latest(sc('cvc', 90), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 3, gaps: [] })
-    expect(masteryPosition(latest(sc('cvc', 89), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 3, gaps: ['cvc'] })
+    expect(masteryPosition(latest(sc('cvc', 90), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 4, gaps: [] })
+    expect(masteryPosition(latest(sc('cvc', 89), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 4, gaps: ['cvc'] })
   })
 })
 
@@ -48,7 +48,7 @@ describe('groupStats', () => {
     expect(g.students).toBe(4)
     expect(g.tested).toBe(3)
     // a 2, b 1, c 2
-    expect(g.medianPosition).toBe(2)
+    expect(g.medianPosition).toBe(3)
   })
 
   it('puts the edge at the first well-tested sheet under 70%', () => {

@@ -8,7 +8,7 @@ import { getDisplayName } from '@/lib/utils'
 import { exportToCSV } from '@/lib/export'
 import { ENGLISH_CLASS_ORDER } from '@/lib/rosterSort'
 import {
-  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_BAND_LABELS,
+  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_SHEET_COUNT, PHONICS_BAND_LABELS,
   phonicsSkill, skillsInGroup, latestBySkill, phonicsBand, scoreText,
   type PhonicsCheckRow, type LatestBySkill, type PhonicsBand,
 } from '@/lib/phonics'
@@ -29,7 +29,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, 
 // ─── Phonics: whole grade and all grades ─────────────────────────
 // Reading → Phonics with the scope set past one class. Every teacher sees
 // every class here, for leveling: where whole classes sit on the packet's
-// twenty sheets, and which students sit where against their class.
+// sheets, and which students sit where against their class.
 //
 // Classes compared: a row per class, each sheet how many of its tested
 // students meet the bar (5/8), coloured by the share, the class's edge (first
@@ -37,7 +37,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, 
 // by class or ranked by mastery position, the furthest sheet meeting the
 // bar. Cells tested by fewer than three students are greyed: too thin to
 // compare on. Those two are the first tab. Leveling: a strip per grade with
-// every checked student placed on the twenty sheets, and the students who
+// every checked student placed on the sheets, and the students who
 // read like the class above or below. Error patterns: how students decoded,
 // what gave trouble and which words were missed, class against class.
 // Groups: students gathered across classes by the sheet to teach next.
@@ -176,7 +176,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
 
   const exportCsv = () => {
     exportToCSV(`phonics-${scope === 'grade' ? `G${grade}-all-classes` : 'all-grades'}`,
-      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), 'Mastered through', 'Position (of 20)', 'Gaps below', 'Tested through (of 20)', 'Reads like', 'Next to teach', 'Last check'],
+      ['Grade', 'Class', 'Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), 'Mastered through', `Position (of ${PHONICS_SHEET_COUNT})`, 'Gaps below', `Tested through (of ${PHONICS_SHEET_COUNT})`, 'Reads like', 'Next to teach', 'Last check'],
       [...students].sort((a, b) => a.grade - b.grade || classRank(a.english_class) - classRank(b.english_class) || a.english_name.localeCompare(b.english_name)).map(s => {
         const latest = latestByStudent[s.id] || {}
         const p = posByStudent[s.id]
@@ -283,8 +283,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       {/* ─── Leveling ─── */}
       <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '레벨링' : 'Leveling'}</h3>
       <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2 max-w-[920px]">{lang === 'ko'
-        ? `점 하나가 학생 한 명, 위치(0–20)에 놓입니다. 음영은 그 반의 중간 50%, 막대는 중앙값. 초록 테두리: 위 반의 중앙값에 이름. 빨간 테두리: 아래 반의 중앙값 이하. 노란 테두리: 아래 반 수준이지만 그 위로는 점검하지 않음.`
-        : `A dot per checked student at their position (0–20). Shaded: the class’s middle half; bar: its median. Ringed green: at or past the median of the class above. Ringed red: at or under the median of the class below. Ringed amber: the same, but never tested past that point, so check further first.`}</p>
+        ? `점 하나가 학생 한 명, 위치(0–${PHONICS_SHEET_COUNT})에 놓입니다. 음영은 그 반의 중간 50%, 막대는 중앙값. 초록 테두리: 위 반의 중앙값에 이름. 빨간 테두리: 아래 반의 중앙값 이하. 노란 테두리: 아래 반 수준이지만 그 위로는 점검하지 않음.`
+        : `A dot per checked student at their position (0–${PHONICS_SHEET_COUNT}). Shaded: the class’s middle half; bar: its median. Ringed green: at or past the median of the class above. Ringed red: at or under the median of the class below. Ringed amber: the same, but never tested past that point, so check further first.`}</p>
       {leveling.byGrade.map(g => (
         <PhonicsLevelingStrip key={g.grade} title={lang === 'ko' ? `${g.grade}학년` : `Grade ${g.grade}`} lanes={g.lanes} students={studentById} pos={posByStudent} flags={leveling.flags}
           lang={lang} onOpenStudent={onOpenStudent} />
@@ -330,8 +330,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         <div>
           <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '학생' : 'Students'}</h3>
           <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko'
-            ? `위치 = 완성한 가장 먼 시트 (20개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
-            : `Position = the furthest sheet mastered, of 20. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>
+            ? `위치 = 완성한 가장 먼 시트 (${PHONICS_SHEET_COUNT}개 중). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
+            : `Position = the furthest sheet mastered, of ${PHONICS_SHEET_COUNT}. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>
         </div>
         <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-ink-2 flex-wrap">
           {BANDS.map(b => <span key={b} className="inline-flex items-center gap-1.5"><span className={`w-3 h-3 rounded-sm ${BAND_TONE[b]} ${b !== 'mastered' ? 'border border-rule-2' : ''}`} />{PHONICS_BAND_LABELS[b][lang]}</span>)}
@@ -418,7 +418,7 @@ function positionShort(p: number): string {
 }
 function positionLabel(p: number): string {
   if (p <= 0) return 'Nothing yet'
-  return `${p} of 20 · ${Number.isInteger(p) ? PHONICS_SKILLS[p - 1].label : `between ${PHONICS_SKILLS[Math.floor(p) - 1].label} and ${PHONICS_SKILLS[Math.ceil(p) - 1].label}`}`
+  return `${p} of ${PHONICS_SHEET_COUNT} · ${Number.isInteger(p) ? PHONICS_SKILLS[p - 1].label : `between ${PHONICS_SKILLS[Math.floor(p) - 1].label} and ${PHONICS_SKILLS[Math.ceil(p) - 1].label}`}`
 }
 
 function SheetHeader({ lang, lead, trail }: { lang: Lang; lead: string[]; trail?: string }) {

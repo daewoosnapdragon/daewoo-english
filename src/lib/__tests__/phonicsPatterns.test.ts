@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { latestBySkill, type PhonicsCheckRow, type PhonicsMark } from '@/lib/phonics'
 import {
-  observationCounts, troubleCounts, missedWords, nextToTeach, teachingGroups, patternKey, splitPatternKey,
+  checkedCount, errorCounts, troubleCounts, missedWords, nextToTeach, teachingGroups, patternKey, splitPatternKey,
 } from '@/lib/phonicsPatterns'
 
 // A check on one or more sheets. `wrong` are the words marked as errors, `partly` as partly right; every other word on the sheet is correct.
@@ -30,15 +30,16 @@ const rows = [
 const latest = Object.fromEntries(['a', 'b', 'c', 'd'].map(s => [s, latestBySkill(rows.filter(r => r.student_id === s))]))
 const checks = Object.fromEntries(rows.map(r => [r.id, r]))
 
-describe('observationCounts', () => {
-  it('counts each student once per checkbox, from their latest sheets only', () => {
-    const r = observationCounts(['a', 'b', 'c', 'd'], latest, checks)
-    expect(r.checked).toBe(3)
+describe('errorCounts', () => {
+  it('counts students per sheet and error, from their latest sheets only, never patterns', () => {
+    expect(checkedCount(['a', 'b', 'c', 'd'], latest)).toBe(3)
+    const r = errorCounts(['a', 'b', 'c', 'd'], latest, checks)
     // a's old "guessing" is superseded; b guessed on digraphs
-    expect(r.counts).toEqual({ automatic: 2, sound_by_sound: 2, guessing: 1 })
-  })
-  it('can be limited to some sheets', () => {
-    expect(observationCounts(['a', 'b'], latest, checks, ['digraphs']).counts).toEqual({ sound_by_sound: 1, guessing: 1 })
+    expect(r.counts).toEqual({
+      [patternKey('cvc', 'automatic')]: 2, [patternKey('cvc', 'sound_by_sound')]: 1,
+      [patternKey('digraphs', 'sound_by_sound')]: 1, [patternKey('digraphs', 'guessing')]: 1,
+    })
+    expect(r.checkedBySheet).toEqual({ cvc: 3, digraphs: 2 })
   })
 })
 
@@ -83,6 +84,8 @@ describe('nextToTeach', () => {
   })
   it('starts at CVC when nothing meets the bar, and knows done and unchecked', () => {
     expect(nextToTeach(L(sc('cvc', 50))).sheet).toBe('cvc')
+    expect(nextToTeach(L(sc('alphabet', 60))).sheet).toBe('alphabet')
+    expect(nextToTeach(L(sc('alphabet', 95), sc('cvc', 50))).sheet).toBe('cvc')
     expect(nextToTeach({}).reason).toBe('unchecked')
     expect(nextToTeach(L(sc('two_more_teams', 100))).reason).toBe('done')
   })

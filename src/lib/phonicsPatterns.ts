@@ -3,7 +3,7 @@
 // Everything here reads each student's latest result per sheet (and the
 // check it came from), so a student counts once however often they sat.
 //
-// Error patterns: how students decoded (the packet's teacher checkboxes),
+// Error patterns: what went wrong (the teacher's error checkboxes),
 // which graphemes gave trouble, and which words were missed most, with what
 // students said instead, for any set of students: a class, a grade, a group.
 //
@@ -21,10 +21,6 @@ import { masteryPosition } from '@/lib/phonicsCompare'
 type Latest = Record<string, LatestBySkill>
 type Checks = Record<string, PhonicsCheckRow>
 
-/** Checkboxes that point at a decoding problem, and those that point at strength. */
-export const CONCERN_OBSERVATIONS = ['guessing', 'omitted', 'vowel_confusion', 'blend_struggle', 'first_syllable']
-export const STRENGTH_OBSERVATIONS = ['automatic', 'flexible']
-
 /** The latest result on each sheet with the check it came from, optionally only some sheets. */
 function eachLatest(sid: string, latest: Latest, checks: Checks, sheets?: string[], fn?: (sheet: string, check: PhonicsCheckRow | undefined) => void) {
   Object.entries(latest[sid] || {}).forEach(([sheet, l]) => {
@@ -33,27 +29,9 @@ function eachLatest(sid: string, latest: Latest, checks: Checks, sheets?: string
   })
 }
 
-export interface ShareCount { checked: number; counts: Record<string, number> }
-
-/**
- * How students decoded: for each teacher checkbox, the number of students
- * who had it ticked on at least one of their latest sheets. `checked` is the
- * number of students with any sheet checked.
- */
-export function observationCounts(studentIds: string[], latest: Latest, checks: Checks, sheets?: string[]): ShareCount {
-  const counts: Record<string, number> = {}
-  let checked = 0
-  studentIds.forEach(sid => {
-    const seen = new Set<string>()
-    let any = false
-    eachLatest(sid, latest, checks, sheets, (sheet, c) => {
-      any = true
-      ;(c?.observations?.[sheet] || []).forEach(o => { if (!o.startsWith(PATTERN_PREFIX)) seen.add(o) })
-    })
-    if (any) checked++
-    seen.forEach(o => { counts[o] = (counts[o] || 0) + 1 })
-  })
-  return { checked, counts }
+/** Students with at least one sheet checked. */
+export function checkedCount(studentIds: string[], latest: Latest): number {
+  return studentIds.filter(sid => Object.keys(latest[sid] || {}).length > 0).length
 }
 
 export const patternKey = (sheet: string, pattern: string) => `${sheet}|${pattern}`
@@ -62,22 +40,33 @@ export function splitPatternKey(key: string): { sheet: string; pattern: string }
   return { sheet: key.slice(0, i), pattern: key.slice(i + 1) }
 }
 
+export interface TickCounts { counts: Record<string, number>; checkedBySheet: Record<string, number> }
+
 /**
- * Patterns that gave trouble, keyed sheet|grapheme: the number of students
- * with it ticked on their latest result for that sheet. `checkedBySheet` is
- * how many of the students have a result on each sheet, the denominator.
+ * Ticks on each student's latest result per sheet, keyed sheet|tick: the
+ * number of students with it ticked. Patterns (the graphemes that gave
+ * trouble) or errors (what went wrong). `checkedBySheet` is how many of the
+ * students have a result on each sheet, the denominator.
  */
-export function troubleCounts(studentIds: string[], latest: Latest, checks: Checks, sheets?: string[]): { counts: Record<string, number>; checkedBySheet: Record<string, number> } {
+function tickCounts(kind: 'pattern' | 'error', studentIds: string[], latest: Latest, checks: Checks, sheets?: string[]): TickCounts {
   const counts: Record<string, number> = {}
   const checkedBySheet: Record<string, number> = {}
   studentIds.forEach(sid => eachLatest(sid, latest, checks, sheets, (sheet, c) => {
     checkedBySheet[sheet] = (checkedBySheet[sheet] || 0) + 1
     ;(c?.observations?.[sheet] || []).forEach(o => {
-      if (o.startsWith(PATTERN_PREFIX)) { const k = patternKey(sheet, o.slice(PATTERN_PREFIX.length)); counts[k] = (counts[k] || 0) + 1 }
+      const isPattern = o.startsWith(PATTERN_PREFIX)
+      if (isPattern !== (kind === 'pattern')) return
+      const k = patternKey(sheet, isPattern ? o.slice(PATTERN_PREFIX.length) : o)
+      counts[k] = (counts[k] || 0) + 1
     })
   }))
   return { counts, checkedBySheet }
 }
+
+/** Patterns that gave trouble, keyed sheet|grapheme. */
+export const troubleCounts = (studentIds: string[], latest: Latest, checks: Checks, sheets?: string[]) => tickCounts('pattern', studentIds, latest, checks, sheets)
+/** What went wrong, keyed sheet|error id. */
+export const errorCounts = (studentIds: string[], latest: Latest, checks: Checks, sheets?: string[]) => tickCounts('error', studentIds, latest, checks, sheets)
 
 export interface MissedWord {
   sheet: string
@@ -132,7 +121,11 @@ export function nextToTeach(latest: LatestBySkill): NextSheet {
   if (!p.tested) return { sheet: null, reason: 'unchecked', checked: false }
   if (p.gaps.length) return { sheet: p.gaps[0], reason: 'gap', checked: true }
   if (p.position >= PHONICS_SKILL_IDS.length) return { sheet: null, reason: 'done', checked: true }
-  const sheet = PHONICS_SKILL_IDS[p.position]
+  // The alphabet sheet is for beginners: a student already checked on words
+  // and never on letters starts on words, not on the alphabet.
+  let i = p.position
+  while (i < PHONICS_SKILL_IDS.length - 1 && phonicsSkill(PHONICS_SKILL_IDS[i])?.group === 'letters' && !latest[PHONICS_SKILL_IDS[i]]) i++
+  const sheet = PHONICS_SKILL_IDS[i]
   return { sheet, reason: 'next', checked: !!latest[sheet] }
 }
 

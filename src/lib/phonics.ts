@@ -1,6 +1,7 @@
 // ─── Phonics quick checks ────────────────────────────────────────
-// The program's "Phonics Quick Checks" packet as data: the twenty student
-// sheets in the packet's order, each with its words exactly as printed; the
+// The program's "Phonics Quick Checks" packet as data: the student sheets
+// in the packet's order, each with its words exactly as printed, after an
+// alphabet sheet of our own that comes before CVC; the
 // packet's rubric; the teacher-page checkboxes; and the arithmetic over
 // saved checks. Decoding only: the student reads each word aloud from the
 // printed sheet (or the screen) and the teacher marks it. Meaning is never
@@ -29,6 +30,8 @@ export interface PhonicsSkill {
   patterns: string[]
   words: string[]
   ccss: string[]
+  /** Tiles across, on screen and printed; 4 when absent. */
+  columns?: number
 }
 
 export interface PhonicsGroup { id: string; label: string; label_ko: string }
@@ -36,6 +39,7 @@ export interface PhonicsGroup { id: string; label: string; label_ko: string }
 export const PHONICS_CONTENT_VERSION = 'quick-checks-2026-11'
 
 export const PHONICS_GROUPS: PhonicsGroup[] = [
+  { id: 'letters', label: 'ABC', label_ko: '알파벳' },
   { id: 'short', label: 'Short vowels', label_ko: '단모음' },
   { id: 'long', label: 'Long vowels', label_ko: '장모음' },
   { id: 'other', label: 'Other vowels', label_ko: '기타 모음' },
@@ -43,6 +47,20 @@ export const PHONICS_GROUPS: PhonicsGroup[] = [
 ]
 
 export const PHONICS_SKILLS: PhonicsSkill[] = [
+  {
+    // Not in the packet: letter names before any decoding. Capitals, then
+    // lowercase, each in mixed order, a row of 13 at a time.
+    id: 'alphabet', group: 'letters', label: 'Alphabet: capitals and lowercase', label_ko: '알파벳: 대문자와 소문자', short: 'ABC',
+    covers: 'Name each letter. Capitals, then lowercase, each in mixed order.', patterns: ['capitals', 'lowercase', 'b d p q', 'm n u', 'vowels'],
+    words: [
+      'S', 'O', 'M', 'B', 'X', 'F', 'K', 'A', 'R', 'H', 'Z', 'D', 'U',
+      'J', 'E', 'Q', 'L', 'C', 'W', 'I', 'T', 'G', 'Y', 'N', 'P', 'V',
+      'd', 't', 'a', 'n', 'q', 'i', 'g', 'w', 'e', 'k', 'b', 'r', 'y',
+      'm', 'u', 'h', 'p', 'f', 'z', 'l', 'c', 'x', 'o', 'j', 's', 'v',
+    ],
+    ccss: ['RF.K.1d'],
+    columns: 13,
+  },
   {
     id: 'cvc', group: 'short', label: 'CVC words', label_ko: 'CVC 단어', short: 'CVC',
     covers: 'Consonant-vowel-consonant, every short vowel.', patterns: ['short a', 'short e', 'short i', 'short o', 'short u', 'consonants'],
@@ -166,6 +184,8 @@ export const PHONICS_SKILLS: PhonicsSkill[] = [
 ]
 
 export const PHONICS_SKILL_IDS: string[] = PHONICS_SKILLS.map(s => s.id)
+/** Sheets in all, the top of the position scale. */
+export const PHONICS_SHEET_COUNT = PHONICS_SKILLS.length
 const BY_ID: Record<string, PhonicsSkill> = Object.fromEntries(PHONICS_SKILLS.map(s => [s.id, s]))
 
 export function phonicsSkill(id: string): PhonicsSkill | undefined { return BY_ID[id] }
@@ -177,26 +197,171 @@ export function orderSkills(ids: string[]): string[] {
   return PHONICS_SKILL_IDS.filter(id => want.has(id))
 }
 
-// ─── The packet's teacher-page checkboxes ────────────────────────
-// Ticked per sheet after the student reads, to drive instruction. Pattern
-// trouble is stored as `pattern:<grapheme>` in the same array.
+// ─── The teacher's error checkboxes ──────────────────────────────
+// Ticked per sheet after the student reads, to name what went wrong and
+// group students by it. Errors only: strengths go in the check's notes.
+// Each sheet has its own few, with an example from its words, then the
+// handful every word sheet (or every two-syllable sheet) shares. An id can
+// recur on several sheets with the same meaning; counts are kept per sheet.
+// Pattern trouble is stored as `pattern:<grapheme>` in the same array.
 
-export interface DecodingObservation { id: string; label: string; label_ko: string }
+export interface SheetError { id: string; label: string; label_ko: string }
 
-export const DECODING_OBSERVATIONS: DecodingObservation[] = [
-  { id: 'blend_struggle', label: 'Knew the letter-sounds, but struggled to blend', label_ko: '글자 소리는 알지만 합치지 못함' },
-  { id: 'sound_by_sound', label: 'Sounded out slowly, sound by sound', label_ko: '소리 하나씩 천천히 읽음' },
-  { id: 'onset_rime', label: 'Blended onset and rime (fl-at)', label_ko: '첫소리와 라임으로 나눠 읽음' },
-  { id: 'stretch', label: 'Decoded by stretching sounds', label_ko: '소리를 늘여서 읽음' },
-  { id: 'syllables', label: 'Broke the word into syllable parts (bas-ket)', label_ko: '음절로 나눠 읽음' },
-  { id: 'first_syllable', label: 'Read the first syllable, not the second', label_ko: '첫 음절만 맞게 읽음' },
-  { id: 'some_whole', label: 'Read some words whole, decoded others', label_ko: '일부는 통째로, 일부는 해독' },
-  { id: 'automatic', label: 'Read most words whole; automatic', label_ko: '대부분 통째로, 자동 인식' },
-  { id: 'guessing', label: 'Guessing, not decoding or automatic recognition', label_ko: '해독 없이 추측' },
-  { id: 'omitted', label: 'Omitted or substituted a sound', label_ko: '소리를 빠뜨리거나 바꿈' },
-  { id: 'vowel_confusion', label: 'Short/long vowel confusion', label_ko: '단모음/장모음 혼동' },
-  { id: 'flexible', label: 'Flexible with adjusting vowel sounds when needed', label_ko: '모음 소리를 유연하게 조정' },
+const E = (id: string, label: string, label_ko: string): SheetError => ({ id, label, label_ko })
+
+/** Every word sheet (not the alphabet). */
+const WORD_SHEET_ERRORS: SheetError[] = [
+  E('blend_struggle', 'Knew the sounds, couldn’t blend', '소리는 알지만 합치지 못함'),
+  E('sound_by_sound', 'Slow, sound by sound', '한 소리씩 천천히'),
+  E('guessing', 'Guessed from the first letter', '첫 글자만 보고 추측'),
 ]
+/** Every two-syllable sheet, before the word-sheet ones. */
+const TWO_SYLLABLE_ERRORS: SheetError[] = [
+  E('wrong_split', 'Split in the wrong place (rob-ot)', '음절을 잘못 나눔 (rob-ot)'),
+  E('first_syllable', 'Read the first syllable, lost the second', '첫 음절만 맞게 읽음'),
+]
+
+const SHEET_ERRORS: Record<string, SheetError[]> = {
+  alphabet: [
+    E('sound_not_name', 'Said the sound, not the name', '이름 대신 소리로 답함'),
+    E('bd_pq', 'b/d or p/q mix-up', 'b/d, p/q 혼동'),
+    E('lookalike', 'Other look-alikes (m/n, i/l, u/n)', '다른 비슷한 글자 혼동 (m/n, i/l, u/n)'),
+    E('alphabet_song', 'Sang the alphabet to find it', '알파벳 노래로 찾음'),
+  ],
+  cvc: [
+    E('short_vowel_mix', 'Wrong short vowel (pet → pit)', '단모음 틀림 (pet → pit)'),
+    E('korean_swap', 'v→b, f→p, z→j (van → ban)', 'v→b, f→p, z→j (van → ban)'),
+    E('last_sound', 'Changed the last sound (log → lot)', '끝소리 바꿈 (log → lot)'),
+    E('added_vowel', 'Added a vowel at the end (hat → hat-eu)', '끝에 모음 추가 (hat → 해트)'),
+  ],
+  digraphs: [
+    E('digraph_split', 'Read the pair as two sounds (shop → s-hop)', '두 글자를 따로 읽음 (shop → s-hop)'),
+    E('sh_ch', 'sh/ch mix-up (chop → shop)', 'sh/ch 혼동 (chop → shop)'),
+    E('th_sound', 'th as /t/, /d/ or /s/ (thin → tin)', 'th를 /t/, /d/, /s/로 (thin → tin)'),
+    E('short_vowel_mix', 'Wrong short vowel (shed → shad)', '단모음 틀림 (shed → shad)'),
+  ],
+  blends: [
+    E('added_vowel', 'Added a vowel in the blend (flat → fulat)', '자음군 사이에 모음 추가 (flat → 플랫)'),
+    E('dropped_blend', 'Dropped a blend sound (step → sep)', '자음군 소리 빠뜨림 (step → sep)'),
+    E('dropped_end', 'Dropped an ending sound (rest → res)', '끝 자음 빠뜨림 (rest → res)'),
+    E('short_vowel_mix', 'Wrong short vowel (spin → span)', '단모음 틀림 (spin → span)'),
+  ],
+  ck_tch_floss: [
+    E('tch_t', 'Sounded the t in tch (catch → cat-ch)', 'tch의 t를 소리 냄 (catch → cat-ch)'),
+    E('double_twice', 'Read the double letter twice (bell → bel-l)', '겹자음을 두 번 읽음 (bell → bel-l)'),
+    E('dropped_blend', 'Dropped a blend sound (stack → sack)', '자음군 소리 빠뜨림 (stack → sack)'),
+    E('short_vowel_mix', 'Wrong short vowel (check → chuck)', '단모음 틀림 (check → chuck)'),
+  ],
+  units: [
+    E('units_short', 'Read the vowel short (kind → kinned)', '모음을 짧게 읽음 (kind → kinned)'),
+    E('nk_ng', '-nk/-ng mix-up (bank → bang)', '-nk/-ng 혼동 (bank → bang)'),
+    E('all_sound', '-all read as /al/ (stall → stal)', '-all을 /al/로 읽음 (stall → stal)'),
+    E('dropped_end', 'Dropped the end (child → chil)', '끝소리 빠뜨림 (child → chil)'),
+  ],
+  open: [
+    E('open_short', 'Read the vowel short (go → got)', '모음을 짧게 읽음 (go → got)'),
+    E('y_ee', 'y read as /ē/ (fly → flee)', 'y를 /ē/로 읽음 (fly → flee)'),
+    E('added_end', 'Added a last sound (so → sock)', '끝에 소리 추가 (so → sock)'),
+  ],
+  silent_e: [
+    E('e_ignored', 'Ignored the e, read it short (made → mad)', 'e를 무시하고 짧게 (made → mad)'),
+    E('e_sounded', 'Sounded the e (made → made-ee)', 'e를 소리 냄 (made → made-ee)'),
+    E('wrong_long', 'Wrong long vowel (side → sade)', '다른 장모음으로 (side → sade)'),
+    E('u_e', 'u_e read short (cute → cut)', 'u_e를 짧게 (cute → cut)'),
+  ],
+  dge_ge_ce_ve: [
+    E('hard_gc', 'Hard g or c (huge → hug, nice → nike)', 'g, c를 강하게 (huge → hug, nice → nike)'),
+    E('dge_d', 'Sounded the d in dge (edge → ed-ge)', 'dge의 d를 소리 냄 (edge → ed-ge)'),
+    E('ve_long', 'Vowel made long before ve (have → hayve)', 've 앞 모음을 길게 (have → hayve)'),
+    E('short_long', 'Long/short vowel wrong (since → sine)', '장/단모음 틀림 (since → sine)'),
+  ],
+  vowel_teams: [
+    E('team_split', 'Sounded both vowels (boat → bo-at)', '두 모음을 따로 읽음 (boat → bo-at)'),
+    E('team_short', 'Read the team short (wait → wat)', '짧게 읽음 (wait → wat)'),
+    E('team_wrong', 'Wrong sound for ea, ow, ie (slow → slau)', 'ea, ow, ie 소리 틀림 (slow → slau)'),
+    E('igh_gh', 'Sounded the gh (light → lig-ht)', 'igh의 gh를 소리 냄 (light → lig-ht)'),
+  ],
+  r_controlled: [
+    E('r_swap', 'ar/or mix-up (farm → form)', 'ar/or 혼동 (farm → form)'),
+    E('er_ir_ur', 'ir/ur/er read differently (bird → beerd)', 'er/ir/ur을 다르게 읽음 (bird → beerd)'),
+    E('r_dropped', 'Dropped the r (dart → dat)', 'r을 빠뜨림 (dart → dat)'),
+  ],
+  oo_ou: [
+    E('oo_wrong', 'Wrong oo (good ↔ mood)', 'oo 소리 틀림 (good ↔ mood)'),
+    E('ou_ow', 'ou/ow read /ō/ (cloud → clode, now → no)', 'ou/ow를 /ō/로 (now → no)'),
+    E('ew_ue', 'ew/ue read /e/ (new → neh)', 'ew/ue를 /e/로 (new → neh)'),
+  ],
+  diphthongs: [
+    E('oi_oy', 'oi/oy read /ō/ (coin → cone)', 'oi/oy를 /ō/로 (coin → cone)'),
+    E('au_aw', 'au/aw read /ow/ (law → low)', 'au/aw를 /ow/로 (law → low)'),
+    E('team_split', 'Sounded both letters (soil → so-il)', '두 글자를 따로 읽음 (soil → so-il)'),
+  ],
+  two_open_closed: [
+    E('open_short', 'Open syllable read short (tiny → tinny)', '열린 음절을 짧게 (tiny → tinny)'),
+    E('closed_long', 'Closed syllable read long (napkin → naypkin)', '닫힌 음절을 길게 (napkin → naypkin)'),
+  ],
+  consonant_le: [
+    E('le_e', 'Sounded the e in -le (bubble → bub-lee)', '-le의 e를 소리 냄 (bubble → bub-lee)'),
+    E('first_vowel', 'Wrong first vowel (cradle → craddle)', '첫 모음 틀림 (cradle → craddle)'),
+  ],
+  y_vowel: [
+    E('y_ee_eye', 'y: /ē/ and /ī/ mixed (baby → bab-eye)', 'y의 /ē/, /ī/ 혼동 (baby → bab-eye)'),
+    E('y_consonant', 'y read as /y/ (fly → fl-yuh)', 'y를 자음 /y/로 (fly → fl-yuh)'),
+    E('first_vowel', 'Wrong first vowel (lady → laddy)', '첫 모음 틀림 (lady → laddy)'),
+  ],
+  one_two_silent_e: [
+    E('e_ignored', 'Ignored the e (slope → slop)', 'e를 무시함 (slope → slop)'),
+    E('e_sounded', 'Sounded the e (invite → in-vit-ee)', 'e를 소리 냄 (invite → in-vit-ee)'),
+  ],
+  two_silent_e: [
+    E('e_ignored', 'Ignored the e (combine → combin)', 'e를 무시함 (combine → combin)'),
+    E('open_short', 'Open first syllable read short (relate → rel-ate)', '열린 첫 음절을 짧게 (relate → rel-ate)'),
+  ],
+  two_r: [
+    E('r_swap', 'ar/or/er mix-up (perform → parform)', 'ar/or/er 혼동 (perform → parform)'),
+    E('r_dropped', 'Dropped the r (army → amy)', 'r을 빠뜨림 (army → amy)'),
+  ],
+  two_vowel_teams: [
+    E('team_split', 'Sounded both vowels (needle → ne-edle)', '두 모음을 따로 읽음 (needle → ne-edle)'),
+    E('team_short', 'Read the team short (detail → detal)', '짧게 읽음 (detail → detal)'),
+  ],
+  two_more_teams: [
+    E('team_wrong', 'Wrong team sound (loyal → lowal)', '모음 조합 소리 틀림 (loyal → lowal)'),
+    E('team_split', 'Sounded both letters (avoid → avo-id)', '두 글자를 따로 읽음 (avoid → avo-id)'),
+  ],
+}
+
+/** Boxes from the first version (strategies, strengths, general errors), kept so old checks still read. */
+const RETIRED_ERRORS: SheetError[] = [
+  E('onset_rime', 'Blended onset and rime (fl-at)', '첫소리와 라임으로 나눠 읽음'),
+  E('stretch', 'Decoded by stretching sounds', '소리를 늘여서 읽음'),
+  E('syllables', 'Broke the word into syllable parts (bas-ket)', '음절로 나눠 읽음'),
+  E('some_whole', 'Read some words whole, decoded others', '일부는 통째로, 일부는 해독'),
+  E('automatic', 'Read most words whole; automatic', '대부분 통째로, 자동 인식'),
+  E('flexible', 'Flexible with adjusting vowel sounds when needed', '모음 소리를 유연하게 조정'),
+  E('omitted', 'Omitted or substituted a sound', '소리를 빠뜨리거나 바꿈'),
+  E('vowel_confusion', 'Short/long vowel confusion', '단모음/장모음 혼동'),
+]
+const RETIRED_BY_ID: Record<string, SheetError> = Object.fromEntries(RETIRED_ERRORS.map(e => [e.id, e]))
+
+/** The boxes a sheet offers: its own, then the shared ones for its kind of sheet. */
+export function sheetErrors(sheet: string): SheetError[] {
+  const group = phonicsSkill(sheet)?.group
+  const shared = group === 'letters' ? [] : group === 'two' ? [...TWO_SYLLABLE_ERRORS, ...WORD_SHEET_ERRORS] : WORD_SHEET_ERRORS
+  return [...(SHEET_ERRORS[sheet] || []), ...shared]
+}
+
+/** A box's wording on a sheet, falling back to the retired boxes for old checks. */
+export function sheetError(sheet: string, id: string): SheetError | undefined {
+  return sheetErrors(sheet).find(e => e.id === id) || RETIRED_BY_ID[id]
+}
+
+/** The boxes for one sheet, plus any already ticked there that the sheet no longer offers. */
+export function errorsForSheet(sheet: string, ticked: string[] = []): SheetError[] {
+  const offered = sheetErrors(sheet)
+  const extra = ticked.filter(id => !id.startsWith(PATTERN_PREFIX) && !offered.some(e => e.id === id)).map(id => RETIRED_BY_ID[id] || E(id, id, id))
+  return [...offered, ...extra]
+}
 
 export const PATTERN_PREFIX = 'pattern:'
 
@@ -206,17 +371,24 @@ export const PATTERN_PREFIX = 'pattern:'
 
 export const PHONICS_CHECK_NOTES: string[] = [
   'Decoding only. The student reads each word aloud, left to right; you never ask what it means. A word they have never heard of is still correct if they read it right.',
-  'Use a check after teaching a phonics pattern to see whether the student has it, or to find where a new student’s decoding stands. Pick one sheet, several, or all twenty.',
+  'Use a check after teaching a phonics pattern to see whether the student has it, or to find where a new student’s decoding stands. Pick one sheet, several, or all of them. For a beginner, start with the alphabet sheet: capitals, then lowercase, the student names each letter.',
   'The student reads from the printed sheet (or Word sheets prints one). Say: “Read these words for me. If you are not sure, sound it out.” Point to the first word and let them set the pace.',
   'Correct: read accurately, including sounded out and then blended (/sh/ /i/ /p/, ship), and self-corrections. Partly: nearly there, one sound off or right only after a long struggle; it counts as half a word. Error: read wrongly, skipped, or nothing after about three seconds. Do not model, teach or correct during the check; the same warm tone for every word.',
   'On an error or a partly, tap the pencil on the tile and write what the student said. The packet asks for this: it is what makes error analysis possible later.',
-  'Under each sheet, tick how the student decoded (sounded out, onset and rime, read whole and automatic, guessing) and the patterns that gave trouble. These are notes for teaching; they do not change the score.',
+  'Under each sheet, tick what went wrong (could not blend, guessed, mixed up vowels, dropped a sound…) and the patterns that gave trouble. Errors only: strengths go in Notes. The ticks group students for teaching; they do not change the score.',
   'Stop a sheet after five errors in a row. Leave the remaining words untouched: they are saved as not read, not as errors.',
   'Accuracy is words correct over words on the sheet, a partly counting half. Beginning, under 70%, needs intervention; Developing, 70–89%, needs guided practice; Mastered, 90% and up, has the pattern.',
   'A phonics check is never graded. It sits on the student page and the leveling screens as information, so a reader who sounds fluent but has gaps in decoding is not missed.',
 ]
 
 // ─── Saved checks ────────────────────────────────────────────────
+
+/**
+ * A recheck of the words missed before. The sheet's result is the earlier
+ * check's marks with the words read again replaced, so the sheet is scored
+ * whole; `rechecked` is what was actually read this time.
+ */
+export interface CarriedSheet { from: string; date: string; rechecked: string[] }
 
 export interface PhonicsCheckRow {
   id: string
@@ -233,6 +405,8 @@ export interface PhonicsCheckRow {
   observations: Record<string, string[]>
   notes: string
   content_version: string
+  /** Sheets this check rechecked from Missed before: what it built on and the words read again. */
+  carried?: Record<string, CarriedSheet>
   created_at?: string
   updated_at?: string
 }
@@ -385,6 +559,43 @@ export interface Attempt { checkId: string; date: string; score: SkillScore }
 /** Checks oldest first: by date, then by save time. */
 export function sortChecksAsc(checks: PhonicsCheckRow[]): PhonicsCheckRow[] {
   return [...checks].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
+}
+
+// ─── Missed before ───────────────────────────────────────────────
+
+export interface MissedSheet {
+  sheet: string
+  /** The check the latest result came from, and its date. */
+  fromCheckId: string
+  fromDate: string
+  /** Words marked error or partly there, in the sheet's order. */
+  words: string[]
+}
+
+/** For one student: the words missed on their latest result for each sheet, sheet by sheet. */
+export function missedBefore(latest: LatestBySkill, checks: PhonicsCheckRow[]): MissedSheet[] {
+  const byId: Record<string, PhonicsCheckRow> = Object.fromEntries(checks.map(c => [c.id, c]))
+  return PHONICS_SKILLS.flatMap(sk => {
+    const l = latest[sk.id]
+    if (!l) return []
+    const marks = byId[l.checkId]?.results?.[sk.id] || {}
+    const words = sk.words.filter(w => isMiss(marks[w]))
+    return words.length ? [{ sheet: sk.id, fromCheckId: l.checkId, fromDate: l.date, words }] : []
+  })
+}
+
+/**
+ * How many of a student's checks missed each word on a sheet. A recheck
+ * counts only the words it read again, not the misses it carried over.
+ */
+export function missCounts(checks: PhonicsCheckRow[], sheet: string): Record<string, number> {
+  const out: Record<string, number> = {}
+  checks.forEach(c => {
+    if (!c.skills?.includes(sheet)) return
+    const read = c.carried?.[sheet]?.rechecked
+    Object.entries(c.results?.[sheet] || {}).forEach(([w, m]) => { if (isMiss(m) && (!read || read.includes(w))) out[w] = (out[w] || 0) + 1 })
+  })
+  return out
 }
 
 /** For one student's checks: every attempt at each sheet, oldest first. */
