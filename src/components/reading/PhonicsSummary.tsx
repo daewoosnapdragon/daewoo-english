@@ -22,7 +22,9 @@ export function phonicsCheckHref(studentId: string, grade: number | string, engl
   return `/reading?tab=phonics&student=${studentId}&grade=${grade}&class=${encodeURIComponent(englishClass)}`
 }
 
-export default function PhonicsSummary({ student, lang }: { student: Student; lang: 'en' | 'ko' }) {
+// onCount: the student page folds Reading to one line only when there are no
+// reading records and no phonics checks.
+export default function PhonicsSummary({ student, lang, onCount }: { student: Student; lang: 'en' | 'ko'; onCount?: (n: number) => void }) {
   const [checks, setChecks] = useState<PhonicsCheckRow[] | null>(null)
   const [allLatest, setLatest] = useState<LatestBySkill>({})
   const { skips } = useAlphabetSkips()
@@ -43,6 +45,7 @@ export default function PhonicsSummary({ student, lang }: { student: Student; la
     return () => { cancelled = true }
   }, [student.id])
 
+  useEffect(() => { if (checks) onCount?.(checks.length) }, [checks]) // eslint-disable-line react-hooks/exhaustive-deps
   const sum = checks ? summarizeStudent(latest) : null
   const href = phonicsCheckHref(student.id, student.grade, student.english_class)
 

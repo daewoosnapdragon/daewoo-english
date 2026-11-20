@@ -2,7 +2,7 @@
 
 import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
@@ -12,8 +12,7 @@ import { classToColor, classToTextColor, domainLabel, formatHomeroom } from '@/l
 import { supabase } from '@/lib/supabase'
 import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { withoutAwayDays } from '@/lib/calendarDays'
-import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, Users2, CheckCircle2, Circle, Target, Check, RefreshCw, BookOpen, Play, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
-import BehaviorTracker from '@/components/behavior/BehaviorTracker'
+import { Search, Upload, Plus, Printer, FileSpreadsheet, AlertTriangle, X, Loader2, ChevronRight, User, Pencil, Trash2, Settings2, Download, CheckCircle2, Target, Check, RefreshCw, BookOpen, Play, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react'
 import WIDABadge, { useWIDALevels } from '@/components/shared/WIDABadge'
 import { sortRoster, filterRoster, widaLevelFromDomains, sanitizeRosterPrefs, rosterPrefsKey, DEFAULT_ROSTER_PREFS, type RosterSortKey, type RosterSortDir, type WidaFilter } from '@/lib/rosterSort'
 import RosterUploadModal from './RosterUploadModal'
@@ -697,6 +696,33 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
 
 // ─── About Tab ──────────────────────────────────────────────────────
 
+// ─── Student page helpers ─────────────────────────────────────────
+// The student page folds a section with nothing in it down to one line, so
+// each section's component says how many records it holds once its own load
+// is done. The parent's callback is left out of the deps on purpose: it is a
+// fresh function every render and only the count matters.
+export function useReportCount(onCount: ((n: number) => void) | undefined, loading: boolean, n: number) {
+  useEffect(() => { if (!loading) onCount?.(n) }, [loading, n]) // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// Runs fn each time the student page's "+ Add" on a folded section is pressed
+// (the signal counts up from 0; 0 means never pressed).
+export function useAddSignal(signal: number | undefined, fn: () => void) {
+  useEffect(() => { if (signal) fn() }, [signal]) // eslint-disable-line react-hooks/exhaustive-deps
+}
+
+// Long lists on the student page show the latest few; the rest is one click away.
+export const RECENT_ROWS = 5
+export function ShowAllToggle({ total, showing, onToggle, lang }: { total: number; showing: boolean; onToggle: () => void; lang: string }) {
+  if (total <= RECENT_ROWS) return null
+  return (
+    <button type="button" onClick={onToggle} aria-expanded={showing}
+      className="inline-flex items-center h-8 text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:text-ink underline-offset-2 hover:underline">
+      {showing ? (lang === 'ko' ? `최근 ${RECENT_ROWS}개만 보기` : `Show the latest ${RECENT_ROWS}`) : (lang === 'ko' ? `${total}개 모두 보기` : `Show all ${total}`)}
+    </button>
+  )
+}
+
 // ─── WIDA-to-Performance Insight ──────────────────────────────────
 
 const WIDA_EXPECTED_RANGES: Record<number, { min: number; max: number; label: string }> = {
@@ -814,12 +840,16 @@ export function WIDAPerformanceInsight({ studentId, lang }: { studentId: string;
   )
 }
 
-export function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+export function AboutTab({ studentId, lang, onCount, addSignal }: { studentId: string; lang: 'en' | 'ko'; onCount?: (n: number) => void; addSignal?: number }) {
   const { currentTeacher, showToast } = useApp()
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  const box = useRef<HTMLTextAreaElement>(null)
+  useReportCount(onCount, loading, notes.trim() ? 1 : 0)
+  // "+ Add a note" on the folded section: the textarea is the add form.
+  useAddSignal(addSignal, () => { requestAnimationFrame(() => box.current?.focus()) })
 
   useEffect(() => {
     setLoading(true)
@@ -852,7 +882,7 @@ export function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 
             </button>
           )}
         </div>
-        <textarea id={`about-${studentId}`} value={notes} onChange={e => { setNotes(e.target.value); setDirty(true) }} rows={5}
+        <textarea ref={box} id={`about-${studentId}`} value={notes} onChange={e => { setNotes(e.target.value); setDirty(true) }} rows={5}
           placeholder={lang === 'ko' ? '학생에 대한 중요한 정보, 메모, 알레르기, 특이사항 등...' : 'Important info about this student — allergies, notes for subs, learning needs, parent communication, anything teachers should know...'}
           className="w-full px-3 py-2.5 border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink outline-none resize-none bg-surface leading-relaxed" />
         <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '모든 교사가 볼 수 있습니다' : 'Visible to all teachers in this class'}</p>
@@ -861,13 +891,16 @@ export function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 
   )
 }
 
-export function ClassTransferHistory({ studentId }: { studentId: string }) {
+export function ClassTransferHistory({ studentId, onCount }: { studentId: string; onCount?: (n: number) => void }) {
   const { language: lang } = useApp()
   const [transfers, setTransfers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  useReportCount(onCount, loading, transfers.length)
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from('class_transfers').select('*').eq('student_id', studentId).order('transfer_date', { ascending: true })
       if (data) setTransfers(data)
+      setLoading(false)
     })()
   }, [studentId])
   if (transfers.length === 0) return null
@@ -893,12 +926,13 @@ export function ClassTransferHistory({ studentId }: { studentId: string }) {
 
 // ─── Academic History Tab (Domain Graphs) ───────────────────────────
 
-export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+export function AcademicHistoryTab({ studentId, lang, onCount }: { studentId: string; lang: 'en' | 'ko'; onCount?: (n: number) => void }) {
   const { activeSemester } = useApp()
   const activeSemesterId = activeSemester?.id || null
   const [data, setData] = useState<{ domain: string; assessments: { name: string; score: number; max: number; pct: number; classAvg: number | null; date: string | null }[] }[]>([])
   const [semesterHistory, setSemesterHistory] = useState<{ semester: string; grades: Record<string, number | null>; behavior: string | null }[]>([])
   const [loading, setLoading] = useState(true)
+  useReportCount(onCount, loading, data.length + semesterHistory.length)
 
   const DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language']
   const DOMAIN_LABELS: Record<string, Record<string, string>> = {
@@ -1150,7 +1184,7 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
 
 // ─── Reading Tab (in Modal) ──────────────────────────────────────────
 
-export function ReadingTabInModal({ studentId, studentName, lang }: { studentId: string; studentName?: string; lang: 'en' | 'ko' }) {
+export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSignal }: { studentId: string; studentName?: string; lang: 'en' | 'ko'; onCount?: (n: number) => void; addSignal?: number }) {
   const { currentTeacher, showToast } = useApp()
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -1167,6 +1201,9 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<any>({})
   const [savingEdit, setSavingEdit] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+  useReportCount(onCount, loading, records.length)
+  useAddSignal(addSignal, () => { setShowManualEntry(false); setShowRunningRecord(true) })
 
   useEffect(() => {
     (async () => {
@@ -1463,7 +1500,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
             <th className={`text-center ${th} w-16`}><span className="sr-only">Edit</span></th>
           </tr></thead>
           <tbody>
-            {records.map((r: any) => {
+            {(showAll ? records : records.slice(0, RECENT_ROWS)).map((r: any) => {
               const level = classifyLevel(r.accuracy_rate)
               const isEditing = editingId === r.id
               if (isEditing) {
@@ -1502,6 +1539,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
           </tbody>
         </table>
       </div>
+      <ShowAllToggle total={records.length} showing={showAll} onToggle={() => setShowAll(v => !v)} lang={lang} />
       </>)}
     </div>
   )
@@ -1509,10 +1547,12 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
 
 // ─── Attendance Tab (in Modal) ──────────────────────────────────────
 
-export function AttendanceTabInModal({ studentId, studentName, lang }: { studentId: string; studentName: string; lang: 'en' | 'ko' }) {
+export function AttendanceTabInModal({ studentId, studentName, lang, onCount }: { studentId: string; studentName: string; lang: 'en' | 'ko'; onCount?: (n: number) => void }) {
   const [records, setRecords] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [correlation, setCorrelation] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  useReportCount(onCount, loading, records.length)
 
   useEffect(() => {
     (async () => {
@@ -1606,15 +1646,16 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
       {records.length === 0 ? (
         <p className="text-center text-ink-3 text-[length:calc(13px*var(--ts))] py-4">{lang === 'ko' ? '출석 기록이 없습니다.' : 'No attendance records yet.'}</p>
       ) : (
-        <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden max-h-[200px] overflow-y-auto">
+        <div>
+        <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden">
           <table className="w-full text-[length:calc(12.5px*var(--ts))]">
-            <thead className="sticky top-0"><tr className="bg-paper-2">
+            <thead><tr className="bg-paper-2">
               <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Date</th>
               <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Status</th>
               <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Note</th>
             </tr></thead>
             <tbody>
-              {records.slice(0, 30).map((r: any) => (
+              {(showAll ? records : records.slice(0, RECENT_ROWS)).map((r: any) => (
                 <tr key={r.id} className="border-t border-rule">
                   <td className="px-3 py-1.5 text-ink">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}</td>
                   <td className={`px-3 py-1.5 text-center font-semibold capitalize ${statusTone[r.status] || 'text-ink-2'}`}>{r.status === 'field_trip' ? 'Field Trip' : r.status}</td>
@@ -1624,6 +1665,8 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
             </tbody>
           </table>
         </div>
+        <ShowAllToggle total={records.length} showing={showAll} onToggle={() => setShowAll(v => !v)} lang={lang} />
+        </div>
       )}
     </div>
   )
@@ -1631,9 +1674,10 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
 
 // ─── Standards Mastery Tab ──────────────────────────────────────────
 
-export function StandardsMasteryTab({ studentId, lang }: { studentId: string; lang: 'en' | 'ko' }) {
+export function StandardsMasteryTab({ studentId, lang, onCount }: { studentId: string; lang: 'en' | 'ko'; onCount?: (n: number) => void }) {
   const [loading, setLoading] = useState(true)
   const [standardsData, setStandardsData] = useState<{ code: string; description: string; domain: string; assessments: { name: string; pct: number }[]; avgPct: number }[]>([])
+  useReportCount(onCount, loading, standardsData.length)
 
   // 4-tier mastery bands — load from saved thresholds
   const [BANDS, setBANDS] = useState({ above: 86, on: 71, approaching: 61 })
@@ -1785,175 +1829,6 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
   )
 }
 
-// ─── Scaffolds Tab ──────────────────────────────────────────────────
-
-export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: string; studentName?: string }) {
-  const { showToast, currentTeacher } = useApp()
-  const [scaffolds, setScaffolds] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [widaLevels, setWidaLevels] = useState<Record<string, number>>({})
-  const [addingCustom, setAddingCustom] = useState(false)
-  const [customText, setCustomText] = useState('')
-  const [customDomain, setCustomDomain] = useState('general')
-
-  // Suggested scaffolds by WIDA level
-  const SUGGESTED_SCAFFOLDS: Record<number, string[]> = {
-    1: ['Visual supports and picture cues', 'Sentence frames for oral responses', 'Word walls with L1 translations', 'Graphic organizers', 'Total Physical Response (TPR)', 'Bilingual glossaries', 'Manipulatives and realia'],
-    2: ['Sentence starters for writing', 'Vocabulary pre-teaching', 'Think-pair-share structures', 'Cloze activities', 'Leveled texts', 'Anchor charts', 'Word banks for tasks'],
-    3: ['Graphic organizers for extended writing', 'Academic language frames', 'Peer collaboration activities', 'Content-specific vocabulary instruction', 'Text annotation strategies', 'Structured note-taking templates'],
-    4: ['Complex sentence modeling', 'Academic discussion protocols', 'Argumentative writing scaffolds', 'Mentor text analysis', 'Self-monitoring checklists', 'Independent research frameworks'],
-    5: ['Advanced vocabulary enrichment', 'Rhetorical analysis tools', 'Cross-curricular connections', 'Student-led discussions', 'Peer editing with rubrics'],
-  }
-
-  useEffect(() => {
-    (async () => {
-      const [scaffRes, widaRes] = await Promise.all([
-        supabase.from('student_scaffolds').select('*').eq('student_id', studentId).eq('is_active', true).order('assigned_at', { ascending: false }),
-        supabase.from('student_wida_levels').select('domain, wida_level').eq('student_id', studentId),
-      ])
-      setScaffolds(scaffRes.data || [])
-      const wm: Record<string, number> = {}
-      widaRes.data?.forEach((w: any) => { wm[w.domain] = w.wida_level })
-      setWidaLevels(wm)
-      setLoading(false)
-    })()
-  }, [studentId])
-
-  const DOMAIN_COLORS: Record<string, string> = {
-    reading: 'bg-blue-100 text-blue-700', phonics: 'bg-purple-100 text-purple-700',
-    writing: 'bg-amber-100 text-amber-700', speaking: 'bg-green-100 text-green-700',
-    language: 'bg-pink-100 text-pink-700', general: 'bg-gray-100 text-gray-700',
-  }
-
-  const toggleEffectiveness = async (id: string, current: string | null) => {
-    const next = current === 'working' ? 'not_working' : current === 'not_working' ? null : 'working'
-    const { error } = await supabase.from('student_scaffolds').update({ effectiveness: next, effectiveness_updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) showToast(`Error: ${error.message}`)
-    else { setScaffolds(prev => prev.map(s => s.id === id ? { ...s, effectiveness: next } : s)); logActivity('edited', `Scaffold marked ${next || 'untried'} · ${studentName}`, { key: `eff:${id}` }) }
-  }
-
-  const removeScaffold = async (id: string) => {
-    const gone = scaffolds.find(s => s.id === id)
-    const { error } = await supabase.from('student_scaffolds').update({ is_active: false }).eq('id', id)
-    if (error) showToast(`Error: ${error.message}`)
-    else { setScaffolds(prev => prev.filter(s => s.id !== id)); logActivity('deleted', `Scaffold for ${studentName} · ${(gone?.scaffold_text || '').slice(0, 60)}`) }
-  }
-
-  const addSuggested = async (text: string) => {
-    const { data, error } = await supabase.from('student_scaffolds').insert({
-      student_id: studentId, domain: 'general', scaffold_text: text,
-      is_active: true, assigned_at: new Date().toISOString(), assigned_by: currentTeacher?.id,
-    }).select().single()
-    if (error) { showToast(`Error: ${error.message}`); return }
-    setScaffolds(prev => [data, ...prev])
-    logActivity('created', `Scaffold for ${studentName} · ${text.slice(0, 60)}`)
-    showToast('Scaffold added')
-  }
-
-  const addCustom = async () => {
-    if (!customText.trim()) return
-    const { data, error } = await supabase.from('student_scaffolds').insert({
-      student_id: studentId, domain: customDomain, scaffold_text: customText.trim(),
-      is_active: true, assigned_at: new Date().toISOString(), assigned_by: currentTeacher?.id,
-    }).select().single()
-    if (error) { showToast(`Error: ${error.message}`); return }
-    setScaffolds(prev => [data, ...prev])
-    logActivity('created', `Custom scaffold for ${studentName} · ${customDomain} · ${customText.trim().slice(0, 60)}`)
-    setCustomText(''); setAddingCustom(false)
-    showToast('Custom scaffold added')
-  }
-
-  if (loading) return <Loading kind="quiet" rows={4} />
-
-  // Determine primary WIDA level for suggestions
-  const widaVals = Object.values(widaLevels).filter(v => v > 0)
-  const avgWida = widaVals.length > 0 ? Math.floor(widaVals.reduce((a, b) => a + b, 0) / widaVals.length) : null
-  const suggestions = avgWida ? (SUGGESTED_SCAFFOLDS[avgWida] || []) : []
-  const activeTexts = new Set(scaffolds.map(s => s.scaffold_text))
-
-  return (
-    <div>
-      {/* Currently using */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{scaffolds.length} active scaffold{scaffolds.length !== 1 ? 's'  : ''}</p>
-        <button onClick={() => setAddingCustom(!addingCustom)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">
-          {addingCustom ? <><X size={10} /> Cancel</> : <><Plus size={10} /> Custom</>}
-        </button>
-      </div>
-
-      {addingCustom && (
-        <div className="bg-surface-alt/50 border border-border rounded-lg p-3 mb-3 flex gap-2">
-          <select value={customDomain} onChange={e => setCustomDomain(e.target.value)}
-            className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none">
-            <option value="general">General</option><option value="reading">Reading</option><option value="writing">Writing</option>
-            <option value="speaking">Speaking</option><option value="phonics">Phonics</option><option value="language">Language</option>
-          </select>
-          <input value={customText} onChange={e => setCustomText(e.target.value)} placeholder="Describe the scaffold..."
-            className="flex-1 px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy" />
-          <button onClick={addCustom} disabled={!customText.trim()}
-            className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">Add</button>
-        </div>
-      )}
-
-      {scaffolds.length > 0 && (
-        <div className="space-y-1.5 mb-5">
-          {scaffolds.map(s => (
-            <div key={s.id} className="flex items-start gap-2.5 p-2.5 bg-surface border border-border rounded-lg group">
-              <span className={`flex-shrink-0 text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded uppercase ${DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.general}`}>{s.domain}</span>
-              <p className="flex-1 text-[length:calc(11.5px*var(--ts))] text-text-primary leading-relaxed">{s.scaffold_text}</p>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={() => toggleEffectiveness(s.id, s.effectiveness)}
-                  className={`px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-semibold ${s.effectiveness === 'working' ? 'bg-green-100 text-green-700' : s.effectiveness === 'not_working' ? 'bg-red-100 text-red-700' : 'bg-surface-alt text-text-tertiary'}`}>
-                  {s.effectiveness === 'working' ? 'Working' : s.effectiveness === 'not_working' ? 'Not working' : 'Untested'}
-                </button>
-                <button onClick={() => removeScaffold(s.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-text-tertiary hover:text-red-500">
-                  <X size={11} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* WIDA-suggested scaffolds */}
-      {avgWida && suggestions.length > 0 && (
-        <div className="border border-blue-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 bg-blue-50 border-b border-blue-200">
-            <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Suggested for WIDA Level {avgWida}</p>
-            <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-0.5">Click + to add to this student's active scaffolds</p>
-          </div>
-          <div className="divide-y divide-blue-100">
-            {suggestions.map((text, i) => {
-              const alreadyAdded = activeTexts.has(text)
-              return (
-                <div key={i} className={`px-4 py-2 flex items-center gap-3 ${alreadyAdded ? 'bg-green-50/30' : 'hover:bg-blue-50/30'}`}>
-                  <p className={`flex-1 text-[length:calc(11.5px*var(--ts))] ${alreadyAdded ? 'text-green-700' : 'text-text-primary'}`}>{text}</p>
-                  {alreadyAdded ? (
-                    <span className="text-[length:calc(11.5px*var(--ts))] text-green-600 font-medium">In use</span>
-                  ) : (
-                    <button onClick={() => addSuggested(text)}
-                      className="p-1 rounded-lg text-blue-500 hover:bg-blue-100 hover:text-blue-700">
-                      <Plus size={14} />
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {!avgWida && scaffolds.length === 0 && (
-        <div className="py-6 text-center">
-          <p className="text-text-tertiary text-[length:calc(12px*var(--ts))]">No WIDA profile set for this student.</p>
-          <p className="text-text-tertiary text-[length:calc(11.5px*var(--ts))] mt-1">Complete their WIDA profile to see suggested scaffolds.</p>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ─── Student PDF Export ─────────────────────────────────────────────
 
 export function buildStudentPDFHtml(student: Student, data: {
@@ -2089,9 +1964,10 @@ ${attendanceRecords.length > 0 ? (() => {
 }
 
 // ─── Student Groups Tab ─────────────────────────────────────────────
-export function StudentGroupsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
+export function StudentGroupsTab({ studentId, studentName, onCount }: { studentId: string; studentName: string; onCount?: (n: number) => void }) {
   const [groups, setGroups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  useReportCount(onCount, loading, groups.length)
 
   useEffect(() => {
     (async () => {
@@ -2151,11 +2027,13 @@ interface StudentGoal {
   created_at: string
 }
 
-export function GoalsTab({ studentId, studentName }: { studentId: string; studentName: string }) {
+export function GoalsTab({ studentId, studentName, onCount, addSignal }: { studentId: string; studentName: string; onCount?: (n: number) => void; addSignal?: number }) {
   const { showToast, currentTeacher } = useApp()
   const [goals, setGoals] = useState<StudentGoal[]>([])
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
+  useReportCount(onCount, loading, goals.length)
+  useAddSignal(addSignal, () => setAdding(true))
   const [newGoal, setNewGoal] = useState({ goal_text: '', target_metric: 'custom', target_value: '', baseline_value: '' })
   const [semId, setSemId] = useState<string | null>(null)
 
@@ -2222,7 +2100,7 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
 
       {adding && (
         <div className="bg-paper-2 border border-rule-2 rounded-lg p-4 mb-4 space-y-3">
-          <textarea value={newGoal.goal_text} onChange={e => setNewGoal(p => ({ ...p, goal_text: e.target.value }))}
+          <textarea autoFocus value={newGoal.goal_text} onChange={e => setNewGoal(p => ({ ...p, goal_text: e.target.value }))}
             placeholder="e.g., Increase CWPM from 45 to 65 by midterm"
             className="w-full px-3 py-2 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12.5px*var(--ts))] outline-none resize-none" rows={2} />
           <div className="flex gap-3">

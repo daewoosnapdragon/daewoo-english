@@ -30,9 +30,11 @@ interface Props {
   /** Open this domain's questionnaire as soon as the data is in (WIDA page cell click). */
   initialDomain?: WIDADomainKey
   onSaved?: () => void
+  /** The student page folds the section to one line when there are no levels and no scaffolds. */
+  onCount?: (n: number) => void
 }
 
-export default function WidaSupport({ studentId, studentName = '', grade, summary = false, initialDomain, onSaved }: Props) {
+export default function WidaSupport({ studentId, studentName = '', grade, summary = false, initialDomain, onSaved, onCount }: Props) {
   const { currentTeacher, language: lang, showToast, activeSemester } = useApp()
   const band = widaBandForGrade(grade)
   const [levels, setLevels] = useState<Record<string, number>>({})
@@ -63,6 +65,8 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
     setLevels(l); setTicks(t); setHistory((hs.data as any) || []); setScaffolds((sc.data as Scaffold[]) || []); setLoading(false)
   }
   useEffect(() => { setLoading(true); load() }, [studentId])
+  const filled = Object.values(levels).filter(v => v > 0).length + scaffolds.length
+  useEffect(() => { if (!loading) onCount?.(filled) }, [loading, filled]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!loading && initialDomain && !summary) openDomain(initialDomain) }, [loading, initialDomain]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openDomain = (d: WIDADomainKey) => { setOpen(d); setDraft(new Set(ticks[d] || [])); setOverride(null) }

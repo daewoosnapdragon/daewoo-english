@@ -57,7 +57,12 @@ const finite = (n: unknown): n is number => typeof n === 'number' && Number.isFi
 
 type LangKey = 'en' | 'ko'
 
-export default function BehaviorTracker({ studentId, studentName }: { studentId: string; studentName: string }) {
+// onCount and addSignal let the student page fold an empty Behavior section to
+// one line and open the add form from it; the list shows the latest entries
+// first and the rest behind "Show all".
+const RECENT = 5
+
+export default function BehaviorTracker({ studentId, studentName, onCount, addSignal }: { studentId: string; studentName: string; onCount?: (n: number) => void; addSignal?: number }) {
   const { language, currentTeacher, showToast, confirmDialog, promptDialog } = useApp()
   const lang = language as LangKey
   const [logs, setLogs] = useState<BehaviorLog[]>([])
@@ -68,6 +73,9 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
   const [showAddForm, setShowAddForm] = useState(false)
   const [expandedLog, setExpandedLog] = useState<string | null>(null)
   const [filterType, setFilterType] = useState<string>('all')
+  const [showAll, setShowAll] = useState(false)
+  useEffect(() => { if (!loading) onCount?.(logs.length) }, [loading, logs.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (addSignal) setShowAddForm(true) }, [addSignal])
 
   const loadLogs = async () => {
     setLoading(true)
@@ -287,7 +295,7 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
         <div className="py-8 text-center text-ink-3 text-[length:calc(13px*var(--ts))]">{lang === 'ko' ? '아직 기록이 없습니다.' : 'No behavior logs yet.'}</div>
       ) : (
         <div className="space-y-1.5">
-          {filteredLogs.map((log: any) => {
+          {(showAll ? filteredLogs : filteredLogs.slice(0, RECENT)).map((log: any) => {
             const typeInfo = [...LOG_TYPES, ABC_TYPE].find(t => t.value === log.type)
             const isExpanded = expandedLog === log.id
             const hasAbc = (log.antecedents?.length || 0) > 0 || (log.behaviors?.length || 0) > 0 || (log.consequences?.length || 0) > 0
@@ -348,6 +356,12 @@ export default function BehaviorTracker({ studentId, studentName }: { studentId:
               </div>
             )
           })}
+          {filteredLogs.length > RECENT && (
+            <button type="button" onClick={() => setShowAll(v => !v)} aria-expanded={showAll}
+              className="inline-flex items-center h-8 text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:text-ink underline-offset-2 hover:underline">
+              {showAll ? (lang === 'ko' ? `최근 ${RECENT}개만 보기` : `Show the latest ${RECENT}`) : (lang === 'ko' ? `${filteredLogs.length}개 모두 보기` : `Show all ${filteredLogs.length}`)}
+            </button>
+          )}
         </div>
       )}
     </div>
