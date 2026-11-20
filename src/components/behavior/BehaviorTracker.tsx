@@ -14,15 +14,15 @@ import { chip, tabRow, tab as tabClass } from '@/components/ui/Controls'
 // ─── ABC Options organized by category ──────────────────────────────
 
 const ANTECEDENT_CATEGORIES = [
-  { label: 'Demands & Tasks', items: ['Escape/Avoidance of Tasks', 'Difficult task presented', 'Non-preferred activity', 'Task demand change'] },
+  { label: 'Demands & tasks', items: ['Escape/Avoidance of Tasks', 'Difficult task presented', 'Non-preferred activity', 'Task demand change'] },
   { label: 'Social', items: ['Attention Seeking (Peer)', 'Attention Seeking (Adult)', 'Social/Peer Interactions', 'Peer conflict'] },
   { label: 'Environment', items: ['Sensory Input', 'Environmental Triggers', 'Transition Between Activities', 'Unstructured Time', 'Change in routine', 'Loud/crowded environment'] },
-  { label: 'Access & Tangibles', items: ['Access to Tangibles', 'Denied preferred item/activity', 'Waiting/sharing required'] },
+  { label: 'Access & tangibles', items: ['Access to Tangibles', 'Denied preferred item/activity', 'Waiting/sharing required'] },
   { label: 'Other', items: ['Other'] },
 ]
 
 const BEHAVIOR_CATEGORIES = [
-  { label: 'Leaving / Movement', items: ['Elopement (in class)', 'Elopement (out of class)', 'Out of seat', 'Wandering'] },
+  { label: 'Leaving / movement', items: ['Elopement (in class)', 'Elopement (out of class)', 'Out of seat', 'Wandering'] },
   { label: 'Aggression', items: ['Physical aggression', 'Verbal aggression', 'Throwing/destroying materials', 'Hitting', 'Kicking', 'Biting'] },
   { label: 'Disruption', items: ['Disrupting class', 'Talking out of turn', 'Making noises', 'Non-compliance', 'Refusal'] },
   { label: 'Emotional', items: ['Crying/emotional outburst', 'Withdrawal/shutting down', 'Tantrum', 'Self-injurious behavior'] },
@@ -31,11 +31,11 @@ const BEHAVIOR_CATEGORIES = [
 ]
 
 const CONSEQUENCE_CATEGORIES = [
-  { label: 'Low-Level Response', items: ['Ignored behavior', 'Verbal warning', 'Staff redirection', 'Proximity/moved seat', 'Nonverbal cue/signal'] },
-  { label: 'Student-Led', items: ['Student self-regulated', 'Used coping strategy', 'Requested break'] },
-  { label: 'Break / De-escalation', items: ['Break/cool-down offered', 'Escorted to calm room', 'Sensory break', 'Walk break'] },
+  { label: 'Low-level response', items: ['Ignored behavior', 'Verbal warning', 'Staff redirection', 'Proximity/moved seat', 'Nonverbal cue/signal'] },
+  { label: 'Student-led', items: ['Student self-regulated', 'Used coping strategy', 'Requested break'] },
+  { label: 'Break / de-escalation', items: ['Break/cool-down offered', 'Escorted to calm room', 'Sensory break', 'Walk break'] },
   { label: 'Positive', items: ['Verbal praise after recovery', 'Reinforcement provided', 'Natural consequence'] },
-  { label: 'Escalated Response', items: ['Additional staff needed', 'Class evacuated', 'Crisis called', 'Restraint used', 'Parent contacted', 'Office referral'] },
+  { label: 'Escalated response', items: ['Additional staff needed', 'Class evacuated', 'Crisis called', 'Restraint used', 'Parent contacted', 'Office referral'] },
   { label: 'Other', items: ['Other'] },
 ]
 
@@ -45,7 +45,7 @@ const LOG_TYPES = [
   { value: 'positive', label: 'Positive', labelKo: '긍정적', dot: 'bg-good', text: 'text-good' },
   { value: 'concern', label: 'Concern', labelKo: '우려', dot: 'bg-warn', text: 'text-warn' },
   { value: 'negative', label: 'Negative', labelKo: '부정 행동', dot: 'bg-bad', text: 'text-bad' },
-  { value: 'parent_contact', label: 'Parent Contact', labelKo: '학부모 연락', dot: 'bg-info', text: 'text-info' },
+  { value: 'parent_contact', label: 'Parent contact', labelKo: '학부모 연락', dot: 'bg-info', text: 'text-info' },
   { value: 'intervention', label: 'Intervention', labelKo: '개입', dot: 'bg-ink-2', text: 'text-ink' },
   { value: 'note', label: 'Note', labelKo: '메모', dot: 'bg-ink-3', text: 'text-ink' },
 ] as const
@@ -142,8 +142,8 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
         <td style="padding:6px;border:1px solid #ddd">${log.is_flagged ? '' : ''}</td>
       </tr>`
     }).join('')
-    printWin.document.write(`<html><head><title>Behavior Log — ${studentName}</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f0f0f0;padding:8px;border:1px solid #ddd;text-align:left}h2{margin-bottom:4px}p{color:#666;margin-top:0}</style></head><body>
-      <h2>Behavior Log — ${studentName}</h2><p>Printed ${new Date().toLocaleDateString()} · ${filteredLogs.length} entries</p>
+    printWin.document.write(`<html><head><title>Behavior log — ${studentName}</title><style>body{font-family:sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f0f0f0;padding:8px;border:1px solid #ddd;text-align:left}h2{margin-bottom:4px}p{color:#666;margin-top:0}</style></head><body>
+      <h2>Behavior log — ${studentName}</h2><p>Printed ${new Date().toLocaleDateString()} · ${filteredLogs.length} entries</p>
       <table><thead><tr><th>Date</th><th>Type</th><th>Details</th><th>Teacher</th><th>Flag</th></tr></thead><tbody>${rows}</tbody></table></body></html>`)
     printWin.document.close()
     printWin.print()
@@ -165,7 +165,7 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
           <button onClick={handlePrint} className="inline-flex items-center h-8 px-3 rounded border border-rule-2 text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:text-ink hover:border-ink-3">{lang === 'ko' ? '인쇄' : 'Print'}</button>
           <button onClick={() => setShowAddForm(!showAddForm)}
             className={`inline-flex items-center gap-1.5 h-8 px-3 rounded text-[length:calc(12px*var(--ts))] font-semibold transition-colors ${showAddForm ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>
-            {showAddForm ? <><X size={13} /> {lang === 'ko' ? '닫기' : 'Close'}</> : <><Plus size={13} /> {lang === 'ko' ? '기록 추가' : 'Add Entry'}</>}
+            {showAddForm ? <><X size={13} /> {lang === 'ko' ? '닫기' : 'Close'}</> : <><Plus size={13} /> {lang === 'ko' ? '기록 추가' : 'Add entry'}</>}
           </button>
         </div>
       </div>
@@ -237,7 +237,7 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
 
         return (
           <div className="border border-rule-2 rounded-lg p-4 bg-surface">
-            <p className="eyebrow mb-1.5">Pattern Analysis ({abcLogs.length} ABC entries)</p>
+            <p className="eyebrow mb-1.5">Pattern analysis ({abcLogs.length} ABC entries)</p>
             <p className="text-[length:calc(12.5px*var(--ts))] text-ink leading-relaxed max-w-[75ch]">{insights.join(' ')}</p>
             <div className="mt-3 grid grid-cols-3 gap-3">
               {topAntecedents.length > 0 && (
@@ -414,7 +414,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
   return (
     <div className="border border-rule-2 rounded-lg bg-surface overflow-hidden">
       <div className="px-4 py-3 bg-paper-2 border-b border-rule flex items-center justify-between">
-        <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{lang === 'ko' ? '새 행동 기록' : 'New Behavior Entry'}</h4>
+        <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{lang === 'ko' ? '새 행동 기록' : 'New behavior entry'}</h4>
         <button onClick={onClose} aria-label={lang === 'ko' ? '닫기' : 'Close'} className="p-1 rounded text-ink-3 hover:text-ink hover:bg-paper-3"><X size={14} /></button>
       </div>
       <div className="p-4 space-y-4">
@@ -449,7 +449,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
             <div className="flex items-center gap-2">
               {showAbc ? <ChevronDown size={14} className="text-ink" /> : <ChevronRight size={14} className="text-ink-3" />}
               <span className={`text-[length:calc(12px*var(--ts))] font-semibold ${showAbc || hasAbcData ? 'text-ink' : 'text-ink-2'}`}>
-                 ABC Data <span className="font-normal text-ink-3 text-[length:calc(11.5px*var(--ts))]">(optional — for detailed behavior tracking)</span>
+                 ABC data <span className="font-normal text-ink-3 text-[length:calc(11.5px*var(--ts))]">(optional — for detailed behavior tracking)</span>
               </span>
             </div>
             {hasAbcData && (
@@ -504,7 +504,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
           <input type="checkbox" checked={isFlagged} onChange={(e: any) => setIsFlagged(e.target.checked)} className="rounded accent-[rgb(var(--bad))]" />
           <Bell size={14} className={isFlagged ? 'text-bad' : 'text-ink-3'} />
           <div>
-            <span className={`text-[length:calc(12px*var(--ts))] font-medium ${isFlagged ? 'text-bad' : 'text-ink'}`}>{lang === 'ko' ? '관리자에게 알림' : 'Flag for Admin (Victoria)'}</span>
+            <span className={`text-[length:calc(12px*var(--ts))] font-medium ${isFlagged ? 'text-bad' : 'text-ink'}`}>{lang === 'ko' ? '관리자에게 알림' : 'Flag for admin (Victoria)'}</span>
             <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2">{lang === 'ko' ? '대시보드에 알림이 표시됩니다' : 'Shows notification on admin dashboard with link to this entry'}</p>
           </div>
         </label>

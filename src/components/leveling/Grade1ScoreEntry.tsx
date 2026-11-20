@@ -18,6 +18,7 @@ import type { G1Content, G1QuestionDef, G1WritingCategory, PassageLevel } from '
 import TestNotesPanel from './TestNotesPanel'
 import { G1_ORAL_NOTES, STOPPING_NOTES } from './testNotes'
 import Overlay from '@/components/ui/Overlay'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 
 // ============================================================================
 // GRADE 1 TEST CONFIGURATION
@@ -822,7 +823,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
   isAdmin: boolean
   teacherClass?: EnglishClass | null
 }) {
-  const { showToast, currentTeacher, confirmDialog } = useApp()
+  const { showToast, currentTeacher, confirmDialog, language } = useApp()
   // Resolve the content this test was (or will be) scored against, so historical
   // tests keep their original questions, passages and word lists.
   const versionKey = g1VersionKeyForTest(levelTest as any)
@@ -1003,7 +1004,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
     savingRef.current = true
     saveSeqRef.current++
     setSaving(true)
-    let errors = 0
+    // Who did not save, so the toast can name them and Retry can rerun just them.
+    const failedIds: string[] = []
     // The local record as it stood when each student's payload was built. The
     // snapshot advances to this, per student, rather than to the whole live
     // roster: a save of one student must never mark another student's unsaved
@@ -1147,22 +1149,26 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
             p_composite_index: metrics.composite,
             p_composite_band: metrics.suggestedClass,
           })
-          if (error) { console.error('G1 save error:', error); errors++; studentOk = false }
+          if (error) { console.error('G1 save error:', error); studentOk = false }
         }
-        if (studentOk) written[sid] = JSON.parse(JSON.stringify(raw))
+        if (studentOk) written[sid] = JSON.parse(JSON.stringify(raw)); else failedIds.push(sid)
       }
       if (Object.keys(written).length > 0) applySnapshot(prev => ({ ...prev, ...written }))
-      if (errors === 0) {
+      if (failedIds.length === 0) {
         if (!silent) showToast(`Saved ${studentIds.length} student${studentIds.length > 1 ? 's' : ''}`)
       } else {
-        showToast(`Saved with ${errors} error(s)`)
+        // The failed students' snapshots were not advanced, so their work stays
+        // dirty on screen and in the autosave; Retry writes just those again.
+        const ko = language === 'ko'
+        const names = failedIds.map(id => students.find(s => s.id === id)?.english_name || id)
+        showToast(notSavedMessage(names, ko), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { enqueueSave(() => runSave(failedIds)) } } })
       }
     } catch (err: any) {
       showToast(`Error saving: ${err.message}`)
     }
     setSaving(false)
     savingRef.current = false
-  }, [levelTest.id, currentTeacher?.id, students, showToast, applySnapshot])
+  }, [levelTest.id, currentTeacher?.id, students, showToast, applySnapshot, language, enqueueSave])
 
   const saveScores = useCallback((studentIds: string[], silent = false) =>
     enqueueSave(() => runSave(studentIds, silent)), [enqueueSave, runSave])
@@ -1410,8 +1416,8 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
       <div className="px-10 bg-surface border-b border-border">
         <div className="flex items-center gap-2 pb-3">
           {[
-            { key: 'oral' as const, icon: Mic, label: 'Oral Test', sub: `${completionStats.oralDone}/${completionStats.total}` },
-            { key: 'written' as const, icon: PenTool, label: 'Written Test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
+            { key: 'oral' as const, icon: Mic, label: 'Oral test', sub: `${completionStats.oralDone}/${completionStats.total}` },
+            { key: 'written' as const, icon: PenTool, label: 'Written test', sub: `${completionStats.writtenDone}/${completionStats.total}` },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[length:calc(13px*var(--ts))] font-medium transition-all ${
@@ -1578,7 +1584,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
 
   return (
     <div className="p-6 max-w-4xl overflow-y-auto">
-      <h3 className="text-[length:calc(16px*var(--ts))] font-display font-semibold text-navy mb-4">Written Test Analytics</h3>
+      <h3 className="text-[length:calc(16px*var(--ts))] font-display font-semibold text-navy mb-4">Written test analytics</h3>
       <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-4">{analytics.studentCount} students scored</p>
 
       <div className="grid gap-3 mb-6" style={{ gridTemplateColumns: `repeat(${G1_QUESTION_SECTIONS.length}, minmax(0, 1fr))` }}>
@@ -1596,7 +1602,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
 
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm mb-6">
         <div className="px-4 py-3 bg-surface-alt border-b border-border">
-          <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Item Analysis</h4>
+          <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Item analysis</h4>
         </div>
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead>
@@ -1638,7 +1644,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
 
       {missed.length > 0 && (
         <div className="bg-surface border border-border rounded-xl p-4 mb-6">
-          <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-2">Instructional Priorities (below 60%)</h4>
+          <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-2">Instructional priorities (below 60%)</h4>
           <div className="grid grid-cols-2 gap-2">
             {missed.map(q => (
               <div key={q.qNum} className="flex items-center gap-2 text-[length:calc(11.5px*var(--ts))]">
@@ -1655,7 +1661,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
         <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-sm">
           <div className="px-4 py-3 bg-surface-alt border-b border-border">
             <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy flex items-center gap-2">
-              <Star size={12} /> {content.extendedWriting.scoring === 'in_total' ? 'Extended Writing Scores' : 'Writing Bonus Scores'} ({writingStudents.length} students)
+              <Star size={12} /> {content.extendedWriting.scoring === 'in_total' ? 'Extended writing scores' : 'Writing bonus scores'} ({writingStudents.length} students)
             </h4>
           </div>
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
@@ -1908,7 +1914,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                 <button onClick={() => onSave(dirtyIds)} disabled={saving || dirtyCount === 0}
                   className={`w-full py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all flex items-center justify-center gap-1.5 ${dirtyCount > 0 ? 'bg-accent text-white hover:bg-accent-hover animate-pulse' : 'bg-paper-2 text-ink-3'} disabled:opacity-50 disabled:animate-none`}>
                   {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
-                  {dirtyCount > 0 ? `Save ${dirtyCount} Changed` : 'All Saved'}
+                  {dirtyCount > 0 ? `Save ${dirtyCount} changed` : 'All saved'}
                 </button>
               </>
             )
@@ -1928,7 +1934,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-[length:calc(18px*var(--ts))] font-display font-semibold text-navy">{student.english_name || student.korean_name}</h3>
-                <div className="text-[length:calc(12px*var(--ts))] text-text-tertiary mt-0.5">{student.english_class} -- Grade 1 Written Test</div>
+                <div className="text-[length:calc(12px*var(--ts))] text-text-tertiary mt-0.5">{student.english_class} -- Grade 1 written test</div>
               </div>
               <div className="flex items-center gap-2">
                 <div className="text-right mr-3">
@@ -2049,7 +2055,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy flex items-center gap-1.5">
-                      <PenTool size={13} className="text-navy" /> Short Writing
+                      <PenTool size={13} className="text-navy" /> Short writing
                     </h4>
                     <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{shortWriting.prompt}</span>
                   </div>
@@ -2093,7 +2099,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                 <div className="flex items-center gap-2">
                   <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy flex items-center gap-1.5">
                     <Star size={13} className="text-warn" />
-                    {writingInTotal ? 'Extended Writing' : 'Writing Bonus'}
+                    {writingInTotal ? 'Extended writing' : 'Writing bonus'}
                   </h4>
                   <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full font-semibold ${
                     writingInTotal ? 'bg-navy/10 text-navy' : 'bg-warn-soft text-warn'
@@ -2104,7 +2110,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   </span>
                   <button onClick={() => setShowRubricGuide(!showRubricGuide)}
                     className={`text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
-                    <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
+                    <Eye size={10} /> {showRubricGuide ? 'Hide guide' : 'Show guide'}
                   </button>
                 </div>
                 <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{writingTotal}/{G1_WRITING_MAX}</span>
@@ -2331,7 +2337,7 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
       {/* Letter Names Grid */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Letter Names</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Letter names</p>
           <span className={`text-[length:calc(12px*var(--ts))] font-bold ${nameCount >= NAME_MAX * 0.75 ? 'text-good' : nameCount >= NAME_MAX * 0.5 ? 'text-warn' : 'text-text-secondary'}`}>
             {nameCount}/{NAME_MAX}
           </span>
@@ -2362,7 +2368,7 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
       {/* Letter Sounds Grid */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Letter Sounds</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Letter sounds</p>
           <span className={`text-[length:calc(12px*var(--ts))] font-bold ${soundCount >= SOUND_MAX * 0.75 ? 'text-good' : soundCount >= SOUND_MAX * 0.5 ? 'text-warn' : 'text-text-secondary'}`}>
             {soundCount}/{SOUND_MAX}
           </span>
@@ -2393,7 +2399,7 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
       {/* Words Given */}
       <div className="bg-surface-alt/50 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Words Given /5</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Words given /5</p>
           <span className={`text-[length:calc(12px*var(--ts))] font-bold ${wordsCount >= 4 ? 'text-good' : wordsCount >= 2 ? 'text-warn' : 'text-text-secondary'}`}>
             {wordsCount}/5
           </span>
@@ -2469,7 +2475,7 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
         </div>
       ) : (
         <div className="bg-paper-2 rounded-xl px-5 py-4 border border-rule">
-          <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink mb-2">Teacher Model First!</p>
+          <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink mb-2">Teacher models first!</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-relaxed">
             Model the whole task with an example word before the student tries each word below.
           </p>
@@ -2529,7 +2535,7 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
       )}
 
       <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10 gap-4">
-        <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy whitespace-nowrap">Phoneme Total: {phonemeTotal} / {max}</span>
+        <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy whitespace-nowrap">Phoneme total: {phonemeTotal} / {max}</span>
         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic text-right">{stoppingRule}</span>
       </div>
     </div>
@@ -2809,7 +2815,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
     <>
       <button onClick={() => setShowPassage(true)}
         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
-        <BookOpen size={14} /> {finished ? 'Done -- ' : ''}Open Passage: "{passage.title}" ({passage.wordCount} words)
+        <BookOpen size={14} /> {finished ? 'Done -- ' : ''}Open passage: "{passage.title}" ({passage.wordCount} words)
       </button>
 
       {showPassage && (
@@ -2995,7 +3001,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                   )}
                   <button onClick={handleSave}
                     className="px-5 py-2 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
-                    Save & Close
+                    Save & close
                   </button>
                 </div>
               </div>
@@ -3169,14 +3175,14 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
         {/* Section 1: Alphabet Recognition -- clickable grids */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Component 1: Alphabet Recognition</h4>
+          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Component 1: Alphabet recognition</h4>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-4">Letters: {content.alphabet.letters.join(', ')} ({content.alphabet.letters.length} letters)</p>
           <AlphabetGrids key={student.id} sc={sc} studentId={student.id} updateScore={updateScore} content={content} />
         </div>
 
         {/* Section 2: Phoneme Manipulation -- redesigned */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Component 2: Phoneme Manipulation</h4>
+          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Component 2: Phoneme manipulation</h4>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-4">
             Words: {content.phoneme.words.map(w => w.word).join(', ')} &mdash; segmenting, counting, isolating sounds
             {content.phoneme.modelWord && <> (model word <span className="font-semibold">{content.phoneme.modelWord.word}</span> is not scored)</>}
@@ -3186,10 +3192,10 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
         {/* Section 3: Oral Reading Fluency -- Passage Level Selection */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">Component 3: Oral Reading Fluency</h4>
+          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">Component 3: Oral reading fluency</h4>
 
           <div className="mb-4">
-            <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary block mb-2">Passage Level</label>
+            <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary block mb-2">Passage level</label>
             <div className="flex gap-2">
               {(['A', 'B', 'C', 'D', 'E', 'F'] as PassageLevel[]).map(level => (
                 <button key={level} onClick={async () => {
@@ -3294,7 +3300,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
               <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10">
                 <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy">
-                  Level A Score: {sc.o_orf_raw ?? '--'} / {content.levelA.max}
+                  Level A score: {sc.o_orf_raw ?? '--'} / {content.levelA.max}
                 </span>
                 {config?.bumpUpThreshold != null && (sc.o_orf_raw ?? 0) >= config.bumpUpThreshold && (
                   <span className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">You may want to re-test at Level B.</span>
@@ -3389,7 +3395,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary block mb-1">
-                    Words Read (:60) <span className="text-text-tertiary">/{config.wordCount}</span>
+                    Words read (:60) <span className="text-text-tertiary">/{config.wordCount}</span>
                   </label>
                   <input type="number" min={0} max={config.wordCount ?? 100}
                     value={sc.o_orf_words_read ?? ''}
@@ -3430,7 +3436,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               )}
 
               <div>
-                <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary block mb-2">NAEP Fluency Rating</label>
+                <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary block mb-2">NAEP fluency rating</label>
                 <div className="grid grid-cols-2 gap-2">
                   {[1, 2, 3, 4].map(n => (
                     <button key={n} onClick={() => updateScore(student.id, 'o_naep', sc.o_naep === n ? null : n)}
@@ -3481,7 +3487,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
             {!compNotAdministered && (
             <div className="bg-paper-2 border border-rule rounded-lg px-3 py-2 mb-3">
-              <p className="text-[length:calc(11.5px*var(--ts))] text-ink font-semibold mb-1">Scoring Guide</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink font-semibold mb-1">Scoring guide</p>
               <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-2">
                 <span><span className="font-bold text-bad">0</span> = No response, wrong, or Korean only</span>
                 <span><span className="font-bold text-ink">1</span> = Partial, vague, or incomplete in English</span>
@@ -3543,7 +3549,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
         {/* Section 5: Open Response -- compare the two pictures */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Open Response (Two Pictures)</h4>
+          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Open response (two pictures)</h4>
           <div className="bg-paper-2 rounded-lg px-4 py-3 border border-rule mb-2">
             <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">Say: "{content.openResponse.say}"</p>
             {/* Kept directly under the script: this is the section where a
@@ -3580,13 +3586,13 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
             })}
           </div>
           <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">
-            Open Response: {sc.o_open_response ?? '--'} / {content.openResponse.max}
+            Open response: {sc.o_open_response ?? '--'} / {content.openResponse.max}
           </div>
         </div>
 
         {/* Section 6: Teacher judgment + notes */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Teacher Notes</h4>
+          <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Teacher notes</h4>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3">
             Anything worth remembering at the leveling meeting: reading behaviors, error patterns,
             how the student handled the session.
@@ -3723,10 +3729,10 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
   return (
     <div className="bg-gradient-to-br from-navy/5 to-navy/10 border border-navy/20 rounded-xl p-5 mb-4">
       <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3 flex items-center gap-2">
-        <Eye size={14} /> Live Score Preview
+        <Eye size={14} /> Live score preview
         <span className={`text-[length:calc(11.5px*var(--ts))] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-info-soft text-info' : 'bg-good-soft text-good'}`}>
           {content.usesClassImpression
-            ? (metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher')
+            ? (metrics.wave === 1 ? 'Wave 1: oral + teacher impression' : 'Wave 2: 30% oral + 30% written + 40% teacher')
             : (metrics.wave === 1 ? 'Oral only -- written test not entered yet' : 'Complete: 55% oral + 45% written')}
         </span>
       </h4>
@@ -4009,7 +4015,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
       pagesHTML += `<div style="page-break-after:always;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:10px 16px;background:#647FBC;border-radius:8px;color:white">
           <div><span style="font-size:18px;font-weight:700">${cls}</span><span style="font-size:12px;margin-left:8px;opacity:0.7">${cs.length} students</span></div>
-          <div style="font-size:11px">Grade 1 Level Test Summary</div>
+          <div style="font-size:11px">Grade 1 level test summary</div>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr style="background:#f1f5f9;text-align:left">
@@ -4021,11 +4027,11 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           </tr></thead>
           <tbody>${rowsHTML}</tbody>
         </table>
-        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 45% oral + 25% MC + 5% short writing + 25% writing; Teacher Ratings are notes only and are not in it. Printed ${new Date().toLocaleDateString()}</p>
+        <p style="font-size:9px;color:#94a3b8;margin-top:8px">* = suggested class differs from current. Composite = 45% oral + 25% MC + 5% short writing + 25% writing; teacher ratings are notes only and are not in it. Printed ${new Date().toLocaleDateString()}</p>
       </div>`
     })
 
-    pw.document.write(`<html><head><title>Grade 1 Leveling Summary</title><style>h1,h2,h3{font-family:Georgia,'Iowan Old Style',serif}</style></head><body style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;padding:20px">${pagesHTML}</body></html>`)
+    pw.document.write(`<html><head><title>Grade 1 leveling summary</title><style>h1,h2,h3{font-family:Georgia,'Iowan Old Style',serif}</style></head><body style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;padding:20px">${pagesHTML}</body></html>`)
     pw.document.close()
     pw.print()
   }
@@ -4043,13 +4049,13 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           {PASSAGE_LEVELS.map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === lv ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>{lv}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] bg-surface">
-          <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
+          <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested class</option><option value="name">Sort: Name</option>
         </select>
         <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border ${showBorderline ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
           <AlertTriangle size={12} /> Borderline
         </button>
         <button onClick={() => handlePrintSummary(rows)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
-          <Printer size={12} /> Print Summary
+          <Printer size={12} /> Print summary
         </button>
         <button onClick={() => {
           exportToCSV('leveling-G1',
@@ -4101,7 +4107,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
         </button>
         <button onClick={saveCheckpoint} disabled={savingCheckpoint}
           className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2 disabled:opacity-50">
-          {savingCheckpoint ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />} Save Checkpoint
+          {savingCheckpoint ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />} Save checkpoint
         </button>
         <button onClick={() => {
           exportToCSV(`leveling-backup-G1-${new Date().toISOString().slice(0, 10)}`,
@@ -4112,7 +4118,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               r.compNotAdministered ? 'not administered' : (r.compTotal ?? ''), r.writtenMC, r.writingBonus,
               r.weighted != null ? (r.weighted * 100).toFixed(0) : '', Math.round(r.absoluteComposite)]))
         }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
-          <Download size={12} /> Full Backup
+          <Download size={12} /> Full backup
         </button>
         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto">{displayed.length} students</span>
       </div>
@@ -4213,7 +4219,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                 <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-bad-soft' : ''}`}>{writingMarked ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-bad inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
                 <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-bad-soft' : ''}`}>{mcMarked ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-bad inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
                 <td className="px-2 py-2 text-center"
-                  title="Teacher Rating, averaged out of 4. Reference for the placement conversation only — it is not part of the composite, so a student nobody has rated is neither helped nor hurt by that.">
+                  title="Teacher rating, averaged out of 4. Reference for the placement conversation only — it is not part of the composite, so a student nobody has rated is neither helped nor hurt by that.">
                   {row.hasAnec ? <span className="text-text-secondary">{(row.anecScore * 4).toFixed(1)}</span> : <span className="text-text-tertiary">{'—'}</span>}
                 </td>
                 <td className={`px-2 py-2 text-center font-bold ${row.isTested ? 'text-navy' : 'text-text-tertiary font-normal italic'}`}
@@ -4235,7 +4241,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. A student who sat the letter and phoneme sections and never reached a passage has still sat the oral test: their column reads <span className="italic">(letters)</span>, and they are scored on that evidence at the bottom band rather than counted as having no oral result. <span className="italic">attempted none</span> is kept for a session marked complete with nothing on it at all. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-bad inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. teacher ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. A student who sat the letter and phoneme sections and never reached a passage has still sat the oral test: their column reads <span className="italic">(letters)</span>, and they are scored on that evidence at the bottom band rather than counted as having no oral result. <span className="italic">attempted none</span> is kept for a session marked complete with nothing on it at all. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-bad inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }

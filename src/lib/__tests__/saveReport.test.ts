@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nameList, notSavedMessage } from '@/lib/saveReport'
+import { nameList, notSavedMessage, objectParticle } from '@/lib/saveReport'
 
 // A failed batch save names the students it missed, five at most.
 
@@ -21,5 +21,16 @@ describe('notSavedMessage', () => {
     expect(notSavedMessage(['Mia', 'Noah'], false)).toBe('Could not save scores for Mia and Noah. What you entered is still here.')
     expect(notSavedMessage(['Mia'], false, { en: 'comments', ko: '코멘트' })).toBe('Could not save comments for Mia. What you entered is still here.')
     expect(notSavedMessage(['Mia'], true)).toContain('Mia의 점수')
+  })
+})
+
+describe('objectParticle', () => {
+  it('takes 을 after a final consonant and 를 after a vowel', () => {
+    expect(objectParticle('점수')).toBe('를')
+    expect(objectParticle('평가')).toBe('를')
+    expect(objectParticle('영어 반')).toBe('을')
+    expect(objectParticle('배치')).toBe('를')
+    expect(objectParticle('scores')).toBe('을(를)')
+    expect(notSavedMessage(['Mia'], true)).toContain('Mia의 점수를 저장하지')
   })
 })

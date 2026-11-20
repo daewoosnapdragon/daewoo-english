@@ -596,7 +596,7 @@ function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: stri
   return (
     <div className="mb-3 pb-2 border-b border-rule">
       <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
-      {rows.length === 0 && editId !== 'new' && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson Plans offers the lessons\' objectives until there are some.'}</p>}
+      {rows.length === 0 && editId !== 'new' && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson plans offers the lessons\' objectives until there are some.'}</p>}
       <ul>
         {rows.map(o => editId === o.id ? <li key={o.id}>{editor}</li> : (
           <li key={o.id} className="group flex items-start gap-2 py-1">

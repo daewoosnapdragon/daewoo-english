@@ -19,6 +19,7 @@ import { FRUSTRATION_ACCURACY, INDEPENDENT_ACCURACY } from './grade2Band'
 import TestNotesPanel from './TestNotesPanel'
 import { ORAL_TEST_NOTES, STOPPING_NOTES } from './testNotes'
 import Overlay from '@/components/ui/Overlay'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -1153,7 +1154,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
             </div>
             <button onClick={handleSaveAndClose}
               className="px-5 py-2 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
-              Save & Close
+              Save & close
             </button>
           </div>
         </div>
@@ -1448,7 +1449,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
   teacherClass: EnglishClass | null
   isAdmin: boolean
 }) {
-  const { showToast, currentTeacher, confirmDialog } = useApp()
+  const { showToast, currentTeacher, confirmDialog, language } = useApp()
   const [students, setStudents] = useState<Student[]>([])
   const [scores, setScores] = useState<Record<string, OralScores>>({})
   const [loading, setLoading] = useState(true)
@@ -1718,7 +1719,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
     // Only save dirty students (not all class students) unless specific sids given
     const toSave = sids || classStudents.filter(s => isStudentDirty(s.id)).map(s => s.id)
     if (toSave.length === 0) { setSaving(false); savingRef.current = false; return }
-    let errors = 0
+    // Who did not save, so the toast can name them and Retry can rerun just them.
+    const failedIds: string[] = []
     // What actually reached the database, per student. The snapshot advances to
     // this rather than to the live scores: a teacher who keeps marking during
     // the save round-trip would otherwise have those clicks recorded as saved
@@ -1823,12 +1825,20 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
         previous_class: students.find(s => s.id === sid)?.english_class || null,
         entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
-      if (error) { console.error('Save error:', error); errors++ }
+      if (error) { console.error('Save error:', error); failedIds.push(sid) }
       else written[sid] = JSON.parse(JSON.stringify(raw))
     }
     setSaving(false)
     savingRef.current = false
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
+    if (failedIds.length > 0) {
+      // Their snapshots are not advanced below, so the marks stay dirty on
+      // screen and in the autosave; Retry writes just those students again.
+      const ko = language === 'ko'
+      const names = failedIds.map(id => students.find(s => s.id === id)?.english_name || id)
+      showToast(notSavedMessage(names, ko), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { handleSave(failedIds) } } })
+    } else {
+      showToast(language === 'ko' ? `저장됨 (${toSave.length}명)` : `Saved (${toSave.length} student${toSave.length === 1 ? '' : 's'})`)
+    }
     logActivity('scored', `${levelTest.name} · oral test · ${Object.keys(written).map(id => students.find(s => s.id === id)?.english_name).filter(Boolean).join(', ').slice(0, 120)}`, { key: `oral:${levelTest.id}` })
     // Only the students this save actually wrote. It once advanced the snapshot
     // for the whole roster, so a save of one class marked another class's
@@ -2153,7 +2163,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
             {activeSection === 'phonics' && config.hasPhonics && (
               <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                 <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1 flex items-center gap-2">
-                  <Mic size={15} /> Component 1: Phonics Screener
+                  <Mic size={15} /> Component 1: Phonics screener
                 </h4>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-4">
                   {config.scripts.phonics
@@ -2173,7 +2183,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
             {activeSection === 'syllables' && config.syllables && (
               <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                 <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1 flex items-center gap-2">
-                  <Mic size={15} /> Component 2: Syllable Counting
+                  <Mic size={15} /> Component 2: Syllable counting
                 </h4>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3">
                   Say: &ldquo;{config.scripts.syllables}&rdquo;
@@ -2195,7 +2205,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
             {activeSection === 'sentences' && config.hasSentences && (
               <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                 <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1 flex items-center gap-2">
-                  <BookOpen size={15} /> Component {config.syllables ? 3 : 2}: Sentence Reading
+                  <BookOpen size={15} /> Component {config.syllables ? 3 : 2}: Sentence reading
                 </h4>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-4">
                   Say: &ldquo;{config.scripts.sentences || 'Now read these sentences out loud. Do your best.'}&rdquo; Tap each word: green = correct, tap again = incorrect.
@@ -2211,10 +2221,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {/* Passage Level Selector */}
                 <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                   <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3 flex items-center gap-2">
-                    <BookOpen size={15} /> {config.hasPhonics ? 'Component 3: ' : ''}Passage Reading
+                    <BookOpen size={15} /> {config.hasPhonics ? 'Component 3: ' : ''}Passage reading
                   </h4>
                   <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3">
-                    Select a passage level based on the student's reading ability. Click "Open Passage" to do a timed reading with word-by-word marking.
+                    Select a passage level based on the student's reading ability. Click "Open passage" to do a timed reading with word-by-word marking.
                     You do not have to start at {config.levels[0]} {'\u2014'} start where the student will be comfortable.
                   </p>
 
@@ -2311,7 +2321,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {/* ORF Results (shown when passage selected) */}
                 {passage && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-4">Oral Reading Fluency Results</h4>
+                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-4">Oral reading fluency results</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
                         <label className="text-[length:calc(12px*var(--ts))] font-medium text-ink-2 block mb-1">Words read</label>
@@ -2374,7 +2384,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {/* NAEP Rating */}
                 {passage && hasNaep && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">NAEP Oral Reading Fluency Rating</h4>
+                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">NAEP oral reading fluency rating</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {([1, 2, 3, 4] as const).map(n => (
                         <button key={n} onClick={() => updateScore(student.id, 'naep', sc.naep === n ? null : n)}
@@ -2401,7 +2411,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {/* Comprehension Questions */}
                 {passage && compQuestions.length > 0 && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Comprehension Questions</h4>
+                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Comprehension questions</h4>
                     <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">
                       {compNotAdministered
                         ? 'Not administered — excluded from this student\'s score.'
@@ -2485,7 +2495,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     </div>
                     <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                       <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">
-                        Comprehension Total: {compNotAdministered ? <span className="text-text-tertiary">Not administered</span> : `${compTotal} / ${config.compMax}`}
+                        Comprehension total: {compNotAdministered ? <span className="text-text-tertiary">Not administered</span> : `${compTotal} / ${config.compMax}`}
                       </span>
                       <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
                         {compNotAdministered
@@ -2501,7 +2511,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {/* Teacher Notes */}
                 {passage && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
-                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-2">Teacher Notes</h4>
+                    <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-2">Teacher notes</h4>
                     <textarea
                       value={sc.notes || ''}
                       onChange={e => updateScore(student.id, 'notes', e.target.value || null)}
@@ -2561,7 +2571,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       const met = stds.filter(s => s.met).length
                       return stds.length > 0 ? (
                         <div className="mt-3 pt-3 border-t border-navy/10">
-                          <p className="text-[length:calc(12px*var(--ts))] font-bold text-navy mb-2">CCSS Standards ({met}/{stds.length} met)</p>
+                          <p className="text-[length:calc(12px*var(--ts))] font-bold text-navy mb-2">CCSS standards ({met}/{stds.length} met)</p>
                           <div className="flex flex-wrap gap-1.5">
                             {stds.map((std, i) => (
                               <span key={i} className={`px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${

@@ -558,8 +558,8 @@ export function compositeWeightsFor(grade: number | string): CompositeWeights {
 
 /** Human labels for the weight editor, in the order they are shown. */
 export const COMPOSITE_TERM_LABELS: [CompositeTerm, string][] = [
-  ['oral', 'Oral Test'], ['decoding', 'Phonics + Sentences'], ['mc', 'MC'],
-  ['shortWriting', 'Short Writing'], ['writing', 'Writing'],
+  ['oral', 'Oral test'], ['decoding', 'Phonics + sentences'], ['mc', 'MC'],
+  ['shortWriting', 'Short writing'], ['writing', 'Writing'],
 ]
 
 // Within the decoding term. Equal, deliberately: the sentence set carries more

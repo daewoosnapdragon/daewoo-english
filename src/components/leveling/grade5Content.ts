@@ -306,9 +306,9 @@ const F26_QUESTIONS: G5QuestionDef[] = [
 // ─── Item 25: Writing ────────────────────────────────────────────────
 
 const F26_WRITING_CATEGORIES: G5WritingCategory[] = [
-  { key: 'story_structure', label: 'Story Structure', max: 4, standard: 'W.5.3', standardDesc: 'Organization of the response', kind: 'ladder' },
+  { key: 'story_structure', label: 'Story structure', max: 4, standard: 'W.5.3', standardDesc: 'Organization of the response', kind: 'ladder' },
   {
-    key: 'content', label: 'Content and Detail', max: 4, standard: 'W.5.2', standardDesc: 'What the response shows', kind: 'checklist',
+    key: 'content', label: 'Content and detail', max: 4, standard: 'W.5.2', standardDesc: 'What the response shows', kind: 'checklist',
     checklist: [
       { key: 'identifies_hero', label: 'Identifies the hero', desc: 'Says who the person is and how the writer knows them — a relationship, a role, or how they came across them. "My grandmother," "my swimming coach," "a doctor I saw on the news" all count; "someone I like" does not.' },
       { key: 'names_taught', label: 'Names what they taught', desc: 'States a lesson, value, or way of behaving the writer took from them. It can be simple ("she taught me to keep trying").' },
@@ -323,9 +323,9 @@ const F26_WRITING_CATEGORIES: G5WritingCategory[] = [
       ],
     },
   },
-  { key: 'language_grammar', label: 'Language and Grammar', max: 4, standard: 'L.5.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
+  { key: 'language_grammar', label: 'Language and grammar', max: 4, standard: 'L.5.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
   { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.5.2', standardDesc: 'Capitalization, punctuation, spelling', kind: 'ladder' },
-  { key: 'word_choice', label: 'Word Choice and Voice', max: 4, standard: 'L.5.3', standardDesc: 'Precision and voice', kind: 'ladder' },
+  { key: 'word_choice', label: 'Word choice and voice', max: 4, standard: 'L.5.3', standardDesc: 'Precision and voice', kind: 'ladder' },
 ]
 
 const F26_WRITING_RUBRIC: Record<string, Record<number, string>> = {
