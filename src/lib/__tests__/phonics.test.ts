@@ -3,7 +3,7 @@ import {
   PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_GROUPS, phonicsSkill, orderSkills,
   ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, LETTERS_BY_FREQUENCY, classSkills, groupsFor, sheetNo, withoutAlphabet,
   scoreSkill, scoreCheck, latestBySkill, phonicsBand, summarizeStudent, phonicsOneLiner, notYetSecure, nextMark, longestErrorRun,
-  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss, sheetGiven, givenSheets, DECODING_OBSERVATIONS, OBSERVATION_GROUPS,
+  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss, sheetGiven, givenSheets, missedBefore, missCounts, DECODING_OBSERVATIONS, OBSERVATION_GROUPS,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
 
@@ -217,5 +217,33 @@ describe('attempts over time', () => {
     const d = check({ id: 'd', date: '2026-12-01', skills: ['cvc'], results: { cvc: { ...firstN('cvc', 20), hat: 'partial' } } })
     const h = wordHistory([d], 'cvc')
     expect(h).toEqual([{ word: 'hat', marks: ['partial'], misses: 1 }])
+  })
+})
+
+describe('missed before', () => {
+  const words = phonicsSkill('cvc')!.words
+  const first = check({ id: 'a', date: '2026-11-01', skills: ['cvc', 'digraphs'], results: { cvc: firstN('cvc', 17), digraphs: firstN('digraphs', 20) } })
+  // A recheck of cvc: the three missed words read again, two now right.
+  const recheck = check({ id: 'b', date: '2026-11-08', created_at: '2026-11-08T01:00:00Z', skills: ['cvc'],
+    results: { cvc: { ...firstN('cvc', 19) } }, carried: { cvc: { from: 'a', date: '2026-11-01', rechecked: words.slice(17) } } })
+  it('lists the words missed on the latest result of each sheet, sheet by sheet', () => {
+    expect(missedBefore(latestBySkill([first]), [first])).toEqual([{ sheet: 'cvc', fromCheckId: 'a', fromDate: '2026-11-01', words: words.slice(17) }])
+    expect(missedBefore(latestBySkill([first, recheck]), [first, recheck])).toEqual([{ sheet: 'cvc', fromCheckId: 'b', fromDate: '2026-11-08', words: words.slice(19) }])
+  })
+  it('leaves out sheets the class does not use', () => {
+    expect(missedBefore(latestBySkill([first]), [first], classSkills(true).filter(s => s.id !== 'cvc'))).toEqual([])
+  })
+  it('scores a recheck as the whole sheet', () => {
+    expect(scoreSkill(recheck, 'cvc')).toMatchObject({ correct: 19, total: 20 })
+  })
+  it('counts a word as missed again only when a recheck read it again', () => {
+    const skipped = check({ id: 'c', date: '2026-11-09', created_at: '2026-11-09T01:00:00Z', skills: ['cvc'],
+      results: { cvc: firstN('cvc', 19) }, carried: { cvc: { from: 'b', date: '2026-11-08', rechecked: [words[0]] } } })
+    expect(missCounts([first, recheck, skipped], 'cvc')).toEqual({ [words[17]]: 1, [words[18]]: 1, [words[19]]: 2 })
+  })
+  it('shows a carried-over mark as not read in the word history', () => {
+    const h = wordHistory([first, recheck], 'cvc')
+    expect(h.find(x => x.word === words[19])).toEqual({ word: words[19], marks: ['error', 'error'], misses: 2 })
+    expect(h.find(x => x.word === words[17])).toEqual({ word: words[17], marks: ['error', 'correct'], misses: 1 })
   })
 })

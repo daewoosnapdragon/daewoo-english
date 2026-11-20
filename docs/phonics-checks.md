@@ -106,7 +106,15 @@ puts them (kept as reference text; the screen itself shows no panel):
 The teacher picks any set of sheets: one, several, or all of them. The set is
 remembered in the browser so a class can be run on the same sheets without
 re-ticking. *Not yet proficient* selects what the student did not get last
-time; *Not checked yet* selects what has never been checked. *Rest correct*
+time; *Not checked yet* selects what has never been checked. *Missed
+before* puts every word missed (error or partly) on the latest check of each
+sheet on one card, ×2 on a word missed on two or more checks. The words read
+again replace their old marks and the rest carry over, so each sheet is saved
+whole and scored again; the check's `carried` column
+(supabase/migrations/20261119_phonics_recheck_carried.sql) records the check
+it built on and the words read again, and a recheck counts only those as
+missed again. *Print for the student* prints the words; Groups prints a
+group's missed words the same way. *Rest correct*
 marks the untouched words correct, for the teacher who only taps the errors.
 *Save and next student* keeps the sheets and moves down the roster.
 

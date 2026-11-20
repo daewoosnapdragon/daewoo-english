@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { fetchAll } from '@/lib/fetchAll'
 import { logActivity } from '@/lib/activity'
-import { PHONICS_CONTENT_VERSION, isMiss, type PhonicsCheckRow, type PhonicsMark } from '@/lib/phonics'
+import { PHONICS_CONTENT_VERSION, isMiss, type CarriedSheet, type PhonicsCheckRow, type PhonicsMark } from '@/lib/phonics'
 
 // ─── Phonics checks: reads and writes ────────────────────────────
 // The table is supabase/migrations/20261110_phonics_checks.sql. Rows come
@@ -40,7 +40,13 @@ export interface PhonicsCheckInput {
   heard: Record<string, Record<string, string>>
   observations: Record<string, string[]>
   notes: string
+  /** Only on a recheck of Missed before. */
+  carried?: Record<string, CarriedSheet>
 }
+
+// Until supabase/migrations/20261119_phonics_recheck_carried.sql has run,
+// the table has no `carried` column: save without it rather than fail.
+const noCarriedColumn = (msg: string) => /carried/.test(msg) && /column|schema/i.test(msg)
 
 /** Inserts a new check, or replaces the contents of `id` when editing. */
 export async function savePhonicsCheck(input: PhonicsCheckInput, id?: string, studentName = ''): Promise<{ id: string | null; error: string | null }> {
@@ -59,16 +65,24 @@ export async function savePhonicsCheck(input: PhonicsCheckInput, id?: string, st
     heard[s] = h
     observations[s] = input.observations[s] || []
   })
-  const row = { ...input, skills, results, heard, observations, content_version: PHONICS_CONTENT_VERSION }
+  const { carried: carriedIn, ...rest } = input
+  const carried = Object.fromEntries(Object.entries(carriedIn || {}).filter(([s]) => skills.includes(s)))
+  const row: Record<string, unknown> = { ...rest, skills, results, heard, observations, content_version: PHONICS_CONTENT_VERSION }
+  if (Object.keys(carried).length) row.carried = carried
   const what = `Phonics check: ${studentName} · ${skills.length} ${skills.length === 1 ? 'sheet' : 'sheets'}`
+  const write = (r: Record<string, unknown>) => id
+    ? supabase.from('phonics_checks').update({ ...r, updated_at: new Date().toISOString() }).eq('id', id).select('id').single()
+    : supabase.from('phonics_checks').insert(r).select('id').single()
+  let { data, error } = await write(row)
+  if (error && 'carried' in row && noCarriedColumn(error.message)) {
+    const { carried: _drop, ...withoutCarried } = row
+    ;({ data, error } = await write(withoutCarried))
+  }
+  if (error) return { id: null, error: error.message }
   if (id) {
-    const { error } = await supabase.from('phonics_checks').update({ ...row, updated_at: new Date().toISOString() }).eq('id', id)
-    if (error) return { id: null, error: error.message }
     logActivity('edited', what, { path: '/reading' })
     return { id, error: null }
   }
-  const { data, error } = await supabase.from('phonics_checks').insert(row).select('id').single()
-  if (error) return { id: null, error: error.message }
   logActivity('saved', what, { path: '/reading' })
   return { id: data?.id || null, error: null }
 }
@@ -90,5 +104,6 @@ function normalize(r: any): PhonicsCheckRow {
     observations: obj(r.observations),
     notes: r.notes || '',
     content_version: r.content_version || '',
+    carried: obj(r.carried),
   }
 }

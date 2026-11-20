@@ -328,6 +328,13 @@ export const PHONICS_CHECK_NOTES: string[] = [
 
 // ─── Saved checks ────────────────────────────────────────────────
 
+/**
+ * A recheck of the words missed before. The sheet's result is the earlier
+ * check's marks with the words read again replaced, so the sheet is scored
+ * whole; `rechecked` is what was actually read this time.
+ */
+export interface CarriedSheet { from: string; date: string; rechecked: string[] }
+
 export interface PhonicsCheckRow {
   id: string
   student_id: string
@@ -343,6 +350,8 @@ export interface PhonicsCheckRow {
   observations: Record<string, string[]>
   notes: string
   content_version: string
+  /** Sheets this check rechecked from Missed before: what it built on and the words read again. */
+  carried?: Record<string, CarriedSheet>
   created_at?: string
   updated_at?: string
 }
@@ -510,6 +519,52 @@ export function sortChecksAsc(checks: PhonicsCheckRow[]): PhonicsCheckRow[] {
   return [...checks].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.created_at || '').localeCompare(b.created_at || ''))
 }
 
+// ─── Missed before ───────────────────────────────────────────────
+
+export interface MissedSheet {
+  sheet: string
+  /** The check the latest result came from, and its date. */
+  fromCheckId: string
+  fromDate: string
+  /** Words marked error or partly there, in the sheet's order. */
+  words: string[]
+}
+
+/**
+ * For one student: the words missed on their latest result for each sheet,
+ * sheet by sheet, in packet order. `sheets` limits it to the sheets a class
+ * works with (a class that skips the alphabet).
+ */
+export function missedBefore(latest: LatestBySkill, checks: PhonicsCheckRow[], sheets: PhonicsSkill[] = PHONICS_SKILLS): MissedSheet[] {
+  const byId: Record<string, PhonicsCheckRow> = Object.fromEntries(checks.map(c => [c.id, c]))
+  return sheets.flatMap(sk => {
+    const l = latest[sk.id]
+    if (!l) return []
+    const marks = byId[l.checkId]?.results?.[sk.id] || {}
+    const words = sk.words.filter(w => isMiss(marks[w]))
+    return words.length ? [{ sheet: sk.id, fromCheckId: l.checkId, fromDate: l.date, words }] : []
+  })
+}
+
+/** The words a check actually read on a sheet: all of them, or on a recheck only those read again. */
+function wasRead(check: PhonicsCheckRow, sheet: string, word: string): boolean {
+  const read = check.carried?.[sheet]?.rechecked
+  return !read || read.includes(word)
+}
+
+/**
+ * How many of a student's checks missed each word on a sheet. A recheck
+ * counts only the words it read again, not the misses it carried over.
+ */
+export function missCounts(checks: PhonicsCheckRow[], sheet: string): Record<string, number> {
+  const out: Record<string, number> = {}
+  checks.forEach(c => {
+    if (!sheetGiven(c, sheet)) return
+    Object.entries(c.results?.[sheet] || {}).forEach(([w, m]) => { if (isMiss(m) && wasRead(c, sheet, w)) out[w] = (out[w] || 0) + 1 })
+  })
+  return out
+}
+
 /** For one student's checks: every attempt at each sheet, oldest first. */
 export function attemptsBySkill(checks: PhonicsCheckRow[]): Record<string, Attempt[]> {
   const out: Record<string, Attempt[]> = {}
@@ -547,7 +602,8 @@ export function wordHistory(checks: PhonicsCheckRow[], skillId: string): WordHis
   const all = words.concat(Array.from(extra))
   return all
     .map((word, i) => {
-      const marks = attempts.map(c => c.results?.[skillId]?.[word])
+      // A recheck's carried-over marks were not read again: blank for that attempt.
+      const marks = attempts.map(c => wasRead(c, skillId, word) ? c.results?.[skillId]?.[word] : undefined)
       return { word, marks, misses: marks.filter(isMiss).length, i }
     })
     .filter(h => h.misses > 0)
