@@ -102,7 +102,7 @@ export default function WhatsNewView() {
 
       {dates.map(d => (
         <section key={d} className="mb-8">
-          <h2 className="eyebrow border-b border-rule-2 pb-1.5 mb-3 flex items-center gap-2">{fmt(d)}{d > today && <span className="px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(10px*var(--ts))]">scheduled</span>}</h2>
+          <h2 className="eyebrow border-b border-rule-2 pb-1.5 mb-3 flex items-center gap-2">{fmt(d)}{d > today && <span className="px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))]">scheduled</span>}</h2>
           <div className="divide-y divide-rule">
             {shown.filter(e => e.date === d).map(e => (
               <article key={e.id} className={`py-3 grid grid-cols-[14px_minmax(0,1fr)] gap-3 ${e.off ? 'opacity-60' : ''}`}>
@@ -121,7 +121,7 @@ export default function WhatsNewView() {
                     </div>
                   )}
                   {e.highlight && <img src={e.highlight.image} alt="" className="w-full max-w-[520px] rounded border border-rule-2 mb-3" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />}
-                  <h3 className="text-[length:calc(15px*var(--ts))] font-semibold text-ink flex items-center gap-2">{e.title}{e.off && <span className="px-1.5 py-0.5 rounded bg-paper-2 text-ink-3 text-[length:calc(10px*var(--ts))] font-medium">off</span>}</h3>
+                  <h3 className="text-[length:calc(15px*var(--ts))] font-semibold text-ink flex items-center gap-2">{e.title}{e.off && <span className="px-1.5 py-0.5 rounded bg-paper-2 text-ink-3 text-[length:calc(11.5px*var(--ts))] font-medium">off</span>}</h3>
                   <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 leading-relaxed mt-1 max-w-[65ch]">{e.body}</p>
                   {e.highlight && <p className="text-[length:calc(13px*var(--ts))] text-ink leading-relaxed mt-1 max-w-[65ch]"><span className="font-semibold">To use it:</span> {e.highlight.how}</p>}
                   <p className="mt-1.5 flex gap-4 text-[length:calc(12.5px*var(--ts))]">

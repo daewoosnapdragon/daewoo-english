@@ -19,7 +19,9 @@
   --white: 251 248 242;      /* raised surfaces: cards, modals, inputs */
   --ink: 27 24 18;
   --ink-2: 79 74 63;
-  --ink-3: 133 125 110;
+  /* ink-3 is the quietest text: labels, hints, breadcrumbs. 108 101 89 keeps
+     4.5:1 on paper, white and paper-2 while staying a clear step under ink-2. */
+  --ink-3: 108 101 89;
   --ink-block: 31 27 20;     /* dark panels that used to be navy */
   --rule: 216 208 190;
   --rule-2: 196 187 166;
@@ -27,11 +29,11 @@
   --accent-2: 110 30 31;     /* hover */
   --accent-soft: 241 220 218;
   --good: 46 107 58;   --good-soft: 220 233 214;
-  --warn: 154 106 18;  --warn-soft: 245 231 194;
+  --warn: 132 91 15;   --warn-soft: 245 231 194;
   --bad: 160 50 46;    --bad-soft: 243 217 213;
   --info: 47 92 138;   --info-soft: 217 228 240;
   /* Calendar event colours, as hex so inline styles can use them directly. */
-  --ev-good: #2E6B3A; --ev-accent: #8A2A2B; --ev-info: #2F5C8A; --ev-warn: #9A6A12; --ev-teal: #4E948A; --ev-other: #857D6E;
+  --ev-good: #2E6B3A; --ev-accent: #8A2A2B; --ev-info: #2F5C8A; --ev-warn: #845B0F; --ev-teal: #4E948A; --ev-other: #6C6559;
   --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
   --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
   --wet: 107 58 51;          /* fresh ink: unsaved words */
@@ -49,7 +51,7 @@ html.dark {
   --white: 31 28 21;
   --ink: 237 230 214;
   --ink-2: 194 185 165;
-  --ink-3: 142 133 116;
+  --ink-3: 152 143 125;
   --ink-block: 12 11 8;
   --rule: 51 46 36;
   --rule-2: 74 67 51;
@@ -61,7 +63,7 @@ html.dark {
   --bad: 224 122 114;   --bad-soft: 62 34 32;
   --info: 127 166 214;  --info-soft: 31 44 59;
   --wet: 232 180 168;
-  --ev-good: #6FAF78; --ev-accent: #D9736F; --ev-info: #7FA6D6; --ev-warn: #D8AE4E; --ev-teal: #6FB8AD; --ev-other: #8E8574;
+  --ev-good: #6FAF78; --ev-accent: #D9736F; --ev-info: #7FA6D6; --ev-warn: #D8AE4E; --ev-teal: #6FB8AD; --ev-other: #988F7D;
 }
 
 body {
@@ -268,6 +270,10 @@ textarea:focus, select:focus {
   outline: none;
 }
 
+/* Placeholders are hints, not missing text: ink-3 in both themes, which holds
+   4.5:1 on every surface an input sits on. Tailwind's default grey did not. */
+input::placeholder, textarea::placeholder { color: rgb(var(--ink-3)); opacity: 1; }
+
 /* ─── Card hover (kept for older screens; no lift, just a firmer rule) ── */
 .card-hover { transition: box-shadow 0.15s ease; }
 .card-hover:hover { box-shadow: 0 0 0 1px rgb(var(--rule-2)); }
@@ -352,7 +358,7 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 /* ═══════════════════════════════════════════════════
    EDITORIAL PRIMITIVES — used by the rebuilt screens
    ═══════════════════════════════════════════════════ */
-.eyebrow { font-size: calc(11px * var(--ts)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
+.eyebrow { font-size: calc(11.5px * var(--ts)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
 .eyebrow-accent { color: rgb(var(--accent)); }
 .rule { border-top: 1px solid rgb(var(--rule)); }
 .rule-2 { border-top: 1px solid rgb(var(--rule-2)); }
@@ -370,8 +376,32 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 /* ─── Chart colours ─────────────────────────────────────────────────
    Hex, so SVG attributes can use them directly. One series colour, the
    accent for a comparison, status colours only for meaning. */
-:root { --paper-hex: #F5F1E8; --c-1: #2F5C8A; --c-2: #8A2A2B; --c-good: #2E6B3A; --c-warn: #9A6A12; --c-bad: #A0322E; --c-mute: #857D6E; --c-rule: #D8D0BE; --c-band: rgba(46,107,58,0.10); --c-text: #4F4A3F; --c-track: #E3DCCB; }
-html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FBF86; --c-warn: #D8AE4E; --c-bad: #E07A72; --c-mute: #8E8574; --c-rule: #332E24; --c-band: rgba(127,191,134,0.14); --c-text: #C2B9A5; --c-track: #2A261D; }
+:root { --paper-hex: #F5F1E8; --c-1: #2F5C8A; --c-2: #8A2A2B; --c-good: #2E6B3A; --c-warn: #845B0F; --c-bad: #A0322E; --c-mute: #6C6559; --c-rule: #D8D0BE; --c-band: rgba(46,107,58,0.10); --c-text: #4F4A3F; --c-track: #E3DCCB; }
+html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FBF86; --c-warn: #D8AE4E; --c-bad: #E07A72; --c-mute: #988F7D; --c-rule: #332E24; --c-band: rgba(127,191,134,0.14); --c-text: #C2B9A5; --c-track: #2A261D; }
+
+/* ─── Class chips ───
+   classToColor() / classToTextColor() in lib/utils read these. Light: the
+   pastel fill and a deep ink of the same hue (4.6:1 or better on the fill).
+   Dark: a deep fill and the pastel as its ink, so a class name written on the
+   page reads in both themes too. --lily etc. above stay the dots and flowers. */
+:root {
+  --cls-lily: #D4A5B0; --cls-lily-ink: #6D2D3A;
+  --cls-camellia: #C8A88E; --cls-camellia-ink: #523D20;
+  --cls-daisy: #E8DFA0; --cls-daisy-ink: #6B5E1A;
+  --cls-sunflower: #AED6CF; --cls-sunflower-ink: #255F53;
+  --cls-marigold: #91ADC8; --cls-marigold-ink: #283E60;
+  --cls-snapdragon: #B4A8CC; --cls-snapdragon-ink: #4B3373;
+  --cls-none: #C8CED8; --cls-none-ink: #4D5464;
+}
+html.dark {
+  --cls-lily: #4E262B; --cls-lily-ink: #D4A5B0;
+  --cls-camellia: #3E301C; --cls-camellia-ink: #C8A88E;
+  --cls-daisy: #4D4418; --cls-daisy-ink: #E8DFA0;
+  --cls-sunflower: #23443A; --cls-sunflower-ink: #AED6CF;
+  --cls-marigold: #243042; --cls-marigold-ink: #91ADC8;
+  --cls-snapdragon: #392A4D; --cls-snapdragon-ink: #B4A8CC;
+  --cls-none: #3B3E44; --cls-none-ink: #C8CED8;
+}
 
 /* ─── Legacy gold buttons ────────────────────────────────────────────
    Older screens pair bg-gold with dark text; gold is now the oxblood
@@ -449,7 +479,7 @@ main:focus { outline: none; }
   box-shadow: 0 8px 18px rgb(var(--ink) / .08); padding: 4px 0 7px; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 160ms ease, transform 160ms var(--ease); }
 .term-wrap.is-open .term-band { opacity: 1; transform: none; }
 .term-months { position: relative; height: 16px; }
-.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(10.5px * var(--ts)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--ink-3)); line-height: 16px; }
+.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(11.5px * var(--ts)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--ink-3)); line-height: 16px; }
 .term-facts { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 3px 16px 0; font-size: calc(12px * var(--ts)); color: rgb(var(--ink-2)); }
 .term-facts b { font-weight: 600; color: rgb(var(--ink)); }
 .term-due { display: inline-flex; align-items: center; gap: 6px; }
@@ -517,7 +547,7 @@ html.dark .stamp { mix-blend-mode: screen; }
   border-radius: 6px; box-shadow: 0 10px 28px rgb(0 0 0 / .22), 0 1px 2px rgb(0 0 0 / .2); overflow: hidden; }
 .toast-card .toast-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px 10px 12px; font-size: calc(13.5px * var(--ts)); font-weight: 500; line-height: 1.4; }
 .toast-card svg.drawn-check { stroke: rgb(var(--good-soft)); }
-.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: calc(11px * var(--ts)); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: calc(11.5px * var(--ts)); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .toast-card .toast-action { flex: none; margin-left: 6px; color: rgb(var(--accent-soft)); font-weight: 600; font-size: calc(13px * var(--ts)); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .toast-card .toast-time { height: 2px; background: rgb(var(--paper) / .28); transform-origin: left; animation: toast-time linear forwards; }
 @keyframes toast-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }

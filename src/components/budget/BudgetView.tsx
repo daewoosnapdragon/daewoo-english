@@ -73,7 +73,7 @@ export default function BudgetView() {
       <tr className="table-row-hover">
         <td className="py-2 pr-3 text-ink font-medium">{label}</td>
         <td className="py-2 pr-3 tabular-nums">{canManage ? <AllowanceInput value={allowance} ko={ko} onSave={async v => { const e = await saveBudget(semester!.id, teacherId, v, b?.note || '', b?.id || null); if (e) showToast(e); else load() }} /> : won(allowance, ko)}</td>
-        <td className="py-2 pr-3 tabular-nums text-ink">{won(spent, ko)}<span className="text-ink-3 text-[length:calc(11px*var(--ts))]"> · {count}</span></td>
+        <td className="py-2 pr-3 tabular-nums text-ink">{won(spent, ko)}<span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]"> · {count}</span></td>
         <td className={`py-2 pr-3 tabular-nums font-semibold ${over ? 'text-bad' : allowance > 0 ? 'text-good' : 'text-ink-3'}`}>{allowance > 0 ? won(remaining, ko) : '—'}</td>
         <td className="py-2 w-40 hidden md:table-cell">{allowance > 0 && <div className="h-2 bg-paper-2 rounded overflow-hidden"><div className={`h-full ${over ? 'bg-bad' : pct > 85 ? 'bg-warn' : 'bg-accent'}`} style={{ width: `${pct}%` }} /></div>}</td>
       </tr>

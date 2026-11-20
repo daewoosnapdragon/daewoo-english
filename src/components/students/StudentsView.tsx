@@ -274,7 +274,7 @@ export default function StudentsView() {
               return `<div style="border:2px solid ${tc};border-radius:10px;padding:10px;page-break-inside:avoid;display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:12px;font-weight:700;color:#1e293b">${s.english_name}</span> <span style="font-size:10px;color:#94a3b8">${s.korean_name}</span></div><span style="font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700;background:${clBg[s.english_class] || '#f1f5f9'};color:${clTx[s.english_class] || '#475569'}">${s.english_class}</span></div><div style="display:flex;gap:8px;align-items:center;font-size:10px">${rd ? `<span style="font-weight:700;color:#647FBC">${Math.round(rd.cwpm)} CWPM</span><span style="color:${arC};font-size:9px">${arrow}</span>` : '<span style="color:#94a3b8">No ORF</span>'}${(s as any).wida_level ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:#eef2ff;color:#4338ca;font-weight:700">WIDA L${(s as any).wida_level}</span>` : ''}${bN > 0 ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:#fef2f2;color:#dc2626;font-weight:600">${bN} incidents</span>` : ''}</div><div style="margin:2px 0">${bars}</div>${goals.length > 0 ? `<div style="border-top:1px solid #f1f5f9;padding-top:3px;margin-top:1px">${goals.map(g => `<p style="font-size:8px;color:#475569;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">&#8226; ${g}</p>`).join('')}</div>` : ''}</div>`
             }).join('')
             const pw = window.open('', '_blank'); if (!pw) return
-            pw.document.write(`<!DOCTYPE html><html><head><title>Data Cards</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media print{body{padding:6px}.grid{gap:6px}}@page{size:landscape;margin:10mm}</style></head><body><div style="text-align:center;margin-bottom:10px"><h2 style="font-size:14px;color:#647FBC;margin:0">Student Data Cards</h2><p style="font-size:10px;color:#999">${filterClass || teacherClass || 'All Classes'} | ${new Date().toLocaleDateString()} | ${sorted.length} students</p></div><div class="grid">${cards}</div><script>window.print()<\/script></body></html>`)
+            pw.document.write(`<!DOCTYPE html><html><head><title>Data Cards</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;padding:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media print{body{padding:6px}.grid{gap:6px}}@page{size:landscape;margin:10mm}</style></head><body><div style="text-align:center;margin-bottom:10px"><h2 style="font-size:14px;color:#647FBC;margin:0">Student Data Cards</h2><p style="font-size:10px;color:#999">${filterClass || teacherClass || 'All Classes'} | ${new Date().toLocaleDateString()} | ${sorted.length} students</p></div><div class="grid">${cards}</div><script>window.print()<\/script></body></html>`)
             pw.document.close()
           }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy/10 text-navy hover:bg-navy/20 transition-all">
             <FileSpreadsheet size={14} /> Data Cards
@@ -284,7 +284,7 @@ export default function StudentsView() {
         {/* Row filters: Korean class and WIDA level. Chips show counts for the current grade/class scope. */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4 text-[length:calc(11.5px*var(--ts))]">
           <div className="flex items-center gap-1">
-            <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary uppercase tracking-wider mr-1">{t.students.koreanClass}:</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider mr-1">{t.students.koreanClass}:</span>
             {KOREAN_CLASSES.map(kc => (
               <button key={kc} onClick={() => setFilterKoreanClass(filterKoreanClass === kc ? null : kc)}
                 className={`px-2.5 py-1 max-sm:min-h-9 whitespace-nowrap rounded font-medium transition-all ${filterKoreanClass === kc ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
@@ -293,7 +293,7 @@ export default function StudentsView() {
             ))}
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary uppercase tracking-wider mr-1">{t.students.widaLevel}:</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider mr-1">{t.students.widaLevel}:</span>
             {widaChipLevels.map(l => (
               <button key={l} onClick={() => setFilterWida(filterWida === l ? null : l)}
                 className={`px-2.5 py-1 max-sm:min-h-9 whitespace-nowrap rounded font-medium transition-all ${filterWida === l ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
@@ -314,7 +314,7 @@ export default function StudentsView() {
               <X size={12} /> {t.students.clearFilters}
             </button>
           )}
-          <span className="hidden sm:inline ml-auto text-[length:calc(11px*var(--ts))] text-text-tertiary">{t.students.sortHint}</span>
+          <span className="hidden sm:inline ml-auto text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{t.students.sortHint}</span>
         </div>
 
         <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
@@ -349,7 +349,7 @@ export default function StudentsView() {
                         </div>
                       ) : (
                         <p className="text-[length:calc(15px*var(--ts))] font-medium text-text-primary leading-tight truncate">
-                          {s.needs_review && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:max(10px,calc(9px*var(--ts)))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                          {s.needs_review && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
                           {s.english_name}
                         </p>
                       )}
@@ -358,7 +358,7 @@ export default function StudentsView() {
                         <span className="text-text-tertiary">·</span>
                         <span>{language === 'ko' ? `${s.grade}학년` : `G${s.grade}`}</span>
                         <span className="text-text-tertiary">·</span>
-                        <span className="inline-flex px-2 py-px rounded-full text-[length:calc(11px*var(--ts))] font-semibold" style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>{s.english_class}</span>
+                        <span className="inline-flex px-2 py-px rounded-full text-[length:calc(11.5px*var(--ts))] font-semibold" style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>{s.english_class}</span>
                         <span className="text-text-tertiary">·</span>
                         <span>{formatHomeroom(s)}</span>
                       </p>
@@ -372,8 +372,8 @@ export default function StudentsView() {
             <table className="hidden sm:table w-full text-[length:calc(13px*var(--ts))]">
               <thead>
                 <tr className="bg-surface-alt">
-                  <th className="text-left px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-                  <th className="text-left px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-10"></th>
+                  <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+                  <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-10"></th>
                   <SortableHeader label={t.students.englishName} sortKey="english_name" current={sortKey} dir={sortDir} onSort={toggleSort} />
                   <SortableHeader label={t.students.widaLevel} sortKey="wida" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <SortableHeader label={t.students.koreanName} sortKey="korean_name" current={sortKey} dir={sortDir} onSort={toggleSort} />
@@ -381,7 +381,7 @@ export default function StudentsView() {
                   <SortableHeader label={t.students.koreanClass} sortKey="korean_class" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <SortableHeader label="#" sortKey="class_number" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
                   <SortableHeader label={t.students.englishClass} sortKey="english_class" current={sortKey} dir={sortDir} onSort={toggleSort} align="center" />
-                  <th className="text-center px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-12"></th>
+                  <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-12"></th>
                 </tr>
               </thead>
               <tbody>
@@ -406,7 +406,7 @@ export default function StudentsView() {
                         />
                       ) : (
                         <>
-                          {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:max(10px,calc(9px*var(--ts)))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                          {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
                           {s.english_name}
                         </>
                       )}
@@ -421,13 +421,13 @@ export default function StudentsView() {
                         <select
                           value={bulkEdits[s.id]?.english_class ?? s.english_class}
                           onChange={e => setBulkEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], english_class: e.target.value as EnglishClass } }))}
-                          className="px-1 py-1.5 border border-border rounded text-[length:calc(11px*var(--ts))] outline-none bg-white"
+                          className="px-1 py-1.5 border border-border rounded text-[length:calc(11.5px*var(--ts))] outline-none bg-white"
                           tabIndex={-1}
                         >
                           {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                       ) : (
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold"
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-semibold"
                           style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>
                           {s.english_class}
                         </span>
@@ -453,7 +453,7 @@ function SortableHeader({ label, sortKey, current, dir, onSort, align = 'left' }
 }) {
   const active = current === sortKey
   return (
-    <th className={`${align === 'center' ? 'text-center' : 'text-left'} px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold ${active ? 'text-navy' : 'text-text-secondary'}`}
+    <th className={`${align === 'center' ? 'text-center' : 'text-left'} px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold ${active ? 'text-navy' : 'text-text-secondary'}`}
       aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
       <button type="button" onClick={() => onSort(sortKey)}
         className={`inline-flex items-center gap-1 uppercase tracking-wider hover:text-navy transition-colors ${align === 'center' ? 'justify-center' : ''}`}>
@@ -483,7 +483,7 @@ function ManageUploadCard({ onComplete }: { onComplete: () => void }) {
         onClick={openUpload}>
         <FileSpreadsheet size={28} className="mx-auto text-text-tertiary mb-2" />
         <p className="text-[length:calc(13px*var(--ts))] font-medium">{language === 'ko' ? '명단 업로드' : 'Upload Roster'}</p>
-        <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mt-0.5">.xlsx, .xls, or .csv</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">.xlsx, .xls, or .csv</p>
       </div>
       {showModal && (
         <RosterUploadModal
@@ -525,7 +525,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
         onClick={() => setShow(true)}>
         <Plus size={28} className="mx-auto text-text-tertiary mb-2" />
         <p className="text-[length:calc(13px*var(--ts))] font-medium">{language === 'ko' ? '학생 추가' : 'Add Student'}</p>
-        <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mt-0.5">{language === 'ko' ? '개별 학생 추가' : 'Add individual student'}</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">{language === 'ko' ? '개별 학생 추가' : 'Add individual student'}</p>
       </div>
     )
   }
@@ -536,16 +536,16 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       <div className="grid grid-cols-2 gap-2">
         <input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} placeholder="Korean Name" className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
         <input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} placeholder="English Name" className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
-        <select value={form.pronoun} onChange={e => setForm({ ...form, pronoun: e.target.value as any })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none col-span-2" aria-label="Pronoun">
+        <select value={form.pronoun} onChange={e => setForm({ ...form, pronoun: e.target.value as any })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none col-span-2" aria-label="Pronoun">
           <option value="">Pronoun: not set (he / she / they)</option><option value="he">he / his</option><option value="she">she / her</option><option value="they">they / their</option></select>
       </div>
       <div className="grid grid-cols-4 gap-2">
-        <select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none">
+        <select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none">
           {GRADES.map(g => <option key={g} value={g}>G{g}</option>)}</select>
-        <select value={form.korean_class} onChange={e => setForm({ ...form, korean_class: e.target.value as KoreanClass })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none">
+        <select value={form.korean_class} onChange={e => setForm({ ...form, korean_class: e.target.value as KoreanClass })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none">
           {KOREAN_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
-        <input type="number" min={1} max={35} value={form.class_number} onChange={e => setForm({ ...form, class_number: parseInt(e.target.value) || 1 })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none text-center" />
-        <select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none">
+        <input type="number" min={1} max={35} value={form.class_number} onChange={e => setForm({ ...form, class_number: parseInt(e.target.value) || 1 })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none text-center" />
+        <select value={form.english_class} onChange={e => setForm({ ...form, english_class: e.target.value as EnglishClass })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none">
           {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
       </div>
       <div className="flex gap-2">
@@ -612,10 +612,10 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
         <div className="flex items-center gap-2">
           <span className="text-[length:calc(15px*var(--ts))]">⚠</span>
           <h4 className="text-[length:calc(13px*var(--ts))] font-bold text-gray-900">{flagged.length} Student{flagged.length !== 1 ? 's' : ''} Need Review</h4>
-          <span className="text-[length:calc(11px*var(--ts))] text-gray-600">Verify info, edit inline, then clear flag</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-gray-600">Verify info, edit inline, then clear flag</span>
         </div>
         <button onClick={clearAllFlags} disabled={clearingAll}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-white border border-amber-300 text-gray-700 hover:bg-amber-100 disabled:opacity-40 transition-all">
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-white border border-amber-300 text-gray-700 hover:bg-amber-100 disabled:opacity-40 transition-all">
           {clearingAll ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
           Clear All Flags
         </button>
@@ -675,10 +675,10 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
                       {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
-                  <td className="px-3 py-2 text-[length:calc(10px*var(--ts))] text-gray-600 max-w-[180px] truncate" title={reason}>{reason}</td>
+                  <td className="px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-gray-600 max-w-[180px] truncate" title={reason}>{reason}</td>
                   <td className="px-3 py-1.5 text-right">
                     <button onClick={() => saveAndClear(s)} disabled={saving === s.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 transition-all whitespace-nowrap">
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 transition-all whitespace-nowrap">
                       {saving === s.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
                       Save & Clear
                     </button>
@@ -792,14 +792,14 @@ export function WIDAPerformanceInsight({ studentId, lang }: { studentId: string;
   return (
     <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden">
       <div className="px-4 py-2.5 bg-paper-2 border-b border-rule">
-        <p className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold">WIDA-to-Performance Analysis</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold">WIDA-to-Performance Analysis</p>
       </div>
       <div className="divide-y divide-rule">
         {insights.map((ins, i) => (
           <div key={i} className="px-4 py-2.5">
             <div className="flex items-center justify-between gap-3 mb-0.5 flex-wrap">
               <span className={`inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] font-semibold capitalize ${tone[ins.status].text}`}><span className={`w-1.5 h-1.5 rounded-full ${tone[ins.status].dot}`} />{ins.domain}</span>
-              <div className="flex items-center gap-3 text-[length:calc(11px*var(--ts))] tabular-nums">
+              <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] tabular-nums">
                 <span className="text-ink-2">WIDA {ins.widaLevel}</span>
                 <span className="text-ink font-medium">Actual: {Math.round(ins.actualPct)}%</span>
                 <span className="text-ink-3">Expected: {ins.expected.min}-{ins.expected.max}%</span>
@@ -855,7 +855,7 @@ export function AboutTab({ studentId, lang }: { studentId: string; lang: 'en' | 
         <textarea id={`about-${studentId}`} value={notes} onChange={e => { setNotes(e.target.value); setDirty(true) }} rows={5}
           placeholder={lang === 'ko' ? '학생에 대한 중요한 정보, 메모, 알레르기, 특이사항 등...' : 'Important info about this student — allergies, notes for subs, learning needs, parent communication, anything teachers should know...'}
           className="w-full px-3 py-2.5 border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink outline-none resize-none bg-surface leading-relaxed" />
-        <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '모든 교사가 볼 수 있습니다' : 'Visible to all teachers in this class'}</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '모든 교사가 볼 수 있습니다' : 'Visible to all teachers in this class'}</p>
       </div>
     </div>
   )
@@ -874,16 +874,16 @@ export function ClassTransferHistory({ studentId }: { studentId: string }) {
   return (
     <div className="border border-rule-2 rounded-lg overflow-hidden">
       <div className="px-4 py-2 bg-paper-2 border-b border-rule">
-        <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 uppercase tracking-wider">{lang === 'ko' ? '반 이력' : 'Class History'}</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 uppercase tracking-wider">{lang === 'ko' ? '반 이력' : 'Class History'}</span>
       </div>
       <div className="px-4 py-2 space-y-1">
         {transfers.map((t, i) => (
-          <div key={t.id || i} className="flex items-center gap-2 text-[length:calc(11px*var(--ts))]">
+          <div key={t.id || i} className="flex items-center gap-2 text-[length:calc(11.5px*var(--ts))]">
             <span className="text-ink-3 w-20">{new Date(t.transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-            <span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(t.from_class), color: classToTextColor(t.from_class) }}>{t.from_class}</span>
+            <span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classToColor(t.from_class), color: classToTextColor(t.from_class) }}>{t.from_class}</span>
             <span className="text-ink-3">→</span>
-            <span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(t.to_class), color: classToTextColor(t.to_class) }}>{t.to_class}</span>
-            {t.reason && <span className="text-[length:calc(11px*var(--ts))] text-ink-3 ml-2">({t.reason})</span>}
+            <span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classToColor(t.to_class), color: classToTextColor(t.to_class) }}>{t.to_class}</span>
+            {t.reason && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 ml-2">({t.reason})</span>}
           </div>
         ))}
       </div>
@@ -997,18 +997,18 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
       {semesterHistory.length > 0 && (
         <div className="border border-rule-2 rounded-lg overflow-hidden">
           <div className="px-4 py-2.5 bg-paper-2 border-b border-rule flex items-center justify-between">
-            <span className="text-[length:calc(11px*var(--ts))] font-semibold text-ink-2 uppercase tracking-wider">{lang === 'ko' ? '학기별 성적' : 'Semester Grades'}</span>
-            <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{semesterHistory.length} semester{semesterHistory.length !== 1 ? 's' : ''}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 uppercase tracking-wider">{lang === 'ko' ? '학기별 성적' : 'Semester Grades'}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{semesterHistory.length} semester{semesterHistory.length !== 1 ? 's' : ''}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-[length:calc(12px*var(--ts))]">
               <thead>
                 <tr className="border-b border-rule">
-                  <th className="px-3 py-2 text-left text-[length:calc(10px*var(--ts))] font-semibold text-ink-3 uppercase w-24">Domain</th>
+                  <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-3 uppercase w-24">Domain</th>
                   {semesterHistory.map((s, i) => (
-                    <th key={i} className="px-2 py-2 text-center text-[length:calc(10px*var(--ts))] font-semibold text-ink-3 uppercase">{s.name.replace('Fall 2025', 'F25').replace('Spring Mid 2026', 'S26-M').replace('Spring Final 2026', 'S26-F').replace('Spring 2026', 'S26')}</th>
+                    <th key={i} className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-3 uppercase">{s.name.replace('Fall 2025', 'F25').replace('Spring Mid 2026', 'S26-M').replace('Spring Final 2026', 'S26-F').replace('Spring 2026', 'S26')}</th>
                   ))}
-                  {semesterHistory.length >= 2 && <th className="px-2 py-2 text-center text-[length:calc(10px*var(--ts))] font-semibold text-ink-3 uppercase w-16">Δ</th>}
+                  {semesterHistory.length >= 2 && <th className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-3 uppercase w-16">Δ</th>}
                 </tr>
               </thead>
               <tbody>
@@ -1024,11 +1024,11 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
                         <td key={i} className="px-2 py-1.5 text-center">
                           {v != null ? (
                             <span className={`font-semibold tabular-nums text-[length:calc(12px*var(--ts))] ${scoreTone(v)}`}>{v.toFixed(1)}</span>
-                          ) : <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">--</span>}
+                          ) : <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]">--</span>}
                         </td>
                       ))}
                       {semesterHistory.length >= 2 && (
-                        <td className="px-2 py-1.5 text-center font-bold text-[length:calc(11px*var(--ts))]">
+                        <td className="px-2 py-1.5 text-center font-bold text-[length:calc(11.5px*var(--ts))]">
                           {change != null ? (
                             <span className={changeTone(change)}>
                               {change > 0 ? '▲' : change < 0 ? '▼' : '–'}{Math.abs(change).toFixed(1)}
@@ -1051,7 +1051,7 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
                     <tr className="border-t border-rule-2 bg-paper-2">
                       <td className="px-3 py-2 font-semibold text-[length:calc(11.5px*var(--ts))] text-ink">Overall</td>
                       {overalls.map((v, i) => (
-                        <td key={i} className="px-2 py-2 text-center font-display text-[length:calc(15px*var(--ts))] text-ink tabular-nums">{v != null ? v.toFixed(1) : '--'}</td>
+                        <td key={i} className="px-2 py-2 text-center font-semibold text-[length:calc(13.5px*var(--ts))] text-ink tabular-nums">{v != null ? v.toFixed(1) : '--'}</td>
                       ))}
                       {semesterHistory.length >= 2 && (
                         <td className="px-2 py-2 text-center font-bold text-[length:calc(12px*var(--ts))]">
@@ -1084,18 +1084,18 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
       {/* Trend sparklines per domain (shows trajectory at a glance) */}
       {data.length >= 2 && (
         <div className="border border-rule-2 rounded-lg p-4">
-          <p className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 uppercase tracking-wider mb-3">{lang === 'ko' ? '영역별 추세' : 'Domain Trends'}</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 uppercase tracking-wider mb-3">{lang === 'ko' ? '영역별 추세' : 'Domain Trends'}</p>
           <div className="grid grid-cols-5 gap-3">
             {data.map(({ domain, assessments }) => {
               const pts = assessments.map(a => a.pct)
-              if (pts.length < 2) return <div key={domain} className="text-center text-[length:calc(10.5px*var(--ts))] text-ink-3">{DOMAIN_LABELS[domain]?.[lang] || domain}<br/>--</div>
+              if (pts.length < 2) return <div key={domain} className="text-center text-[length:calc(11.5px*var(--ts))] text-ink-3">{DOMAIN_LABELS[domain]?.[lang] || domain}<br/>--</div>
               const first = pts[0], last = pts[pts.length - 1]
               const trend = last - first
               return (
                 <div key={domain} className="text-center">
-                  <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 block mb-1">{DOMAIN_LABELS[domain]?.[lang] || domain}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 block mb-1">{DOMAIN_LABELS[domain]?.[lang] || domain}</span>
                   <div className="flex justify-center"><Sparkline values={pts} tone={trend > 2 ? 'good' : trend < -2 ? 'bad' : undefined} width={80} height={32} /></div>
-                  <span className={`text-[length:calc(10.5px*var(--ts))] font-semibold tabular-nums ${trend > 2 ? 'text-good' : trend < -2 ? 'text-bad' : 'text-ink-3'}`}>
+                  <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums ${trend > 2 ? 'text-good' : trend < -2 ? 'text-bad' : 'text-ink-3'}`}>
                     {trend > 0 ? '+' : ''}{trend.toFixed(0)}% {trend > 2 ? '▲' : trend < -2 ? '▼' : '→'}
                   </span>
                 </div>
@@ -1120,7 +1120,7 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
             <div className="p-3 space-y-1.5">
               {assessments.map((a, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <span className="text-[length:calc(11px*var(--ts))] text-ink-2 w-28 shrink-0 truncate" title={a.name}>{a.name}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-2 w-28 shrink-0 truncate" title={a.name}>{a.name}</span>
                   <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink w-14 shrink-0 tabular-nums">{a.score}/{a.max}</span>
                   <div className="flex-1 h-4 bg-paper-3 rounded-sm overflow-hidden relative">
                     {/* Class avg marker */}
@@ -1131,11 +1131,11 @@ export function AcademicHistoryTab({ studentId, lang }: { studentId: string; lan
                     )}
                     <div className="h-full rounded-sm" style={{ width: `${Math.max(a.pct, 3)}%`, backgroundColor: 'var(--c-1)' }} />
                   </div>
-                  <span className={`text-[length:calc(11px*var(--ts))] font-semibold w-12 text-right tabular-nums ${scoreTone(a.pct)}`}>{a.pct.toFixed(0)}%</span>
+                  <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold w-12 text-right tabular-nums ${scoreTone(a.pct)}`}>{a.pct.toFixed(0)}%</span>
                 </div>
               ))}
             </div>
-            <div className="px-4 py-1.5 border-t border-rule flex items-center gap-4 text-[length:calc(10.5px*var(--ts))] text-ink-3">
+            <div className="px-4 py-1.5 border-t border-rule flex items-center gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-3">
               <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ backgroundColor: 'var(--c-1)' }} /> Student</span>
               <span className="flex items-center gap-1"><span className="w-px h-3 bg-ink inline-block" /><span className="w-1.5 h-1.5 rounded-full bg-ink" /> Class Average</span>
             </div>
@@ -1293,10 +1293,10 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
 
   const primaryBtn = 'inline-flex items-center gap-1.5 h-9 px-4 rounded text-[length:calc(12.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40 transition-colors'
   const secondaryBtn = 'inline-flex items-center gap-1.5 h-9 px-3.5 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink-2 hover:text-ink hover:border-ink-3 transition-colors'
-  const fieldLabel = 'text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-0.5'
+  const fieldLabel = 'text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-0.5'
   const field = 'w-full h-8 px-2 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12px*var(--ts))] outline-none'
   const cellField = 'w-14 px-1 py-1 text-center border border-rule-2 rounded bg-surface text-ink text-[length:calc(11.5px*var(--ts))] outline-none'
-  const th = 'px-2 py-2 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold'
+  const th = 'px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold'
 
   return (
     <div className="space-y-3">
@@ -1374,7 +1374,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
               <div className="flex items-center gap-2 bg-surface rounded px-3 py-2 border border-rule-2">
                 <BookOpen size={13} className="text-ink-3 shrink-0" />
                 <span className="text-[length:calc(12.5px*var(--ts))] font-medium text-ink">{selectedPassage.title}</span>
-                <span className="text-[length:calc(11px*var(--ts))] text-ink-3">({selectedPassage.word_count}w)</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">({selectedPassage.word_count}w)</span>
                 <button onClick={() => setSelectedPassage(null)} aria-label="Clear passage" className="ml-auto p-0.5 rounded text-ink-3 hover:text-bad"><X size={13} /></button>
               </div>
             )}
@@ -1440,7 +1440,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
             </div>
           </div>
           {/* Level guide */}
-          <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 border-t border-rule text-[length:calc(11px*var(--ts))] text-ink-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 border-t border-rule text-[length:calc(11.5px*var(--ts))] text-ink-2">
             <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-bad" />Below 90% = Frustration</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-info" />90-95% = Instructional</span>
             <span className="inline-flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-good" />96%+ = Independent</span>
@@ -1449,7 +1449,8 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
       )}
 
       <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{records.length} {lang === 'ko' ? '개 기록' : 'assessments recorded'}</p>
-      <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden">
+      {/* Scrolls sideways on a phone so Lexile, NAEP and Edit stay reachable. */}
+      <div className="relative bg-surface border border-rule-2 rounded-lg overflow-x-auto">
         <table className="w-full text-[length:calc(12.5px*var(--ts))] tabular-nums">
           <thead><tr className="bg-paper-2 border-b border-rule">
             <th className={`text-left ${th} px-3`}>Date</th>
@@ -1472,13 +1473,13 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
                     <td className="px-2 py-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3">{r.passage_title || '—'}</td>
                     <td className="px-1 py-1"><input type="number" value={editForm.cwpm} onChange={e => setEditForm((f: any) => ({ ...f, cwpm: e.target.value }))} className={cellField} /></td>
                     <td className="px-1 py-1"><input type="number" step="0.1" value={editForm.accuracy_rate} onChange={e => setEditForm((f: any) => ({ ...f, accuracy_rate: e.target.value }))} className={cellField} /></td>
-                    <td className="px-2 py-1.5 text-center text-[length:calc(11px*var(--ts))] text-ink-3">{level.label}</td>
+                    <td className="px-2 py-1.5 text-center text-[length:calc(11.5px*var(--ts))] text-ink-3">{level.label}</td>
                     <td className="px-1 py-1"><input value={editForm.reading_level} onChange={e => setEditForm((f: any) => ({ ...f, reading_level: e.target.value }))} className={cellField} placeholder="—" /></td>
                     <td className="px-1 py-1"><select value={editForm.naep_fluency} onChange={e => setEditForm((f: any) => ({ ...f, naep_fluency: e.target.value }))} className={cellField}><option value="">—</option><option value="1">L1</option><option value="2">L2</option><option value="3">L3</option><option value="4">L4</option></select></td>
                     <td className="px-2 py-1.5 text-center">
                       <div className="flex gap-1 justify-center">
-                        <button onClick={saveEdit} disabled={savingEdit} className="h-7 px-2.5 rounded text-[length:calc(11px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">{savingEdit ? '...' : 'Save'}</button>
-                        <button onClick={() => setEditingId(null)} className="h-7 px-2 rounded text-[length:calc(11px*var(--ts))] font-medium text-ink-2 hover:text-ink">Cancel</button>
+                        <button onClick={saveEdit} disabled={savingEdit} className="h-7 px-2.5 rounded text-[length:calc(11.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">{savingEdit ? '...' : 'Save'}</button>
+                        <button onClick={() => setEditingId(null)} className="h-7 px-2 rounded text-[length:calc(11.5px*var(--ts))] font-medium text-ink-2 hover:text-ink">Cancel</button>
                       </div>
                     </td>
                   </tr>
@@ -1488,7 +1489,7 @@ export function ReadingTabInModal({ studentId, studentName, lang }: { studentId:
               return (
                 <tr key={r.id} className={`border-t border-rule ${fromLevelTest ? 'bg-paper-2/50' : 'hover:bg-paper-2/60 cursor-pointer'}`} onClick={() => { if (!fromLevelTest) startEdit(r) }} title={fromLevelTest ? 'From the level test; edit it on the Level Tests screen' : undefined}>
                   <td className="px-3 py-2 text-ink">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-                  <td className="px-2 py-2 font-medium text-ink truncate max-w-[140px]">{fromLevelTest ? <span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-info-soft text-info text-[length:max(10px,calc(9.5px*var(--ts)))] font-bold uppercase tracking-wide">Level test</span><span className="truncate">{(r.passage_title || '').replace(/^Level test · /, '')}</span></span> : (r.passage_title || '—')}</td>
+                  <td className="px-2 py-2 font-medium text-ink truncate max-w-[140px]">{fromLevelTest ? <span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-info-soft text-info text-[length:calc(11.5px*var(--ts))] font-bold uppercase tracking-wide">Level test</span><span className="truncate">{(r.passage_title || '').replace(/^Level test · /, '')}</span></span> : (r.passage_title || '—')}</td>
                   <td className="px-2 py-2 text-center font-semibold text-ink">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
                   <td className={`px-2 py-2 text-center font-semibold ${level.color}`}>{r.accuracy_rate != null ? `${r.accuracy_rate.toFixed(1)}%` : '—'}</td>
                   <td className={`px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-semibold ${level.color}`}>{level.label}</td>
@@ -1596,7 +1597,7 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
       {/* Attendance-Academic Correlation */}
       {correlation && (
         <div className="bg-warn-soft border border-rule rounded-lg p-4">
-          <p className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-warn font-semibold mb-1">Attendance-Academic Insight</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-warn font-semibold mb-1">Attendance-Academic Insight</p>
           <p className="text-[length:calc(12.5px*var(--ts))] text-ink leading-relaxed max-w-[75ch]">{correlation}</p>
         </div>
       )}
@@ -1608,9 +1609,9 @@ export function AttendanceTabInModal({ studentId, studentName, lang }: { student
         <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden max-h-[200px] overflow-y-auto">
           <table className="w-full text-[length:calc(12.5px*var(--ts))]">
             <thead className="sticky top-0"><tr className="bg-paper-2">
-              <th className="text-left px-3 py-2 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Date</th>
-              <th className="text-center px-3 py-2 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Status</th>
-              <th className="text-left px-3 py-2 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Note</th>
+              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Date</th>
+              <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Status</th>
+              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Note</th>
             </tr></thead>
             <tbody>
               {records.slice(0, 30).map((r: any) => (
@@ -1719,16 +1720,16 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
     <div>
       {/* Visual grid overview */}
       <div className="mb-4 p-3 border border-rule-2 rounded-lg">
-        <p className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-2">Standards Mastery Overview</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-2">Standards Mastery Overview</p>
         {(() => {
           const byDomain: Record<string, typeof standardsData> = {}
           standardsData.forEach(s => { const d = s.domain || 'other'; if (!byDomain[d]) byDomain[d] = []; byDomain[d].push(s) })
           return Object.entries(byDomain).map(([domain, stds]) => (
             <div key={domain} className="mb-2 last:mb-0">
-              <p className="text-[length:calc(10px*var(--ts))] uppercase font-semibold text-ink-3 mb-1">{domain}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase font-semibold text-ink-3 mb-1">{domain}</p>
               <div className="flex flex-wrap gap-1">
                 {stds.map(std => (
-                  <div key={std.code} className={`px-2 py-1 rounded text-[length:calc(10.5px*var(--ts))] font-semibold cursor-help ${band(std.avgPct).chip}`}
+                  <div key={std.code} className={`px-2 py-1 rounded text-[length:calc(11.5px*var(--ts))] font-semibold cursor-help ${band(std.avgPct).chip}`}
                     title={`${std.code}: ${std.description}\n${Math.round(std.avgPct)}% (${std.assessments.length} assessment${std.assessments.length !== 1 ? 's' : ''})`}>
                     {std.code}
                   </div>
@@ -1737,7 +1738,7 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
             </div>
           ))
         })()}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[length:calc(10.5px*var(--ts))] text-ink-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[length:calc(11.5px*var(--ts))] text-ink-2">
           <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-info" /> 86%+ Above Standard</span>
           <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-good" /> 71-85% On Standard</span>
           <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-warn" /> 61-70% Approaching</span>
@@ -1750,7 +1751,7 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
         <span className="inline-flex items-center gap-1.5 text-good font-semibold"><span className="w-1.5 h-1.5 rounded-full bg-good" />{onStd} on standard</span>
         <span className="inline-flex items-center gap-1.5 text-warn font-semibold"><span className="w-1.5 h-1.5 rounded-full bg-warn" />{approaching} approaching</span>
         <span className="inline-flex items-center gap-1.5 text-bad font-semibold"><span className="w-1.5 h-1.5 rounded-full bg-bad" />{below} below standard</span>
-        <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{standardsData.length} standards</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{standardsData.length} standards</span>
       </div>
 
       {/* Standards list */}
@@ -1765,12 +1766,12 @@ export function StandardsMasteryTab({ studentId, lang }: { studentId: string; la
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">{std.code}</span>
-                  <span className="px-1.5 py-px rounded border border-rule-2 text-[length:calc(10px*var(--ts))] font-medium text-ink-2 capitalize">
+                  <span className="px-1.5 py-px rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] font-medium text-ink-2 capitalize">
                     {std.domain}
                   </span>
-                  <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3">{std.assessments.length} assessment{std.assessments.length !== 1 ? 's' : ''}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{std.assessments.length} assessment{std.assessments.length !== 1 ? 's' : ''}</span>
                 </div>
-                <p className="text-[length:calc(11px*var(--ts))] text-ink-2 mt-0.5 truncate">{std.description}</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-0.5 truncate">{std.description}</p>
               </div>
               {/* Mini progress bar */}
               <div className="w-24 h-1.5 bg-paper-3 rounded-full overflow-hidden">
@@ -1874,9 +1875,9 @@ export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: strin
     <div>
       {/* Currently using */}
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{scaffolds.length} active scaffold{scaffolds.length !== 1 ? 's'  : ''}</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{scaffolds.length} active scaffold{scaffolds.length !== 1 ? 's'  : ''}</p>
         <button onClick={() => setAddingCustom(!addingCustom)}
-          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">
           {addingCustom ? <><X size={10} /> Cancel</> : <><Plus size={10} /> Custom</>}
         </button>
       </div>
@@ -1884,14 +1885,14 @@ export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: strin
       {addingCustom && (
         <div className="bg-surface-alt/50 border border-border rounded-lg p-3 mb-3 flex gap-2">
           <select value={customDomain} onChange={e => setCustomDomain(e.target.value)}
-            className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(10px*var(--ts))] outline-none">
+            className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none">
             <option value="general">General</option><option value="reading">Reading</option><option value="writing">Writing</option>
             <option value="speaking">Speaking</option><option value="phonics">Phonics</option><option value="language">Language</option>
           </select>
           <input value={customText} onChange={e => setCustomText(e.target.value)} placeholder="Describe the scaffold..."
-            className="flex-1 px-2 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
+            className="flex-1 px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy" />
           <button onClick={addCustom} disabled={!customText.trim()}
-            className="px-3 py-1.5 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">Add</button>
+            className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">Add</button>
         </div>
       )}
 
@@ -1899,11 +1900,11 @@ export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: strin
         <div className="space-y-1.5 mb-5">
           {scaffolds.map(s => (
             <div key={s.id} className="flex items-start gap-2.5 p-2.5 bg-surface border border-border rounded-lg group">
-              <span className={`flex-shrink-0 text-[length:max(10px,calc(8px*var(--ts)))] font-bold px-1.5 py-0.5 rounded uppercase ${DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.general}`}>{s.domain}</span>
-              <p className="flex-1 text-[length:calc(11px*var(--ts))] text-text-primary leading-relaxed">{s.scaffold_text}</p>
+              <span className={`flex-shrink-0 text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded uppercase ${DOMAIN_COLORS[s.domain] || DOMAIN_COLORS.general}`}>{s.domain}</span>
+              <p className="flex-1 text-[length:calc(11.5px*var(--ts))] text-text-primary leading-relaxed">{s.scaffold_text}</p>
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button onClick={() => toggleEffectiveness(s.id, s.effectiveness)}
-                  className={`px-1.5 py-0.5 rounded text-[length:max(10px,calc(8px*var(--ts)))] font-semibold ${s.effectiveness === 'working' ? 'bg-green-100 text-green-700' : s.effectiveness === 'not_working' ? 'bg-red-100 text-red-700' : 'bg-surface-alt text-text-tertiary'}`}>
+                  className={`px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-semibold ${s.effectiveness === 'working' ? 'bg-green-100 text-green-700' : s.effectiveness === 'not_working' ? 'bg-red-100 text-red-700' : 'bg-surface-alt text-text-tertiary'}`}>
                   {s.effectiveness === 'working' ? 'Working' : s.effectiveness === 'not_working' ? 'Not working' : 'Untested'}
                 </button>
                 <button onClick={() => removeScaffold(s.id)} className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-text-tertiary hover:text-red-500">
@@ -1919,17 +1920,17 @@ export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: strin
       {avgWida && suggestions.length > 0 && (
         <div className="border border-blue-200 rounded-xl overflow-hidden">
           <div className="px-4 py-2.5 bg-blue-50 border-b border-blue-200">
-            <p className="text-[length:calc(11px*var(--ts))] font-semibold text-blue-800">Suggested for WIDA Level {avgWida}</p>
-            <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-600 mt-0.5">Click + to add to this student's active scaffolds</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Suggested for WIDA Level {avgWida}</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-0.5">Click + to add to this student's active scaffolds</p>
           </div>
           <div className="divide-y divide-blue-100">
             {suggestions.map((text, i) => {
               const alreadyAdded = activeTexts.has(text)
               return (
                 <div key={i} className={`px-4 py-2 flex items-center gap-3 ${alreadyAdded ? 'bg-green-50/30' : 'hover:bg-blue-50/30'}`}>
-                  <p className={`flex-1 text-[length:calc(11px*var(--ts))] ${alreadyAdded ? 'text-green-700' : 'text-text-primary'}`}>{text}</p>
+                  <p className={`flex-1 text-[length:calc(11.5px*var(--ts))] ${alreadyAdded ? 'text-green-700' : 'text-text-primary'}`}>{text}</p>
                   {alreadyAdded ? (
-                    <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-green-600 font-medium">In use</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] text-green-600 font-medium">In use</span>
                   ) : (
                     <button onClick={() => addSuggested(text)}
                       className="p-1 rounded-lg text-blue-500 hover:bg-blue-100 hover:text-blue-700">
@@ -1946,7 +1947,7 @@ export function ScaffoldsTab({ studentId, studentName = '' }: { studentId: strin
       {!avgWida && scaffolds.length === 0 && (
         <div className="py-6 text-center">
           <p className="text-text-tertiary text-[length:calc(12px*var(--ts))]">No WIDA profile set for this student.</p>
-          <p className="text-text-tertiary text-[length:calc(10px*var(--ts))] mt-1">Complete their WIDA profile to see suggested scaffolds.</p>
+          <p className="text-text-tertiary text-[length:calc(11.5px*var(--ts))] mt-1">Complete their WIDA profile to see suggested scaffolds.</p>
         </div>
       )}
     </div>
@@ -2121,15 +2122,15 @@ export function StudentGroupsTab({ studentId, studentName }: { studentId: string
         groups.map(g => (
           <div key={g.id} className="bg-surface border border-rule rounded-lg p-3">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[length:calc(10px*var(--ts))] font-semibold px-1.5 py-px rounded border border-rule-2 text-ink-2 uppercase tracking-wide">{typeLabels[g.type] || g.type}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold px-1.5 py-px rounded border border-rule-2 text-ink-2 uppercase tracking-wide">{typeLabels[g.type] || g.type}</span>
               <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{g.name}</span>
-              <span className="text-[length:calc(11px*var(--ts))] text-ink-3 ml-auto">{(g.student_ids || []).length} students</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 ml-auto">{(g.student_ids || []).length} students</span>
             </div>
             {g.focus && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2">{g.focus}</p>}
             {g.book && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 italic">{g.book}</p>}
             {g.roles && g.roles[studentId] && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2">Role: {g.roles[studentId]}</p>}
             {g.notes && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 italic mt-1">{g.notes}</p>}
-            {g.active_from && <p className="text-[length:calc(11px*var(--ts))] text-ink-3">{g.active_from}{g.active_until ? ` → ${g.active_until}` : ''}</p>}
+            {g.active_from && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{g.active_from}{g.active_until ? ` → ${g.active_until}` : ''}</p>}
           </div>
         ))
       )}
@@ -2212,9 +2213,9 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2">Set 2-3 measurable goals per semester for {studentName.split(' ')[0]}.</p>
-        <button onClick={() => setAdding(!adding)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded text-[length:calc(12px*var(--ts))] font-semibold transition-colors ${adding ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>
+        <button onClick={() => setAdding(!adding)} className={`shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 h-8 px-3 rounded text-[length:calc(12px*var(--ts))] font-semibold transition-colors ${adding ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>
           {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add Goal</>}
         </button>
       </div>
@@ -2226,19 +2227,19 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
             className="w-full px-3 py-2 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12.5px*var(--ts))] outline-none resize-none" rows={2} />
           <div className="flex gap-3">
             <div>
-              <label className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-1">Metric</label>
+              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-1">Metric</label>
               <select value={newGoal.target_metric} onChange={e => setNewGoal(p => ({ ...p, target_metric: e.target.value }))}
                 className={goalField}>
                 <option value="cwpm">CWPM</option><option value="grade_pct">Grade %</option><option value="writing">Writing</option><option value="custom">Custom</option>
               </select>
             </div>
             <div>
-              <label className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-1">Baseline</label>
+              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-1">Baseline</label>
               <input type="number" value={newGoal.baseline_value} onChange={e => setNewGoal(p => ({ ...p, baseline_value: e.target.value }))}
                 className={`w-20 ${goalField}`} placeholder="Start" />
             </div>
             <div>
-              <label className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-1">Target</label>
+              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold block mb-1">Target</label>
               <input type="number" value={newGoal.target_value} onChange={e => setNewGoal(p => ({ ...p, target_value: e.target.value }))}
                 className={`w-20 ${goalField}`} placeholder="Target" />
             </div>
@@ -2267,23 +2268,23 @@ export function GoalsTab({ studentId, studentName }: { studentId: string; studen
                   <div className="flex-1">
                     <p className="text-[length:calc(13px*var(--ts))] font-medium text-ink leading-snug">{goal.goal_text}</p>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`inline-flex items-center gap-1.5 text-[length:calc(11px*var(--ts))] font-semibold ${(statusTone[goal.status] || statusTone.active).text}`}><span className={`w-1.5 h-1.5 rounded-full ${(statusTone[goal.status] || statusTone.active).dot}`} />
+                      <span className={`inline-flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold ${(statusTone[goal.status] || statusTone.active).text}`}><span className={`w-1.5 h-1.5 rounded-full ${(statusTone[goal.status] || statusTone.active).dot}`} />
                         {(goal.status || 'active').charAt(0).toUpperCase() + (goal.status || 'active').slice(1)}
                       </span>
                       {goal.target_metric && goal.target_metric !== 'custom' && (
-                        <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{metricLabels[goal.target_metric] || goal.target_metric}</span>
+                        <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{metricLabels[goal.target_metric] || goal.target_metric}</span>
                       )}
                       {goal.baseline_value != null && goal.target_value != null && (
-                        <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{goal.baseline_value} &rarr; {goal.target_value}</span>
+                        <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{goal.baseline_value} &rarr; {goal.target_value}</span>
                       )}
-                      <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{new Date(goal.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{new Date(goal.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     </div>
                     {progress != null && (
                       <div className="mt-2 flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-paper-3 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full ${progress >= 100 ? 'bg-good' : 'bg-ink'}`} style={{ width: `${progress}%` }} />
                         </div>
-                        <span className="text-[length:calc(11px*var(--ts))] font-medium text-ink-2 tabular-nums">{Math.round(progress)}%</span>
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-medium text-ink-2 tabular-nums">{Math.round(progress)}%</span>
                       </div>
                     )}
                   </div>

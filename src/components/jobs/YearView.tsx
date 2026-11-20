@@ -71,7 +71,7 @@ export default function YearView({ ko, today, routines, events, jobs, semesters,
           {marks.map((m, i) => (
             <button key={`${m.routineId}-${m.date}-${i}`} onClick={() => onPick(m.routineId)} title={`${m.label} · ${fmtDay(m.date, ko)}${m.semesterName ? ` · ${m.semesterName}` : ''}${m.ghost ? (ko ? ' · 아직 날짜 없음' : ' · no date set yet') : ''}`}
               className="absolute -translate-x-1/2 group" style={{ left: pct(m.date), top: i % 2 === 0 ? 0 : 18 }}>
-              <span className={`block text-[length:calc(10.5px*var(--ts))] leading-none whitespace-nowrap px-1 rounded ${m.ghost ? 'text-ink-3' : 'text-ink'} group-hover:bg-paper-2`} style={{ color: m.ghost ? undefined : m.color }}>{m.label}</span>
+              <span className={`block text-[length:calc(11.5px*var(--ts))] leading-none whitespace-nowrap px-1 rounded ${m.ghost ? 'text-ink-3' : 'text-ink'} group-hover:bg-paper-2`} style={{ color: m.ghost ? undefined : m.color }}>{m.label}</span>
             </button>
           ))}
           {/* the line itself */}
@@ -80,17 +80,17 @@ export default function YearView({ ko, today, routines, events, jobs, semesters,
             <button key={`d-${m.routineId}-${m.date}-${i}`} onClick={() => onPick(m.routineId)} aria-label={`${m.label} ${m.date}`} className="absolute -translate-x-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 bg-paper hover:scale-125 transition-transform" style={{ left: pct(m.date), top: 48, borderColor: m.color, background: m.ghost ? undefined : m.color }} />
           ))}
           {/* today */}
-          {spanFraction(today, year.from, year.to) !== null && <div className="absolute top-[36px] h-[24px] w-px bg-accent -translate-x-1/2" style={{ left: pct(today) }} title={ko ? '오늘' : 'Today'}><span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-[length:calc(9.5px*var(--ts))] text-accent font-semibold">{ko ? '오늘' : 'today'}</span></div>}
+          {spanFraction(today, year.from, year.to) !== null && <div className="absolute top-[36px] h-[24px] w-px bg-accent -translate-x-1/2" style={{ left: pct(today) }} title={ko ? '오늘' : 'Today'}><span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-[length:calc(11.5px*var(--ts))] text-accent font-semibold">{ko ? '오늘' : 'today'}</span></div>}
           {/* semester ticks */}
           {ticks.map((t, i) => (
             <div key={`${t.date}-${i}`} className="absolute -translate-x-1/2" style={{ left: pct(t.date), top: 52 }} title={`${t.label} · ${fmtDay(t.date, ko)}`}>
               <span className="block w-px h-2 bg-ink-3 mx-auto" />
-              <span className="block text-[length:calc(9px*var(--ts))] leading-none text-ink-3 whitespace-nowrap -translate-x-1/2 ml-[50%]" style={{ marginTop: i % 2 === 0 ? 2 : 12 }}>{t.label}</span>
+              <span className="block text-[length:calc(11.5px*var(--ts))] leading-none text-ink-3 whitespace-nowrap -translate-x-1/2 ml-[50%]" style={{ marginTop: i % 2 === 0 ? 2 : 12 }}>{t.label}</span>
             </div>
           ))}
           {/* months */}
           <div className="absolute left-0 right-0 top-[88px] grid grid-cols-12 border-t border-rule">
-            {year.months.map(k => <span key={k} className={`text-[length:calc(10.5px*var(--ts))] pt-1 pl-1 border-l border-rule first:border-l-0 ${k === thisMonth ? 'text-ink font-semibold' : 'text-ink-3'}`}>{monthLabel(k)}</span>)}
+            {year.months.map(k => <span key={k} className={`text-[length:calc(11.5px*var(--ts))] pt-1 pl-1 border-l border-rule first:border-l-0 ${k === thisMonth ? 'text-ink font-semibold' : 'text-ink-3'}`}>{monthLabel(k)}</span>)}
           </div>
         </div>
       </section>
@@ -104,8 +104,8 @@ export default function YearView({ ko, today, routines, events, jobs, semesters,
           const now = k === thisMonth, past = k < thisMonth
           return (
             <div key={k} className={`min-w-0 rounded border p-3 grid gap-2 content-start ${now ? 'border-accent bg-surface' : past ? 'border-rule opacity-70' : 'border-rule bg-surface'}`}>
-              <p className={`font-display text-[length:calc(19px*var(--ts))] leading-none ${now ? 'text-accent' : 'text-ink'}`}>{monthLabel(k, true)}<span className="font-body text-[length:calc(11px*var(--ts))] text-ink-3 ml-1.5">{k.slice(0, 4)}</span></p>
-              {ts.map((t, i) => <p key={i} className="text-[length:calc(11px*var(--ts))] text-ink-3 leading-snug">{fmtDay(t.date, ko, false)} · {t.label}</p>)}
+              <p className={`font-display text-[length:calc(19px*var(--ts))] leading-none ${now ? 'text-accent' : 'text-ink'}`}>{monthLabel(k, true)}<span className="font-body text-[length:calc(11.5px*var(--ts))] text-ink-3 ml-1.5">{k.slice(0, 4)}</span></p>
+              {ts.map((t, i) => <p key={i} className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-snug">{fmtDay(t.date, ko, false)} · {t.label}</p>)}
               {ms.map((m, i) => (
                 <button key={i} onClick={() => onPick(m.routineId)} className="text-left flex items-start gap-1.5 leading-snug">
                   <span className="mt-[5px] w-2 h-2 rounded-full shrink-0 border-2" style={{ borderColor: m.color, background: m.ghost ? undefined : m.color }} />
@@ -117,7 +117,7 @@ export default function YearView({ ko, today, routines, events, jobs, semesters,
                   {js.map(j => <li key={j.id} className={`text-[length:calc(11.5px*var(--ts))] leading-snug truncate ${j.status === 'done' ? 'line-through text-ink-3' : 'text-ink-2'}`} title={j.title}>{fmtDay(j.due_date!, ko, false).replace(/^\w+ /, '')} {j.title}<span className="text-ink-3"> · {j.owner_id ? nameOf(j.owner_id) : '—'}{percent(j) !== null && j.status !== 'done' ? ` · ${percent(j)}%` : ''}</span></li>)}
                 </ul>
               )}
-              {ms.length === 0 && ts.length === 0 && js.length === 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-3">—</p>}
+              {ms.length === 0 && ts.length === 0 && js.length === 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">—</p>}
             </div>
           )
         })}

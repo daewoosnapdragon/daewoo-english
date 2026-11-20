@@ -44,7 +44,7 @@ export default function StoryPicker({ units, selected, onChange, ko, presets = [
               <label className="flex items-center gap-2 px-3 py-1.5 bg-paper-2 cursor-pointer">
                 <input type="checkbox" checked={all} ref={el => { if (el) el.indeterminate = some && !all }} onChange={() => setMany(ids, !all)} />
                 <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">{g.label}</span>
-                <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3">{ids.filter(id => selected.has(id)).length}/{ids.length}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ids.filter(id => selected.has(id)).length}/{ids.length}</span>
               </label>
               {shown.map(u => {
                 const t = splitUnitTitle(u.title)
@@ -52,9 +52,9 @@ export default function StoryPicker({ units, selected, onChange, ko, presets = [
                 return (
                   <label key={u.id} className={`flex items-center gap-2 px-3 py-1 pl-7 ${off ? 'opacity-50' : 'cursor-pointer hover:bg-paper'}`}>
                     <input type="checkbox" checked={selected.has(u.id) || !!off} disabled={off} onChange={() => toggle(u.id)} />
-                    {t.badge.length <= 8 ? <span className="text-[length:calc(10px*var(--ts))] text-ink-3 w-12 shrink-0">{t.badge}</span> : <span className="w-2 shrink-0" />}
+                    {t.badge.length <= 8 ? <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 w-12 shrink-0">{t.badge}</span> : <span className="w-2 shrink-0" />}
                     <span className="text-[length:calc(12.5px*var(--ts))] text-ink truncate">{t.name}</span>
-                    <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3 truncate ml-auto shrink-0 max-w-[160px]">{genreOf(u)}</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 truncate ml-auto shrink-0 max-w-[160px]">{genreOf(u)}</span>
                   </label>
                 )
               })}

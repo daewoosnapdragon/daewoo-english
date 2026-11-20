@@ -4,7 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor, IMPLAUSIBLE_CWPM, isCorrectAnswer, acceptedLetters, hasMultipleKeys, writingTotalFrom } from '@/lib/utils'
+import { classToTextColor, IMPLAUSIBLE_CWPM, isCorrectAnswer, acceptedLetters, hasMultipleKeys, writingTotalFrom, classTint, classDot } from '@/lib/utils'
 import { Loader2, ChevronDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
@@ -235,13 +235,13 @@ export default function LevelingAnalysis({ levelTests }: { levelTests: LevelTest
         <div className="flex gap-1 border-l border-border pl-2 ml-1">
           {(['placement', 'questions', 'skills'] as const).map(v => (
             <button key={v} onClick={() => setView(v)}
-              className={`px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium capitalize ${view === v ? 'bg-navy/10 text-navy' : 'text-text-secondary hover:bg-surface-alt'}`}>
+              className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium capitalize ${view === v ? 'bg-navy/10 text-navy' : 'text-text-secondary hover:bg-surface-alt'}`}>
               {v}
             </button>
           ))}
         </div>
         {years.length > 1 && (
-          <select value={year} onChange={e => setYear(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] bg-surface ml-auto">
+          <select value={year} onChange={e => setYear(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] bg-surface ml-auto">
             {years.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         )}
@@ -304,14 +304,14 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <div className="px-4 pt-3.5 pb-2">
           <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Where they are, and where the test puts them</p>
-          <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">Down the diagonal is staying. Click any number for the names.</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Down the diagonal is staying. Click any number for the names.</p>
         </div>
-        <table className="text-[length:calc(11px*var(--ts))] w-full">
+        <table className="text-[length:calc(11.5px*var(--ts))] w-full">
           <thead>
             <tr>
-              <th className="px-3 py-2 text-left text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold">In</th>
+              <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">In</th>
               {PLACED_ENGLISH_CLASSES.map(c => (
-                <th key={c} className="px-2 py-2 text-center text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
+                <th key={c} className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
               ))}
             </tr>
           </thead>
@@ -331,7 +331,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                         ? <span className="block py-2 text-text-tertiary/40">·</span>
                         : <button onClick={() => setCell(on ? null : { from: from as EnglishClass, to })}
                             className={`w-full py-2 font-bold transition-colors ${on ? 'bg-navy text-white' : stay ? 'text-text-secondary hover:bg-surface-alt' : 'text-navy hover:bg-surface-alt'}`}
-                            style={!on && !stay ? { backgroundColor: classToColor(to) + '22' } : undefined}>
+                            style={!on && !stay ? { backgroundColor: classTint(to, 13) } : undefined}>
                             {n}
                           </button>}
                     </td>
@@ -342,7 +342,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           })}</tbody>
           <tfoot>
             <tr className="border-t-2 border-border bg-surface-alt/50">
-              <td className="px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold">Would be</td>
+              <td className="px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Would be</td>
               {PLACED_ENGLISH_CLASSES.map(to => {
                 const n = classes.reduce((sum, from) => sum + (matrix[from]?.[to]?.length ?? 0), 0)
                 const over = n > CLASS_CAP
@@ -350,7 +350,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                   <td key={to} className="px-2 py-2 text-center">
                     <span className={`font-bold ${over ? 'text-red-600' : 'text-navy'}`}
                       title={over ? `${n} is over the cap of ${CLASS_CAP}` : undefined}>{n || '·'}</span>
-                    {over && <span className="block text-[length:max(10px,calc(8px*var(--ts)))] text-red-600">over {CLASS_CAP}</span>}
+                    {over && <span className="block text-[length:calc(11.5px*var(--ts))] text-red-600">over {CLASS_CAP}</span>}
                   </td>
                 )
               })}
@@ -362,16 +362,16 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
             asking about. */}
         {cell && (
           <div className="border-t border-border px-4 py-3 bg-surface-alt/40">
-            <p className="text-[length:calc(11px*var(--ts))] font-semibold text-navy mb-1.5">
+            <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy mb-1.5">
               {cell.from} <span className="text-text-tertiary">&rarr;</span> {cell.to}
               <span className="text-text-tertiary font-normal ml-1.5">{matrix[cell.from]?.[cell.to]?.length ?? 0}</span>
 
             </p>
             <div className="flex flex-wrap gap-1.5">
               {(matrix[cell.from]?.[cell.to] ?? []).sort((a, b) => b.composite - a.composite).map(r => (
-                <span key={r.student.id} className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-surface border border-border text-[length:calc(11px*var(--ts))]">
+                <span key={r.student.id} className="inline-flex items-baseline gap-1 px-2 py-1 rounded-lg bg-surface border border-border text-[length:calc(11.5px*var(--ts))]">
                   <span className="font-medium text-navy">{r.student.english_name}</span>
-                  <span className="text-text-tertiary text-[length:calc(10px*var(--ts))]">{Math.round(r.composite * 100)}</span>
+                  <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">{Math.round(r.composite * 100)}</span>
                 </span>
               ))}
             </div>
@@ -382,11 +382,11 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
       {/* ── Each class: how wide it is, and what it read ── */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Each class</p>
-        <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mb-3">
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">
           Left: the range of ability in the room. The bar is the middle half of the class and the line is the middle student.
           Right: which passage they sustained &mdash; two classes on the same passage are reading the same text, whatever the rooms are called.
         </p>
-        <div className="flex text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
+        <div className="flex text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
           <span className="w-20 shrink-0" />
           <span className="flex-[3]">Range of ability</span>
           <span className="w-14 shrink-0" />
@@ -404,15 +404,15 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           const withBand = Object.values(passages).reduce((a, b) => a + b, 0)
           return (
             <div key={c} className="flex items-center gap-0 mb-2">
-              <span className="w-20 shrink-0 text-[length:calc(10px*var(--ts))] font-semibold text-right pr-2" style={{ color: classToTextColor(c) }}>{c}</span>
+              <span className="w-20 shrink-0 text-[length:calc(11.5px*var(--ts))] font-semibold text-right pr-2" style={{ color: classToTextColor(c) }}>{c}</span>
               <div className="flex-[3] relative h-6">
                 <div className="absolute top-1/2 left-0 right-0 h-px bg-border" />
-                <div className="absolute top-1/2 h-px" style={{ left: `${vals[0]}%`, width: `${vals[vals.length - 1] - vals[0]}%`, backgroundColor: classToColor(c) }} />
+                <div className="absolute top-1/2 h-px" style={{ left: `${vals[0]}%`, width: `${vals[vals.length - 1] - vals[0]}%`, backgroundColor: classDot(c) }} />
                 {q && <div className="absolute top-1 bottom-1 rounded-sm" title={`Middle half: ${Math.round(q.q1)} to ${Math.round(q.q3)}`}
-                  style={{ left: `${q.q1}%`, width: `${Math.max(0.8, q.q3 - q.q1)}%`, backgroundColor: classToColor(c) + '66', border: `1px solid ${classToColor(c)}` }} />}
+                  style={{ left: `${q.q1}%`, width: `${Math.max(0.8, q.q3 - q.q1)}%`, backgroundColor: classTint(c, 40), border: `1px solid ${classDot(c)}` }} />}
                 <div className="absolute top-0.5 bottom-0.5 w-[2px]" title={`Middle student: ${Math.round(mid)}`} style={{ left: `${mid}%`, backgroundColor: classToTextColor(c) }} />
               </div>
-              <span className="w-14 shrink-0 text-center text-[length:max(10px,calc(9.5px*var(--ts)))] text-text-tertiary tabular-nums"
+              <span className="w-14 shrink-0 text-center text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums"
                 title="How wide the middle half of this class is. Bigger means a wider range of ability in one room.">
                 {q ? `spread ${Math.round(q.q3 - q.q1)}` : ''}
               </span>
@@ -422,11 +422,11 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                   if (!n) return null
                   return <div key={l} title={`Passage ${l}: ${n}`} className="h-full flex items-center justify-center"
                     style={{ width: `${(n / withBand) * 100}%`, backgroundColor: PASSAGE_COLORS[l] }}>
-                    {(n / withBand) > 0.16 && <span className="text-[length:max(10px,calc(8px*var(--ts)))] font-bold text-white">{l}</span>}
+                    {(n / withBand) > 0.16 && <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-white">{l}</span>}
                   </div>
                 })}
               </div>
-              <span className="w-8 shrink-0 text-right text-[length:calc(10px*var(--ts))] text-text-tertiary">{inClass.length}</span>
+              <span className="w-8 shrink-0 text-right text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{inClass.length}</span>
             </div>
           )
         })}
@@ -449,17 +449,17 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">
             {cell ? <>{cell.from} <span className="text-text-tertiary">&rarr;</span> {cell.to}</> : 'Every tested student'}
           </p>
-          <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{listed.length}</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{listed.length}</span>
           {cell
-            ? <button onClick={() => setCell(null)} className="text-[length:calc(10px*var(--ts))] text-navy hover:underline ml-auto">Show all</button>
-            : <button onClick={() => setOnlyMoves(!onlyMoves)} className={`text-[length:calc(10px*var(--ts))] ml-auto px-2 py-1 rounded-lg ${onlyMoves ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
+            ? <button onClick={() => setCell(null)} className="text-[length:calc(11.5px*var(--ts))] text-navy hover:underline ml-auto">Show all</button>
+            : <button onClick={() => setOnlyMoves(!onlyMoves)} className={`text-[length:calc(11.5px*var(--ts))] ml-auto px-2 py-1 rounded-lg ${onlyMoves ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
                 Only where it differs
               </button>}
         </div>
-        <table className="w-full text-[length:calc(11px*var(--ts))]">
+        <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
             {['Student', 'In', 'Composite', 'Band', 'Passage', 'Test suggests', 'Last placed'].map((h, i) => (
-              <th key={h} className={`px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
+              <th key={h} className={`px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
             ))}
           </tr></thead>
           <tbody>{listed.map(r => {
@@ -473,10 +473,10 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
               <tr key={r.student.id} className={`border-t border-border ${diff ? 'bg-amber-50/30' : ''}`}>
                 <td className="px-3 py-2 whitespace-nowrap">
                   <span className="font-medium text-navy">{r.student.english_name}</span>
-                  <span className="text-text-tertiary ml-1.5 text-[length:calc(10px*var(--ts))]">{r.student.korean_name}</span>
+                  <span className="text-text-tertiary ml-1.5 text-[length:calc(11.5px*var(--ts))]">{r.student.korean_name}</span>
                 </td>
                 <td className="px-3 py-2 text-center">
-                  <span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(r.student.english_class as EnglishClass) + '40', color: classToTextColor(r.student.english_class as EnglishClass) }}>{r.student.english_class}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(r.student.english_class as EnglishClass, 25), color: classToTextColor(r.student.english_class as EnglishClass) }}>{r.student.english_class}</span>
                 </td>
                 <td className="px-3 py-2 text-center font-semibold text-navy">{Math.round(r.composite * 100)}</td>
                 <td className="px-3 py-2 text-center text-text-secondary">{r.band ? Math.round(r.band.composite) : '—'}</td>
@@ -485,14 +485,14 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                     <span className="inline-flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PASSAGE_COLORS[r.band.effectiveLevel] }} />
                       {r.band.effectiveLevel}
-                      {r.band.downgraded && <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-amber-600" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}>&darr;</span>}
+                      {r.band.downgraded && <span className="text-[length:calc(11.5px*var(--ts))] text-amber-600" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}>&darr;</span>}
                     </span>
                   ) : <span className="text-text-tertiary">—</span>}
                 </td>
                 <td className="px-3 py-2 text-center">
-                  <span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(sug) + '40', color: classToTextColor(sug) }}>{sug}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(sug, 25), color: classToTextColor(sug) }}>{sug}</span>
                 </td>
-                <td className="px-3 py-2 text-center text-[length:calc(10px*var(--ts))] text-text-tertiary">{r.lastYear ?? '—'}</td>
+                <td className="px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{r.lastYear ?? '—'}</td>
               </tr>
             )
           })}</tbody>
@@ -622,15 +622,15 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
         <div className="bg-surface border border-border rounded-xl overflow-x-auto">
           <div className="px-4 pt-3.5 pb-2">
             <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Oral test</p>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
               Every figure is the whole class added together: points earned out of points available to them. Sentence reading is words read correctly out of words put in front of them.
               Comprehension is grouped by depth of knowledge, since the questions differ per passage &mdash; DOK 1 is retrieval, DOK 2 asks the student to do something with what they found.
             </p>
           </div>
-          <table className="w-full text-[length:calc(11px*var(--ts))]">
+          <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead><tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
-              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
             </tr></thead>
             <tbody>
               {Object.keys(oral.dok).sort().map(k => (
@@ -653,7 +653,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
               )}
               {Object.keys(oral.naep).length > 0 && (
                 <tr className="border-t border-border">
-                  <td className="px-3 py-2 font-medium text-navy">Expression <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary font-normal">NAEP, out of 4</span></td>
+                  <td className="px-3 py-2 font-medium text-navy">Expression <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-normal">NAEP, out of 4</span></td>
                   {classes.map(c => {
                     const v = oral.naep[c]
                     if (!v?.length) return <td key={c} className="px-2 py-2 text-center text-text-tertiary">—</td>
@@ -670,7 +670,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
           <div className="px-4 pt-3.5 pb-3">
             <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Written test &middot; every question</p>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">One bar per question, in paper order. Taller is better. Click a bar to open it.</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">One bar per question, in paper order. Taller is better. Click a bar to open it.</p>
           </div>
           <div className="px-4 pb-2 flex items-end gap-[3px] h-24">
             {items.map(it => {
@@ -684,7 +684,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
               )
             })}
           </div>
-          <div className="px-4 pb-3 flex items-center gap-2 text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">
+          <div className="px-4 pb-3 flex items-center gap-2 text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
             <span>Q{items[0]?.q.qNum}</span><span className="flex-1 border-b border-border" /><span>Q{items[items.length - 1]?.q.qNum}</span>
           </div>
           {openQ != null && (() => {
@@ -698,12 +698,12 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
         <div className="bg-surface border border-border rounded-xl overflow-x-auto">
           <div className="px-4 pt-3.5 pb-2">
             <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Writing</p>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">Each cell is a share of that category&rsquo;s own total. Open a category for the criteria beneath it.</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Each cell is a share of that category&rsquo;s own total. Open a category for the criteria beneath it.</p>
           </div>
-          <table className="w-full text-[length:calc(11px*var(--ts))]">
+          <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead><tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Category</th>
-              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Category</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
             </tr></thead>
             <tbody>{writing.map(w => {
               const open = openCat === w.cat.key
@@ -715,7 +715,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
                         {w.criteria.length > 0 && <ChevronDown size={11} className={`text-text-tertiary transition-transform ${open ? 'rotate-180' : ''}`} />}
                         <span>
                           <span className="font-medium text-navy">{w.cat.label}</span>
-                          <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">out of {w.cat.max}{w.cat.standard ? ` · ${w.cat.standard}` : ''}</span>
+                          <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">out of {w.cat.max}{w.cat.standard ? ` · ${w.cat.standard}` : ''}</span>
                         </span>
                       </button>
                     </td>
@@ -724,8 +724,8 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
                   {open && w.criteria.map((cr: any) => (
                     <tr key={cr.item.key} className="border-t border-border/50 bg-surface-alt/25">
                       <td className="px-3 py-1.5 pl-8">
-                        <span className="text-[length:calc(10px*var(--ts))] text-text-secondary">{cr.item.label}</span>
-                        {cr.item.desc && <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary leading-snug max-w-[300px]">{cr.item.desc}</span>}
+                        <span className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">{cr.item.label}</span>
+                        {cr.item.desc && <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-snug max-w-[300px]">{cr.item.desc}</span>}
                       </td>
                       {classes.map(c => <Cell key={c} v={cr.byCls[c] ? { hit: cr.byCls[c].hit, n: cr.byCls[c].n } : null} small />)}
                     </tr>
@@ -756,9 +756,9 @@ function Cell({ v, sub, small }: { v: { hit: number; n: number } | null; sub?: s
     : 'bg-red-50 text-red-700 border-red-200'
   return (
     <td className="px-2 py-1.5 text-center">
-      <span className={`inline-block px-2 py-0.5 rounded border font-semibold ${small ? 'text-[length:max(10px,calc(9px*var(--ts)))]' : 'text-[length:calc(10px*var(--ts))]'} ${tone}`}
+      <span className={`inline-block px-2 py-0.5 rounded border font-semibold ${small ? 'text-[length:calc(11.5px*var(--ts))]' : 'text-[length:calc(11.5px*var(--ts))]'} ${tone}`}
         title={`${v.hit} of ${v.n}`}>{pct}%</span>
-      <span className="block text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary mt-0.5">{sub || `${Math.round(v.hit)}/${Math.round(v.n)}`}</span>
+      <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">{sub || `${Math.round(v.hit)}/${Math.round(v.n)}`}</span>
     </td>
   )
 }
@@ -770,12 +770,12 @@ function Rollup({ title, blurb, acc, classes, prefix = '' }: { title: string; bl
     <div className="bg-surface border border-border rounded-xl overflow-x-auto">
       <div className="px-4 pt-3.5 pb-2">
         <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">{title}</p>
-        {blurb && <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{blurb}</p>}
+        {blurb && <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{blurb}</p>}
       </div>
-      <table className="w-full text-[length:calc(11px*var(--ts))]">
+      <table className="w-full text-[length:calc(11.5px*var(--ts))]">
         <thead><tr className="bg-surface-alt">
-          <th className="text-left px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">&nbsp;</th>
-          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+          <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">&nbsp;</th>
+          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
         </tr></thead>
         <tbody>{keys.map(k => (
           <tr key={k} className="border-t border-border">
@@ -794,20 +794,20 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
   return (
     <div className="p-4">
       <div className="flex items-baseline gap-2 mb-1.5 flex-wrap">
-        <span className="text-[length:calc(11px*var(--ts))] font-bold text-navy">Q{q.qNum}</span>
-        <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">{it.correct}/{it.answered}</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">Q{q.qNum}</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{it.correct}/{it.answered}</span>
         {hasMultipleKeys(q) && (
-          <span className="text-[length:max(10px,calc(9px*var(--ts)))] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold"
+          <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold"
             title={q.acceptAny
               ? 'Every answer is accepted on this item -- the printed question rules nothing out, so its percentage measures nothing. Do not read it as a class strength.'
               : 'More than one answer is accepted on this item, so it no longer separates students the way the standard implies.'}>
             {q.acceptAny ? 'any answer accepted' : `accepts ${acceptedLetters(q, letters).map(l => l.toUpperCase()).join(' or ')}`}
           </span>
         )}
-        {q.standard && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{q.standard}</span>}
-        {q.dok != null && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">DOK {q.dok}</span>}
+        {q.standard && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{q.standard}</span>}
+        {q.dok != null && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">DOK {q.dok}</span>}
       </div>
-      <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-2">{q.text}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-2">{q.text}</p>
       <div className="space-y-1 mb-2">
         {letters.map((L, i) => {
           const n = it.picks[L] || 0
@@ -816,17 +816,17 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
           const isTopWrong = it.topWrong && it.topWrong[0] === L
           return (
             <div key={L} className="flex items-center gap-2">
-              <span className={`w-4 text-[length:calc(10px*var(--ts))] font-bold shrink-0 ${isKey ? 'text-green-700' : 'text-text-tertiary'}`}>{L})</span>
-              <span className={`text-[length:calc(10px*var(--ts))] flex-1 min-w-0 truncate ${isKey ? 'text-green-800 font-medium' : 'text-text-secondary'}`}>{q.choices?.[i]}</span>
+              <span className={`w-4 text-[length:calc(11.5px*var(--ts))] font-bold shrink-0 ${isKey ? 'text-green-700' : 'text-text-tertiary'}`}>{L})</span>
+              <span className={`text-[length:calc(11.5px*var(--ts))] flex-1 min-w-0 truncate ${isKey ? 'text-green-800 font-medium' : 'text-text-secondary'}`}>{q.choices?.[i]}</span>
               <div className="w-32 h-3 bg-gray-100 rounded-full overflow-hidden shrink-0">
                 <div className="h-full rounded-full" style={{ width: `${share}%`, backgroundColor: isKey ? '#22C55E' : isTopWrong ? '#F59E0B' : '#CBD5E1' }} />
               </div>
-              <span className="w-8 text-[length:calc(10px*var(--ts))] text-text-tertiary shrink-0 text-right">{n}</span>
+              <span className="w-8 text-[length:calc(11.5px*var(--ts))] text-text-tertiary shrink-0 text-right">{n}</span>
             </div>
           )
         })}
       </div>
-      {q.note && <p className="text-[length:calc(10px*var(--ts))] text-text-secondary bg-surface-alt/60 border border-border rounded-lg px-2.5 py-1.5 mb-2 leading-snug">{q.note}</p>}
+      {q.note && <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary bg-surface-alt/60 border border-border rounded-lg px-2.5 py-1.5 mb-2 leading-snug">{q.note}</p>}
       <div className="flex flex-wrap gap-1.5">
         {classes.map(c => {
           const v = it.byClass[c]
@@ -836,7 +836,7 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
           // gradient and the weak class is the one that looks wrong.
           const col = rainbow(p)
           return <span key={c} title={`${v.correct} of ${v.n}`}
-            className="text-[length:max(10px,calc(9px*var(--ts)))] px-1.5 py-0.5 rounded font-semibold text-white"
+            className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold text-white"
             style={{ backgroundColor: col }}>{c} {Math.round(p * 100)}%</span>
         })}
       </div>
@@ -875,7 +875,7 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
     return (
       <div className="bg-surface border border-border rounded-xl p-4">
         <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Reading aloud against the written paper</p>
-        <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">Fills in once the written papers are marked.</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Fills in once the written papers are marked.</p>
       </div>
     )
   }
@@ -894,10 +894,10 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
       <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Reading aloud against the written paper</p>
-      <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-1 max-w-[70ch]">
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-1 max-w-[70ch]">
         Every dot is one student. How well they read aloud runs left to right; how they did on the written paper runs bottom to top.
       </p>
-      <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-3 max-w-[70ch]">
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3 max-w-[70ch]">
         A student on the dotted line did about as well on both. The further a dot sits from that line, the more the two tests disagree about them &mdash; and those are the students worth a second look.
       </p>
 
@@ -911,30 +911,30 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
             <g key={g}>
               <line x1={px(g)} x2={px(g)} y1={T} y2={py(0)} stroke="#E2E8F0" strokeWidth="1" />
               <line x1={L} x2={px(100)} y1={py(g)} y2={py(g)} stroke="#E2E8F0" strokeWidth="1" />
-              <text x={px(g)} y={py(0) + 16} fontSize="10" fill="#94A3B8" textAnchor="middle">{g}</text>
-              <text x={L - 8} y={py(g) + 3.5} fontSize="10" fill="#94A3B8" textAnchor="end">{g}</text>
+              <text x={px(g)} y={py(0) + 16} fontSize="12" fill="var(--c-text)" textAnchor="middle">{g}</text>
+              <text x={L - 8} y={py(g) + 3.5} fontSize="12" fill="var(--c-text)" textAnchor="end">{g}</text>
             </g>
           ))}
           <line x1={L} y1={py(0)} x2={px(100)} y2={py(100)} stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 4" />
-          <text x={L + 12} y={T + 18} fontSize="11" fill="#3B82F6" opacity="0.85">Stronger on paper</text>
-          <text x={px(100) - 12} y={py(0) - 12} fontSize="11" fill="#B45309" opacity="0.9" textAnchor="end">Stronger reading aloud</text>
+          <text x={L + 12} y={T + 18} fontSize="12" fill="var(--c-1)">Stronger on paper</text>
+          <text x={px(100) - 12} y={py(0) - 12} fontSize="12" fill="var(--c-warn)" textAnchor="end">Stronger reading aloud</text>
 
           {pts.map(p => {
             const on = hover?.r.student.id === p.r.student.id
             return (
               <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
-                fill={classToColor(p.r.student.english_class as EnglishClass)}
+                fill={classDot(p.r.student.english_class as EnglishClass)}
                 stroke={on ? '#0F172A' : '#fff'} strokeWidth={on ? 2 : 1.4}
                 style={{ cursor: 'pointer', transition: 'r .1s' }}
                 onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
             )
           })}
-          <text x={(L + px(100)) / 2} y={H - 8} fontSize="11" fill="#64748B" textAnchor="middle">how well they read aloud &rarr;</text>
-          <text x={16} y={(T + py(0)) / 2} fontSize="11" fill="#64748B" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>written paper score &rarr;</text>
+          <text x={(L + px(100)) / 2} y={H - 8} fontSize="12" fill="var(--c-text)" textAnchor="middle">how well they read aloud &rarr;</text>
+          <text x={16} y={(T + py(0)) / 2} fontSize="12" fill="var(--c-text)" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>written paper score &rarr;</text>
         </svg>
 
         {hover && (
-          <div className="absolute pointer-events-none bg-navy text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[length:calc(11px*var(--ts))] whitespace-nowrap z-10"
+          <div className="absolute pointer-events-none bg-navy text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[length:calc(11.5px*var(--ts))] whitespace-nowrap z-10"
             style={{ left: `${(px(hover.x) / W) * 100}%`, top: `${(py(hover.y) / H) * 100}%`, transform: 'translate(-50%, -140%)' }}>
             <span className="font-semibold">{hover.r.student.english_name}</span>
             <span className="opacity-70 ml-1.5">{hover.r.student.english_class}</span>
@@ -957,12 +957,12 @@ function Corner({ title, note, people, tone }: { title: string; note: string; to
   return (
     <div className={`rounded-lg border p-3 ${tone === 'amber' ? 'bg-amber-50/60 border-amber-200' : 'bg-blue-50/60 border-blue-200'}`}>
       <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">{title} <span className="text-text-tertiary font-normal">{people.length}</span></p>
-      <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary leading-snug mb-2">{note}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-snug mb-2">{note}</p>
       {people.length === 0
-        ? <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary italic">Nobody on this test.</p>
+        ? <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">Nobody on this test.</p>
         : <div className="flex flex-wrap gap-1">
             {people.map(p => (
-              <span key={p.r.student.id} className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-surface border border-border"
+              <span key={p.r.student.id} className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-surface border border-border"
                 title={`read aloud ${Math.round(p.x)} · paper ${Math.round(p.y)}%`}>{p.r.student.english_name}</span>
             ))}
           </div>}
@@ -1079,20 +1079,20 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
         <div className="flex items-start gap-3 mb-3">
           <div>
             <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Skills, against the grade median</p>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
               Blue above the grade, red below. Not raw percentages side by side &mdash; an eleven-item grammar section and a hand-scored writing rubric do not share a scale.
             </p>
           </div>
           <button onClick={() => setRaw(!raw)}
-            className={`ml-auto shrink-0 text-[length:calc(10px*var(--ts))] px-2.5 py-1 rounded-lg ${raw ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+            className={`ml-auto shrink-0 text-[length:calc(11.5px*var(--ts))] px-2.5 py-1 rounded-lg ${raw ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
             {raw ? 'Showing scores' : 'Show scores'}
           </button>
         </div>
-        <table className="w-full text-[length:calc(11px*var(--ts))]">
+        <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr>
-            <th className="text-left px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
-            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
-            <th className="text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
+            <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+            <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
           </tr></thead>
           <tbody>
             {rowsOut.map(({ def, line: l }) => (
@@ -1110,7 +1110,7 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
             )}
           </tbody>
         </table>
-        <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-3">
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-3">
           <span className="inline-block w-2 h-2 rounded-sm bg-navy/40 align-middle mr-1" />
           The two comprehension rows are joined on purpose. A class level on what it hears and below on what it reads has a reading problem, not a comprehension one &mdash; merging them would hide it.
           &mdash; is a skill this grade&rsquo;s test does not measure, never a zero.
@@ -1123,7 +1123,7 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
       {/* ── One card per class ── */}
       <div>
         <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-1">What each class needs</p>
-        <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mb-3">Strongest first, against the grade. One card per room, for the teacher who has it on Monday.</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">Strongest first, against the grade. One card per room, for the teacher who has it on Monday.</p>
         <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}>
           {classes.map(c => {
             const items = [...SKILL_DEFS.map(d => ({ name: d.name, key: d.key })), { name: 'Writing', key: 'writing' }]
@@ -1137,17 +1137,17 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
             return (
               <div key={c} className="bg-surface border border-border rounded-xl p-3.5">
                 <p className="text-[length:calc(13px*var(--ts))] font-semibold" style={{ color: classToTextColor(c) }}>{c}</p>
-                <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mb-2.5">strongest first, against the grade</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-2.5">strongest first, against the grade</p>
                 {items.map(it => {
                   const w = Math.min(50, (Math.abs(it.d) / 22) * 50)
                   return (
                     <div key={it.name} className="flex items-center gap-2 mb-1">
-                      <span className="w-[92px] shrink-0 text-[length:calc(10.5px*var(--ts))] text-text-secondary truncate">{it.name}</span>
+                      <span className="w-[92px] shrink-0 text-[length:calc(11.5px*var(--ts))] text-text-secondary truncate">{it.name}</span>
                       <span className="flex-1 h-1.5 rounded-full bg-surface-alt relative overflow-hidden">
                         <span className="absolute top-0 bottom-0 rounded-full"
                           style={{ left: `${it.d >= 0 ? 50 : 50 - w}%`, width: `${w}%`, backgroundColor: devColor(it.d) }} />
                       </span>
-                      <span className="w-7 shrink-0 text-right text-[length:max(10px,calc(9.5px*var(--ts)))] text-text-tertiary tabular-nums">{it.d > 0 ? '+' : ''}{it.d.toFixed(0)}</span>
+                      <span className="w-7 shrink-0 text-right text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums">{it.d > 0 ? '+' : ''}{it.d.toFixed(0)}</span>
                     </div>
                   )
                 })}
@@ -1178,13 +1178,13 @@ function SkillRow({ name, src, l, classes, raw, pair, indent, strong, onToggle, 
             <ChevronDown size={11} className={`text-text-tertiary transition-transform ${open ? 'rotate-180' : ''}`} />
             <span>
               <span className={`${strong ? 'font-semibold' : 'font-medium'} text-navy`}>{name}</span>
-              <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{src}</span>
+              <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{src}</span>
             </span>
           </button>
         ) : (
           <>
-            <span className={`${indent ? 'text-[length:calc(10.5px*var(--ts))] text-text-secondary' : 'font-medium text-navy'}`}>{name}</span>
-            <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{src}</span>
+            <span className={`${indent ? 'text-[length:calc(11.5px*var(--ts))] text-text-secondary' : 'font-medium text-navy'}`}>{name}</span>
+            <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{src}</span>
           </>
         )}
       </td>
@@ -1194,7 +1194,7 @@ function SkillRow({ name, src, l, classes, raw, pair, indent, strong, onToggle, 
         const d = pct - l.med
         return (
           <td key={c} className="px-1.5 py-1.5 text-center">
-            <span className="block rounded py-1.5 text-[length:calc(11px*var(--ts))] font-semibold tabular-nums"
+            <span className="block rounded py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums"
               style={{ backgroundColor: devColor(d) }}
               title={`${c} · ${name}: ${Math.round(pct)}% (grade median ${Math.round(l.med)}%)`}>
               {raw ? `${Math.round(pct)}%` : `${d > 0 ? '+' : ''}${d.toFixed(0)}`}
@@ -1202,7 +1202,7 @@ function SkillRow({ name, src, l, classes, raw, pair, indent, strong, onToggle, 
           </td>
         )
       })}
-      <td className="px-2 py-2 text-center text-[length:calc(10.5px*var(--ts))] text-text-tertiary tabular-nums">{l ? `${Math.round(l.med)}%` : '—'}</td>
+      <td className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums">{l ? `${Math.round(l.med)}%` : '—'}</td>
     </tr>
   )
 }
@@ -1243,10 +1243,10 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
   return (
     <div className="bg-surface border border-border rounded-xl p-4">
       <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Speed against understanding</p>
-      <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-1 max-w-[70ch]">
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-1 max-w-[70ch]">
         Every dot is one student. How fast they read runs left to right; how much of the passage they understood runs bottom to top.
       </p>
-      <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-3 max-w-[70ch]">
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3 max-w-[70ch]">
         The two corners that matter are the bottom right &mdash; reading quickly and following none of it &mdash; and the top left, where a slow reader understood everything they got through.
       </p>
 
@@ -1258,39 +1258,39 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
           {[0, 25, 50, 75, 100].map(g => (
             <g key={g}>
               <line x1={L} x2={px(maxX)} y1={py(g)} y2={py(g)} stroke="#E2E8F0" />
-              <text x={L - 8} y={py(g) + 3.5} fontSize="10" fill="#94A3B8" textAnchor="end">{g}%</text>
+              <text x={L - 8} y={py(g) + 3.5} fontSize="12" fill="var(--c-text)" textAnchor="end">{g}%</text>
             </g>
           ))}
           {[0, 50, 100, 150, 200].filter(v => v <= maxX).map(v => (
             <g key={v}>
               <line x1={px(v)} x2={px(v)} y1={T} y2={py(0)} stroke="#E2E8F0" />
-              <text x={px(v)} y={py(0) + 16} fontSize="10" fill="#94A3B8" textAnchor="middle">{v}</text>
+              <text x={px(v)} y={py(0) + 16} fontSize="12" fill="var(--c-text)" textAnchor="middle">{v}</text>
             </g>
           ))}
-          <text x={px(maxX) - 10} y={py(0) - 10} fontSize="11" fill="#B91C1C" opacity="0.85" textAnchor="end">Fast, not following it</text>
-          <text x={L + 10} y={T + 16} fontSize="11" fill="#2563EB" opacity="0.8">Slow, understood it</text>
+          <text x={px(maxX) - 10} y={py(0) - 10} fontSize="12" fill="var(--c-bad)" textAnchor="end">Fast, not following it</text>
+          <text x={L + 10} y={T + 16} fontSize="12" fill="var(--c-1)">Slow, understood it</text>
           {believable.map(p => {
             const on = hover?.r.student.id === p.r.student.id
             return (
               <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
-                fill={classToColor(p.r.student.english_class as EnglishClass)}
+                fill={classDot(p.r.student.english_class as EnglishClass)}
                 stroke={on ? '#0F172A' : '#fff'} strokeWidth={on ? 2 : 1.4}
                 style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
             )
           })}
           {suspect.map(p => (
             <circle key={p.r.student.id} cx={px(maxX) - 7} cy={py(p.y)} r="7"
-              fill={classToColor(p.r.student.english_class as EnglishClass)}
+              fill={classDot(p.r.student.english_class as EnglishClass)}
               stroke="#DC2626" strokeWidth="2.5" strokeDasharray="3 2"
               style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })}>
               <title>{`${p.r.student.english_name}: ${Math.round(p.x)} wpm — off the scale`}</title>
             </circle>
           ))}
-          <text x={(L + px(maxX)) / 2} y={H - 8} fontSize="11" fill="#64748B" textAnchor="middle">words a minute &rarr;</text>
-          <text x={16} y={(T + py(0)) / 2} fontSize="11" fill="#64748B" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>understood &rarr;</text>
+          <text x={(L + px(maxX)) / 2} y={H - 8} fontSize="12" fill="var(--c-text)" textAnchor="middle">words a minute &rarr;</text>
+          <text x={16} y={(T + py(0)) / 2} fontSize="12" fill="var(--c-text)" textAnchor="middle" transform={`rotate(-90 16 ${(T + py(0)) / 2})`}>understood &rarr;</text>
         </svg>
         {hover && (
-          <div className="absolute pointer-events-none bg-navy text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[length:calc(11px*var(--ts))] whitespace-nowrap z-10"
+          <div className="absolute pointer-events-none bg-navy text-white rounded-lg px-2.5 py-1.5 shadow-lg text-[length:calc(11.5px*var(--ts))] whitespace-nowrap z-10"
             style={{ left: `${(px(hover.x) / W) * 100}%`, top: `${(py(hover.y) / H) * 100}%`, transform: 'translate(-50%, -140%)' }}>
             <span className="font-semibold">{hover.r.student.english_name}</span>
             <span className="opacity-70 ml-1.5">{hover.r.student.english_class}</span>
@@ -1300,7 +1300,7 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
       </div>
 
       {suspect.length > 0 && (
-        <p className="text-[length:calc(11px*var(--ts))] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
+        <p className="text-[length:calc(11.5px*var(--ts))] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
           <strong>{suspect.map(p => `${p.r.student.english_name} (${Math.round(p.x)} wpm)`).join(', ')}</strong>{' '}
           {suspect.length === 1 ? 'is' : 'are'} shown pinned at the right edge, because {suspect.length === 1 ? 'that rate is' : 'those rates are'} faster
           than fluent adult reading aloud and cannot be real. Almost always a stopwatch started partway through the read, so the whole passage counts
@@ -1379,48 +1379,48 @@ function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClas
         <div className="flex items-start gap-3 flex-wrap">
           <div>
             <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Standards, by class</p>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary">
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
               Written standards are scored out of the points behind them; oral ones out of the students who met them.
             </p>
           </div>
           <div className="ml-auto flex items-center gap-1.5 flex-wrap">
             <select value={lens} onChange={e => setLens(e.target.value as any)}
-              className="px-2 py-1 border border-border rounded-lg text-[length:calc(10px*var(--ts))] bg-surface">
+              className="px-2 py-1 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] bg-surface">
               <option value="grade">Across the grade</option>
               {classes.map(c => <option key={c} value={c}>In {c}</option>)}
             </select>
             {([['weak', 'Weakest first'], ['strong', 'Strongest first'], ['code', 'By code']] as const).map(([k, label]) => (
               <button key={k} onClick={() => setSort(k)}
-                className={`text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg ${sort === k ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                className={`text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg ${sort === k ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
                 {label}
               </button>
             ))}
           </div>
         </div>
       </div>
-      <table className="w-full text-[length:calc(11px*var(--ts))]">
+      <table className="w-full text-[length:calc(11.5px*var(--ts))]">
         <thead><tr className="bg-surface-alt">
-          <th className="text-left px-3 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">Standard</th>
+          <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">Standard</th>
           {classes.map(c => (
-            <th key={c} className={`text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
+            <th key={c} className={`text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
           ))}
-          <th className={`text-center px-2 py-2 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
+          <th className={`text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
         </tr></thead>
         <tbody>{shown.map(st => (
           <tr key={st.code} className="border-t border-border">
             <td className="px-3 py-2">
               <span className="font-medium text-navy">{st.code}</span>
-              <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{st.src === 'oral' ? 'oral test' : 'written paper'}</span>
+              <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{st.src === 'oral' ? 'oral test' : 'written paper'}</span>
             </td>
             {classes.map(c => <Cell key={c} v={st.byCls[c] ? { hit: st.byCls[c].got, n: st.byCls[c].max } : null} />)}
-            <td className="px-2 py-2 text-center text-[length:calc(10.5px*var(--ts))] text-text-tertiary tabular-nums">
+            <td className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums">
               {st.overall != null ? `${Math.round(st.overall * 100)}%` : '—'}
             </td>
           </tr>
         ))}</tbody>
       </table>
       {ordered.length > 8 && (
-        <button onClick={() => setOpen(!open)} className="text-[length:calc(10px*var(--ts))] text-navy hover:underline px-4 py-2.5">
+        <button onClick={() => setOpen(!open)} className="text-[length:calc(11.5px*var(--ts))] text-navy hover:underline px-4 py-2.5">
           {open ? 'Show the first eight' : `Show all ${ordered.length} standards`}
         </button>
       )}

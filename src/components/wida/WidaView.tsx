@@ -198,7 +198,7 @@ export default function WidaView() {
                       const o = overallOf(s.id)
                       return (
                         <tr key={s.id} className={`cursor-pointer ${on ? 'bg-paper-2' : 'hover:bg-paper-2/60'}`} onClick={() => { setSelected(s.id); setDomain(undefined) }}>
-                          <td className={`px-4 py-1.5 ${on ? 'border-l-2 border-accent' : 'border-l-2 border-transparent'}`}><span className="text-ink font-medium">{s.english_name}</span><span className="text-[length:calc(11px*var(--ts))] text-ink-3 ml-1.5">{s.korean_name}</span></td>
+                          <td className={`px-4 py-1.5 ${on ? 'border-l-2 border-accent' : 'border-l-2 border-transparent'}`}><span className="text-ink font-medium">{s.english_name}</span><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 ml-1.5">{s.korean_name}</span></td>
                           {WIDA_DOMAINS.map(d => {
                             const lv = levels[s.id]?.[d] || 0
                             const prev = compare?.data[s.id]?.[d] || 0
@@ -207,8 +207,8 @@ export default function WidaView() {
                               <td key={d} className="px-1.5 py-1 text-center">
                                 <button onClick={e => { e.stopPropagation(); setSelected(s.id); setDomain(d) }} title={ko ? `${DOMAIN_LABEL[d][1]} 질문에 답하기` : `Answer the ${DOMAIN_LABEL[d][0].toLowerCase()} can-do questions`}
                                   className={`w-full h-9 rounded border ${on && domain === d ? 'border-accent' : 'border-transparent'} ${lv ? LEVEL_TONE[Math.floor(lv)] : 'text-ink-3 hover:bg-paper-2'} hover:border-ink-3`}>
-                                  <span className="font-display text-[length:calc(17px*var(--ts))] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[length:max(10px,calc(9.5px*var(--ts)))] uppercase tracking-wider leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
-                                  {diff != null && diff !== 0 && <span className={`block text-[length:calc(10px*var(--ts))] font-bold leading-none ${diff > 0 ? 'text-good' : 'text-bad'}`}>{diff > 0 ? `+${diff}` : diff}</span>}
+                                  <span className="font-display text-[length:calc(17px*var(--ts))] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
+                                  {diff != null && diff !== 0 && <span className={`block text-[length:calc(11.5px*var(--ts))] font-bold leading-none ${diff > 0 ? 'text-good' : 'text-bad'}`}>{diff > 0 ? `+${diff}` : diff}</span>}
                                 </button>
                               </td>
                             )
@@ -222,7 +222,7 @@ export default function WidaView() {
                 </table>
               </div>
             )}
-            <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-2">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')} · {ko ? '칸을 클릭하면 그 영역의 질문이 열립니다.' : 'Click a cell for one domain, or “Assess the class” to go student by student.'}</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')} · {ko ? '칸을 클릭하면 그 영역의 질문이 열립니다.' : 'Click a cell for one domain, or “Assess the class” to go student by student.'}</p>
           </div>
 
           <div className="border border-rule-2 rounded-lg p-5 sticky top-[120px]">

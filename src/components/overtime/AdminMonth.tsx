@@ -75,7 +75,7 @@ export default function AdminMonth({ staff, settings, month, setMonth, onOpen }:
         <div className="overflow-x-auto">
           <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>
-              <tr className="text-left text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-ink-3 border-b border-rule-2">
+              <tr className="text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 border-b border-rule-2">
                 <th className="py-2 pr-3 font-semibold">{ko ? '교사' : 'Teacher'}</th>
                 <th className="py-2 pr-3 font-semibold">{ko ? '반' : 'Class'}</th>
                 <th className="py-2 pr-3 font-semibold text-right">{ko ? '기록' : 'Entries'}</th>

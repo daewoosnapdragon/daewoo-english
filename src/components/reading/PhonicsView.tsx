@@ -257,7 +257,7 @@ function RosterRail({ students, currentId, lang, lastDates, onPick }: {
             <li key={s.id} className="max-sm:shrink-0">
               <button onClick={() => !own && onPick(s.id)} aria-current={own || undefined} className={`w-full text-left px-3 py-1.5 max-sm:min-h-11 max-sm:min-w-[96px] ${own ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/60'}`}>
                 <span className={`block text-[length:calc(12.5px*var(--ts))] truncate ${own ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
-                <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3 truncate"><span className="ko-name">{s.korean_name}</span>{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
+                <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 truncate"><span className="ko-name">{s.korean_name}</span>{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
               </button>
             </li>
           )
@@ -310,7 +310,7 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
           <thead>
             <tr className="bg-paper-2">
               <th rowSpan={2} className="max-sm:sticky max-sm:left-0 max-sm:z-[1] bg-paper-2 text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
-              {groupsFor(skills).map(({ group: g, skills: gs }) => <th key={g.id} colSpan={gs.length} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
+              {groupsFor(skills).map(({ group: g, skills: gs }) => <th key={g.id} colSpan={gs.length} title={lang === 'ko' ? g.label_ko : g.label} className="px-1 pt-2 pb-1 eyebrow !tracking-[0.08em] font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
               <th rowSpan={2} className="px-3 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-left align-bottom">{lang === 'ko' ? '현재 과제' : 'Working on'}</th>
               <th rowSpan={2} className="border-b border-rule-2" />
             </tr>
@@ -318,8 +318,8 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
               {skills.map((s, i) => (
                 <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[104px] ${i > 0 && skills[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${s.label}\n${s.covers}`}>
                   <div className="flex flex-col items-center justify-end gap-1 h-full">
-                    <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
-                    <span className={`text-[length:calc(10px*var(--ts))] leading-none ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ' '}</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
+                    <span className={`text-[length:calc(11.5px*var(--ts))] leading-none ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ' '}</span>
                   </div>
                 </th>
               ))}
@@ -334,7 +334,7 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
                 <tr key={s.id}>
                   <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-paper px-3 py-1 border-r border-rule-2 overflow-hidden">
                     <button onClick={() => onStudent(s.id)} className="block w-full text-left truncate hover:underline" title={lang === 'ko' ? '시도별 진전 보기' : `Progress for ${s.english_name}`}>
-                      <span className="text-ink">{getDisplayName(s)}</span><span className="ko-name text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
+                      <span className="text-ink">{getDisplayName(s)}</span><span className="ko-name text-ink-3 ml-1.5 text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span>
                     </button>
                   </td>
                   {skills.map((sk, i) => {
@@ -345,17 +345,19 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
                       <td key={sk.id} className={`p-[3px] ${i > 0 && skills[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                         <button onClick={() => l && onCell(s.id, sk.id)} disabled={!l}
                           title={l ? `${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}${d != null ? ` · ${d >= 0 ? '+' : ''}${d} since the attempt before` : ''}${l.score.unread ? ` · ${l.score.unread} ${lang === 'ko' ? '미읽음' : 'not read'}` : ''}` : `${sk.label}: ${lang === 'ko' ? '미점검' : 'not checked'}`}
-                          className={`w-full h-7 rounded-sm text-[length:calc(10.5px*var(--ts))] font-semibold inline-flex items-center justify-center gap-px ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
+                          className={`w-full h-7 rounded-sm text-[length:calc(11.5px*var(--ts))] font-semibold inline-flex items-center justify-center gap-px ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
                           {l ? l.score.pct : '·'}{d != null && d > 0 && <ArrowUp size={9} strokeWidth={3} />}{d != null && d < 0 && <ArrowDown size={9} strokeWidth={3} />}
                         </button>
                       </td>
                     )
                   })}
-                  <td className="px-3 py-1 border-l border-rule-2 text-[length:calc(11px*var(--ts))] leading-tight overflow-hidden">
+                  <td className="px-3 py-1 border-l border-rule-2 text-[length:calc(11.5px*var(--ts))] leading-tight overflow-hidden">
                     {sum.tested === 0 ? <span className="text-ink-3">—</span>
                       : sum.frontier ? <span className="block text-ink truncate" title={phonicsSkill(sum.frontier)?.label}>{phonicsSkill(sum.frontier)?.label}</span>
-                      : <span className="block text-good truncate">{lang === 'ko' ? '모두 완성' : 'All mastered'}</span>}
-                    {sum.lastDate && <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{fmtShort(sum.lastDate, lang)}</span>}
+                      : sum.tested >= skills.length ? <span className="block text-good truncate">{lang === 'ko' ? '모두 완성' : 'All mastered'}</span>
+                      // Only some sheets checked: "all mastered" would claim the ones nobody has looked at yet.
+                      : <span className="block text-good truncate" title={lang === 'ko' ? '점검한 시트 모두 완성' : 'All checked sheets mastered'}>{lang === 'ko' ? '점검한 시트 모두 완성' : 'Mastered so far'}</span>}
+                    {sum.lastDate && <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">{fmtShort(sum.lastDate, lang)}</span>}
                   </td>
                   <td className="py-1 text-center"><button onClick={() => onCheck(s.id)} title={lang === 'ko' ? '이 학생 점검' : `Check ${s.english_name}`} aria-label={`Check ${s.english_name}`} className="w-7 h-7 inline-flex items-center justify-center rounded border border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3"><ClipboardCheck size={13} /></button></td>
                 </tr>
@@ -580,7 +582,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
           ) : <div className="space-y-1.5">
             {groupsFor(sheets).map(({ group: g, skills: gs }) => (
               <div key={g.id} className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[length:calc(11px*var(--ts))] text-ink-3 w-[96px] shrink-0">{lang === 'ko' ? g.label_ko : g.label}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 w-[96px] shrink-0">{lang === 'ko' ? g.label_ko : g.label}</span>
                 {gs.map(s => {
                   const on = skills.includes(s.id)
                   const l = latest[s.id]
@@ -661,7 +663,7 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
         </div>
         <div className="flex items-center gap-3">
           <span className={`text-[length:calc(13px*var(--ts))] font-semibold tabular-nums ${band ? BAND_TEXT[band] : 'text-ink-3'}`}>{halfText(correct, partial)} / {sk.words.length}{band && <span className="font-normal text-[length:calc(11.5px*var(--ts))] ml-1.5">{PHONICS_BAND_LABELS[band][lang]}</span>}</span>
-          <button onClick={onTakeOut} className="inline-flex items-center gap-1 h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink hover:border-ink-3"
+          <button onClick={onTakeOut} className="inline-flex items-center gap-1 h-6 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink hover:border-ink-3"
             title={lang === 'ko' ? '이 시트를 끝내지 못했나요? 이 점검에서 빼면 점수에 들어가지 않습니다(0이 아님).' : 'Did not get to this sheet, or stopped early for a reason that is not the student’s reading? Take it out: it is not scored, not a 0.'}>
             <X size={11} /> {lang === 'ko' ? '이 점검에서 빼기' : 'Not given'}
           </button>
@@ -674,7 +676,7 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
             row.forEach(w => { if (marks[w] === 'correct') rc++; else if (marks[w] === 'partial') rp++; if (marks[w]) rm++ })
             return (
               <div key={i} className="grid grid-cols-[20px_1fr_48px] items-center gap-2">
-                <span className="text-[length:calc(11px*var(--ts))] text-ink-3 tabular-nums" title={lang === 'ko' ? `${i + 1}줄` : `Row ${i + 1}`}>{i + 1}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums" title={lang === 'ko' ? `${i + 1}줄` : `Row ${i + 1}`}>{i + 1}</span>
                 <div className="grid grid-cols-7 gap-2">{row.map(tile)}</div>
                 <span className="text-right text-[length:calc(11.5px*var(--ts))] tabular-nums text-ink-3">{rm > 0 ? <><b className="text-ink">{halfText(rc, rp)}</b>/{row.length}</> : ''}</span>
               </div>
@@ -702,8 +704,8 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
   )
 }
 
-const smallBtn = 'h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3'
-const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11px*var(--ts))] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+const smallBtn = 'h-6 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3'
+const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11.5px*var(--ts))] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
 
 // One word (or letter) to tap. The pencil on an error or partly records what
 // was said; `missedTimes` (two or more) marks a word this student keeps
@@ -717,9 +719,9 @@ function WordTile({ word, letter = false, mark, heard, lang, missedTimes = 0, on
         title={mark ? MARK_LABEL[mark][lang] : undefined}
         className={`w-full ${letter ? 'px-1 py-2 text-[length:calc(26px*var(--ts))]' : 'px-3 py-2.5 text-[length:calc(21px*var(--ts))]'} rounded border-2 font-serif leading-none select-none ${mark ? MARK_TILE[mark] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
         {word}
-        {isMiss(mark) && heard && <span className="block font-sans text-[length:calc(11px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard}”</span>}
+        {isMiss(mark) && heard && <span className="block font-sans text-[length:calc(11.5px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard}”</span>}
       </button>
-      {missedTimes >= 2 && <span className="absolute -top-1.5 -left-1.5 px-1 h-4 rounded-full bg-bad text-white font-sans text-[length:max(10px,calc(9.5px*var(--ts)))] font-semibold leading-4 pointer-events-none" title={lang === 'ko' ? `${missedTimes}번 틀림` : `Missed ${missedTimes} times`}>×{missedTimes}</span>}
+      {missedTimes >= 2 && <span className="absolute -top-1.5 -left-1.5 px-1 h-4 rounded-full bg-bad text-white font-sans text-[length:calc(11.5px*var(--ts))] font-semibold leading-4 pointer-events-none" title={lang === 'ko' ? `${missedTimes}번 틀림` : `Missed ${missedTimes} times`}>×{missedTimes}</span>}
       {mark && <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white pointer-events-none ${MARK_SOLID[mark]}`}>{mark === 'correct' ? <Check size={10} strokeWidth={3} /> : mark === 'partial' ? <Minus size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</span>}
       {isMiss(mark) && (
         <button onClick={onHeard} title={lang === 'ko' ? '뭐라고 읽었는지 적기' : 'Write what they said'} aria-label={`What did they say for ${word}`}
@@ -738,7 +740,7 @@ function ObservationTicks({ sk, observations, lang, onObs, className = '' }: {
     <div className={`space-y-2 ${className}`}>
       {/* The sheet's own error patterns first: what the sheet is there to find. */}
       <div className="grid grid-cols-[112px_1fr] gap-2 items-start">
-        <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? '이 시트' : 'This sheet'}</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? '이 시트' : 'This sheet'}</span>
         <div className="flex flex-wrap gap-1.5">
           {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}
         </div>
@@ -746,7 +748,7 @@ function ObservationTicks({ sk, observations, lang, onObs, className = '' }: {
       {/* How a student decoded words, and word-level errors, mean nothing for single letters. */}
       {!sk.sections && OBSERVATION_GROUPS.filter(g => g.id !== 'how').concat(OBSERVATION_GROUPS.filter(g => g.id === 'how')).map(g => (
         <div key={g.id} className="grid grid-cols-[112px_1fr] gap-2 items-start">
-          <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? g.label_ko : g.label}</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? g.label_ko : g.label}</span>
           <div className="flex flex-wrap gap-1.5">
             {DECODING_OBSERVATIONS.filter(o => o.group === g.id).map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
           </div>

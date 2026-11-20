@@ -31,7 +31,7 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
     return <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6">{lang === 'ko' ? '아직 이 학생의 파닉스 점검이 없습니다.' : 'No phonics checks for this student yet.'}</p>
   }
 
-  const cell = compact ? 'h-6 text-[length:calc(10.5px*var(--ts))]' : 'h-7 text-[length:calc(11px*var(--ts))]'
+  const cell = compact ? 'h-6 text-[length:calc(11.5px*var(--ts))]' : 'h-7 text-[length:calc(11.5px*var(--ts))]'
 
   return (
     <div>
@@ -53,8 +53,8 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
               <th className="text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2">{lang === 'ko' ? '시트' : 'Sheet'}</th>
               {own.map((c, i) => (
                 <th key={c.id} className={`px-0.5 py-2 border-b border-rule-2 text-center align-bottom ${i > 0 ? 'border-l border-rule' : ''}`} title={`${fmtShort(c.date, lang)} · ${givenSheets(c).length} ${givenSheets(c).length === 1 ? 'sheet' : 'sheets'}${c.notes ? `\n${c.notes}` : ''}`}>
-                  <span className="block text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap overflow-hidden text-ellipsis">{fmtShort(c.date, lang)}</span>
-                  <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{givenSheets(c).length}</span>
+                  <span className="block text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap overflow-hidden text-ellipsis">{fmtShort(c.date, lang)}</span>
+                  <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">{givenSheets(c).length}</span>
                 </th>
               ))}
               <th className="px-2 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-right align-bottom">{lang === 'ko' ? '변화' : 'Change'}</th>
@@ -90,7 +90,7 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
         </table>
       </div>
       {skills.length < PHONICS_SKILLS.length && (
-        <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? `미점검 시트 ${PHONICS_SKILLS.length - skills.length}개는 표시하지 않습니다.` : `${PHONICS_SKILLS.length - skills.length} sheets never checked are not shown.`}</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? `미점검 시트 ${PHONICS_SKILLS.length - skills.length}개는 표시하지 않습니다.` : `${PHONICS_SKILLS.length - skills.length} sheets never checked are not shown.`}</p>
       )}
     </div>
   )

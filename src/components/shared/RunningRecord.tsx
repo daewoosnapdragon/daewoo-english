@@ -143,7 +143,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
               <BookOpen size={20} />
               Running Record
             </h2>
-            <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mt-0.5">
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
               {passageTitle && <span className="font-medium text-text-secondary">{passageTitle}</span>}
               {studentName && <span> · {studentName}</span>}
               {` · ${totalWords} words`}
@@ -175,25 +175,25 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
           <div className="flex items-center gap-6 text-[length:calc(12px*var(--ts))]">
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{errors}</div>
-              <div className="text-white/60 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider">Errors</div>
+              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">Errors</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{selfCorrections}</div>
-              <div className="text-white/60 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider">Self-Corr</div>
+              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">Self-Corr</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold text-gold">{finished ? cwpm : '—'}</div>
-              <div className="text-white/60 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider">CWPM</div>
+              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">CWPM</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{finished ? `${accuracyRate}%` : '—'}</div>
-              <div className="text-white/60 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider">Accuracy</div>
+              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">Accuracy</div>
             </div>
           </div>
         </div>
 
         {/* Instructions */}
-        <div className="px-6 py-2 bg-accent-light border-b border-border text-[length:calc(10px*var(--ts))] text-navy shrink-0">
+        <div className="px-6 py-2 bg-accent-light border-b border-border text-[length:calc(11.5px*var(--ts))] text-navy shrink-0">
           <strong>Click cycle:</strong> 1× = <span className="text-red-600 font-bold">error</span> · 2× = <span className="text-amber-600 font-bold">self-correct</span> · 3× = <span className="text-blue-600 font-bold">last word read</span> · 4× = reset
         </div>
 
@@ -201,18 +201,18 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {lastWordIdx !== null && (
             <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
-              <span className="text-[length:calc(11px*var(--ts))] text-blue-800 font-medium">
+              <span className="text-[length:calc(11.5px*var(--ts))] text-blue-800 font-medium">
                 Last word read: "{words[lastWordIdx]?.word}" — <span className="font-bold">{lastWordIdx + 1}/{totalWords} words</span>
                 {lastWordIdx + 1 < totalWords && <span className="text-blue-600 ml-1">(student didn't finish)</span>}
               </span>
-              <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(10px*var(--ts))] text-red-500 hover:text-red-700">Clear marker</button>
+              <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700">Clear marker</button>
             </div>
           )}
           <div className="leading-[2.8]">
             {lines.map((line, li) => (
               <div key={li} className="flex flex-wrap gap-x-1 mb-1">
                 {/* Line number */}
-                <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary w-6 text-right mr-2 mt-2 shrink-0">{li * 12 + 1}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary w-6 text-right mr-2 mt-2 shrink-0">{li * 12 + 1}</span>
                 {line.map(w => {
                   const isPastLast = lastWordIdx !== null && w.index > lastWordIdx
                   const isLastWord = lastWordIdx === w.index
@@ -236,7 +236,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
                       style={{ touchAction: 'manipulation' }}
                     >
                       {w.word}
-                      {w.mark === 'self_correct' && !isPastLast && <span className="text-[length:max(10px,calc(8px*var(--ts)))] align-super ml-0.5">SC</span>}
+                      {w.mark === 'self_correct' && !isPastLast && <span className="text-[length:calc(11.5px*var(--ts))] align-super ml-0.5">SC</span>}
                     </button>
                   )
                 })}
@@ -248,7 +248,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
         {/* Footer */}
         {finished && (
           <div className="px-6 py-4 border-t border-border bg-surface-alt/30 flex items-center justify-between shrink-0">
-            <div className="text-[length:calc(11px*var(--ts))] text-text-secondary space-x-4">
+            <div className="text-[length:calc(11.5px*var(--ts))] text-text-secondary space-x-4">
               <span>Words read: <strong>{wordsRead}/{totalWords}</strong></span>
               <span>Errors: <strong className="text-red-600">{errors}</strong></span>
               <span>Self-corrections: <strong className="text-amber-600">{selfCorrections}</strong></span>
@@ -287,22 +287,22 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Text</label>
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Text</label>
             <textarea value={text} onChange={e => setText(e.target.value)} rows={8} placeholder="Paste or type the full passage text here..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-y font-serif leading-relaxed" />
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-1">{wordCount} words</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">{wordCount} words</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
+              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
               <input value={level} onChange={e => setLevel(e.target.value)} placeholder="e.g. F, 1.2" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
             </div>
             <div>
-              <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
               <select value={gradeRange} onChange={e => setGradeRange(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-surface">
                 <option value="">Any</option>
                 <option value="1">Grade 1</option>
@@ -313,7 +313,7 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
               </select>
             </div>
             <div>
-              <label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
               <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g. NAEP, custom" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
             </div>
           </div>

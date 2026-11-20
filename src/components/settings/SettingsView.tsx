@@ -241,13 +241,13 @@ function TeacherSection() {
           <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>
               <tr className="bg-paper-2">
-                <th className="text-left px-5 py-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '영어반' : 'English Class'}
                 </th>
-                <th className="text-left px-5 py-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '교사 이름' : 'Teacher Name'}
                 </th>
-                <th className="text-left px-5 py-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
                   {language === 'ko' ? '역할' : 'Role'}
                 </th>
                 <th className="px-5 py-3 w-32"></th>
@@ -262,7 +262,7 @@ function TeacherSection() {
                       {teacher.english_class === 'Admin' ? (
                         <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Admin</span>
                       ) : (
-                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-bold"
+                        <span className="inline-flex px-2.5 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-bold"
                           style={{
                             backgroundColor: classToColor(teacher.english_class as EnglishClass),
                             color: classToTextColor(teacher.english_class as EnglishClass),
@@ -285,14 +285,14 @@ function TeacherSection() {
                     <td className="px-5 py-3 flex items-center gap-1">
                       {edited && (
                         <button onClick={() => handleSave(teacher)} disabled={saving === teacher.id}
-                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
+                          className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
                           {saving === teacher.id ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {language === 'ko' ? '저장' : 'Save'}
                         </button>
                       )}
                       {!edited && !isCore(teacher) && teacher.id !== currentTeacher?.id && (
                         <button onClick={() => startDelete(teacher)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-red-500 hover:bg-red-50 transition-colors">
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-red-500 hover:bg-red-50 transition-colors">
                           <Trash2 size={12} /> {language === 'ko' ? '삭제' : 'Remove'}
                         </button>
                       )}
@@ -516,7 +516,7 @@ function SemesterSection() {
       </div>
 
       {!canManage && (
-        <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mb-3">
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">
           {lang === 'ko'
             ? '활성 학기는 관리자 또는 Snapdragon 계정만 설정할 수 있습니다.'
             : 'Only admin and Snapdragon accounts can set the active semester. Your account always follows whichever semester they make active.'}
@@ -536,13 +536,13 @@ function SemesterSection() {
       {adding && canManage && (
         <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
               <input value={newSem.name} onChange={(e: any) => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
               <input value={newSem.name_ko} onChange={(e: any) => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
               <input value={newSem.academic_year} onChange={(e: any) => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
               <select value={newSem.type} onChange={(e: any) => setNewSem({ ...newSem, type: e.target.value })}
                 className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy">
                 <option value="spring">Spring</option>
@@ -554,13 +554,13 @@ function SemesterSection() {
               </select></div>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start Date</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start Date</label>
               <input type="date" value={newSem.start_date} onChange={(e: any) => setNewSem({ ...newSem, start_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End Date</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End Date</label>
               <input type="date" value={newSem.end_date} onChange={(e: any) => setNewSem({ ...newSem, end_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Midterm Cutoff</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Midterm Cutoff</label>
               <input type="date" value={newSem.midterm_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, midterm_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Report Card Cutoff</label>
+            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Report Card Cutoff</label>
               <input type="date" value={newSem.report_card_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, report_card_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           <div className="flex gap-2">
@@ -587,25 +587,25 @@ function SemesterSection() {
                   <div className="flex items-center gap-2">
                     <span className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{sem.name}</span>
                     {sem.name_ko && <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{sem.name_ko}</span>}
-                    {sem.is_active && <span className="text-[length:max(10px,calc(9px*var(--ts)))] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
-                    {sem.is_archived && <span className="text-[length:max(10px,calc(9px*var(--ts)))] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
+                    {sem.is_active && <span className="text-[length:calc(11.5px*var(--ts))] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
+                    {sem.is_archived && <span className="text-[length:calc(11.5px*var(--ts))] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-2">
                       {!sem.is_archived && (!sem.is_active || activeCount > 1) && (
                         <button onClick={() => handleSetActive(sem.id)} disabled={saving === sem.id}
                           title={sem.is_active ? 'Make this the only active semester' : 'Make this the active semester for every account'}
-                          className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium disabled:opacity-50">
+                          className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium disabled:opacity-50">
                           {sem.is_active ? 'Keep Only This Active' : 'Set Active'}
                         </button>
                       )}
                       <button onClick={() => handleToggleArchive(sem)}
                         title={sem.is_archived ? 'Restore to semester pickers' : 'Hide from semester pickers (keeps all data)'}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
                         {sem.is_archived ? <><ArchiveRestore size={10} /> Restore</> : <><Archive size={10} /> Archive</>}
                       </button>
                       <button onClick={() => handleSave(sem)} disabled={saving === sem.id}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
                         {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
                       </button>
                       <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
@@ -613,30 +613,30 @@ function SemesterSection() {
                   )}
                 </div>
                 <div className="grid grid-cols-4 gap-3">
-                  <div><label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
+                  <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
                     <input type="date" value={sem.start_date || ''} onChange={(e: any) => updateField(sem.id, 'start_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
-                  <div><label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
+                  <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
                     <input type="date" value={sem.end_date || ''} onChange={(e: any) => updateField(sem.id, 'end_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
-                    <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Midterm Cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:max(10px,calc(8px*var(--ts)))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
+                    <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
+                      Midterm Cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
                     </label>
                     <input type="date" value={sem.midterm_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'midterm_cutoff_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
-                    <label className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Report Card Cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:max(10px,calc(8px*var(--ts)))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
+                    <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
+                      Report Card Cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
                     </label>
                     <input type="date" value={sem.report_card_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'report_card_cutoff_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                 </div>
-                <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-2">Grades entered before the midterm cutoff count toward progress reports. All grades in the semester count toward the final report card. Grades auto-lock after each cutoff date.</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-2">Grades entered before the midterm cutoff count toward progress reports. All grades in the semester count toward the final report card. Grades auto-lock after each cutoff date.</p>
               </div>
             ))}
           </div>
@@ -796,11 +796,11 @@ function ProgramBenchmarksSection() {
         <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead>
             <tr className="bg-paper-2">
-              <th className="text-left px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[length:max(10px,calc(8px*var(--ts)))]">mid-semester target</span></th>
-              <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[length:max(10px,calc(8px*var(--ts)))]">end-semester target</span></th>
-              <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
-              <th className="text-left px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
+              <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[length:calc(11.5px*var(--ts))]">mid-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[length:calc(11.5px*var(--ts))]">end-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
+              <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -831,11 +831,11 @@ function ProgramBenchmarksSection() {
                     {editable ? (
                       <span className="flex items-center justify-center gap-1">
                         <input type="number" value={b.lexile_min} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_min', e.target.value)}
-                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
+                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy" />
                         <span className="text-text-tertiary">-</span>
                         <input type="number" value={b.lexile_max} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'lexile_max', e.target.value)}
-                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
-                        <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">L</span>
+                          className="w-14 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy" />
+                        <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">L</span>
                       </span>
                     ) : <span className="text-text-secondary">{b.lexile_min}-{b.lexile_max}L</span>}
                   </td>
@@ -843,9 +843,9 @@ function ProgramBenchmarksSection() {
                     {editable ? (
                       <textarea value={b.notes} onChange={(e: any) => updateBenchmark(selectedGrade, cls, 'notes', e.target.value)}
                         rows={2}
-                        className="w-full px-2 py-1.5 border border-border rounded text-[length:calc(11px*var(--ts))] outline-none focus:border-navy resize-y min-h-[48px]"
+                        className="w-full px-2 py-1.5 border border-border rounded text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy resize-y min-h-[48px]"
                         placeholder="Focus areas, WIDA levels, standards..." />
-                    ) : <span className="text-text-tertiary text-[length:calc(11px*var(--ts))] whitespace-pre-wrap">{b.notes}</span>}
+                    ) : <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))] whitespace-pre-wrap">{b.notes}</span>}
                   </td>
                 </tr>
               )
@@ -853,7 +853,7 @@ function ProgramBenchmarksSection() {
           </tbody>
         </table>
       </div>
-      <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-2"><strong>CWPM Mid</strong> = expected correct words per minute by mid-semester (used as "Approaching" threshold). <strong>CWPM End</strong> = target fluency by end of semester (used as "Proficient" threshold). These are realistic ELL program targets, not native-speaker norms. Benchmarks appear in Reading Fluency, Leveling, and Report Cards. Admin and class teachers can edit.</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-2"><strong>CWPM Mid</strong> = expected correct words per minute by mid-semester (used as "Approaching" threshold). <strong>CWPM End</strong> = target fluency by end of semester (used as "Proficient" threshold). These are realistic ELL program targets, not native-speaker norms. Benchmarks appear in Reading Fluency, Leveling, and Report Cards. Admin and class teachers can edit.</p>
     </div>
   )
 }
@@ -916,9 +916,9 @@ function ClassManagementSection() {
         <table className="w-full text-[length:calc(13px*var(--ts))]">
           <thead>
             <tr className="bg-paper-2">
-              <th className="text-left px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
-              <th className="text-right px-4 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
+              <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
+              <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
+              <th className="text-right px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -930,16 +930,16 @@ function ClassManagementSection() {
                     <span className="font-semibold text-[length:calc(13px*var(--ts))] px-2 py-0.5 rounded" style={{ backgroundColor: classToColor(cls.english_class as EnglishClass), color: classToTextColor(cls.english_class as EnglishClass) }}>
                       {cls.english_class}
                     </span>
-                    {isCore && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary ml-2">Core</span>}
+                    {isCore && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-2">Core</span>}
                   </td>
                   <td className="text-center px-4 py-2.5 font-medium">{cls.count}</td>
                   <td className="text-right px-4 py-2.5">
                     {!isCore ? (
                       <button onClick={() => handleDeleteClass(cls.english_class)} disabled={deleting === cls.english_class}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40">
                         {deleting === cls.english_class ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
                       </button>
-                    ) : <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">Protected</span>}
+                    ) : <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Protected</span>}
                   </td>
                 </tr>
               )
@@ -1025,14 +1025,14 @@ function AssessmentWeightsSection() {
         <div className="grid grid-cols-3 gap-2 mb-4 mt-3">
           {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
             <div key={type} className="bg-surface-alt/50 rounded-lg px-3 py-2">
-              <p className="text-[length:calc(11px*var(--ts))] font-semibold text-navy">{typeLabels[type]}</p>
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-0.5">{typeDescs[type]}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">{typeLabels[type]}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">{typeDescs[type]}</p>
             </div>
           ))}
         </div>
 
         {/* Grade-level defaults */}
-        <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Default Weights by Grade</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Default Weights by Grade</p>
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map(grade => {
             const key = String(grade)
@@ -1044,7 +1044,7 @@ function AssessmentWeightsSection() {
                 <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy w-16">Grade {grade}</span>
                 {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                   <div key={type} className="flex items-center gap-1.5">
-                    <label className="text-[length:calc(10px*var(--ts))] text-text-secondary w-20">{typeLabels[type]}</label>
+                    <label className="text-[length:calc(11.5px*var(--ts))] text-text-secondary w-20">{typeLabels[type]}</label>
                     {isAdmin ? (
                       <input type="number" min={0} max={100} value={w[type]}
                         onChange={e => update(key, type, Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
@@ -1054,7 +1054,7 @@ function AssessmentWeightsSection() {
                     )}
                   </div>
                 ))}
-                <span className={`text-[length:calc(11px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>
                   {total}%{!isValid && ' (must be 100)'}
                 </span>
               </div>
@@ -1065,18 +1065,18 @@ function AssessmentWeightsSection() {
         {/* Class-specific overrides */}
         <div className="mt-4">
           <button onClick={() => setShowClassOverrides(!showClassOverrides)}
-            className="text-[length:calc(11px*var(--ts))] font-medium text-navy hover:underline flex items-center gap-1">
+            className="text-[length:calc(11.5px*var(--ts))] font-medium text-navy hover:underline flex items-center gap-1">
             <ChevronDown size={12} className={`transition-transform ${showClassOverrides ? 'rotate-180' : ''}`} />
             {showClassOverrides ? 'Hide' : 'Show'} class-specific overrides
           </button>
-          <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-1">Override weights for specific class+grade combos (e.g. Lily Grade 1 vs Snapdragon Grade 1)</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">Override weights for specific class+grade combos (e.g. Lily Grade 1 vs Snapdragon Grade 1)</p>
         </div>
 
         {showClassOverrides && (
           <div className="mt-3 space-y-4">
             {[1, 2, 3, 4, 5].map(grade => (
               <div key={grade}>
-                <p className="text-[length:calc(11px*var(--ts))] font-semibold text-navy mb-1.5">Grade {grade} — Class Overrides</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy mb-1.5">Grade {grade} — Class Overrides</p>
                 <div className="space-y-1.5">
                   {classes.map(cls => {
                     const key = `${grade}-${cls}`
@@ -1086,10 +1086,10 @@ function AssessmentWeightsSection() {
                     const isValid = total === 100
                     return (
                       <div key={cls} className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${!hasOverride ? 'border-border/50 bg-surface-alt/20 opacity-60' : isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
-                        <span className="text-[length:calc(11px*var(--ts))] font-medium w-24" style={{ color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-medium w-24" style={{ color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
                         {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                           <div key={type} className="flex items-center gap-1">
-                            <label className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary w-14">{typeLabels[type]}</label>
+                            <label className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary w-14">{typeLabels[type]}</label>
                             {isAdmin ? (
                               <input type="number" min={0} max={100} value={hasOverride ? w[type] : ''}
                                 placeholder={String(getWeight(String(grade))[type])}
@@ -1109,14 +1109,14 @@ function AssessmentWeightsSection() {
                                     }
                                   }
                                 }}
-                                className="w-12 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-navy" />
+                                className="w-12 px-1.5 py-1 border border-border rounded text-center text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy" />
                             ) : (
-                              <span className="text-[length:calc(11px*var(--ts))] font-medium w-12 text-center">{hasOverride ? w[type] + '%' : '—'}</span>
+                              <span className="text-[length:calc(11.5px*var(--ts))] font-medium w-12 text-center">{hasOverride ? w[type] + '%' : '—'}</span>
                             )}
                           </div>
                         ))}
-                        {hasOverride && <span className={`text-[length:calc(10px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>{total}%</span>}
-                        {!hasOverride && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary ml-auto italic">using default</span>}
+                        {hasOverride && <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>{total}%</span>}
+                        {!hasOverride && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto italic">using default</span>}
                       </div>
                     )
                   })}
@@ -1188,35 +1188,35 @@ function SchoolInfoSection() {
       <div className="border-t border-rule-2 pt-5">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님' : 'Principal'}
             </label>
             <input value={settings.principal_name || ''} onChange={(e: any) => setSettings({ ...settings, principal_name: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님 (한글)' : 'Principal (Korean)'}
             </label>
             <input value={settings.principal_name_ko || ''} onChange={(e: any) => setSettings({ ...settings, principal_name_ko: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '팀 매니저' : 'Team Manager'}
             </label>
             <input value={settings.team_manager || ''} onChange={(e: any) => setSettings({ ...settings, team_manager: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '학년도' : 'Academic Year'}
             </label>
             <input value={settings.academic_year || ''} onChange={(e: any) => setSettings({ ...settings, academic_year: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div className="col-span-2">
-            <label className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '프로그램 부제' : 'Program Subtitle'}
             </label>
             <input value={settings.program_subtitle || ''} onChange={(e: any) => setSettings({ ...settings, program_subtitle: e.target.value })}
@@ -1272,7 +1272,7 @@ function ScheduleRulesSection() {
                 {[1, 2, 3, 4, 5].map(w => (
                   <td key={w} className="px-3 py-1.5 text-center">
                     <button onClick={() => toggle(g, w)} disabled={!canEdit} title={on(g, w) ? (language === 'ko' ? '수업 없음' : 'No class') : (language === 'ko' ? '수업 있음' : 'Class as usual')}
-                      className={`w-8 h-7 rounded border text-[length:calc(11px*var(--ts))] font-bold ${on(g, w) ? 'bg-ink text-paper border-ink' : 'bg-surface border-rule-2 text-ink-3 hover:border-ink-3'} disabled:cursor-default`}>{on(g, w) ? '—' : ''}</button>
+                      className={`w-8 h-7 rounded border text-[length:calc(11.5px*var(--ts))] font-bold ${on(g, w) ? 'bg-ink text-paper border-ink' : 'bg-surface border-rule-2 text-ink-3 hover:border-ink-3'} disabled:cursor-default`}>{on(g, w) ? '—' : ''}</button>
                   </td>
                 ))}
               </tr>
@@ -1320,7 +1320,7 @@ function BehaviorLadderSection() {
       </div>
       <div className="border border-rule-2 rounded-lg overflow-hidden">
         <table className="w-full text-[length:calc(12.5px*var(--ts))]">
-          <thead><tr className="bg-paper-2 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-ink-3">
+          <thead><tr className="bg-paper-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3">
             <th className="text-left px-4 py-2 w-16">{ko ? '단계' : 'Step'}</th><th className="text-left px-3 py-2 w-28">{ko ? '기록 수' : 'Notes to open'}</th><th className="text-left px-3 py-2">{ko ? '관리자가 하는 일' : 'What admin does'}</th><th className="text-left px-3 py-2 w-56">{ko ? '종료 조치 (버튼 이름)' : 'Action that closes it (button)'}</th><th className="w-10" />
           </tr></thead>
           <tbody className="divide-y divide-rule">

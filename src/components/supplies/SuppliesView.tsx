@@ -93,7 +93,7 @@ export default function SuppliesView() {
       <div className="flex gap-1.5 flex-wrap mb-6">
         {tabs.map(t => (
           <button key={t.id} onClick={() => { setTab(t.id); history.replaceState(null, '', `#${t.id}`) }} className={`h-8 px-3 rounded text-[length:calc(12.5px*var(--ts))] inline-flex items-center gap-1.5 border ${tab === t.id ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>
-            {t.icon}{t.label}{t.badge ? <span className={`ml-0.5 text-[length:calc(10.5px*var(--ts))] font-semibold rounded-full px-1.5 ${tab === t.id ? 'bg-paper text-ink' : 'bg-warn-soft text-warn'}`}>{t.badge}</span> : null}
+            {t.icon}{t.label}{t.badge ? <span className={`ml-0.5 text-[length:calc(11.5px*var(--ts))] font-semibold rounded-full px-1.5 ${tab === t.id ? 'bg-paper text-ink' : 'bg-warn-soft text-warn'}`}>{t.badge}</span> : null}
           </button>
         ))}
       </div>
@@ -160,14 +160,14 @@ function StockSection({ s, me, ko, canManage, nameOf, fail }: SectionProps) {
                     <td className="py-1.5 pr-3">
                       <span className="text-ink font-medium">{i.name}</span>
                       {i.link && <a href={i.link} target="_blank" rel="noreferrer" className="ml-1.5 text-ink-3 hover:text-accent inline-flex align-middle" title={ko ? '구매 링크' : 'Where to buy'}><ExternalLink size={11} /></a>}
-                      <span className="block text-[length:calc(11px*var(--ts))] text-ink-3">
+                      <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">
                         {hasPacks(i) ? `${i.pack_name} of ${num(Number(i.pack_size))} ${i.unit}` : i.unit}
                         {i.last_price != null ? ` · ${won(i.last_price, ko)} ${ko ? '/' : 'a'} ${i.unit}${i.last_price_at ? ` · ${fmtDay(i.last_price_at, ko)}` : ''}` : ''}
                         {by !== 'place' && (i.cabinet || i.shelf) ? ` · ${placeOf(i, ko)}` : ''}
                         {i.notes ? ` · ${i.notes}` : ''}
                       </span>
                     </td>
-                    <td className={`py-1.5 pr-3 tabular-nums ${under ? 'text-warn font-semibold' : 'text-ink'}`}>{fmtQty(i, i.on_hand)}{hasPacks(i) && i.on_hand >= Number(i.pack_size) ? <span className="block text-[length:calc(11px*var(--ts))] font-normal text-ink-3">{num(i.on_hand)} {i.unit}</span> : null}</td>
+                    <td className={`py-1.5 pr-3 tabular-nums ${under ? 'text-warn font-semibold' : 'text-ink'}`}>{fmtQty(i, i.on_hand)}{hasPacks(i) && i.on_hand >= Number(i.pack_size) ? <span className="block text-[length:calc(11.5px*var(--ts))] font-normal text-ink-3">{num(i.on_hand)} {i.unit}</span> : null}</td>
                     <td className="py-1.5 pr-3 tabular-nums text-ink-3">{fmtQty(i, i.par)}</td>
                     <td className="py-1.5 pr-3">
                       {lowNow
@@ -304,7 +304,7 @@ function RequestsSection({ s, me, ko, canManage, nameOf, fail }: SectionProps) {
         <div className="min-w-0 flex-1">
           <p className="text-[length:calc(13.5px*var(--ts))] text-ink"><span className="font-medium">{r.name}</span> <span className="tabular-nums text-ink-2">× {num(r.quantity)}{r.unit ? ` ${r.unit}` : ''}</span>
             {r.link && <a href={r.link} target="_blank" rel="noreferrer" className="ml-1.5 text-ink-3 hover:text-accent inline-flex align-middle"><ExternalLink size={11} /></a>}
-            <span className={`ml-2 text-[length:calc(11px*var(--ts))] px-1.5 py-0.5 rounded ${r.status === 'needed' ? 'bg-warn-soft text-warn' : r.status === 'ordered' ? 'bg-info-soft text-info' : r.status === 'arrived' ? 'bg-good-soft text-good' : 'bg-paper-2 text-ink-3'}`}>{ko ? REQUEST_LABELS[r.status].ko : REQUEST_LABELS[r.status].en}</span>
+            <span className={`ml-2 text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded ${r.status === 'needed' ? 'bg-warn-soft text-warn' : r.status === 'ordered' ? 'bg-info-soft text-info' : r.status === 'arrived' ? 'bg-good-soft text-good' : 'bg-paper-2 text-ink-3'}`}>{ko ? REQUEST_LABELS[r.status].ko : REQUEST_LABELS[r.status].en}</span>
           </p>
           {r.purpose && <p className="text-[length:calc(12px*var(--ts))] text-ink-2 mt-0.5">{r.purpose}</p>}
           <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">
@@ -472,13 +472,13 @@ function ReceiptsSection({ s, me, ko, nameOf, fail, teachers }: SectionProps) {
               return (
                 <li key={i} className={`py-2.5 ${l.goes === 'skip' ? 'opacity-50' : ''}`}>
                   <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-2 md:gap-4 items-start">
-                    <div className="min-w-0"><p className="text-[length:calc(13px*var(--ts))] text-ink font-medium">{l.name}</p>{l.raw && l.raw !== l.name && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 font-mono truncate">{l.raw}</p>}</div>
+                    <div className="min-w-0"><p className="text-[length:calc(13px*var(--ts))] text-ink font-medium">{l.name}</p>{l.raw && l.raw !== l.name && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 font-mono truncate">{l.raw}</p>}</div>
                     <div className="flex items-center gap-1.5">
                       <input type="number" min={0} step="any" value={l.qty} onChange={e => upd(i, { qty: Number(e.target.value) })} className={`${inp} max-w-[70px] tabular-nums`} />
                       {it && hasPacks(it)
                         ? <select value={l.packMode ? 'pack' : 'unit'} onChange={e => upd(i, { packMode: e.target.value === 'pack' })} className={sel}><option value="pack">{it.pack_name} {ko ? `(${num(Number(it.pack_size))} ${it.unit})` : `of ${num(Number(it.pack_size))}`}</option><option value="unit">{it.unit}</option></select>
                         : <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 w-16">{l.unit || (it ? it.unit : '')}</span>}
-                      {it && l.packMode && <span className="text-[length:calc(11px*var(--ts))] text-ink-3 whitespace-nowrap">= {num(singles)} {it.unit}</span>}
+                      {it && l.packMode && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 whitespace-nowrap">= {num(singles)} {it.unit}</span>}
                     </div>
                     <div className="flex items-center gap-1.5"><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '가격' : 'Price'}</span><input type="number" min={0} step="1" value={l.price ?? ''} onChange={e => upd(i, { price: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0" className={`${inp} max-w-[100px] tabular-nums`} /><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '원' : 'won'}</span></div>
                     <button onClick={() => setLines(ls => ls!.filter((_, j) => j !== i))} className="text-ink-3 hover:text-ink justify-self-end" title={ko ? '이 줄 빼기' : 'Leave this line out'}><X size={13} /></button>
@@ -490,7 +490,7 @@ function ReceiptsSection({ s, me, ko, nameOf, fail, teachers }: SectionProps) {
                       <option value="skip">{ko ? '— 이 줄 건너뛰기 —' : '— skip this line —'}</option>
                       <optgroup label={ko ? '재고에 더하기' : 'Stock: add to'}>{s.active.map(x => <option key={x.id} value={x.id}>{x.name} · {fmtQty(x, x.on_hand)}</option>)}</optgroup>
                     </select>
-                    {it && l.goes === 'stock' && <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{fmtQty(it, it.on_hand)} → {fmtQty(it, it.on_hand + singles)}</span>}
+                    {it && l.goes === 'stock' && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{fmtQty(it, it.on_hand)} → {fmtQty(it, it.on_hand + singles)}</span>}
                     {!stock && l.goes !== 'skip' && (
                       <>
                         <select value={l.for_teacher_id || ''} onChange={e => upd(i, { for_teacher_id: e.target.value || null })} className={sel}>
@@ -605,7 +605,7 @@ function CountSection({ s, me, ko, canManage, nameOf, fail }: SectionProps) {
               const head = group !== lastGroup; lastGroup = group
               return (
                 <RowGroup key={i.id} head={head ? group : null}>
-                  <td className="py-1.5 pr-3 text-ink">{i.name} <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]">{hasPacks(i) ? `${i.pack_name} of ${num(Number(i.pack_size))}` : i.unit}</span>{isLow(i) && <span className="ml-2 text-[length:calc(10.5px*var(--ts))] px-1 rounded bg-warn-soft text-warn">{ko ? '부족' : 'low'}</span>}</td>
+                  <td className="py-1.5 pr-3 text-ink">{i.name} <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]">{hasPacks(i) ? `${i.pack_name} of ${num(Number(i.pack_size))}` : i.unit}</span>{isLow(i) && <span className="ml-2 text-[length:calc(11.5px*var(--ts))] px-1 rounded bg-warn-soft text-warn">{ko ? '부족' : 'low'}</span>}</td>
                   <td className="py-1.5 pr-3 tabular-nums text-ink-3">{fmtQty(i, i.on_hand)}</td>
                   <td className={`py-1.5 pr-3 ${diff ? 'text-ink font-semibold' : ''}`}><PackInputs item={i} value={val(i)} onChange={n => setVals(v => ({ ...v, [i.id]: n }))} ko={ko} /></td>
                 </RowGroup>

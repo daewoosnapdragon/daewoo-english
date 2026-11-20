@@ -43,7 +43,7 @@ export function UnitInput({ value, books, linkedName, placeholder, onChange, onP
         }}
         placeholder={placeholder}
         role="combobox" aria-expanded={open} aria-autocomplete="list"
-        className="lp-field w-full text-[length:calc(13.5px*var(--ts))] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1.5 placeholder:text-text-tertiary/40"
+        className="lp-field w-full text-[length:calc(13.5px*var(--ts))] bg-transparent border-b border-border/60 outline-none focus:border-navy py-1.5 placeholder:text-ink-3"
       />
       {open && (
         <ul role="listbox" className="absolute left-0 right-0 top-full mt-1 z-30 bg-surface border border-border rounded-lg shadow-lg py-1 max-h-[260px] overflow-y-auto">

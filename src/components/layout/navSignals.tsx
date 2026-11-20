@@ -115,7 +115,7 @@ export function NavMarks({ id, signals, ko }: { id: string; signals: Signals; ko
   const dotText = dot ? (ko ? `${gradesPhrase(signals.unmarked, true)} 출석 미완료` : `${gradesPhrase(signals.unmarked, false)} not marked yet`) : ''
   return (
     <>
-      {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-ink text-paper text-[length:calc(10px*var(--ts))] font-semibold tabular-nums flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {ko ? '건 확인 필요' : 'need a look'}</span></span> : null}
+      {badge ? <span className="min-w-[16px] h-4 px-1 rounded-full bg-ink text-paper text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums flex items-center justify-center">{badge > 9 ? '9+' : badge}<span className="sr-only"> {ko ? '건 확인 필요' : 'need a look'}</span></span> : null}
       {dot ? <span className="w-1.5 h-1.5 rounded-full bg-warn" title={dotText}><span className="sr-only">{dotText}</span></span> : null}
       {done ? <span title={ko ? '오늘 출석 완료' : 'All marked today'} className="inline-flex"><DrawnCheck size={12} /><span className="sr-only">{ko ? '오늘 출석 완료' : 'All marked today'}</span></span> : null}
     </>

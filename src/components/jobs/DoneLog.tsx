@@ -57,7 +57,7 @@ export function TermSummary({ jobs, ko, teachers, semester, nameOf }: { jobs: Ad
           </tr>)}
         </tbody>
       </table>
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-2">{ko ? `${teachers.length}명 중 완료 기록이 있는 사람만 표시됩니다.` : 'Only people with a finished job are listed.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{ko ? `${teachers.length}명 중 완료 기록이 있는 사람만 표시됩니다.` : 'Only people with a finished job are listed.'}</p>
     </div>
   )
 }

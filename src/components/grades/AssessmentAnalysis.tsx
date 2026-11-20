@@ -179,9 +179,9 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
         <section className="border border-rule-2 rounded-lg p-4">
           <div className="flex items-baseline justify-between mb-3"><span className="eyebrow">{ko ? '점수 분포' : 'How the class did'}</span><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{d.scored.length} {ko ? '명 채점' : 'scored'}</span></div>
           <div className="grid grid-cols-3 gap-3 mb-4">
-            <div><span className="font-display text-[length:calc(26px*var(--ts))] text-ink tabular-nums leading-none">{d.median != null ? Math.round(d.median) : '—'}<span className="text-[length:calc(13px*var(--ts))] text-ink-3">%</span></span><span className="block text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{ko ? '중앙값' : 'median'}</span></div>
-            <div><span className="font-display text-[length:calc(26px*var(--ts))] text-ink tabular-nums leading-none">{d.mean != null ? Math.round(d.mean) : '—'}<span className="text-[length:calc(13px*var(--ts))] text-ink-3">%</span></span><span className="block text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{ko ? '평균' : 'average'}</span></div>
-            <div><span className={`font-display text-[length:calc(26px*var(--ts))] tabular-nums leading-none ${d.bandCounts.below ? 'text-bad' : 'text-ink'}`}>{d.bandCounts.below}</span><span className="block text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{ko ? `미달 (${bands.approaching}% 미만)` : `below ${bands.approaching}%`}</span></div>
+            <div><span className="font-display text-[length:calc(26px*var(--ts))] text-ink tabular-nums leading-none">{d.median != null ? Math.round(d.median) : '—'}<span className="text-[length:calc(13px*var(--ts))] text-ink-3">%</span></span><span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{ko ? '중앙값' : 'median'}</span></div>
+            <div><span className="font-display text-[length:calc(26px*var(--ts))] text-ink tabular-nums leading-none">{d.mean != null ? Math.round(d.mean) : '—'}<span className="text-[length:calc(13px*var(--ts))] text-ink-3">%</span></span><span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{ko ? '평균' : 'average'}</span></div>
+            <div><span className={`font-display text-[length:calc(26px*var(--ts))] tabular-nums leading-none ${d.bandCounts.below ? 'text-bad' : 'text-ink'}`}>{d.bandCounts.below}</span><span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{ko ? `미달 (${bands.approaching}% 미만)` : `below ${bands.approaching}%`}</span></div>
           </div>
           <div className="grid grid-cols-6 gap-1.5 items-end h-[96px]">
             {d.buckets.map(b => {
@@ -189,14 +189,14 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
               const t = b.hi <= bands.approaching ? 'bg-bad' : b.hi <= bands.on ? 'bg-warn' : 'bg-good'
               return (
                 <div key={b.label} className="flex flex-col items-center justify-end h-full gap-1" title={b.students.map(s => s.english_name).join(', ')}>
-                  <span className="text-[length:calc(11px*var(--ts))] tabular-nums text-ink-2">{n || ''}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] tabular-nums text-ink-2">{n || ''}</span>
                   <div className={`w-full rounded-sm ${n ? t : 'bg-paper-3'}`} style={{ height: n ? `${Math.max(6, (n / maxBucket) * 64)}px` : '3px' }} />
-                  <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3 tabular-nums">{b.label}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">{b.label}</span>
                 </div>
               )
             })}
           </div>
-          <div className="flex gap-3 mt-3 text-[length:calc(11px*var(--ts))] text-ink-3 flex-wrap" title={ko ? `총점 기준: 우수 ${bands.above}%+, 도달 ${bands.on}%+, 근접 ${bands.approaching}%+` : `By total score: Above ${bands.above}%+, On target ${bands.on}%+, Approaching ${bands.approaching}%+, Below under ${bands.approaching}%`}>
+          <div className="flex gap-3 mt-3 text-[length:calc(11.5px*var(--ts))] text-ink-3 flex-wrap" title={ko ? `총점 기준: 우수 ${bands.above}%+, 도달 ${bands.on}%+, 근접 ${bands.approaching}%+` : `By total score: Above ${bands.above}%+, On target ${bands.on}%+, Approaching ${bands.approaching}%+, Below under ${bands.approaching}%`}>
             {(['above', 'on', 'approaching', 'below'] as const).map(k => <span key={k} className="inline-flex items-center gap-1.5"><span className={`w-2.5 h-2.5 rounded-sm ${bandBg[k]} ${k === 'above' ? '' : 'border border-rule-2'}`} />{bandLabel[k]} <span className="tabular-nums text-ink">{d.bandCounts[k]}</span></span>)}
             <span className="text-ink-3">{ko ? `(총점 기준: ${bands.above} / ${bands.on} / ${bands.approaching}%)` : `(by total score: ${bands.above} / ${bands.on} / ${bands.approaching}%)`}</span>
           </div>
@@ -219,7 +219,7 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
                   <span className="w-2 h-2 rounded-sm self-center" style={{ backgroundColor: domainColor(dm) }} />
                   <span className={dm === here ? 'font-semibold' : ''} style={{ color: domainColor(dm) }}>{domainLabel(dm)}</span>
                   <span className={`font-semibold tabular-nums ${tone(d.perDomain[dm])}`}>{d.perDomain[dm] != null ? `${Math.round(d.perDomain[dm]!)}%` : '—'}</span>
-                  <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{split[dm]} {ko ? '점' : 'pts'}{dm === here ? (ko ? ' · 이 탭' : ' · this tab') : ''}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{split[dm]} {ko ? '점' : 'pts'}{dm === here ? (ko ? ' · 이 탭' : ' · this tab') : ''}</span>
                 </span>
               ))}
             </div>
@@ -236,19 +236,19 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
                   <div key={s.code} className="py-2">
                     <button onClick={() => setOpenStd(open ? null : s.code)} className="w-full grid grid-cols-[16px_88px_minmax(0,1fr)_96px_72px_64px] gap-2 items-center text-left">
                       <span className="text-ink-3">{open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</span>
-                      <span className="font-mono text-[length:calc(11px*var(--ts))] inline-flex items-center gap-1.5" style={{ color: routed ? domainColor(domOfStd(s.code)) : undefined }}>{routed && <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: domainColor(domOfStd(s.code)) }} title={domainLabel(domOfStd(s.code))} />}<span className={routed ? '' : 'text-info'}>{s.code}</span></span>
+                      <span className="font-mono text-[length:calc(11.5px*var(--ts))] inline-flex items-center gap-1.5" style={{ color: routed ? domainColor(domOfStd(s.code)) : undefined }}>{routed && <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: domainColor(domOfStd(s.code)) }} title={domainLabel(domOfStd(s.code))} />}<span className={routed ? '' : 'text-info'}>{s.code}</span></span>
                       <span className="text-[length:calc(12.5px*var(--ts))] text-ink truncate" title={stdRow(s.code)?.text}>{plainName(s.code)}<span className="text-ink-3"> · {s.nQ} {ko ? '문항' : s.nQ === 1 ? 'question' : 'questions'}</span></span>
                       <span className="flex h-2.5 rounded-sm overflow-hidden bg-paper-3" title={`${met.length} of ${total} ${ko ? '명 도달' : 'met it'}`}>
                         {met.length > 0 && <span className="bg-good" style={{ width: `${(met.length / total) * 100}%` }} />}
                       </span>
                       <span className={`text-[length:calc(12px*var(--ts))] tabular-nums whitespace-nowrap ${met.length === total ? 'text-good' : met.length < total / 2 ? 'text-bad' : 'text-ink-2'}`}>{met.length}/{total} {ko ? '도달' : 'met it'}</span>
-                      <span className={`text-right text-[length:calc(12.5px*var(--ts))] font-semibold tabular-nums ${tone(s.pct)}`}>{s.pct != null ? `${Math.round(s.pct)}%` : '—'}<span className="text-[length:calc(10.5px*var(--ts))] font-normal text-ink-3"> {ko ? '평균' : 'avg'}</span></span>
+                      <span className={`text-right text-[length:calc(12.5px*var(--ts))] font-semibold tabular-nums ${tone(s.pct)}`}>{s.pct != null ? `${Math.round(s.pct)}%` : '—'}<span className="text-[length:calc(11.5px*var(--ts))] font-normal text-ink-3"> {ko ? '평균' : 'avg'}</span></span>
                     </button>
                     {open && (
                       <div className="mt-2 ml-6 grid gap-1.5 text-[length:calc(12px*var(--ts))]">
                         <p className="text-ink-3 leading-snug">{stdRow(s.code)?.text}</p>
-                        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2 items-start"><span className="inline-flex h-6 items-center px-2 rounded bg-good text-white text-[length:calc(11px*var(--ts))] font-semibold w-fit">{ko ? '도달' : 'Met it'} · {met.length}</span>{met.length ? names(met) : <span className="text-ink-3">{ko ? '없음' : 'nobody'}</span>}</div>
-                        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2 items-start"><span className="inline-flex h-6 items-center px-2 rounded bg-bad-soft text-bad text-[length:calc(11px*var(--ts))] font-semibold w-fit">{ko ? '미도달' : 'Not yet'} · {notMet.length}</span>{notMet.length ? names(notMet) : <span className="text-ink-3">{ko ? '없음' : 'nobody'}</span>}</div>
+                        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2 items-start"><span className="inline-flex h-6 items-center px-2 rounded bg-good text-white text-[length:calc(11.5px*var(--ts))] font-semibold w-fit">{ko ? '도달' : 'Met it'} · {met.length}</span>{met.length ? names(met) : <span className="text-ink-3">{ko ? '없음' : 'nobody'}</span>}</div>
+                        <div className="grid grid-cols-[110px_minmax(0,1fr)] gap-2 items-start"><span className="inline-flex h-6 items-center px-2 rounded bg-bad-soft text-bad text-[length:calc(11.5px*var(--ts))] font-semibold w-fit">{ko ? '미도달' : 'Not yet'} · {notMet.length}</span>{notMet.length ? names(notMet) : <span className="text-ink-3">{ko ? '없음' : 'nobody'}</span>}</div>
                       </div>
                     )}
                   </div>
@@ -273,10 +273,10 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
                 return (
                   <>
                     <tr key={x.it.num} onClick={() => setOpenItem(open ? null : x.it.num)} className={`cursor-pointer hover:bg-paper-2 ${x.flag ? 'bg-warn-soft/30' : ''}`}>
-                      <td className="px-4 py-1.5 text-ink font-medium">Q{x.it.num}<span className="text-ink-3 font-normal text-[length:calc(11px*var(--ts))]"> {x.it.answer_key ? x.it.answer_key : `${x.it.max_points}pt`}</span></td>
-                      <td className="px-2 py-1.5 text-ink-2 truncate max-w-[320px]">{x.it.standard ? <><span className="font-mono text-[length:calc(11px*var(--ts))] mr-1.5" style={{ color: routed ? domainColor(domOfStd(x.it.standard)) : undefined }}><span className={routed ? '' : 'text-info'}>{x.it.standard}</span>{routed && <span className="opacity-70"> · {domainShort(domOfStd(x.it.standard))}</span>}</span>{plainName(x.it.standard)}</> : <span className="text-ink-3">—</span>}</td>
+                      <td className="px-4 py-1.5 text-ink font-medium">Q{x.it.num}<span className="text-ink-3 font-normal text-[length:calc(11.5px*var(--ts))]"> {x.it.answer_key ? x.it.answer_key : `${x.it.max_points}pt`}</span></td>
+                      <td className="px-2 py-1.5 text-ink-2 truncate max-w-[320px]">{x.it.standard ? <><span className="font-mono text-[length:calc(11.5px*var(--ts))] mr-1.5" style={{ color: routed ? domainColor(domOfStd(x.it.standard)) : undefined }}><span className={routed ? '' : 'text-info'}>{x.it.standard}</span>{routed && <span className="opacity-70"> · {domainShort(domOfStd(x.it.standard))}</span>}</span>{plainName(x.it.standard)}</> : <span className="text-ink-3">—</span>}</td>
                       <td className={`px-2 py-1.5 text-right font-semibold ${tone(x.pct)}`}>{x.pct != null ? `${Math.round(x.pct)}%` : '—'}</td>
-                      <td className="px-2 py-1.5 text-ink-2">{x.wrong ? <><span className="font-bold text-bad">{x.wrong.L}</span> <span className="text-ink-3">× {x.wrong.n}{x.wrong.L === '—' ? ` ${ko ? '무응답' : 'blank'}` : ''}</span></> : x.n ? <span className="text-ink-3">{isChoiceItem(x.it) ? (ko ? '없음' : 'none') : `${x.missed.length} ${ko ? '명 절반 미만' : 'under half'}`}</span> : ''}{x.blank > 0 && x.wrong?.L !== '—' && <span className="text-ink-3 text-[length:calc(11px*var(--ts))] ml-1.5">· {x.blank} {ko ? '무응답' : 'blank'}</span>}</td>
+                      <td className="px-2 py-1.5 text-ink-2">{x.wrong ? <><span className="font-bold text-bad">{x.wrong.L}</span> <span className="text-ink-3">× {x.wrong.n}{x.wrong.L === '—' ? ` ${ko ? '무응답' : 'blank'}` : ''}</span></> : x.n ? <span className="text-ink-3">{isChoiceItem(x.it) ? (ko ? '없음' : 'none') : `${x.missed.length} ${ko ? '명 절반 미만' : 'under half'}`}</span> : ''}{x.blank > 0 && x.wrong?.L !== '—' && <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))] ml-1.5">· {x.blank} {ko ? '무응답' : 'blank'}</span>}</td>
                       <td className={`px-2 py-1.5 text-right ${x.disc != null && x.disc < 0.1 && (x.pct ?? 100) < 80 ? 'text-warn font-semibold' : 'text-ink-3'}`}>{x.disc != null ? `${x.disc >= 0 ? '+' : ''}${Math.round(x.disc * 100)}` : ''}</td>
                       <td className="px-2 py-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-2">{x.flag ? <span className="inline-flex items-center gap-1.5"><AlertTriangle size={12} className="text-warn" />{flagText[x.flag]}</span> : ''}</td>
                     </tr>
@@ -306,16 +306,16 @@ export default function AssessmentAnalysis({ map, students, responses, flags, le
           <div className="grid gap-2">
             {crits.map(({ c, avg, spread, n, low }) => (
               <div key={c.key} className="grid grid-cols-[180px_minmax(0,1fr)_56px_minmax(0,1fr)] gap-3 items-center text-[length:calc(12.5px*var(--ts))]">
-                <span className={`truncate ${weakest?.c.key === c.key ? 'font-semibold text-ink' : 'text-ink'}`} title={c.label}>{c.label}{c.standard && <span className="block font-mono text-[length:calc(10.5px*var(--ts))] text-info">{c.standard}</span>}</span>
+                <span className={`truncate ${weakest?.c.key === c.key ? 'font-semibold text-ink' : 'text-ink'}`} title={c.label}>{c.label}{c.standard && <span className="block font-mono text-[length:calc(11.5px*var(--ts))] text-info">{c.standard}</span>}</span>
                 <span className="flex h-3 rounded-sm overflow-hidden bg-paper-3" title={spread.map((k, i) => `${levelLabels[i]} ${k}`).join(' · ')}>
-                  {spread.map((k, i) => k ? <span key={i} className={`flex items-center justify-center text-[length:max(10px,calc(9px*var(--ts)))] font-bold ${i === 0 ? 'bg-ink-3 text-paper' : i === 1 ? 'bg-bad text-white' : i === 2 ? 'bg-warn text-white' : i === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`} style={{ width: `${(k / Math.max(1, n)) * 100}%` }}>{i}</span> : null)}
+                  {spread.map((k, i) => k ? <span key={i} className={`flex items-center justify-center text-[length:calc(11.5px*var(--ts))] font-bold ${i === 0 ? 'bg-ink-3 text-paper' : i === 1 ? 'bg-bad text-white' : i === 2 ? 'bg-warn text-white' : i === 3 ? 'bg-good-soft text-good' : 'bg-good text-white'}`} style={{ width: `${(k / Math.max(1, n)) * 100}%` }}>{i}</span> : null)}
                 </span>
                 <span className={`text-right font-semibold tabular-nums ${avg == null ? 'text-ink-3' : avg < 2 ? 'text-bad' : avg < 3 ? 'text-warn' : 'text-good'}`}>{avg != null ? avg.toFixed(1) : '—'}</span>
                 <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 min-w-0">{low.length ? <span className="flex items-center gap-1.5 flex-wrap"><span>{ko ? '0–1점:' : 'At 0 or 1:'}</span>{names(low)}</span> : ''}</span>
               </div>
             ))}
           </div>
-          <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-3">{ko ? '막대는 각 단계에 있는 학생 수입니다 (0–4).' : 'Each bar shows how many students landed on each level, 0 to 4.'}</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-3">{ko ? '막대는 각 단계에 있는 학생 수입니다 (0–4).' : 'Each bar shows how many students landed on each level, 0 to 4.'}</p>
         </section>
       ))}
     </div>

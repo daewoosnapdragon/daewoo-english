@@ -5,8 +5,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
-import { getKSTDateString } from '@/lib/utils'
+import { getKSTDateString, classToColor, classToTextColor } from '@/lib/utils'
 import { X, Pencil, Trash2 } from 'lucide-react'
+import { PLACED_ENGLISH_CLASSES, type EnglishClass } from '@/types'
 
 // ─── Notice board ────────────────────────────────────────────────
 // Under the masthead on every page, and only when there is something to
@@ -22,10 +23,6 @@ interface Notice {
 }
 interface Receipt { notice_id: string; teacher_id: string; seen_at: string | null; dismissed_at: string | null }
 
-const CLASS_BG: Record<string, string> = {
-  Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy',
-  Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon',
-}
 
 function whenLabel(iso: string, lang: string) {
   const d = new Date(iso)
@@ -152,12 +149,14 @@ export default function NoticeBoard() {
           const canEdit = n.author_id === me || isAdmin
           const author = authorOf(n)
           const initial = author ? author.name.charAt(0) : '!'
+          const authorClass = (PLACED_ENGLISH_CLASSES as string[]).includes(author?.english_class || '') ? author!.english_class as EnglishClass : null
           const urgent = n.style === 'urgent'
           const isOpen = open.has(n.id)
           const meta = `${author?.name || (n.author_id ? (ko ? '알 수 없음' : 'Unknown') : (ko ? '자동 알림' : 'Automatic'))} · ${whenLabel(n.created_at, lang)} · ${audienceLabel(n)}${n.author_id === me ? ` · ${seenLabel(n)}` : ''}`
           return (
             <div key={n.id} className={`grid grid-cols-[20px_minmax(0,1fr)_auto] gap-x-3 items-start px-4 sm:px-6 py-1 border-b border-rule last:border-b-0 text-[length:calc(13px*var(--ts))] ${urgent ? 'bg-bad-soft' : ''}`}>
-              <span aria-hidden="true" className={`mt-[7px] w-5 h-5 rounded-full text-white text-[length:calc(10px*var(--ts))] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
+              <span aria-hidden="true" className={`mt-[7px] w-5 h-5 rounded-full text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center ${authorClass ? '' : 'bg-ink text-paper'}`}
+                style={authorClass ? { backgroundColor: classToColor(authorClass), color: classToTextColor(authorClass) } : undefined}>{initial}</span>
               <button type="button" onClick={() => toggleOpen(n.id)} aria-expanded={isOpen} title={isOpen ? undefined : n.body}
                 className="min-w-0 min-h-[34px] py-1.5 text-left text-ink rounded hover:text-ink-2">
                 <span className={isOpen ? 'block whitespace-pre-wrap break-words' : 'block truncate'}>

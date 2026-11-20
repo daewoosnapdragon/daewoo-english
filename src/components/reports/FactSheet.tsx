@@ -35,7 +35,7 @@ export interface FactSheetProps {
 }
 
 const INK = '#1e293b', MUTED = '#64748b', RULE = '#DFE4EB'
-const H = ({ children }: { children: React.ReactNode }) => <h3 className="text-[length:calc(10px*var(--ts))] tracking-[1.6px] uppercase font-semibold m-0" style={{ color: MUTED }}>{children}</h3>
+const H = ({ children }: { children: React.ReactNode }) => <h3 className="text-[length:calc(11.5px*var(--ts))] tracking-[1.6px] uppercase font-semibold m-0" style={{ color: MUTED }}>{children}</h3>
 
 function MonthDay({ iso }: { iso: string | null }) {
   if (!iso) return null
@@ -52,13 +52,13 @@ function RubricRow({ p }: { p: RubricPiece }) {
       <button type="button" onClick={() => hasText && setOpen(o => !o)} aria-expanded={open} className={`text-left ${hasText ? 'cursor-pointer' : 'cursor-default'}`} style={{ color: INK }}>
         <span className="font-medium">{p.name}</span>{p.date && <span style={{ color: MUTED }}>, <MonthDay iso={p.date} /></span>}
         <span style={{ color: MUTED }}> · {p.earned}/{p.possible}</span>
-        <span className="block" style={{ color: '#475569' }}>{p.criteria.filter(c => c.score != null).map(c => `${c.label} ${c.score}`).join(', ')}{hasText && <span className="underline underline-offset-2 ml-1.5 text-[length:calc(11px*var(--ts))]" style={{ color: MUTED }}>{open ? 'hide' : 'what the rubric says'}</span>}</span>
+        <span className="block" style={{ color: '#475569' }}>{p.criteria.filter(c => c.score != null).map(c => `${c.label} ${c.score}`).join(', ')}{hasText && <span className="underline underline-offset-2 ml-1.5 text-[length:calc(11.5px*var(--ts))]" style={{ color: MUTED }}>{open ? 'hide' : 'what the rubric says'}</span>}</span>
       </button>
       {open && (
         <dl className="m-0 ml-2 pl-2.5 grid gap-y-1.5" style={{ borderLeft: '1px solid #C8CED8' }}>
           {p.criteria.filter(c => c.score != null).map(c => (
             <div key={c.key}>
-              <dt className="text-[length:calc(11px*var(--ts))] font-semibold" style={{ color: '#475569' }}>{c.label} · {c.score}{c.standard && <span className="font-normal" style={{ color: MUTED }}> · {c.standard}</span>}</dt>
+              <dt className="text-[length:calc(11.5px*var(--ts))] font-semibold" style={{ color: '#475569' }}>{c.label} · {c.score}{c.standard && <span className="font-normal" style={{ color: MUTED }}> · {c.standard}</span>}</dt>
               <dd className="m-0 text-[length:calc(12px*var(--ts))] leading-[1.45]" style={{ color: INK }}>{c.descriptor || (c.score === 0 ? 'Level 0: not attempted.' : 'This rubric has no descriptor for this level.')}</dd>
             </div>
           ))}
@@ -77,7 +77,7 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMi
         <H>Letters this semester</H>
         <table className="w-full border-collapse tabular-nums">
           <thead>
-            <tr className="text-left text-[length:calc(10.5px*var(--ts))]" style={{ color: MUTED }}>
+            <tr className="text-left text-[length:calc(11.5px*var(--ts))]" style={{ color: MUTED }}>
               <th scope="col" className="font-medium pb-1">Area</th>
               <th scope="col" className="font-medium pb-1">Letter</th>
               {sinceMidLabel && <th scope="col" className="font-medium pb-1 whitespace-nowrap">{sinceMidLabel}</th>}
@@ -97,7 +97,7 @@ export default function FactSheet({ rows, sinceMidLabel, sinceLastLabel, sinceMi
             ))}
           </tbody>
         </table>
-        {sinceMidNote && <p className="m-0 text-[length:calc(10.5px*var(--ts))] leading-snug" style={{ color: MUTED }}>{sinceMidNote}</p>}
+        {sinceMidNote && <p className="m-0 text-[length:calc(11.5px*var(--ts))] leading-snug" style={{ color: MUTED }}>{sinceMidNote}</p>}
       </section>
 
       <section className="flex flex-col gap-1.5">

@@ -235,10 +235,10 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
           {editing && <span className="eyebrow eyebrow-accent">{ko ? '수정' : 'Editing'}</span>}
           {[[1, ko ? '설정' : 'Set up'], [2, scoring === 'rubric' ? (ko ? '루브릭' : 'Rubric') : scoring === 'points' ? (ko ? '총점' : 'Points') : (ko ? '정답 키' : 'Answer key')]].map(([n, l]) => (
             <button key={n} onClick={() => setStep(n as 1 | 2)} className={`flex items-center gap-2 ${step === n ? 'text-ink font-semibold' : 'text-ink-3'}`}>
-              <span className={`w-5 h-5 rounded-full text-[length:calc(11px*var(--ts))] flex items-center justify-center ${step === n ? 'bg-accent text-white' : step > (n as number) ? 'bg-good text-white' : 'border border-rule-2'}`}>{step > (n as number) ? <Check size={11} /> : n}</span>{l}
+              <span className={`w-5 h-5 rounded-full text-[length:calc(11.5px*var(--ts))] flex items-center justify-center ${step === n ? 'bg-accent text-white' : step > (n as number) ? 'bg-good text-white' : 'border border-rule-2'}`}>{step > (n as number) ? <Check size={11} /> : n}</span>{l}
             </button>
           ))}
-          {!editing && <span className="flex items-center gap-2 text-ink-3"><span className="w-5 h-5 rounded-full border border-rule-2 text-[length:calc(11px*var(--ts))] flex items-center justify-center">3</span>{ko ? '채점' : 'Score'}</span>}
+          {!editing && <span className="flex items-center gap-2 text-ink-3"><span className="w-5 h-5 rounded-full border border-rule-2 text-[length:calc(11.5px*var(--ts))] flex items-center justify-center">3</span>{ko ? '채점' : 'Score'}</span>}
         </div>
         <button onClick={onClose} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={15} /></button>
       </div>
@@ -270,7 +270,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
           </div>
           <div className="grid grid-cols-[160px_140px_1fr] gap-4">
             <div><label htmlFor="na-date" className={label}>{ko ? '날짜' : 'Date'}</label><input id="na-date" type="date" value={date} onChange={e => setDate(e.target.value)} className={field} /></div>
-            <div><label htmlFor="na-points" className={label}>{ko ? '총점' : 'Total points'}</label><input id="na-points" type="number" min={1} value={scoring === 'key' && map.length ? String(keyTotal(map)) : points} disabled={scoring !== 'points' || legacySections} onChange={e => setPoints(e.target.value)} className={`${field} tabular-nums disabled:text-ink-3`} />{scoring !== 'points' && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{scoring === 'rubric' ? (ko ? '기준당 4점' : '4 per criterion') : (ko ? '정답 키에서 계산됨' : 'Adds up from the key')}</p>}</div>
+            <div><label htmlFor="na-points" className={label}>{ko ? '총점' : 'Total points'}</label><input id="na-points" type="number" min={1} value={scoring === 'key' && map.length ? String(keyTotal(map)) : points} disabled={scoring !== 'points' || legacySections} onChange={e => setPoints(e.target.value)} className={`${field} tabular-nums disabled:text-ink-3`} />{scoring !== 'points' && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{scoring === 'rubric' ? (ko ? '기준당 4점' : '4 per criterion') : (ko ? '정답 키에서 계산됨' : 'Adds up from the key')}</p>}</div>
             <div><label htmlFor="na-notes" className={label}>{ko ? '메모' : 'Notes'}</label><input id="na-notes" value={notes} onChange={e => setNotes(e.target.value)} className={field} placeholder={ko ? '선택' : 'optional'} /></div>
           </div>
           {scoring === 'points' && !legacySections && (
@@ -278,11 +278,11 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
               <span className={label}>{ko ? '기준 (선택)' : 'Standards (optional)'}</span>
               <div className="flex flex-wrap items-center gap-1.5">
                 {tagged.map(code => (
-                  <span key={code} className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1 rounded-full border border-rule-2 bg-surface text-[length:calc(12.5px*var(--ts))]"><span className="font-mono text-[length:calc(11px*var(--ts))] text-info">{code}</span><span className="text-ink-2 truncate max-w-[260px]">{plainNameOf(code)}</span><button onClick={() => setTagged(prev => prev.filter(c => c !== code))} title={ko ? '기준 제거' : 'Remove standard'} className="w-5 h-5 rounded-full hover:bg-paper-2 text-ink-3 hover:text-bad flex items-center justify-center"><X size={11} /></button></span>
+                  <span key={code} className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1 rounded-full border border-rule-2 bg-surface text-[length:calc(12.5px*var(--ts))]"><span className="font-mono text-[length:calc(11.5px*var(--ts))] text-info">{code}</span><span className="text-ink-2 truncate max-w-[260px]">{plainNameOf(code)}</span><button onClick={() => setTagged(prev => prev.filter(c => c !== code))} title={ko ? '기준 제거' : 'Remove standard'} className="w-5 h-5 rounded-full hover:bg-paper-2 text-ink-3 hover:text-bad flex items-center justify-center"><X size={11} /></button></span>
                 ))}
                 <button onClick={() => setPickingTag(true)} className="h-7 px-2.5 rounded-full border border-dashed border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3">{ko ? '기준 선택…' : 'Tag a standard…'}</button>
               </div>
-              <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{ko ? '총점 하나만 입력하므로 기준은 평가 전체에 붙습니다. 점수가 다른 영역으로 옮겨가지는 않습니다.' : 'With one total per student the standards sit on the whole assessment. They do not move points between domains.'}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{ko ? '총점 하나만 입력하므로 기준은 평가 전체에 붙습니다. 점수가 다른 영역으로 옮겨가지는 않습니다.' : 'With one total per student the standards sit on the whole assessment. They do not move points between domains.'}</p>
             </div>
           )}
           {!editing && (
@@ -397,7 +397,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                           <div className="flex flex-wrap items-center gap-2 text-[length:calc(12.5px*var(--ts))] pt-1">
                             <span className="text-ink-3">{ko ? '기준' : 'Standard'}</span>
                             {sec.standard
-                              ? <span className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1 rounded-full border border-rule-2 bg-surface"><span className="font-mono text-[length:calc(11px*var(--ts))] text-info">{sec.standard}</span><span className="text-ink-2 truncate max-w-[280px]">{plainNameOf(sec.standard)}</span><button onClick={() => setSection(sec.id, { standard: undefined })} title={ko ? '기준 제거' : 'Remove standard'} className="w-5 h-5 rounded-full hover:bg-paper-2 text-ink-3 hover:text-bad flex items-center justify-center"><X size={11} /></button></span>
+                              ? <span className="inline-flex items-center gap-1.5 h-7 pl-2.5 pr-1 rounded-full border border-rule-2 bg-surface"><span className="font-mono text-[length:calc(11.5px*var(--ts))] text-info">{sec.standard}</span><span className="text-ink-2 truncate max-w-[280px]">{plainNameOf(sec.standard)}</span><button onClick={() => setSection(sec.id, { standard: undefined })} title={ko ? '기준 제거' : 'Remove standard'} className="w-5 h-5 rounded-full hover:bg-paper-2 text-ink-3 hover:text-bad flex items-center justify-center"><X size={11} /></button></span>
                               : <button onClick={() => setPickingSectionStd(sec.id)} className="h-7 px-2.5 rounded-full border border-dashed border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3">{ko ? '기준 선택… (선택)' : 'Tag a standard… (optional)'}</button>}
                             {sec.standard && <button onClick={() => setPickingSectionStd(sec.id)} className="text-ink-3 hover:text-ink">{ko ? '변경' : 'change'}</button>}
                             {canSpread && <button onClick={() => setSections(prev => prev.map(x => ({ ...x, standard: sec.standard })))} className="text-accent hover:underline">{ko ? '모든 섹션에 적용' : 'Use for every section'}</button>}
@@ -435,9 +435,9 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                         <div key={q.num} className="relative">
                           <button onClick={() => setEditingQ(editingQ === q.num ? null : q.num)}
                             className={`min-w-[58px] border rounded text-center overflow-hidden bg-surface ${editingQ === q.num ? 'border-accent' : 'border-rule-2'}`}>
-                            <span className="block text-[length:calc(10px*var(--ts))] text-ink-3 bg-paper-2 tracking-wide">Q{q.num}{q.max_points !== 1 || !q.answer_key ? ` · ${q.max_points}pt` : ''}</span>
-                            <span className={`block font-mono font-bold ${q.answer_key ? 'text-[length:calc(15px*var(--ts))]' : 'text-[length:calc(10.5px*var(--ts))] font-sans font-medium text-ink-2'} py-0.5 px-1 truncate max-w-[120px]`}>{q.answer_key || (q.type === 'rubric' && q.rubric ? q.rubric.name : typeLabel[q.type])}</span>
-                            <span className="block text-[length:max(10px,calc(9.5px*var(--ts)))] text-info px-1 pb-0.5 min-h-[14px]">{q.standard || ''}</span>
+                            <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 bg-paper-2 tracking-wide">Q{q.num}{q.max_points !== 1 || !q.answer_key ? ` · ${q.max_points}pt` : ''}</span>
+                            <span className={`block font-mono font-bold ${q.answer_key ? 'text-[length:calc(15px*var(--ts))]' : 'text-[length:calc(11.5px*var(--ts))] font-sans font-medium text-ink-2'} py-0.5 px-1 truncate max-w-[120px]`}>{q.answer_key || (q.type === 'rubric' && q.rubric ? q.rubric.name : typeLabel[q.type])}</span>
+                            <span className="block text-[length:calc(11.5px*var(--ts))] text-info px-1 pb-0.5 min-h-[14px]">{q.standard || ''}</span>
                           </button>
                           {editingQ === q.num && (
                             <div className="absolute z-20 top-full left-0 mt-1 w-[220px] bg-surface border border-rule-2 rounded shadow-lg p-3 grid gap-2 text-[length:calc(12px*var(--ts))]">
@@ -449,7 +449,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
                               {q.type === 'rubric' && (
                                 <div className="grid gap-1"><span className="eyebrow">Rubric</span>
                                   <div className="flex gap-1.5"><button onClick={() => setPickingRubricFor(q.num)} className="h-7 px-2 border border-rule-2 rounded text-ink-2 hover:text-ink flex-1 text-left truncate">{q.rubric ? `${q.rubric.name} · ${q.rubric.criteria.length} criteria` : (ko ? '루브릭 선택…' : 'Pick a rubric…')}</button>{q.rubric && <button onClick={() => setQ(q.num, { rubric: null })} className="h-7 px-2 border border-rule-2 rounded text-ink-3 hover:text-bad">×</button>}</div>
-                                  <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3">{ko ? '기준당 4점. 루브릭 없이는 0–4 점수 하나.' : 'Scored criterion by criterion, 4 each. Without one, a single 0–4 mark.'}</span>
+                                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '기준당 4점. 루브릭 없이는 0–4 점수 하나.' : 'Scored criterion by criterion, 4 each. Without one, a single 0–4 mark.'}</span>
                                 </div>
                               )}
                               <div className="grid gap-1"><span className="eyebrow">Standard</span>

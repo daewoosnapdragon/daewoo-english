@@ -578,7 +578,7 @@ export default function AttendanceView() {
                       </label>
                     ))}
                 </div>
-                {printWeeks.size > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mb-2">{printWeeks.size} {printWeeks.size === 1 ? 'week' : 'weeks'} {lang === 'ko' ? '선택됨' : 'selected across all months'}</p>}
+                {printWeeks.size > 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{printWeeks.size} {printWeeks.size === 1 ? 'week' : 'weeks'} {lang === 'ko' ? '선택됨' : 'selected across all months'}</p>}
                 <div className="flex gap-2">
                   <button onClick={() => { handlePrintAttendance(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }} disabled={printWeeks.size === 0} className="flex-1 h-8 rounded bg-accent text-white text-[length:calc(12px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-40">{printWeeks.size > 0 ? `${lang === 'ko' ? '인쇄' : 'Print'} ${printWeeks.size}` : (lang === 'ko' ? '주를 선택하세요' : 'Select weeks')}</button>
                   <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '취소' : 'Cancel'}</button>
@@ -626,7 +626,7 @@ export default function AttendanceView() {
             {isNoClassDay
               ? <p className="text-[length:calc(12.5px*var(--ts))] text-warn mt-1.5">{isWeekend ? (lang === 'ko' ? '주말에는 수업이 없습니다' : 'No classes on weekends') : dayStatus.off ? (lang === 'ko' ? `휴일 (${dayStatus.off}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Day off (${dayStatus.off}): everyone was marked absent automatically. Change anyone who came to class.`) : <>{lang === 'ko' ? `${selectedGrade}학년은 ${weekdayName}에 영어 수업이 없습니다` : `Grade ${selectedGrade} has no English on ${weekdayName}s`} · {lang === 'ko' ? '화살표로 다음 수업일로 이동' : 'use the arrows to skip to the next class day'}</>}</p>
               : dayStatus.trip ? <p className="text-[length:calc(12.5px*var(--ts))] text-info mt-1.5">{lang === 'ko' ? `현장학습 (${dayStatus.trip}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Field trip (${dayStatus.trip}): everyone was marked absent automatically. Change anyone who came to class.`}</p>
-              : <p className="hide-on-touch max-sm:hidden text-[length:calc(12px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? '행을 클릭한 뒤' : 'Click a row, then press'} <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">P</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">A</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">T</kbd> · ↑ ↓</p>}
+              : <p className="hide-on-touch max-sm:hidden text-[length:calc(12px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? '행을 클릭한 뒤' : 'Click a row, then press'} <kbd className="px-1 border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))]">P</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))]">A</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))]">T</kbd> · ↑ ↓</p>}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 h-8 max-sm:h-11 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><UserCheck size={13} className="text-good" /> {lang === 'ko' ? '전원 출석' : 'All present'}</button>
@@ -675,7 +675,7 @@ export default function AttendanceView() {
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-[length:calc(15px*var(--ts))] font-medium text-ink leading-tight truncate">{s.english_name}
-                          {away && <span className={`ml-2 text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}
+                          {away && <span className={`ml-2 text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}
                         </p>
                         <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-0.5 tabular-nums truncate"><span className="ko-name">{s.korean_name}</span> · {formatHomeroom(s)}</p>
                       </div>
@@ -714,7 +714,7 @@ export default function AttendanceView() {
                   return (
                     <tr key={s.id} onClick={() => setFocusedRow(i)} className={`${focused ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/50'}`}>
                       <td className="px-2 py-1.5 text-ink-3 tabular-nums">{i + 1}</td>
-                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="ko-name text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
+                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="ko-name text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
                       <td className="px-2 py-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums whitespace-nowrap">{formatHomeroom(s)}</td>
                       <td className="px-2 py-1.5 text-center">
                         <div className="inline-flex border border-rule-2 rounded overflow-hidden bg-surface">
@@ -808,7 +808,7 @@ export default function AttendanceView() {
                           const titleTxt = nonClass ? `Grade ${g}: no class` : count === 0 && !future ? `Grade ${g}: not marked` : count === 0 ? `Grade ${g}: upcoming` : `Grade ${g}: ${count}/${total} marked`
                           return (
                             <div key={g} title={titleTxt} onClick={clickable ? (e) => { e.stopPropagation(); guardUnsaved(() => { setSelectedGrade(g); setSelectedDate(key); setViewMode('day') }) } : undefined}
-                              className={`flex items-center justify-between gap-1 rounded-sm px-1.5 py-0.5 text-[length:calc(11px*var(--ts))] font-semibold tabular-nums ${cls} ${clickable ? 'cursor-pointer hover:brightness-95' : ''}`}>
+                              className={`flex items-center justify-between gap-1 rounded-sm px-1.5 py-0.5 text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums ${cls} ${clickable ? 'cursor-pointer hover:brightness-95' : ''}`}>
                               <span>G{g}</span><span className="inline-flex items-center">{right}</span>
                             </div>
                           )

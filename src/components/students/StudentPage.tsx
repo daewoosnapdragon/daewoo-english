@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, type Student, type EnglishClass, type Grade, type KoreanClass } from '@/types'
-import { getKSTDateString, percentToLetter, formatHomeroom } from '@/lib/utils'
+import { getKSTDateString, percentToLetter, formatHomeroom, classToColor, classToTextColor } from '@/lib/utils'
 import WIDABadge from '@/components/shared/WIDABadge'
 import BehaviorLadderPanel from '@/components/behavior/BehaviorLadderPanel'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
@@ -37,10 +37,6 @@ import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
 // facts you always want and a section list that follows the scroll; the body
 // is every section in order of how often teachers look at it. No tabs.
 
-const CLASS_BG: Record<string, string> = {
-  Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy',
-  Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon',
-}
 
 interface Facts {
   overall: number | null; attendanceRate: number | null; absences: number; tardies: number
@@ -193,9 +189,9 @@ export default function StudentPage({ studentId }: { studentId: string }) {
             <p className="ko-name text-[length:calc(15px*var(--ts))] text-ink-2 mt-1">{student.korean_name}</p>
           </div>
           <div className="flex flex-wrap gap-1.5 items-center">
-            <span className={`px-2 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold text-white ${CLASS_BG[student.english_class] || 'bg-ink'}`}>{student.english_class}</span>
+            <span className="px-2 py-0.5 rounded-full text-[length:calc(12px*var(--ts))] font-semibold" style={{ backgroundColor: classToColor(student.english_class as EnglishClass), color: classToTextColor(student.english_class as EnglishClass) }}>{student.english_class}</span>
             <WIDABadge studentId={student.id} />
-            {(student as any).is_transfer && <span className="px-2 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold bg-info-soft text-info">{lang === 'ko' ? '전학' : 'Transfer'}{(student as any).transfer_date ? ` · ${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}</span>}
+            {(student as any).is_transfer && <span className="px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-semibold bg-info-soft text-info">{lang === 'ko' ? '전학' : 'Transfer'}{(student as any).transfer_date ? ` · ${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}</span>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[length:calc(12.5px*var(--ts))] tabular-nums">
             <dt className="text-ink-3">{lang === 'ko' ? '학년' : 'Grade'}</dt><dd className="text-ink font-medium">{student.grade} · {formatHomeroom(student)}</dd>
@@ -328,7 +324,7 @@ function LevelTestHistory({ studentId, lang }: { studentId: string; lang: string
             <td className="py-2 text-ink">{r.level_tests?.name || '—'}<span className="text-ink-3 ml-2 text-[length:calc(11.5px*var(--ts))]">G{r.level_tests?.grade}</span></td>
             <td className="py-2 text-ink-2">{r.previous_class || '—'}</td>
             <td className="py-2 text-right text-ink-2">{r.composite_index != null ? Math.round(Number(r.composite_index) * 100) : '—'}{r.composite_band ? <span className="text-ink-3 ml-1 text-[length:calc(11.5px*var(--ts))]">{r.composite_band}</span> : null}</td>
-            <td className="py-2 pl-4"><span className="font-semibold text-ink">{r.final_placement || '—'}</span>{r.is_overridden && <span className="text-[length:calc(11px*var(--ts))] text-warn ml-2" title={r.override_reason || ''}>{lang === 'ko' ? '교사 판단' : 'teacher decision'}{r.auto_placement ? ` · ${lang === 'ko' ? '제안' : 'suggested'} ${r.auto_placement}` : ''}</span>}</td>
+            <td className="py-2 pl-4"><span className="font-semibold text-ink">{r.final_placement || '—'}</span>{r.is_overridden && <span className="text-[length:calc(11.5px*var(--ts))] text-warn ml-2" title={r.override_reason || ''}>{lang === 'ko' ? '교사 판단' : 'teacher decision'}{r.auto_placement ? ` · ${lang === 'ko' ? '제안' : 'suggested'} ${r.auto_placement}` : ''}</span>}</td>
           </tr>
         ))}
       </tbody>
@@ -363,7 +359,7 @@ function ReadingTrend({ student, lang }: { student: Student; lang: string }) {
   return (
     <div className="mb-6">
       <LineChart points={points} band={band} height={200} unit="" />
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
     </div>
   )
 }
@@ -411,7 +407,7 @@ function GradesAtAGlance({ student, semesterId, lang }: { student: Student; seme
               <p className="eyebrow truncate">{label(d.domain)}</p>
               <p className={`font-display text-[length:calc(24px*var(--ts))] leading-none mt-1 tabular-nums ${tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink'}`}>{d.mine != null ? Math.round(d.mine) : '—'}</p>
               <div className="mt-1.5"><Sparkline values={d.series} tone={tone} width={110} height={22} /></div>
-              <p className="text-[length:calc(10.5px*var(--ts))] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
             </div>
           )
         })}

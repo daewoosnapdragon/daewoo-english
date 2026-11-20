@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
-import { classToColor, classToTextColor } from '@/lib/utils'
+import { classToTextColor, classTint, classDot } from '@/lib/utils'
 import { WIDA_LEVELS } from '@/lib/wida'
 import { latestBySkill, orderSkills, phonicsBand, phonicsSkill, summarizeStudent, scoreText, type LatestBySkill } from '@/lib/phonics'
 import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
@@ -131,17 +131,17 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[length:calc(13px*var(--ts))] font-bold">{studentName}</p>
-                <p className="text-[length:calc(10px*var(--ts))] text-blue-200/70">{koreanName} -- {className} -- Grade {grade}</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-blue-200/70">{koreanName} -- {className} -- Grade {grade}</p>
               </div>
               <div className="flex items-center gap-1.5">
                 {widaInfo && (
-                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(10px*var(--ts))] font-bold"
+                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold"
                     style={{ backgroundColor: widaInfo.bg, color: '#374151', borderLeft: `3px solid ${widaInfo.color}` }}>
                     L{widaInfo.level}
                   </span>
                 )}
                 {levelTestData?.composite != null && (
-                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(10px*var(--ts))] font-bold bg-white/20 text-white">
+                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold bg-white/20 text-white">
                     {(levelTestData.composite * 100).toFixed(0)}%
                   </span>
                 )}
@@ -150,14 +150,14 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
           </div>
 
           {!data ? (
-            <div className="p-4 text-center text-[length:calc(11px*var(--ts))] text-text-tertiary">Loading...</div>
+            <div className="p-4 text-center text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Loading...</div>
           ) : (
             <div className="p-3 space-y-2.5">
 
               {/* ── Level Test Comparison Bars ────────────────── */}
               {levelTestData && (
                 <div>
-                  <p className="text-[length:max(10px,calc(8px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Level Test vs. Class Averages</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Level Test vs. Class Averages</p>
                   <ComparisonBars
                     studentScores={{
                       oral: levelTestData.rawCwpm,
@@ -180,20 +180,20 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                 <div className="flex gap-2">
                   {levelTestData.percentile != null && (
                     <div className="flex-1 bg-surface-alt rounded-lg px-2.5 py-1.5 text-center">
-                      <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary font-semibold">RANK</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">RANK</p>
                       <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{Math.round(levelTestData.percentile * 100)}%ile</p>
                     </div>
                   )}
                   {levelTestData.suggestedClass && (
                     <div className="flex-1 rounded-lg px-2.5 py-1.5 text-center border"
-                      style={{ borderColor: classToColor(levelTestData.suggestedClass as EnglishClass) + '60', backgroundColor: classToColor(levelTestData.suggestedClass as EnglishClass) + '10' }}>
-                      <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary font-semibold">SUGGESTED</p>
+                      style={{ borderColor: classTint(levelTestData.suggestedClass as EnglishClass, 38), backgroundColor: classTint(levelTestData.suggestedClass as EnglishClass, 6) }}>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">SUGGESTED</p>
                       <p className="text-[length:calc(12px*var(--ts))] font-bold" style={{ color: classToTextColor(levelTestData.suggestedClass as EnglishClass) }}>{levelTestData.suggestedClass}</p>
                     </div>
                   )}
                   {levelTestData.passageLevel && (
                     <div className="flex-1 bg-surface-alt rounded-lg px-2.5 py-1.5 text-center">
-                      <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary font-semibold">PASSAGE</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">PASSAGE</p>
                       <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{levelTestData.passageLevel}</p>
                     </div>
                   )}
@@ -203,20 +203,20 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── WIDA domains ─────────────────────────────── */}
               {widaVals.length > 0 && (
                 <div>
-                  <p className="text-[length:max(10px,calc(8px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">WIDA Profile</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">WIDA Profile</p>
                   <div className="flex gap-1.5">
                     {Object.entries(data.wida).map(([d, v]) => {
                       const info = WIDA_LEVELS.find(w => w.level === Math.floor(v))
                       return (
                         <div key={d} className="flex-1 rounded-lg p-1.5 text-center border"
                           style={{ backgroundColor: info?.bg || '#f8fafc', borderColor: info?.color || '#e2e8f0' }}>
-                          <p className="text-[length:max(10px,calc(8px*var(--ts)))] font-bold text-text-tertiary uppercase">{domainLabels[d] || d}</p>
+                          <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-text-tertiary uppercase">{domainLabels[d] || d}</p>
                           <p className="text-[length:calc(14px*var(--ts))] font-bold" style={{ color: info?.color || '#64748b' }}>{v}</p>
                         </div>
                       )
                     })}
                   </div>
-                  {widaInfo && <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-1 italic">{widaInfo.desc}</p>}
+                  {widaInfo && <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1 italic">{widaInfo.desc}</p>}
                 </div>
               )}
 
@@ -226,10 +226,10 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                 const tone = (b: string) => b === 'mastered' ? 'bg-green-600 border-green-600 text-white' : b === 'developing' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-600'
                 return (
                   <div>
-                    <p className="text-[length:max(10px,calc(8px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
                     <div className="flex flex-wrap gap-1">
                       {orderSkills(Object.keys(data.phonics)).map(id => { const l = data.phonics[id]; return (
-                        <span key={id} className={`px-1.5 py-0.5 rounded border text-[length:max(10px,calc(9px*var(--ts)))] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
+                        <span key={id} className={`px-1.5 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
                       ) })}
                     </div>
                   </div>
@@ -239,11 +239,11 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Semester Grades ──────────────────────────── */}
               {data.grades.length > 0 && (
                 <div>
-                  <p className="text-[length:max(10px,calc(8px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Fall Semester Grades</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Fall Semester Grades</p>
                   <div className="flex flex-wrap gap-1">
                     {data.grades.slice(0, 6).map((g, i) => (
                       <div key={i} className={`px-2 py-1 rounded-lg text-center min-w-[46px] ${g.score >= 80 ? 'bg-green-50 border border-green-200' : g.score >= 60 ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'}`}>
-                        <p className="text-[length:max(10px,calc(7px*var(--ts)))] text-text-tertiary capitalize truncate">{g.domain}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary capitalize truncate">{g.domain}</p>
                         <p className={`text-[length:calc(12px*var(--ts))] font-bold ${g.score >= 80 ? 'text-green-600' : g.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{g.score.toFixed(0)}%</p>
                       </div>
                     ))}
@@ -254,11 +254,11 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Reading trend ────────────────────────────── */}
               {readings.length > 0 && (
                 <div>
-                  <p className="text-[length:max(10px,calc(8px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Reading Fluency</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Reading Fluency</p>
                   <div className="flex items-center gap-2">
                     {readings.slice(0, 3).map((r, i) => (
                       <div key={i} className="bg-surface-alt rounded-lg px-2.5 py-1.5 text-center flex-1">
-                        <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary">{new Date(r.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{new Date(r.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                         <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{r.cwpm ? Math.round(r.cwpm) : '--'}</p>
                       </div>
                     ))}
@@ -271,9 +271,9 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
 
               {/* ── Attendance ───────────────────────────────── */}
               <div className="flex gap-1.5 pt-1 border-t border-border">
-                <div className="flex-1 text-center py-1 rounded bg-green-50 text-green-700 text-[length:calc(10px*var(--ts))] font-medium">{data.attCounts.present}P</div>
-                <div className="flex-1 text-center py-1 rounded bg-red-50 text-red-700 text-[length:calc(10px*var(--ts))] font-medium">{data.attCounts.absent}A</div>
-                <div className="flex-1 text-center py-1 rounded bg-amber-50 text-amber-700 text-[length:calc(10px*var(--ts))] font-medium">{data.attCounts.tardy}T</div>
+                <div className="flex-1 text-center py-1 rounded bg-green-50 text-green-700 text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.present}P</div>
+                <div className="flex-1 text-center py-1 rounded bg-red-50 text-red-700 text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.absent}A</div>
+                <div className="flex-1 text-center py-1 rounded bg-amber-50 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.tardy}T</div>
               </div>
             </div>
           )}
@@ -300,7 +300,7 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
     { key: 'comp', label: 'Comp', value: studentScores.comp, maxAuto: 15 },
   ].filter(m => m.value != null) as { key: string; label: string; value: number; maxAuto: number | null }[]
 
-  if (metrics.length === 0) return <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary italic">No level test scores yet.</p>
+  if (metrics.length === 0) return <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">No level test scores yet.</p>
 
   // For each metric, determine max scale from all classes + student value
   const classesToShow = [classBelow, currentClass, classAbove].filter(Boolean) as EnglishClass[]
@@ -322,8 +322,8 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
         return (
           <div key={m.key}>
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-semibold text-text-secondary">{m.label}</span>
-              <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-bold text-navy">{Math.round(m.value)}{m.maxAuto ? `/${m.maxAuto}` : ''}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary">{m.label}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">{Math.round(m.value)}{m.maxAuto ? `/${m.maxAuto}` : ''}</span>
             </div>
             <div className="space-y-0.5">
               {/* Class below average */}
@@ -332,11 +332,11 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
                 if (avg == null) return null
                 return (
                   <div className="flex items-center gap-1">
-                    <span className="w-14 text-[length:max(10px,calc(8px*var(--ts)))] text-right text-text-tertiary truncate">{classBelow}</span>
+                    <span className="w-14 text-[length:calc(11.5px*var(--ts))] text-right text-text-tertiary truncate">{classBelow}</span>
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
-                      <div className="h-full rounded-full opacity-40" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classToColor(classBelow) }} />
+                      <div className="h-full rounded-full opacity-40" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classDot(classBelow) }} />
                     </div>
-                    <span className="w-6 text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary text-right">{Math.round(avg)}</span>
+                    <span className="w-6 text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-right">{Math.round(avg)}</span>
                   </div>
                 )
               })()}
@@ -345,16 +345,16 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
                 const avg = m.key === 'oral' ? classAverages[currentClass]?.oral : m.key === 'writing' ? classAverages[currentClass]?.writing : m.key === 'mc' ? classAverages[currentClass]?.mc : classAverages[currentClass]?.comp
                 return (
                   <div className="flex items-center gap-1">
-                    <span className="w-14 text-[length:max(10px,calc(8px*var(--ts)))] text-right font-semibold truncate" style={{ color: classToTextColor(currentClass) }}>{currentClass}</span>
+                    <span className="w-14 text-[length:calc(11.5px*var(--ts))] text-right font-semibold truncate" style={{ color: classToTextColor(currentClass) }}>{currentClass}</span>
                     <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden relative">
                       {/* Class average bar */}
-                      {avg != null && <div className="absolute h-full rounded-full opacity-25" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classToColor(currentClass) }} />}
+                      {avg != null && <div className="absolute h-full rounded-full opacity-25" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classDot(currentClass) }} />}
                       {/* Class average marker */}
-                      {avg != null && <div className="absolute top-0 h-full w-0.5" style={{ left: `${(avg / scale) * 100}%`, backgroundColor: classToColor(currentClass), opacity: 0.5 }} />}
+                      {avg != null && <div className="absolute top-0 h-full w-0.5" style={{ left: `${(avg / scale) * 100}%`, backgroundColor: classDot(currentClass), opacity: 0.5 }} />}
                       {/* Student marker (diamond) */}
                       <div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rotate-45 border-2 border-white shadow-sm" style={{ left: `${(m.value / scale) * 100}%`, transform: `translateX(-50%) translateY(-50%) rotate(45deg)`, backgroundColor: m.value >= (avg ?? 0) ? '#22C55E' : '#EF4444' }} />
                     </div>
-                    <span className="w-6 text-[length:max(10px,calc(8px*var(--ts)))] font-bold text-right" style={{ color: classToTextColor(currentClass) }}>{avg != null ? Math.round(avg) : '--'}</span>
+                    <span className="w-6 text-[length:calc(11.5px*var(--ts))] font-bold text-right" style={{ color: classToTextColor(currentClass) }}>{avg != null ? Math.round(avg) : '--'}</span>
                   </div>
                 )
               })()}
@@ -364,11 +364,11 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
                 if (avg == null) return null
                 return (
                   <div className="flex items-center gap-1">
-                    <span className="w-14 text-[length:max(10px,calc(8px*var(--ts)))] text-right text-text-tertiary truncate">{classAbove}</span>
+                    <span className="w-14 text-[length:calc(11.5px*var(--ts))] text-right text-text-tertiary truncate">{classAbove}</span>
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
-                      <div className="h-full rounded-full opacity-40" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classToColor(classAbove) }} />
+                      <div className="h-full rounded-full opacity-40" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classDot(classAbove) }} />
                     </div>
-                    <span className="w-6 text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary text-right">{Math.round(avg)}</span>
+                    <span className="w-6 text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-right">{Math.round(avg)}</span>
                   </div>
                 )
               })()}
@@ -377,7 +377,7 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
         )
       })}
       {/* Legend */}
-      <div className="flex items-center gap-3 text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary pt-0.5">
+      <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-text-tertiary pt-0.5">
         <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rotate-45 bg-green-500" /> Student (above avg)</span>
         <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rotate-45 bg-red-500" /> Student (below avg)</span>
         <span className="flex items-center gap-0.5"><span className="w-3 h-0.5 bg-gray-400 opacity-50" /> Class avg</span>

@@ -60,7 +60,7 @@ export default function PhoneNav({ active, signals }: { active: string; signals:
     { title: ko ? '그 밖의 페이지' : 'Other pages', ids: moreIds },
   ]
   const moreActive = !PHONE_TABS.includes(active)
-  const tab = (on: boolean) => `relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-[length:calc(11px*var(--ts))] leading-tight ${on ? 'text-accent font-semibold' : 'text-ink-2 font-medium hover:text-ink'}`
+  const tab = (on: boolean) => `relative flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-[length:calc(11.5px*var(--ts))] leading-tight ${on ? 'text-accent font-semibold' : 'text-ink-2 font-medium hover:text-ink'}`
   const unmarkedText = signals.unmarked.length ? (ko ? `${gradesPhrase(signals.unmarked, true)} 출석 미완료` : `${gradesPhrase(signals.unmarked, false)} not marked yet`) : ''
   const badge = signals.cases || signals.flagged
 
@@ -75,7 +75,7 @@ export default function PhoneNav({ active, signals }: { active: string; signals:
               <span className="relative">
                 <Icon size={21} strokeWidth={on ? 2.1 : 1.7} aria-hidden="true" />
                 {id === 'attendance' && signals.unmarked.length > 0 && <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-warn ring-2 ring-[rgb(var(--white))]" />}
-                {id === 'dashboard' && badge > 0 && <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-ink text-paper text-[length:calc(10px*var(--ts))] font-semibold tabular-nums flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>}
+                {id === 'dashboard' && badge > 0 && <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full bg-ink text-paper text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums flex items-center justify-center">{badge > 9 ? '9+' : badge}</span>}
               </span>
               <span className="truncate max-w-full px-0.5">{navLabel(id, language)}</span>
               {id === 'attendance' && unmarkedText && <span className="sr-only">{unmarkedText}</span>}

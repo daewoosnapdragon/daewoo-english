@@ -74,18 +74,18 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
                       <div className="flex items-start justify-between gap-1">
                         <button onClick={() => onOpenStudent(s)} className="text-left hover:underline">
                           <span className="block text-[length:calc(13px*var(--ts))] font-semibold text-ink leading-tight">{getDisplayName(s)}</span>
-                          <span className="block text-[length:calc(11px*var(--ts))] text-ink-3">{s.korean_name}</span>
+                          <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">{s.korean_name}</span>
                         </button>
                         <button onClick={() => onRemove(s.id)} aria-label={`Remove ${s.english_name}`} className="text-ink-3 hover:text-ink"><X size={12} /></button>
                       </div>
-                      <span className="flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-ink-2 mt-1"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</span>
+                      <span className="flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-1"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</span>
                       {p?.tested ? (
-                        <span className="block text-[length:calc(11px*var(--ts))] text-ink mt-1" title={p.through ? `Mastered through ${phonicsSkill(p.through)?.label}` : ''}>
+                        <span className="block text-[length:calc(11.5px*var(--ts))] text-ink mt-1" title={p.through ? `Mastered through ${phonicsSkill(p.through)?.label}` : ''}>
                           <span className="font-semibold">{p.position}</span>/20 {p.through ? phonicsSkill(p.through)?.short : ''}
                           {p.gaps.length > 0 && <AlertTriangle size={10} className="inline text-warn ml-1" />}
                           <span className="text-ink-3"> · {lang === 'ko' ? `${p.testedThrough}번까지` : `to ${p.testedThrough}`}</span>
                         </span>
-                      ) : <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '미점검' : 'Not checked'}</span>}
+                      ) : <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '미점검' : 'Not checked'}</span>}
                       {f && <span className="block mt-1"><FlagChip f={f} lang={lang} /></span>}
                     </th>
                   )
@@ -101,7 +101,7 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
                     <tr className="bg-paper-2"><td colSpan={students.length + 1} className="px-4 py-1 eyebrow font-semibold">{lang === 'ko' ? g.label_ko : g.label}</td></tr>
                     {rows.map(sk => (
                       <tr key={sk.id} className="border-t border-rule">
-                        <td className="px-4 py-1 text-ink truncate" title={sk.covers}><span className="text-ink-3 text-[length:calc(10.5px*var(--ts))] mr-1.5">{sheetNo(sk.id)}</span>{lang === 'ko' ? sk.label_ko : sk.label}</td>
+                        <td className="px-4 py-1 text-ink truncate" title={sk.covers}><span className="text-ink-3 text-[length:calc(11.5px*var(--ts))] mr-1.5">{sheetNo(sk.id)}</span>{lang === 'ko' ? sk.label_ko : sk.label}</td>
                         {students.map(s => {
                           const l = latestByStudent[s.id]?.[sk.id]
                           if (!l) return <td key={s.id} className="px-2 py-1 border-l border-rule"><span className="block h-7 rounded-sm bg-paper-2/60 text-ink-3/50 text-center leading-7">·</span></td>
@@ -112,9 +112,9 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
                               <div className={`h-7 rounded-sm px-2 flex items-center justify-between gap-1 ${BAND_TONE[band]}`}
                                 title={`${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band].en} · ${fmtShort(l.date, lang)}${trouble.length ? `\nTrouble: ${trouble.join(', ')}` : ''}`}>
                                 <span className="font-semibold">{l.score.pct}%</span>
-                                <span className="text-[length:calc(10px*var(--ts))] opacity-75">{scoreText(l.score)}</span>
+                                <span className="text-[length:calc(11.5px*var(--ts))] opacity-75">{scoreText(l.score)}</span>
                               </div>
-                              {trouble.length > 0 && <span className="block text-[length:calc(10px*var(--ts))] text-ink-3 truncate mt-0.5" title={trouble.join(', ')}>{trouble.join(', ')}</span>}
+                              {trouble.length > 0 && <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 truncate mt-0.5" title={trouble.join(', ')}>{trouble.join(', ')}</span>}
                             </td>
                           )
                         })}
@@ -124,9 +124,9 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
                 )
               })}
               <tr className="border-t-2 border-rule-2 align-top">
-                <td className="px-4 py-2 text-ink font-semibold">{lang === 'ko' ? '해독 방식' : 'How they decoded'}<span className="block text-[length:calc(10.5px*var(--ts))] font-normal text-ink-3">{lang === 'ko' ? '시트 수' : 'sheets ticked'}</span></td>
+                <td className="px-4 py-2 text-ink font-semibold">{lang === 'ko' ? '해독 방식' : 'How they decoded'}<span className="block text-[length:calc(11.5px*var(--ts))] font-normal text-ink-3">{lang === 'ko' ? '시트 수' : 'sheets ticked'}</span></td>
                 {students.map(s => (
-                  <td key={s.id} className="px-2 py-2 border-l border-rule text-[length:calc(11px*var(--ts))] leading-snug">
+                  <td key={s.id} className="px-2 py-2 border-l border-rule text-[length:calc(11.5px*var(--ts))] leading-snug">
                     {howBy[s.id].length === 0 ? <span className="text-ink-3">—</span> : howBy[s.id].map(([o, n]) => {
                       const d = DECODING_OBSERVATIONS.find(x => x.id === o)
                       const tone = d?.group === 'error' ? 'text-bad' : 'text-ink-2'

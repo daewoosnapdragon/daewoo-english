@@ -129,7 +129,7 @@ export default function CommandPalette() {
               if (e.key === 'Enter' && items[hi]) { e.preventDefault(); items[hi].run(e.metaKey || e.ctrlKey) }
             }}
             className="flex-1 h-full bg-transparent text-[length:calc(15px*var(--ts))] text-ink placeholder:text-ink-3 outline-none" />
-          <span className="text-[length:calc(11px*var(--ts))] text-ink-3">esc</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">esc</span>
         </div>
         <div className="max-h-[60vh] overflow-y-auto py-1">
           {items.length === 0 && <p className="px-4 py-6 text-[length:calc(13px*var(--ts))] text-ink-3">{lang === 'ko' ? '일치하는 항목이 없습니다.' : 'Nothing matches.'}</p>}
@@ -141,7 +141,7 @@ export default function CommandPalette() {
                 {it.dot ? <span className={`w-2.5 h-2.5 rounded-full ${it.dot}`} /> : <Icon size={14} className="text-ink-3" />}
                 <span className="text-[length:calc(14px*var(--ts))] text-ink">{it.label}</span>
                 {it.hint && <span className="text-[length:calc(12px*var(--ts))] text-ink-3 truncate">{it.hint}</span>}
-                <span className="ml-auto text-[length:calc(11px*var(--ts))] text-ink-3 whitespace-nowrap">{it.kind === 'student' ? (hi === i ? (lang === 'ko' ? '↩ 열기 · ⌘↩ 행동 기록' : '↩ open · ⌘↩ behavior log') : '') : it.kind === 'page' ? (lang === 'ko' ? '페이지' : 'page') : ''}</span>
+                <span className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-3 whitespace-nowrap">{it.kind === 'student' ? (hi === i ? (lang === 'ko' ? '↩ 열기 · ⌘↩ 행동 기록' : '↩ open · ⌘↩ behavior log') : '') : it.kind === 'page' ? (lang === 'ko' ? '페이지' : 'page') : ''}</span>
               </button>
             )
           })}

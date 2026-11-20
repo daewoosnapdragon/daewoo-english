@@ -143,8 +143,8 @@ export default function StandardsHeatMap() {
                 <th className="sticky left-0 z-10 bg-paper-2 text-left px-3 py-2 eyebrow font-semibold min-w-[170px] border-b border-r border-rule-2">{lang === 'ko' ? '학생' : 'Student'}</th>
                 {codes.map(code => (
                   <th key={code} className="px-1 py-2 border-b border-rule-2 min-w-[56px] align-bottom" title={`${plainName(code)}\n${skillOf(code)?.name || ''}`}>
-                    <span className="block text-[length:calc(10.5px*var(--ts))] font-mono text-info">{code}</span>
-                    <span className={`block text-[length:calc(10px*var(--ts))] mt-0.5 ${colAvg[code] != null && colAvg[code]! < bands.on ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[code] != null ? `${Math.round(colAvg[code]!)}%` : ''}</span>
+                    <span className="block text-[length:calc(11.5px*var(--ts))] font-mono text-info">{code}</span>
+                    <span className={`block text-[length:calc(11.5px*var(--ts))] mt-0.5 ${colAvg[code] != null && colAvg[code]! < bands.on ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[code] != null ? `${Math.round(colAvg[code]!)}%` : ''}</span>
                   </th>
                 ))}
                 <th className="px-2 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-right">{lang === 'ko' ? '평균' : 'Avg'}</th>
@@ -155,11 +155,11 @@ export default function StandardsHeatMap() {
                 const ra = rowAvg(s.id)
                 return (
                   <tr key={s.id}>
-                    <td className="sticky left-0 z-10 bg-surface px-3 py-1 border-r border-rule-2 whitespace-nowrap"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span></td>
+                    <td className="sticky left-0 z-10 bg-surface px-3 py-1 border-r border-rule-2 whitespace-nowrap"><Link href={`/students/${s.id}`} className="text-ink hover:underline">{getDisplayName(s)}</Link><span className="text-ink-3 ml-1.5 text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span></td>
                     {codes.map(code => { const c = grid[s.id]?.[code]; const p = pct(c); return (
                       <td key={code} className="p-[3px]">
                         <button onClick={() => c && setOpen({ sid: s.id, code })} disabled={!c} title={c ? `${Math.round(p!)}% · ${c.evidence.length} ${c.evidence.length === 1 ? 'item' : 'items'}` : ''}
-                          className={`w-full h-7 rounded-sm text-[length:calc(11px*var(--ts))] font-semibold ${c ? tone(p) : 'bg-paper-2/60 text-transparent'}`}>{c ? Math.round(p!) : '·'}</button>
+                          className={`w-full h-7 rounded-sm text-[length:calc(11.5px*var(--ts))] font-semibold ${c ? tone(p) : 'bg-paper-2/60 text-transparent'}`}>{c ? Math.round(p!) : '·'}</button>
                       </td>) })}
                     <td className={`px-2 py-1 border-l border-rule-2 text-right font-semibold ${ra != null && ra < bands.on ? 'text-bad' : 'text-ink'}`}>{ra != null ? `${Math.round(ra)}%` : '—'}</td>
                   </tr>

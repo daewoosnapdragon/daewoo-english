@@ -90,7 +90,7 @@ export const translations = {
     },
     // Students
     students: {
-      title: 'Student Roster',
+      title: 'Students',
       addStudent: 'Add Student',
       uploadRoster: 'Upload Roster',
       koreanName: 'Korean Name',
@@ -110,7 +110,7 @@ export const translations = {
     },
     // Grades
     grades: {
-      title: 'Grade Entry',
+      title: 'Grades',
       spreadsheetMode: 'Spreadsheet',
       studentMode: 'Student View',
       bulkMode: 'Bulk Entry',

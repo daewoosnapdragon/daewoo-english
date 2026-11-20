@@ -4,7 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, LevelTest } from '@/types'
-import { classToColor, classToTextColor, writingTotalFrom } from '@/lib/utils'
+import { classToColor, classToTextColor, writingTotalFrom, classTint, classDot } from '@/lib/utils'
 import { Loader2, Search, TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react'
 import { calculateG2Band, bandScalesFromG2, bandScalesFromG3, bandScalesFromG4, bandScalesFromG5 } from './grade2Band'
 import { getG2Content, g2VersionKeyForTest, g2StandardDescriptions } from './grade2Content'
@@ -344,10 +344,10 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
   const delta = (now: number | null, before: number | null) => {
     if (now == null || before == null) return null
     const d = Math.round((now - before) * 10) / 10
-    if (Math.abs(d) < 0.05) return <span className="text-text-tertiary text-[length:calc(10px*var(--ts))]"><Minus size={9} className="inline" /></span>
+    if (Math.abs(d) < 0.05) return <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]"><Minus size={9} className="inline" /></span>
     return d > 0
-      ? <span className="text-green-600 text-[length:calc(10px*var(--ts))] font-semibold"><TrendingUp size={9} className="inline" /> +{d}</span>
-      : <span className="text-red-600 text-[length:calc(10px*var(--ts))] font-semibold"><TrendingDown size={9} className="inline" /> {d}</span>
+      ? <span className="text-green-600 text-[length:calc(11.5px*var(--ts))] font-semibold"><TrendingUp size={9} className="inline" /> +{d}</span>
+      : <span className="text-red-600 text-[length:calc(11.5px*var(--ts))] font-semibold"><TrendingDown size={9} className="inline" /> {d}</span>
   }
 
   return (
@@ -361,32 +361,32 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               className="pl-8 pr-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] bg-surface w-56" />
           </div>
           <div className="flex gap-1 flex-wrap">
-            <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
+            <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
             {ENGLISH_CLASSES.filter(c => (classCounts[c] || 0) > 0).map(cls => (
               <button key={cls} onClick={() => setFilterClass(cls)}
-                className={`px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
+                className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
                 style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>
                 {cls} <span className="opacity-60">{classCounts[cls]}</span>
               </button>
             ))}
           </div>
-          <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary ml-auto">Grade {levelTest.grade} &middot; {matches.length} of {students.length}</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto">Grade {levelTest.grade} &middot; {matches.length} of {students.length}</span>
         </div>
         <div className="flex gap-1.5 flex-wrap max-h-[132px] overflow-y-auto p-1 bg-surface-alt/40 rounded-lg border border-border">
-          {matches.length === 0 && <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary px-2 py-1">No students match.</span>}
+          {matches.length === 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-2 py-1">No students match.</span>}
           {matches.map(s => (
             <button key={s.id} onClick={() => setSelected(s.id)}
-              className={`px-2.5 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] border transition-colors ${selected === s.id ? 'bg-navy text-white border-navy' : 'bg-surface border-border hover:bg-surface-alt'}`}>
+              className={`px-2.5 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] border transition-colors ${selected === s.id ? 'bg-navy text-white border-navy' : 'bg-surface border-border hover:bg-surface-alt'}`}>
               <span className="font-medium">{s.english_name}</span>
               <span className={`ml-1 ${selected === s.id ? 'opacity-70' : 'text-text-tertiary'}`}>{s.korean_name}</span>
-              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle" style={{ backgroundColor: classToColor(s.english_class as EnglishClass) }} />
+              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full align-middle" style={{ backgroundColor: classDot(s.english_class as EnglishClass) }} />
             </button>
           ))}
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-[length:calc(11px*var(--ts))] text-red-700">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-[length:calc(11.5px*var(--ts))] text-red-700">
           Could not load history: {error}
         </div>
       )}
@@ -395,8 +395,8 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
         <div className="flex items-center gap-2 mb-3">
           <span className="text-[length:calc(15px*var(--ts))] font-semibold text-navy">{student.english_name}</span>
           <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{student.korean_name}</span>
-          <span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(student.english_class as EnglishClass) + '40', color: classToTextColor(student.english_class as EnglishClass) }}>{student.english_class}</span>
-          <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{sittings.length} level test{sittings.length === 1 ? '' : 's'} on record</span>
+          <span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(student.english_class as EnglishClass, 25), color: classToTextColor(student.english_class as EnglishClass) }}>{student.english_class}</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{sittings.length} level test{sittings.length === 1 ? '' : 's'} on record</span>
         </div>
       )}
 
@@ -418,11 +418,11 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
         <div className="space-y-5">
           {/* ── Headline: one column per sitting ── */}
           <div className="bg-surface border border-border rounded-xl overflow-x-auto">
-            <table className="w-full text-[length:calc(11px*var(--ts))]">
+            <table className="w-full text-[length:calc(11.5px*var(--ts))]">
               <thead><tr className="bg-surface-alt">
-                <th className="text-left px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px]">&nbsp;</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px]">&nbsp;</th>
                 {sittings.map(s => (
-                  <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">
+                  <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">
                     {s.test.academic_year} {s.test.semester}<br/>
                     <span className="normal-case text-text-tertiary">Grade {s.test.grade}</span>
                   </th>
@@ -434,7 +434,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                   {sittings.map(s => (
                     <td key={s.test.id} className="px-3 py-2 text-center">
                       {s.band ? <><span className="font-bold text-navy text-[length:calc(13px*var(--ts))]">{s.band.effectiveLevel}</span>
-                        {s.band.downgraded && <span className="block text-[length:max(10px,calc(8px*var(--ts)))] text-amber-600" title={`Attempted ${s.band.attemptedLevel}, did not sustain it.`}>tried {s.band.attemptedLevel}</span>}</>
+                        {s.band.downgraded && <span className="block text-[length:calc(11.5px*var(--ts))] text-amber-600" title={`Attempted ${s.band.attemptedLevel}, did not sustain it.`}>tried {s.band.attemptedLevel}</span>}</>
                         : <span className="text-text-tertiary">—</span>}
                     </td>
                   ))}
@@ -467,7 +467,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                   <td className="px-3 py-2 text-text-secondary font-medium">Comprehension</td>
                   {sittings.map(s => (
                     <td key={s.test.id} className="px-3 py-2 text-center">
-                      {s.calc.comp_not_administered ? <span className="text-amber-700 text-[length:max(10px,calc(9px*var(--ts)))]">not administered</span>
+                      {s.calc.comp_not_administered ? <span className="text-amber-700 text-[length:calc(11.5px*var(--ts))]">not administered</span>
                         : s.calc.comp_total != null ? <>{s.calc.comp_total}<span className="text-text-tertiary/50">/{s.calc.comp_max ?? '?'}</span></>
                         : <span className="text-text-tertiary">—</span>}
                     </td>
@@ -478,14 +478,14 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                   {sittings.map(s => (
                     <td key={s.test.id} className="px-3 py-2 text-center">
                       {s.placement
-                        ? <span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(s.placement) + '40', color: classToTextColor(s.placement) }}>{s.placement}</span>
+                        ? <span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(s.placement, 25), color: classToTextColor(s.placement) }}>{s.placement}</span>
                         : <span className="text-text-tertiary">—</span>}
                     </td>
                   ))}
                 </tr>
               </tbody>
             </table>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary px-3 py-2 border-t border-border">
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-3 py-2 border-t border-border">
               Raw written totals are deliberately absent: the papers change between versions, so a 24/31 this year and a 22/26 last year are not the same measure.
               Passage level, band and CWPM survive a version change intact, and the standards below survive it by anchor.
             </p>
@@ -497,13 +497,13 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               <p className="text-[length:calc(12px*var(--ts))] font-semibold text-amber-800 mb-1 flex items-center gap-1.5">
                 <AlertTriangle size={13} /> Unfinished business
               </p>
-              <p className="text-[length:calc(11px*var(--ts))] text-amber-700 mb-2.5">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 mb-2.5">
                 Standards from an earlier grade that this student is still missing on their most recent paper.
                 The tests probe these on purpose, so each one is a named gap rather than a general weakness.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {unfinished.map(u => (
-                  <span key={u.code} className="inline-flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-white border border-amber-200 text-[length:calc(10px*var(--ts))] max-w-[320px]">
+                  <span key={u.code} className="inline-flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-white border border-amber-200 text-[length:calc(11.5px*var(--ts))] max-w-[320px]">
                     <span className="font-bold text-amber-900 whitespace-nowrap">{u.code}</span>
                     <span className="text-text-tertiary whitespace-nowrap">{u.met}/{u.total}</span>
                     <span className="text-amber-800 leading-snug">{STANDARD_TEXT[u.code] || STRAND_LABELS[u.code.split('.')[0]] || ''}</span>
@@ -517,14 +517,14 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
           {sittings.some(s => s.anec || s.raw?.notes) && (
             <div className="bg-surface border border-border rounded-xl overflow-x-auto">
               <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy px-3 pt-3">What teachers saw</p>
-              <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary px-3 pb-2">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-3 pb-2">
                 Ratings are notes, not scores &mdash; they are deliberately outside the composite, since a teacher new this year has rated nobody.
                 Across sittings they are the one record of how a student is changing that no test question captures.
               </p>
-              <table className="w-full text-[length:calc(11px*var(--ts))]">
+              <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>
                   {([['receptive_language', 'Receptive language'], ['productive_language', 'Productive language'], ['engagement_pace', 'Engagement and pace']] as const).map(([k, label], ri) => (
@@ -547,7 +547,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                     {sittings.map(s => (
                       <td key={s.test.id} className="px-3 py-2 text-center">
                         {s.anec?.teacher_recommends
-                          ? <span className={`text-[length:calc(10px*var(--ts))] font-bold ${s.anec.teacher_recommends === 'keep' ? 'text-blue-600' : s.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>
+                          ? <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${s.anec.teacher_recommends === 'keep' ? 'text-blue-600' : s.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>
                               {s.anec.teacher_recommends === 'keep' ? 'Keep' : s.anec.teacher_recommends === 'move_up' ? 'Move up' : 'Move down'}</span>
                           : <span className="text-text-tertiary">—</span>}
                       </td>
@@ -558,9 +558,9 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                     {sittings.map(s => (
                       <td key={s.test.id} className="px-3 py-2 text-center">
                         {s.placement
-                          ? <><span className="px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold" style={{ backgroundColor: classToColor(s.placement) + '40', color: classToTextColor(s.placement) }}>{s.placement}</span>
+                          ? <><span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(s.placement, 25), color: classToTextColor(s.placement) }}>{s.placement}</span>
                             {s.overridden && s.autoPlacement && s.autoPlacement !== s.placement &&
-                              <span className="block text-[length:max(10px,calc(8px*var(--ts)))] text-amber-600 mt-0.5" title={`The test suggested ${s.autoPlacement}; a teacher moved them.`}>overridden from {s.autoPlacement}</span>}</>
+                              <span className="block text-[length:calc(11.5px*var(--ts))] text-amber-600 mt-0.5" title={`The test suggested ${s.autoPlacement}; a teacher moved them.`}>overridden from {s.autoPlacement}</span>}</>
                           : <span className="text-text-tertiary">—</span>}
                       </td>
                     ))}
@@ -571,9 +571,9 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                 <div className="border-t border-border px-3 py-2.5 space-y-2">
                   {sittings.filter(s => s.raw?.notes || s.anec?.notes).map(s => (
                     <div key={s.test.id}>
-                      <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold">{s.test.academic_year} {s.test.semester}</p>
-                      {s.raw?.notes && <p className="text-[length:calc(11px*var(--ts))] text-text-secondary leading-snug">&ldquo;{s.raw.notes}&rdquo; <span className="text-text-tertiary text-[length:max(10px,calc(9px*var(--ts)))]">&mdash; oral test</span></p>}
-                      {s.anec?.notes && <p className="text-[length:calc(11px*var(--ts))] text-text-secondary leading-snug">&ldquo;{s.anec.notes}&rdquo; <span className="text-text-tertiary text-[length:max(10px,calc(9px*var(--ts)))]">&mdash; teacher rating</span></p>}
+                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{s.test.academic_year} {s.test.semester}</p>
+                      {s.raw?.notes && <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-snug">&ldquo;{s.raw.notes}&rdquo; <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">&mdash; oral test</span></p>}
+                      {s.anec?.notes && <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-snug">&ldquo;{s.anec.notes}&rdquo; <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">&mdash; teacher rating</span></p>}
                     </div>
                   ))}
                 </div>
@@ -585,22 +585,22 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
           {standardsRows.length > 0 && (
             <div className="bg-surface border border-border rounded-xl overflow-x-auto">
               <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy px-3 pt-3">Standards, by anchor</p>
-              <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary px-3 pb-2">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-3 pb-2">
                 The grade digit in a CCSS code rises every year but the anchor does not &mdash; RI.2.1, RI.3.1 and RI.4.1 are one skill at a harder bar.
                 Rows are anchors, so a score holding steady across two columns means the student got better, because the test got harder.
                 Cells with fewer than three questions behind them are greyed: one item is noise, not a trend.
               </p>
-              <table className="w-full text-[length:calc(11px*var(--ts))]">
+              <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[170px]">Anchor</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[170px]">Anchor</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>{standardsRows.map(r => (
                   <tr key={r.anchor} className="border-t border-border">
                     <td className="px-3 py-2 align-top">
                       <span className="font-bold text-navy">{r.anchor.replace('.', '·')}</span>
-                      <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{STRAND_LABELS[r.strand] || r.strand}</span>
-                      {r.text && <span className="block text-[length:calc(10px*var(--ts))] text-text-secondary mt-0.5 leading-snug max-w-[300px]">{r.text}</span>}
+                      <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{STRAND_LABELS[r.strand] || r.strand}</span>
+                      {r.text && <span className="block text-[length:calc(11.5px*var(--ts))] text-text-secondary mt-0.5 leading-snug max-w-[300px]">{r.text}</span>}
                     </td>
                     {sittings.map(s => {
                       const hits = r.perTest[s.test.id]
@@ -609,11 +609,11 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                       const total = hits.reduce((a, h) => a + h.total, 0)
                       return (
                         <td key={s.test.id} className="px-3 py-2 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded border text-[length:calc(10px*var(--ts))] font-semibold ${tone(met, total)}`}
+                          <span className={`inline-block px-2 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] font-semibold ${tone(met, total)}`}
                             title={total < 3 ? `Only ${total} question${total === 1 ? '' : 's'} behind this — too few to read as a trend.` : undefined}>
                             {met}/{total}
                           </span>
-                          <span className="block text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary mt-0.5"
+                          <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5"
                             title={hits.map(h => STANDARD_TEXT[h.code] ? `${h.code} \u2014 ${STANDARD_TEXT[h.code]}` : h.code).join('\n')}>
                             {hits.map(h => h.code).join(', ')}
                           </span>
@@ -630,14 +630,14 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
           {(writingRows.length > 0 || sittings.some(s => writingTotalFrom(s.raw, s.calc) != null || s.calc.short_writing_total != null)) && (
             <div className="bg-surface border border-border rounded-xl overflow-x-auto">
               <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy px-3 pt-3">Writing</p>
-              <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary px-3 pb-2">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-3 pb-2">
                 Scored by rubric rather than by question, so none of this reaches the standards grid above &mdash; that is built from the multiple choice alone.
                 Maxima differ by grade (Grade 2 marks each category out of 5, grades 3&ndash;5 out of 4), so the score is shown over its own denominator.
               </p>
-              <table className="w-full text-[length:calc(11px*var(--ts))]">
+              <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">Category</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">Category</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>
                   {writingRows.map(r => (
@@ -646,7 +646,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                         <span className="font-medium text-navy">{WRITING_CATEGORY_LABELS[r.key] || r.key}</span>
                         {(() => {
                           const std = Object.values(r.perTest).map(v => v.standard).find(Boolean)
-                          return std ? <span className="block text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{std}{STANDARD_TEXT[std] ? ` \u2014 ${STANDARD_TEXT[std]}` : ''}</span> : null
+                          return std ? <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{std}{STANDARD_TEXT[std] ? ` \u2014 ${STANDARD_TEXT[std]}` : ''}</span> : null
                         })()}
                       </td>
                       {sittings.map(s => {
@@ -654,7 +654,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                         if (!v) return <td key={s.test.id} className="px-3 py-2 text-center text-text-tertiary">—</td>
                         return (
                           <td key={s.test.id} className="px-3 py-2 text-center">
-                            <span className={`inline-block px-2 py-0.5 rounded border text-[length:calc(10px*var(--ts))] font-semibold ${tone(v.score, Math.max(v.max, 3))}`}>{v.score}<span className="opacity-60">/{v.max}</span></span>
+                            <span className={`inline-block px-2 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] font-semibold ${tone(v.score, Math.max(v.max, 3))}`}>{v.score}<span className="opacity-60">/{v.max}</span></span>
                           </td>
                         )
                       })}
@@ -698,11 +698,11 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
           {domainRows.length > 0 && (
             <div className="bg-surface border border-border rounded-xl overflow-x-auto">
               <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy px-3 pt-3">By domain</p>
-              <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary px-3 pb-2">The coarse view, for when a single anchor has too few questions to trust on its own.</p>
-              <table className="w-full text-[length:calc(11px*var(--ts))]">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-3 pb-2">The coarse view, for when a single anchor has too few questions to trust on its own.</p>
+              <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[170px]">Domain</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[170px]">Domain</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>{domainRows.map(([dom, perTest]) => (
                   <tr key={dom} className="border-t border-border">
@@ -712,8 +712,8 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                       if (!v) return <td key={s.test.id} className="px-3 py-2 text-center text-text-tertiary">—</td>
                       return (
                         <td key={s.test.id} className="px-3 py-2 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded border text-[length:calc(10px*var(--ts))] font-semibold ${tone(v.correct, v.total)}`}>{pct(v.correct, v.total)}%</span>
-                          <span className="block text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary mt-0.5">{v.correct}/{v.total}</span>
+                          <span className={`inline-block px-2 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] font-semibold ${tone(v.correct, v.total)}`}>{pct(v.correct, v.total)}%</span>
+                          <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">{v.correct}/{v.total}</span>
                         </td>
                       )
                     })}

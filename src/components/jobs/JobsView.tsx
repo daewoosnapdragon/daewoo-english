@@ -202,7 +202,7 @@ function BiteLine({ bite, ko, today, who, reload, patchJob, onOpen }: { bite: Bi
       <input type="checkbox" checked={false} onChange={tick} className="mt-1 rounded border-rule-2" aria-label={step.text} />
       <button onClick={onOpen} className="min-w-0 text-left flex-1">
         <span className="block text-[length:calc(12.5px*var(--ts))] text-ink leading-snug truncate">{step.text}{step.doing ? <span className="text-accent font-semibold"> · {ko ? '진행 중' : 'working on it'}</span> : null}{step.note ? <span className="text-ink-2 italic"> · {step.note}</span> : null}</span>
-        <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 truncate"><span className={urgencyTone(u)}>{dueLabel({ status: 'scheduled', due_kind: 'date', due_date: step.due_date }, today, ko)}</span> · {job.title} · {ko ? `${n}/${job.steps.length} 단계` : `step ${n} of ${job.steps.length}`}{percent(job) !== null ? ` · ${percent(job)}%` : ''}</span>
+        <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 truncate"><span className={urgencyTone(u)}>{dueLabel({ status: 'scheduled', due_kind: 'date', due_date: step.due_date }, today, ko)}</span> · {job.title} · {ko ? `${n}/${job.steps.length} 단계` : `step ${n} of ${job.steps.length}`}{percent(job) !== null ? ` · ${percent(job)}%` : ''}</span>
       </button>
     </div>
   )

@@ -56,7 +56,7 @@ export default function WidaTimeline({ students, historyData, currentLevels, loa
             {columns.map(col => {
               if (col === 'current') return <th key="current" className="text-center px-3 py-2.5 eyebrow font-semibold text-ink w-20">{ko ? '현재' : 'Now'}</th>
               const [y, m] = col.split('-')
-              return <th key={col} className="text-center px-3 py-2.5 text-[length:calc(11px*var(--ts))] text-ink-3 font-medium w-16">{MONTH_NAMES[parseInt(m)]} {y.slice(2)}</th>
+              return <th key={col} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 font-medium w-16">{MONTH_NAMES[parseInt(m)]} {y.slice(2)}</th>
             })}
             <th className="text-center px-3 py-2.5 eyebrow font-semibold w-20">{ko ? '변화' : 'Change'}</th>
           </tr>
@@ -68,7 +68,7 @@ export default function WidaTimeline({ students, historyData, currentLevels, loa
             const change = first != null && now != null ? now - first : null
             return (
               <tr key={s.id} className="hover:bg-paper-2/60">
-                <td className="px-4 py-1.5 sticky left-0 bg-surface"><span className="text-ink">{s.english_name}</span><span className="text-[length:calc(11px*var(--ts))] text-ink-3 ml-1.5">{s.korean_name}</span></td>
+                <td className="px-4 py-1.5 sticky left-0 bg-surface"><span className="text-ink">{s.english_name}</span><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 ml-1.5">{s.korean_name}</span></td>
                 {columns.map(col => {
                   const levels = col === 'current' ? currentLevels[s.id] : byStudentMonth[s.id]?.[col]
                   const o = overallOf(levels)
@@ -81,7 +81,7 @@ export default function WidaTimeline({ students, historyData, currentLevels, loa
           })}
         </tbody>
       </table>
-      <p className="px-4 py-2.5 border-t border-rule text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '각 칸은 네 영역의 평균입니다. 마우스를 올리면 영역별 수준이 보입니다.' : 'Each cell is the average of the four domains. Hover for the breakdown.'}</p>
+      <p className="px-4 py-2.5 border-t border-rule text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '각 칸은 네 영역의 평균입니다. 마우스를 올리면 영역별 수준이 보입니다.' : 'Each cell is the average of the four domains. Hover for the breakdown.'}</p>
     </div>
   )
 }

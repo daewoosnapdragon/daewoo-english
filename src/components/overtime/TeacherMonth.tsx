@@ -166,7 +166,7 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
 
       <div className="overflow-x-auto">
         <div id="add" className="min-w-[900px] bg-surface border border-rule rounded-md overflow-hidden">
-          <div className={`${OT_COLS} px-4 h-[38px] bg-paper-2 border-b border-rule-2 text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-ink-2`}>
+          <div className={`${OT_COLS} px-4 h-[38px] bg-paper-2 border-b border-rule-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-ink-2`}>
             <span /><span>{ko ? '날짜' : 'Date'}</span><span>{ko ? '시작 – 끝' : 'From – To'}</span><span>{ko ? '시간' : 'Time'}</span><span>{ko ? '금액' : 'Won'}</span><span>{ko ? '무슨 일' : 'What was the work'}</span><span />
           </div>
 
