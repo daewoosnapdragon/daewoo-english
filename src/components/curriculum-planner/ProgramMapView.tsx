@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
-import { classToColor, getKSTDateString } from '@/lib/utils'
+import { getKSTDateString, classDot } from '@/lib/utils'
 import { teacherForClass } from '@/lib/classTeacher'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { STRANDS, STRAND_LABEL, splitUnitTitle } from '@/lib/curriculumCore'
@@ -116,7 +116,7 @@ export default function ProgramMapView() {
     <div className="flex flex-col gap-4">
       {/* Controls: the week, the view, the level */}
       <div className="flex items-center gap-3 flex-wrap">
-        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '학년도' : 'Year'}<br />
+        <label className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => setYear(e.target.value)} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
         {views.length > 1 && <div role="group" className="inline-flex rounded border border-rule-2 overflow-hidden self-end">
@@ -126,7 +126,7 @@ export default function ProgramMapView() {
           <div className="flex items-center gap-2 self-end">
             <button onClick={() => setWeek(Math.max(1, wk - 1))} disabled={wk <= 1} className="w-9 h-9 rounded border border-rule-2 bg-surface inline-flex items-center justify-center text-ink disabled:opacity-40" aria-label={ko ? '이전 주' : 'Previous week'}><ChevronLeft size={16} /></button>
             <div className="min-w-[200px] px-1">
-              <p className="text-[length:calc(17px*var(--ts))] font-semibold text-ink leading-tight">{ko ? `${weekName(wk)}주` : `Week ${weekName(wk)}`}{todayPos !== null && wk === nowWeek && <span className="ml-2 align-middle text-[length:calc(10.5px*var(--ts))] font-semibold text-white bg-accent px-1.5 py-0.5 rounded">{ko ? '이번 주' : 'this week'}</span>}</p>
+              <p className="text-[length:calc(17px*var(--ts))] font-semibold text-ink leading-tight">{ko ? `${weekName(wk)}주` : `Week ${weekName(wk)}`}{todayPos !== null && wk === nowWeek && <span className="ml-2 align-middle text-[length:calc(11.5px*var(--ts))] font-semibold text-white bg-accent px-1.5 py-0.5 rounded">{ko ? '이번 주' : 'this week'}</span>}</p>
               {w && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{fmtDay(w.monday, ko)} – {fmtDay(w.friday, ko)}</p>}
             </div>
             <button onClick={() => setWeek(Math.min(N, wk + 1))} disabled={wk >= N} className="w-9 h-9 rounded border border-rule-2 bg-surface inline-flex items-center justify-center text-ink disabled:opacity-40" aria-label={ko ? '다음 주' : 'Next week'}><ChevronRight size={16} /></button>
@@ -136,7 +136,7 @@ export default function ProgramMapView() {
         <span className="flex-1" />
         {levelNames.length > 1 && (
           <div className="flex gap-1 flex-wrap self-end">
-            {[null, ...levelNames].map(c => <button key={c || 'all'} onClick={() => setOnly(c)} className={`h-8 px-3 rounded-full text-[length:calc(12.5px*var(--ts))] border ${only === c ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink bg-surface'}`}>{c === null ? (ko ? '전체' : 'All') : <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: classToColor(c as any) }} />{c}</span>}</button>)}
+            {[null, ...levelNames].map(c => <button key={c || 'all'} onClick={() => setOnly(c)} className={`h-8 px-3 rounded-full text-[length:calc(12.5px*var(--ts))] border ${only === c ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink bg-surface'}`}>{c === null ? (ko ? '전체' : 'All') : <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{ background: classDot(c as any) }} />{c}</span>}</button>)}
           </div>
         )}
       </div>
@@ -156,7 +156,7 @@ export default function ProgramMapView() {
                 <ul className="flex flex-col gap-1 text-[length:calc(13px*var(--ts))] leading-snug">
                   {b.together.map(t => (
                     <li key={t.unitId} className="flex items-start gap-2 text-ink">
-                      <span className="shrink-0 w-[18px] h-[18px] mt-px rounded-full bg-ink text-paper text-[length:calc(10.5px*var(--ts))] font-bold inline-flex items-center justify-center">{t.tag}</span>
+                      <span className="shrink-0 w-[18px] h-[18px] mt-px rounded-full bg-ink text-paper text-[length:calc(11.5px*var(--ts))] font-bold inline-flex items-center justify-center">{t.tag}</span>
                       <span><span className="font-semibold">{ko ? '함께 계획' : 'Plan together'}:</span> {t.text}{t.rows.some(r => teacherName(r.teacherId)) && <span className="text-ink-3"> ({t.rows.map(r => teacherName(r.teacherId)).filter(Boolean).join(', ')})</span>}</span>
                     </li>
                   ))}
@@ -173,13 +173,13 @@ export default function ProgramMapView() {
       {N > 0 && rows.length > 0 && (
         <div className="border border-rule rounded bg-surface overflow-hidden">
           <div className="grid border-b border-rule bg-paper" style={grid}>
-            <span className="px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wide text-ink-3 font-semibold">{ko ? '반 · 학년' : 'Class · grade'}</span>
-            {strandsShown.map(st => <span key={st} className="px-3 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wide text-ink-3 font-semibold border-l border-rule">{ko ? STRAND_LABEL[st].ko : STRAND_LABEL[st].en}</span>)}
+            <span className="px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 font-semibold">{ko ? '반 · 학년' : 'Class · grade'}</span>
+            {strandsShown.map(st => <span key={st} className="px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 font-semibold border-l border-rule">{ko ? STRAND_LABEL[st].ko : STRAND_LABEL[st].en}</span>)}
           </div>
           {levels.map(l => (
             <div key={l.cls}>
               <div className="flex items-center gap-2.5 px-4 py-2 bg-paper-2 border-b border-rule">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ background: classToColor(l.cls as any) }} />
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: classDot(l.cls as any) }} />
                 <span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{l.cls}</span>
                 {teacherName(l.rows[0].teacherId) && <span className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{teacherName(l.rows[0].teacherId)}</span>}
               </div>
@@ -212,7 +212,7 @@ export default function ProgramMapView() {
                                   <span className="block text-[length:calc(13.5px*var(--ts))] font-semibold text-ink leading-snug">{t.name}</span>
                                   <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">{pos.of > 1 ? (ko ? `${pos.of}주 중 ${pos.at}주` : `week ${pos.at} of ${pos.of}`) : (ko ? '이번 주' : 'this week')}{doneSet.has(`${b.placement.id}|${b.unit.id}`) ? (ko ? ' · 완료' : ' · done') : ''}</span>
                                 </span>
-                                {tag && <span className="shrink-0 w-[18px] h-[18px] rounded-full bg-ink text-paper text-[length:calc(10.5px*var(--ts))] font-bold inline-flex items-center justify-center" title={ko ? '같은 단원을 하는 반이 있습니다' : 'Another class is on this unit this week'}>{tag}</span>}
+                                {tag && <span className="shrink-0 w-[18px] h-[18px] rounded-full bg-ink text-paper text-[length:calc(11.5px*var(--ts))] font-bold inline-flex items-center justify-center" title={ko ? '같은 단원을 하는 반이 있습니다' : 'Another class is on this unit this week'}>{tag}</span>}
                               </a>
                             )
                           })}

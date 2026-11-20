@@ -121,15 +121,15 @@ export default function ActivityView() {
                 <span className={`font-medium ${tone(r.action)}`}>{ACTION_LABELS[r.action]?.[ko ? 'ko' : 'en'] || r.action}</span>
                 <span className="min-w-0 text-ink-2">
                   <span className="break-words">{r.detail}</span>
-                  {r.count > 1 && <span className="ml-2 text-[length:calc(10.5px*var(--ts))] text-ink-3 tabular-nums" title={ko ? `${timeOf(r.created_at)}부터` : `since ${timeOf(r.created_at)}`}>×{r.count}</span>}
-                  {r.action !== 'visit' && r.path && <span className="ml-2 text-[length:calc(10.5px*var(--ts))] text-ink-3">{r.path}</span>}
+                  {r.count > 1 && <span className="ml-2 text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums" title={ko ? `${timeOf(r.created_at)}부터` : `since ${timeOf(r.created_at)}`}>×{r.count}</span>}
+                  {r.action !== 'visit' && r.path && <span className="ml-2 text-[length:calc(11.5px*var(--ts))] text-ink-3">{r.path}</span>}
                 </span>
               </div>
             ))}
           </div>
         </div>
       ))}
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-6">{ko ? '같은 작업을 10분 안에 반복하면 한 줄로 묶이고 횟수(×N)가 표시됩니다. 열람 줄은 화면에 무엇이 있었는지(반·학년·학생·시트·탭)를 적고, 그 밖에 채점, 저장, 생성·수정·삭제, 인쇄, 공지, 설정 변경, 로그인·로그아웃이 기록됩니다.' : 'The same action repeated within ten minutes folds into one line with a count (×N). An Opened line says what was on screen: the class and grade, the student, the sheet or tab. Everything saved, scored, created, edited, deleted, printed or posted is recorded with what it was, along with settings changes and sign-ins and sign-outs.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-6">{ko ? '같은 작업을 10분 안에 반복하면 한 줄로 묶이고 횟수(×N)가 표시됩니다. 열람 줄은 화면에 무엇이 있었는지(반·학년·학생·시트·탭)를 적고, 그 밖에 채점, 저장, 생성·수정·삭제, 인쇄, 공지, 설정 변경, 로그인·로그아웃이 기록됩니다.' : 'The same action repeated within ten minutes folds into one line with a count (×N). An Opened line says what was on screen: the class and grade, the student, the sheet or tab. Everything saved, scored, created, edited, deleted, printed or posted is recorded with what it was, along with settings changes and sign-ins and sign-outs.'}</p>
     </div>
   )
 }

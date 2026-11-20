@@ -166,11 +166,11 @@ export default function BehaviorView() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <button onClick={() => setDetail(c)} className="text-[length:calc(14px*var(--ts))] font-semibold text-ink hover:underline">{c.students?.english_name}<span className="text-ink-3 font-normal text-[length:calc(12px*var(--ts))] ml-1.5">{c.students?.korean_name}</span></button>
-                      <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class} · G{c.students?.grade}</span>
-                      <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
-                      {c.status === 'closed' ? <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-good-soft text-good font-semibold">{ko ? '종결' : 'closed'}</span>
-                        : c.status === 'acknowledged' ? <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '읽음 · 조치 대기' : 'read · waiting for action'}</span>
-                        : <span className={`text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded font-bold ${overdue ? 'bg-bad text-white' : 'bg-warn-soft text-warn'}`}>{ko ? `관리자 대기 ${waiting}일` : `waiting on admin · ${waiting} school ${waiting === 1 ? 'day' : 'days'}`}</span>}
+                      <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class} · G{c.students?.grade}</span>
+                      <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
+                      {c.status === 'closed' ? <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-good-soft text-good font-semibold">{ko ? '종결' : 'closed'}</span>
+                        : c.status === 'acknowledged' ? <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '읽음 · 조치 대기' : 'read · waiting for action'}</span>
+                        : <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded font-bold ${overdue ? 'bg-bad text-white' : 'bg-warn-soft text-warn'}`}>{ko ? `관리자 대기 ${waiting}일` : `waiting on admin · ${waiting} school ${waiting === 1 ? 'day' : 'days'}`}</span>}
                     </div>
                     <ol className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1 text-[length:calc(12px*var(--ts))]">
                       {steps.map((st, i) => (
@@ -211,8 +211,8 @@ export default function BehaviorView() {
             {visibleLogs.map(r => (
               <div key={r.id} className="grid grid-cols-[72px_190px_110px_minmax(0,1fr)_110px] gap-3 items-baseline py-2 text-[length:calc(12.5px*var(--ts))]">
                 <span className="text-ink-3 tabular-nums">{fmtDay(r.date, ko)}</span>
-                <span className="min-w-0 truncate"><span className="font-medium text-ink">{r.students?.english_name}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{r.students?.english_class}</span></span>
-                <span><span className={`text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${TYPE_TONE[r.type] || 'bg-paper-2 text-ink-2'}`}>{r.type.replace('_', ' ')}</span>{r.is_flagged && <Flag size={11} className="inline ml-1.5 text-bad" />}</span>
+                <span className="min-w-0 truncate"><span className="font-medium text-ink">{r.students?.english_name}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11.5px*var(--ts))]">{r.students?.english_class}</span></span>
+                <span><span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${TYPE_TONE[r.type] || 'bg-paper-2 text-ink-2'}`}>{r.type.replace('_', ' ')}</span>{r.is_flagged && <Flag size={11} className="inline ml-1.5 text-bad" />}</span>
                 <span className="text-ink-2 whitespace-pre-wrap break-words">{r.note}</span>
                 <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))] truncate">{r.teachers?.name || nameOf(r.teacher_id)}</span>
               </div>
@@ -222,7 +222,7 @@ export default function BehaviorView() {
       </section>
 
       {detail && <CaseModal c={detail} teachers={teachers} seenLabel={seenPhrase(detail.notice_id)?.text || ''} onClose={() => setDetail(null)} onChanged={load} />}
-      {!allClasses && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-6 inline-flex items-center gap-1.5"><AlertTriangle size={11} />{ko ? '내 반의 사례와 기록만 보입니다.' : 'You see your own class. Admin and the Snapdragon teacher see every class.'}</p>}
+      {!allClasses && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-6 inline-flex items-center gap-1.5"><AlertTriangle size={11} />{ko ? '내 반의 사례와 기록만 보입니다.' : 'You see your own class. Admin and the Snapdragon teacher see every class.'}</p>}
     </div>
   )
 }

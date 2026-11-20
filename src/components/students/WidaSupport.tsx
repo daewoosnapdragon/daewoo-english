@@ -152,10 +152,10 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
           <div className="grid gap-3">
             {LEVELS.map(lv => (
               <div key={lv} className={`grid grid-cols-[110px_1fr] gap-3 rounded px-2 py-1.5 ${floorLv(chosen) === lv ? 'bg-surface' : ''}`}>
-                <div><span className={`font-display text-[length:calc(20px*var(--ts))] tabular-nums ${floorLv(chosen) === lv ? 'text-ink' : 'text-ink-3'}`}>{lv}</span><span className="block text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3">{widaLevelName(lv)}</span><span className="block h-1 rounded-sm bg-paper-3 mt-1 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
+                <div><span className={`font-display text-[length:calc(20px*var(--ts))] tabular-nums ${floorLv(chosen) === lv ? 'text-ink' : 'text-ink-3'}`}>{lv}</span><span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3">{widaLevelName(lv)}</span><span className="block h-1 rounded-sm bg-paper-3 mt-1 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
                   {suggestion.strength[lv] === 1
-                    ? <button onClick={() => { setDraft(ticksClearFrom(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-bad">{lang === 'ko' ? '여기부터 해제' : 'Clear from here'}</button>
-                    : <button onClick={() => { setDraft(ticksThrough(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '여기까지 전부' : 'All through here'}</button>}
+                    ? <button onClick={() => { setDraft(ticksClearFrom(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-bad">{lang === 'ko' ? '여기부터 해제' : 'Clear from here'}</button>
+                    : <button onClick={() => { setDraft(ticksThrough(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '여기까지 전부' : 'All through here'}</button>}
                 </div>
                 <div className="grid gap-1">
                   {WIDA_CAN_DO[open][band][lv].map(item => (
@@ -189,7 +189,7 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
               <span className="eyebrow">{s.domain === 'general' ? (lang === 'ko' ? '일반' : 'General') : dl(s.domain as WIDADomainKey)}{s.wida_level ? ` · L${s.wida_level}` : ''}</span>
               <span className="text-ink">{s.scaffold_text}</span>
               <span className="flex items-center gap-2">
-                <button onClick={() => toggleEff(s)} className={`h-6 px-2 rounded-full border text-[length:calc(11px*var(--ts))] font-semibold ${s.effectiveness === 'working' ? 'bg-good-soft text-good border-good/40' : s.effectiveness === 'not_working' ? 'bg-bad-soft text-bad border-bad/40' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>{s.effectiveness === 'working' ? (lang === 'ko' ? '효과 있음' : 'Working') : s.effectiveness === 'not_working' ? (lang === 'ko' ? '효과 없음' : 'Not working') : (lang === 'ko' ? '평가' : 'Rate')}</button>
+                <button onClick={() => toggleEff(s)} className={`h-6 px-2 rounded-full border text-[length:calc(11.5px*var(--ts))] font-semibold ${s.effectiveness === 'working' ? 'bg-good-soft text-good border-good/40' : s.effectiveness === 'not_working' ? 'bg-bad-soft text-bad border-bad/40' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>{s.effectiveness === 'working' ? (lang === 'ko' ? '효과 있음' : 'Working') : s.effectiveness === 'not_working' ? (lang === 'ko' ? '효과 없음' : 'Not working') : (lang === 'ko' ? '평가' : 'Rate')}</button>
                 {!summary && <button onClick={() => removeScaffold(s)} title={lang === 'ko' ? '제거' : 'Remove'} className="text-ink-3 hover:text-bad"><X size={13} /></button>}
               </span>
             </div>
@@ -223,7 +223,7 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
           )}
         </div>
       )}
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{WIDA_LEVELS.map(l => `${l.level} ${l.name}`).join(' · ')}</p>
     </div>
   )
 }

@@ -78,14 +78,14 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
                 <li key={o.text} className="flex items-start gap-2">
                   <p className="flex-1 text-text-secondary italic leading-snug"><span className="not-italic font-semibold text-navy">Students will</span> {o.text}</p>
                   <button type="button" onClick={() => onAddObjective(o.text)} disabled={added(o.text)}
-                    className="shrink-0 text-[length:calc(11px*var(--ts))] font-semibold px-2 py-0.5 rounded border border-border text-navy enabled:hover:border-navy disabled:opacity-50">{added(o.text) ? 'Added' : 'Add'}</button>
+                    className="shrink-0 text-[length:calc(11.5px*var(--ts))] font-semibold px-2 py-0.5 rounded border border-border text-navy enabled:hover:border-navy disabled:opacity-50">{added(o.text) ? 'Added' : 'Add'}</button>
                 </li>
               ))}
             </ul>
           )}
           {unit.lessons.length > 0 && (
             <>
-              <p className="mt-3 text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-text-tertiary">Lessons</p>
+              <p className="mt-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-text-tertiary">Lessons</p>
               <ol className="mt-1 space-y-0.5">
                 {unit.lessons.map((l, i) => <li key={l.id} className={l.id === lessonId ? 'font-semibold text-navy' : ''}>{i + 1}. {l.title}</li>)}
               </ol>
@@ -93,8 +93,8 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
           )}
           {(codes.length > 0 || wida.length > 0) && (
             <div className="mt-3 flex flex-wrap gap-1">
-              {codes.map(c => { const s = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded border border-border text-text-secondary cursor-help">{s.code}{s.plain ? ` · ${s.plain}` : ''}</span> })}
-              {wida.map(w => <span key={w} title="WIDA 2020 language expectation" className="text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded border border-border text-text-tertiary">{w}</span>)}
+              {codes.map(c => { const s = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border border-border text-text-secondary cursor-help">{s.code}{s.plain ? ` · ${s.plain}` : ''}</span> })}
+              {wida.map(w => <span key={w} title="WIDA 2020 language expectation" className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border border-border text-text-tertiary">{w}</span>)}
             </div>
           )}
           {unit.files.length > 0 && (

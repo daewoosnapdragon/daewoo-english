@@ -271,8 +271,8 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                 <td className={`px-3 py-1 border-r border-rule-2 truncate ${r.isGrade ? 'font-semibold text-ink' : 'text-ink'}`}>
                   {r.englishClass && <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[r.englishClass] || 'bg-ink-3'}`} />}{r.label}
                 </td>
-                <td className="px-2 py-1 text-[length:calc(11px*var(--ts))] text-ink-2 text-center">{r.stats.tested}/{r.stats.students}</td>
-                <td className="px-2 py-1 text-[length:calc(11px*var(--ts))] text-ink-2 border-r border-rule-2 truncate" title={r.stats.medianPosition != null ? positionLabel(r.stats.medianPosition) : ''}>
+                <td className="px-2 py-1 text-[length:calc(11.5px*var(--ts))] text-ink-2 text-center">{r.stats.tested}/{r.stats.students}</td>
+                <td className="px-2 py-1 text-[length:calc(11.5px*var(--ts))] text-ink-2 border-r border-rule-2 truncate" title={r.stats.medianPosition != null ? positionLabel(r.stats.medianPosition) : ''}>
                   {r.stats.medianPosition == null ? <span className="text-ink-3">—</span>
                     : <><span className="font-semibold text-ink">{r.stats.medianPosition}</span> <span className="text-ink-3">{positionShort(r.stats.medianPosition)}</span></>}
                 </td>
@@ -285,7 +285,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                     <td key={sk.id} className={`p-[3px] ${i > 0 && sheets[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                       <div title={`${r.label} · ${sk.label}: ${st.tested ? `${st.meeting} of the ${st.tested} checked have mastered it, 90% or more on their latest check (${st.pct}%)` : 'nobody checked'}${st.tested && st.tested < r.stats.students ? ` · ${r.stats.students - st.tested} not checked` : ''}${st.thin && st.tested ? ' · too few to compare on' : ''}${edge ? ' · the class’s edge' : ''}`}
                         className={`w-full h-9 rounded-sm font-semibold flex items-center justify-center leading-none whitespace-nowrap ${shareTone(st.pct, st.thin)} ${edge ? 'ring-2 ring-ink ring-inset' : ''}`}>
-                        {st.pct == null ? <span className="text-[length:calc(10.5px*var(--ts))]">·</span> : <span className="text-[length:calc(12px*var(--ts))]">{st.meeting}/{st.tested}</span>}
+                        {st.pct == null ? <span className="text-[length:calc(11.5px*var(--ts))]">·</span> : <span className="text-[length:calc(12px*var(--ts))]">{st.meeting}/{st.tested}</span>}
                       </div>
                     </td>
                   )
@@ -327,11 +327,11 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                   return (
                     <tr key={s.id}>
                       <td className="text-center"><PickBox on={picked.includes(s.id)} full={picked.length >= MAX_COMPARE} onToggle={() => togglePick(s.id)} lang={lang} /></td>
-                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span></td>
+                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="ko-name text-ink-3 text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span></td>
                       <td className="px-2 py-1 text-ink-2 whitespace-nowrap"><span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</td>
-                      <td className="px-2 py-1 text-ink whitespace-nowrap"><span className="font-semibold">{p.position}</span> {p.through ? phonicsSkill(p.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')} <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">· {lang === 'ko' ? `${p.testedThrough}번까지 점검` : `tested to ${p.testedThrough}`}</span></td>
-                      <td className="px-2 py-1"><FlagChip f={f} lang={lang} /> <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{lang === 'ko' ? `중앙값 ${f.likeMedian}` : `median ${f.likeMedian}`}</span></td>
-                      <td className="px-2 py-1 text-[length:calc(11px*var(--ts))] text-ink-2">{p.gaps.length ? p.gaps.map(g => phonicsSkill(g)?.short).join(', ') : <span className="text-ink-3">—</span>}</td>
+                      <td className="px-2 py-1 text-ink whitespace-nowrap"><span className="font-semibold">{p.position}</span> {p.through ? phonicsSkill(p.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')} <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]">· {lang === 'ko' ? `${p.testedThrough}번까지 점검` : `tested to ${p.testedThrough}`}</span></td>
+                      <td className="px-2 py-1"><FlagChip f={f} lang={lang} /> <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko' ? `중앙값 ${f.likeMedian}` : `median ${f.likeMedian}`}</span></td>
+                      <td className="px-2 py-1 text-[length:calc(11.5px*var(--ts))] text-ink-2">{p.gaps.length ? p.gaps.map(g => phonicsSkill(g)?.short).join(', ') : <span className="text-ink-3">—</span>}</td>
                     </tr>
                   )
                 })}
@@ -406,7 +406,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                 <button onClick={() => togglePick(s.id)} aria-label={`Remove ${s.english_name}`} className="text-ink-3 hover:text-ink"><X size={12} /></button>
               </span>
             ))}
-            <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{pickedStudents.length}/{MAX_COMPARE}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{pickedStudents.length}/{MAX_COMPARE}</span>
             <button onClick={() => setPicked([])} className="text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '지우기' : 'Clear'}</button>
             <button onClick={() => setComparing(true)} disabled={pickedStudents.length < 2}
               className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1.5">
@@ -446,7 +446,7 @@ function positionLabel(p: number): string {
 function SkippedCell({ span, lang, h = 'h-9' }: { span: number; lang: Lang; h?: string }) {
   return (
     <td colSpan={span} className="p-[3px]">
-      <div className={`w-full ${h} flex items-center justify-center text-[length:calc(10.5px*var(--ts))] text-ink-3 italic`} title={lang === 'ko' ? '이 반은 알파벳 시트를 건너뜁니다' : 'This class skips the alphabet sheets'}>
+      <div className={`w-full ${h} flex items-center justify-center text-[length:calc(11.5px*var(--ts))] text-ink-3 italic`} title={lang === 'ko' ? '이 반은 알파벳 시트를 건너뜁니다' : 'This class skips the alphabet sheets'}>
         {lang === 'ko' ? '건너뜀' : 'Skipped'}
       </div>
     </td>
@@ -465,8 +465,8 @@ function SheetHeader({ sheets, lang, lead, trail }: { sheets: PhonicsSkill[]; la
         {sheets.map((s, i) => (
           <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[96px] ${i > 0 && sheets[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${sheetNo(s.id) ? `${sheetNo(s.id)}. ` : ''}${s.label}\n${s.covers}`}>
             <div className="flex flex-col items-center justify-end gap-1 h-full">
-              <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
-              <span className="text-[length:max(10px,calc(9.5px*var(--ts)))] leading-none text-ink-3">{sheetNo(s.id) || '\u00a0'}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] leading-none text-ink-3">{sheetNo(s.id) || '\u00a0'}</span>
             </div>
           </th>
         ))}
@@ -495,7 +495,7 @@ function StudentRow({ sheets, skipAlphabet, s, latest, pos, flag, lang, showClas
         <PickBox on={picked} full={full} onToggle={onPick} lang={lang} />
         <button onClick={onName} className="block min-w-0 flex-1 text-left truncate hover:underline" title={`${s.english_name} · ${s.english_class} · ${lang === 'ko' ? '시도별 진전 보기' : 'open progress'}`}>
           {showClass && <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />}
-          <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
+          <span className="text-ink">{getDisplayName(s)}</span><span className="ko-name text-ink-3 ml-1.5 text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span>
         </button>
         </div>
       </td>
@@ -508,13 +508,13 @@ function StudentRow({ sheets, skipAlphabet, s, latest, pos, flag, lang, showClas
           <td key={sk.id} className={`p-[3px] ${i > 0 && sheets[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
             <button onClick={() => l && onCell(sk.id)} disabled={!l}
               title={l ? `${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}` : `${sk.label}: not checked`}
-              className={`w-full h-6 rounded-sm text-[length:calc(10.5px*var(--ts))] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
+              className={`w-full h-6 rounded-sm text-[length:calc(11.5px*var(--ts))] font-semibold ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
               {l ? l.score.pct : '·'}
             </button>
           </td>
         )
       })}
-      <td className="px-3 py-1 border-l border-rule-2 text-[length:calc(11px*var(--ts))] leading-tight overflow-hidden">
+      <td className="px-3 py-1 border-l border-rule-2 text-[length:calc(11.5px*var(--ts))] leading-tight overflow-hidden">
         {!pos.tested ? <span className="text-ink-3">{lang === 'ko' ? '미점검' : 'Not checked'}</span> : (
           <>
             <span className="flex items-center gap-1 text-ink truncate" title={pos.through ? `Mastered through ${phonicsSkill(pos.through)?.label}${pos.gaps.length ? ` · under 90% below it: ${pos.gaps.map(g => phonicsSkill(g)?.label).join(', ')}` : ''}` : 'Nothing mastered yet'}>
@@ -522,7 +522,7 @@ function StudentRow({ sheets, skipAlphabet, s, latest, pos, flag, lang, showClas
               <span className="truncate">{pos.through ? phonicsSkill(pos.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')}</span>
               {pos.gaps.length > 0 && <AlertTriangle size={11} className="text-warn shrink-0" />}
             </span>
-            <span className="flex items-center gap-1 text-[length:calc(10px*var(--ts))] text-ink-3">
+            <span className="flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-ink-3">
               <span className="truncate">{lang === 'ko' ? `${pos.testedThrough}번까지${flag ? '' : ' 점검'}` : `${flag ? 'to' : 'tested to'} ${pos.testedThrough}`}{last && !flag ? ` · ${fmtShort(last, lang)}` : ''}</span>
               {flag && <span className="ml-auto shrink-0"><FlagChip f={flag} lang={lang} /></span>}
             </span>

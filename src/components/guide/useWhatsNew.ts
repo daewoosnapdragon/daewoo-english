@@ -10,8 +10,9 @@ import { WHATS_NEW_OVERRIDES_KEY, applyOverrides, parseOverrides, visibleEntries
 // Per-teacher "seen up to" date, kept in app_settings under
 // whats_new_seen:<teacher id> so it follows the teacher between computers,
 // and the admin overrides (dates moved, entries turned off) under one
-// shared key. A module cache keeps the masthead dot, the dashboard popup
-// and the What's new page in step.
+// shared key. A module cache keeps the dot on the name button, the count
+// in the name menu, the popup the What's new page can replay and the page
+// itself in step.
 
 const SEEN_EVENT = 'daewoo:whats-new-seen'
 const seenCache: Record<string, string> = {}

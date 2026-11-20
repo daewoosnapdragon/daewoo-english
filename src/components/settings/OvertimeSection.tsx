@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { DEFAULT_OVERTIME_SETTINGS, fmtWon, policyText, type OvertimeSettings } from '@/lib/overtime'
 import { loadOvertimeSettings, saveOvertimeSettings } from '@/lib/overtimeData'
 import { Loader2, Save } from 'lucide-react'
@@ -20,6 +21,8 @@ export default function OvertimeSection() {
   const [s, setS] = useState<OvertimeSettings | null>(null)
   const [reasons, setReasons] = useState('')
   const [dirty, setDirty] = useState(false)
+  // Leaving the page before saving these settings asks first (lib/unsaved.ts).
+  useUnsaved(dirty)
   const [saving, setSaving] = useState(false)
   useEffect(() => { loadOvertimeSettings().then(v => { setS(v); setReasons(v.reasons.join('\n')) }) }, [])
   const upd = (p: Partial<OvertimeSettings>) => { setS(x => x ? { ...x, ...p } : x); setDirty(true) }

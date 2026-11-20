@@ -14,7 +14,7 @@ export default function StatusTag({ status, waitingOn, ko, onChange, small }: { 
   const [open, setOpen] = useState(false)
   const [waitText, setWaitText] = useState(waitingOn || '')
   const [asking, setAsking] = useState(false)
-  const size = small ? 'h-6 px-2 text-[length:calc(10.5px*var(--ts))]' : 'h-7 px-2.5 text-[length:calc(11.5px*var(--ts))]'
+  const size = small ? 'h-6 px-2 text-[length:calc(11.5px*var(--ts))]' : 'h-7 px-2.5 text-[length:calc(11.5px*var(--ts))]'
   return (
     <span className="relative inline-block">
       <button onClick={e => { e.stopPropagation(); setOpen(o => !o); setAsking(false) }} className={`${size} rounded-full border bg-surface font-medium whitespace-nowrap ${tone[status]}`} title={status === 'waiting' && waitingOn ? waitingOn : undefined}>
@@ -32,7 +32,7 @@ export default function StatusTag({ status, waitingOn, ko, onChange, small }: { 
             {asking && (
               <span className="block px-3 py-2 border-t border-rule">
                 <input autoFocus value={waitText} onChange={e => setWaitText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { onChange('waiting', waitText.trim()); setOpen(false) } if (e.key === 'Escape') setOpen(false) }} placeholder={ko ? '무엇을 기다리나요?' : 'Waiting on whom or what?'} className="w-full h-7 px-2 bg-paper border border-rule-2 rounded text-[length:calc(12px*var(--ts))] text-ink" />
-                <button onClick={() => { onChange('waiting', waitText.trim()); setOpen(false) }} className="mt-1.5 h-6 px-2 rounded bg-accent text-white text-[length:calc(11px*var(--ts))] font-semibold">{ko ? '저장' : 'Save'}</button>
+                <button onClick={() => { onChange('waiting', waitText.trim()); setOpen(false) }} className="mt-1.5 h-6 px-2 rounded bg-accent text-white text-[length:calc(11.5px*var(--ts))] font-semibold">{ko ? '저장' : 'Save'}</button>
               </span>
             )}
           </span>

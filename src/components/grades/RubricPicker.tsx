@@ -93,7 +93,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
           <div className="border-r border-rule-2 overflow-y-auto p-3 space-y-4 text-[length:calc(13px*var(--ts))]">
             <div>
               <p className="eyebrow px-3 mb-1">{lang === 'ko' ? '템플릿' : 'Templates'}</p>
-              {templates.map(t => <button key={t.key} onClick={() => setSel({ kind: 'template', key: t.key })} className={row(sel?.kind === 'template' && sel.key === t.key)}><span><span className="block font-medium">{t.name}</span><span className={`block text-[length:calc(11px*var(--ts))] ${sel?.kind === 'template' && sel.key === t.key ? 'text-paper/70' : 'text-ink-3'}`}>{t.description}</span></span></button>)}
+              {templates.map(t => <button key={t.key} onClick={() => setSel({ kind: 'template', key: t.key })} className={row(sel?.kind === 'template' && sel.key === t.key)}><span><span className="block font-medium">{t.name}</span><span className={`block text-[length:calc(11.5px*var(--ts))] ${sel?.kind === 'template' && sel.key === t.key ? 'text-paper/70' : 'text-ink-3'}`}>{t.description}</span></span></button>)}
             </div>
             {loadError ? (
               <div className="px-3 text-[length:calc(12px*var(--ts))] text-warn space-y-1">
@@ -116,7 +116,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
                       return (
                         <div key={r.id} className="relative group">
                           <button onClick={() => setSel({ kind: 'saved', id: r.id })} className={row(on)}>
-                            <span className="min-w-0"><span className="block font-medium truncate">{r.name}</span><span className={`block text-[length:calc(11px*var(--ts))] ${on ? 'text-paper/70' : 'text-ink-3'}`}>{r.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · {r.english_class ? r.english_class : (lang === 'ko' ? '학교 전체' : 'school')}{r.created_by !== me && authorName(r) ? ` · ${authorName(r)}` : ''}</span></span>
+                            <span className="min-w-0"><span className="block font-medium truncate">{r.name}</span><span className={`block text-[length:calc(11.5px*var(--ts))] ${on ? 'text-paper/70' : 'text-ink-3'}`}>{r.criteria.length} {lang === 'ko' ? '기준' : 'criteria'} · {r.english_class ? r.english_class : (lang === 'ko' ? '학교 전체' : 'school')}{r.created_by !== me && authorName(r) ? ` · ${authorName(r)}` : ''}</span></span>
                           </button>
                           {canDelete(r) && <button onClick={e => { e.stopPropagation(); remove(r) }} title={lang === 'ko' ? '목록에서 삭제 (점수 유지)' : 'Remove from the list (grades are kept)'} className={`absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 ${on ? 'text-paper/70 hover:text-paper' : 'text-ink-3 hover:text-bad'}`}><Trash2 size={12} /></button>}
                         </div>
@@ -140,7 +140,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
                 <div className="divide-y divide-rule">
                   {preview.criteria.map(c => (
                     <div key={c.key} className="py-2.5">
-                      <div className="flex items-baseline justify-between gap-2"><span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[length:calc(11px*var(--ts))] text-info">{c.standard}</span>}</div>
+                      <div className="flex items-baseline justify-between gap-2"><span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{c.label}</span>{c.standard && <span className="text-[length:calc(11.5px*var(--ts))] text-info">{c.standard}</span>}</div>
                       <div className="grid grid-cols-4 gap-2 mt-1.5">
                         {c.levels.map((l, i) => <div key={i} className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-snug"><span className="text-ink-3 font-semibold mr-1">{i + 1}</span>{l}</div>)}
                       </div>

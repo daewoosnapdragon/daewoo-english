@@ -70,7 +70,7 @@ export default function PhonicsSummary({ student, lang }: { student: Student; la
               return (
                 <button key={s.id} onClick={() => l && setOpen({ skill: s.id, checkId: l.checkId })} disabled={!l}
                   title={`${s.label}${l ? ` · ${scoreText(l.score)} · ${fmtLong(l.date, lang)}` : ` · ${lang === 'ko' ? '미점검' : 'not checked'}`}`}
-                  className={`inline-flex flex-col items-center min-w-[58px] px-1.5 py-1 rounded-sm text-[length:calc(10.5px*var(--ts))] leading-tight ${b ? BAND_TONE[b] : 'bg-paper-2 text-ink-3/70'} disabled:cursor-default`}>
+                  className={`inline-flex flex-col items-center min-w-[58px] px-1.5 py-1 rounded-sm text-[length:calc(11.5px*var(--ts))] leading-tight ${b ? BAND_TONE[b] : 'bg-paper-2 text-ink-3/70'} disabled:cursor-default`}>
                   <span className="font-medium whitespace-nowrap">{s.short}</span>
                   <span className="tabular-nums font-semibold">{l ? scoreText(l.score) : '·'}</span>
                 </button>

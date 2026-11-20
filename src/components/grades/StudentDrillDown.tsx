@@ -293,7 +293,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
       return `<div style="margin-bottom:14px"><h3 style="font-size:12px;font-weight:700;color:${DOMAIN_COLOR[d]};text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;display:flex;justify-content:space-between">${esc(DOMAIN_LABELS[d][lang])}<span>${pct1(byDomain[d].avg)}</span></h3><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:#f1f5f9"><th style="padding:4px 8px;border:1px solid #e2e8f0;text-align:left">${ko ? '평가' : 'Assessment'}</th><th style="padding:4px 8px;border:1px solid #e2e8f0">${ko ? '점수' : 'Score'}</th><th style="padding:4px 8px;border:1px solid #e2e8f0">%</th><th style="padding:4px 8px;border:1px solid #e2e8f0">${ko ? '반 평균' : 'Class'}</th></tr></thead><tbody>${rows}</tbody></table></div>`
     }).join('')
     const stds = standards.length ? `<h3 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin:14px 0 4px">${ko ? '기준별' : 'Standards'}</h3><table style="width:100%;border-collapse:collapse;font-size:11px">${standards.map(s => { const b = stdBand(s.pct!); return `<tr><td style="padding:3px 8px;border:1px solid #e2e8f0;color:${DOMAIN_COLOR[s.domain] || '#64748b'};font-family:monospace">${s.code}</td><td style="padding:3px 8px;border:1px solid #e2e8f0">${esc(plainName(s.code))}</td><td style="padding:3px 8px;border:1px solid #e2e8f0;text-align:center">${fmtPts(s.earned)}/${fmtPts(s.possible)}</td><td style="padding:3px 8px;border:1px solid #e2e8f0;text-align:center;font-weight:600;color:${b === 'met' ? '#16a34a' : b === 'approaching' ? '#d97706' : '#dc2626'}">${b === 'met' ? (ko ? '도달' : 'Met') : b === 'approaching' ? (ko ? '근접' : 'Approaching') : (ko ? '미달' : 'Not yet')}</td></tr>` }).join('')}</table>` : ''
-    pw.document.write(`<!DOCTYPE html><html><head><title>Grade Report - ${esc(selected.english_name)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>body{font-family:Inter,sans-serif;margin:24px;color:#1a1a2e}@media print{@page{margin:15mm}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#647FBC;border-radius:8px;color:white;margin-bottom:14px"><div><span style="font-size:20px;font-weight:700">${esc(selected.english_name)}</span><span style="font-size:14px;margin-left:8px;opacity:0.7">${esc(selected.korean_name)}</span></div><div style="font-size:11px;text-align:right">${ko ? '성적표' : 'Grade Report'}<br>${new Date().toLocaleDateString()}${overall != null ? `<br><b style="font-size:16px">${overall.toFixed(1)}% · ${percentToLetter(overall)}</b>` : ''}</div></div><div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">${tiles}</div>${tables}${stds}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
+    pw.document.write(`<!DOCTYPE html><html><head><title>Grade Report - ${esc(selected.english_name)}</title><style>h1,h2,h3{font-family:Georgia,'Iowan Old Style',serif}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;margin:24px;color:#1a1a2e}@media print{@page{margin:15mm}}</style></head><body><div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#647FBC;border-radius:8px;color:white;margin-bottom:14px"><div><span style="font-size:20px;font-weight:700">${esc(selected.english_name)}</span><span style="font-size:14px;margin-left:8px;opacity:0.7">${esc(selected.korean_name)}</span></div><div style="font-size:11px;text-align:right">${ko ? '성적표' : 'Grade Report'}<br>${new Date().toLocaleDateString()}${overall != null ? `<br><b style="font-size:16px">${overall.toFixed(1)}% · ${percentToLetter(overall)}</b>` : ''}</div></div><div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">${tiles}</div>${tables}${stds}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
     pw.document.close(); pw.print()
   }
 
@@ -307,7 +307,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <input value={filter} onChange={e => setFilter(e.target.value)} placeholder={ko ? '학생 찾기' : 'Find a student'} className="w-full h-8 pl-7 pr-2 text-[length:calc(12.5px*var(--ts))] bg-surface-alt border border-border rounded-md outline-none focus:border-navy" />
           </div>
-          <p className="text-[length:calc(10.5px*var(--ts))] text-text-tertiary mt-1.5">{students.length} {ko ? '명' : 'students'} · ↑ ↓ {ko ? '이동' : 'to move'}</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1.5">{students.length} {ko ? '명' : 'students'} · ↑ ↓ {ko ? '이동' : 'to move'}</p>
         </div>
         <div className="overflow-y-auto flex-1">
           {visibleStudents.map(s => {
@@ -316,7 +316,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
             return (
               <button key={s.id} data-active={active} onClick={() => setSelectedStudentId(s.id)} className={`w-full flex items-center gap-2 px-3 py-2 text-left border-b border-border/60 ${active ? 'bg-accent-light shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface-alt'}`}>
                 <span className={`w-2 h-2 rounded-full shrink-0 ${v == null ? 'bg-border' : v < 60 ? 'bg-danger' : v < 70 ? 'bg-amber-500' : 'bg-transparent'}`} title={v != null && v < 70 ? (ko ? '70% 미만' : 'Under 70%') : undefined} />
-                <span className="min-w-0 flex-1"><span className={`block text-[length:calc(12.5px*var(--ts))] truncate ${active ? 'font-semibold text-navy' : 'text-text-primary'}`}>{s.english_name}</span><span className="block text-[length:calc(10.5px*var(--ts))] text-text-tertiary truncate">{s.korean_name}</span></span>
+                <span className="min-w-0 flex-1"><span className={`block text-[length:calc(12.5px*var(--ts))] truncate ${active ? 'font-semibold text-navy' : 'text-text-primary'}`}>{s.english_name}</span><span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary truncate">{s.korean_name}</span></span>
                 <span className={`text-[length:calc(12px*var(--ts))] tabular-nums font-semibold ${toneOf(v)}`}>{v != null ? Math.round(v) : loadingClass ? '…' : '—'}</span>
               </button>
             )
@@ -343,7 +343,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                 {selected.photo_url ? <img src={selected.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" /> : null}
                 <div className="min-w-0">
                   <h3 className="font-display text-xl font-semibold text-navy leading-tight">{selected.english_name}<span className="text-text-tertiary ml-2 text-[length:calc(14px*var(--ts))] font-normal">{selected.korean_name}</span></h3>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap text-[length:calc(11px*var(--ts))]">
+                  <div className="flex items-center gap-2 mt-1 flex-wrap text-[length:calc(11.5px*var(--ts))]">
                     <WIDABadge studentId={selected.id} compact />
                     {reading && (reading.cwpm != null || reading.level) && <span className="px-1.5 py-0.5 rounded bg-surface border border-border text-text-secondary" title={ko ? '최근 읽기 평가' : 'Latest reading record'}>{ko ? '읽기' : 'Reading'} {reading.cwpm != null ? `${reading.cwpm} cwpm` : ''}{reading.level ? ` · ${reading.level}` : ''}</span>}
                     <button onClick={() => navigateTo({ view: 'students', preSelectedStudent: selected.id })} className="inline-flex items-center gap-1 text-navy hover:underline"><ExternalLink size={10} />{ko ? '학생 페이지' : 'Student page'}</button>
@@ -354,17 +354,17 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
               <div className="flex items-center gap-2">
                 <button onClick={() => step(-1)} className="w-8 h-8 rounded-lg border border-border bg-surface text-text-secondary hover:text-navy flex items-center justify-center" title={ko ? '이전 학생 (↑)' : 'Previous student (↑)'}><ChevronLeft size={14} /></button>
                 <button onClick={() => step(1)} className="w-8 h-8 rounded-lg border border-border bg-surface text-text-secondary hover:text-navy flex items-center justify-center" title={ko ? '다음 학생 (↓)' : 'Next student (↓)'}><ChevronRight size={14} /></button>
-                <button onClick={printReport} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-surface text-text-secondary hover:bg-border border border-border"><Printer size={12} />{ko ? '인쇄' : 'Print report'}</button>
+                <button onClick={printReport} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface text-text-secondary hover:bg-border border border-border"><Printer size={12} />{ko ? '인쇄' : 'Print report'}</button>
               </div>
             </div>
             <div className="px-5 py-3 flex items-center gap-5 flex-wrap border-b border-border bg-surface-alt/40">
               <div className="flex items-baseline gap-2">
                 <span className={`text-3xl font-display font-bold ${toneOf(overall)}`}>{overall != null ? `${overall.toFixed(1)}%` : '—'}</span>
                 {overall != null && <span className="text-[length:calc(13px*var(--ts))] font-semibold text-text-secondary">{percentToLetter(overall)}</span>}
-                <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase tracking-wider font-semibold">{ko ? '전체' : 'Overall'}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider font-semibold">{ko ? '전체' : 'Overall'}</span>
               </div>
-              <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{ko ? '영역 평균의 평균, 성적표와 같은 값' : 'the mean of the domain averages, the same number the report card uses'}</span>
-              <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary ml-auto tabular-nums">{scoredCount}/{allAssessments.length} {ko ? '채점됨' : 'scored'}{unscored.length ? ` · ${unscored.length} ${ko ? '미채점' : 'to score'}` : ''}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{ko ? '영역 평균의 평균, 성적표와 같은 값' : 'the mean of the domain averages, the same number the report card uses'}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto tabular-nums">{scoredCount}/{allAssessments.length} {ko ? '채점됨' : 'scored'}{unscored.length ? ` · ${unscored.length} ${ko ? '미채점' : 'to score'}` : ''}</span>
             </div>
             {/* Domain tiles */}
             <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-border">
@@ -376,25 +376,25 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                 const drop = seq.length >= 3 ? ((seq[seq.length - 3] + seq[seq.length - 2]) / 2) - seq[seq.length - 1] : 0
                 return (
                   <div key={d} className="px-4 py-3 min-w-0" style={{ backgroundColor: b ? domainTint(d, '0A') : undefined }}>
-                    <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider font-semibold truncate" style={{ color: DOMAIN_COLOR[d] }} title={DOMAIN_LABELS[d][lang]}>{DOMAIN_LABELS[d][lang]}</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold truncate" style={{ color: DOMAIN_COLOR[d] }} title={DOMAIN_LABELS[d][lang]}>{DOMAIN_LABELS[d][lang]}</p>
                     {!b ? (
-                      <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mt-2 leading-snug">{ko ? '아직 평가 없음' : 'no assessments yet'}</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-2 leading-snug">{ko ? '아직 평가 없음' : 'no assessments yet'}</p>
                     ) : (
                       <>
                         <div className="flex items-baseline gap-1.5 mt-1">
                           <span className={`font-display text-[length:calc(24px*var(--ts))] leading-none tabular-nums ${toneOf(b.avg)}`}>{b.avg != null ? Math.round(b.avg) : '—'}</span>
-                          {b.avg != null && <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">%</span>}
-                          {diff != null && <span className={`text-[length:calc(10.5px*var(--ts))] tabular-nums font-semibold ${diff >= 0 ? 'text-success' : 'text-danger'}`} title={`${prevSemester?.name || (ko ? '지난 학기' : 'last semester')}: ${Math.round(prev!)}%`}>{diff >= 0 ? '▲' : '▼'} {Math.abs(Math.round(diff))}</span>}
+                          {b.avg != null && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">%</span>}
+                          {diff != null && <span className={`text-[length:calc(11.5px*var(--ts))] tabular-nums font-semibold ${diff >= 0 ? 'text-success' : 'text-danger'}`} title={`${prevSemester?.name || (ko ? '지난 학기' : 'last semester')}: ${Math.round(prev!)}%`}>{diff >= 0 ? '▲' : '▼'} {Math.abs(Math.round(diff))}</span>}
                         </div>
                         <div className="mt-1.5"><DomainTrend points={b.trend} color={DOMAIN_COLOR[d]} yMin={trendMin} ko={ko} /></div>
-                        <p className="text-[length:calc(10.5px*var(--ts))] text-text-tertiary mt-0.5 tabular-nums truncate">{ko ? '반' : 'class'} {b.classAvg != null ? `${Math.round(b.classAvg)}%` : '—'} · {seq.length}/{b.rows.length}{drop >= 15 ? ` · ${ko ? '최근 하락' : 'recent drop'}` : ''}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5 tabular-nums truncate">{ko ? '반' : 'class'} {b.classAvg != null ? `${Math.round(b.classAvg)}%` : '—'} · {seq.length}/{b.rows.length}{drop >= 15 ? ` · ${ko ? '최근 하락' : 'recent drop'}` : ''}</p>
                       </>
                     )}
                   </div>
                 )
               })}
             </div>
-            <p className="px-4 py-1.5 border-t border-border text-[length:calc(10px*var(--ts))] text-text-tertiary flex items-center gap-3 flex-wrap">
+            <p className="px-4 py-1.5 border-t border-border text-[length:calc(11.5px*var(--ts))] text-text-tertiary flex items-center gap-3 flex-wrap">
               <span className="inline-flex items-center gap-1.5"><span className="w-4 h-[2px] bg-navy inline-block rounded" />{ko ? '학생의 누적 평균' : "this student's running average"}</span>
               <span className="inline-flex items-center gap-1.5"><span className="w-4 border-t border-dashed border-text-tertiary inline-block" />{ko ? '반의 누적 평균' : "the class's"}</span>
               <span>{ko ? `다섯 칸 모두 ${trendMin}–100% 눈금` : `one scale across the five tiles, ${trendMin} to 100%`}{trendMin < 70 ? (ko ? ' · 70% 선' : ' · the faint line is 70%') : ''}</span>
@@ -406,7 +406,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
             <div className={`grid gap-4 ${notes.length > 0 && unscored.length > 0 ? 'md:grid-cols-2' : ''}`}>
               {notes.length > 0 && (
                 <div className="bg-surface border border-border rounded-xl p-4">
-                  <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">{ko ? '눈여겨볼 점' : 'Worth a look'}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">{ko ? '눈여겨볼 점' : 'Worth a look'}</p>
                   <ul className="space-y-1.5">
                     {notes.map((n, i) => <li key={i} className="flex items-start gap-2 text-[length:calc(12.5px*var(--ts))] text-text-primary"><span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.tone === 'good' ? 'bg-success' : n.tone === 'bad' ? 'bg-danger' : n.tone === 'warn' ? 'bg-amber-500' : 'bg-navy/40'}`} />{n.text}</li>)}
                   </ul>
@@ -414,14 +414,14 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
               )}
               {unscored.length > 0 && (
                 <div className="bg-surface border border-amber-300/60 rounded-xl p-4 bg-amber-50/30">
-                  <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-amber-700 font-semibold mb-2">{ko ? '미채점' : 'Not yet scored'} · {unscored.length}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-amber-700 font-semibold mb-2">{ko ? '미채점' : 'Not yet scored'} · {unscored.length}</p>
                   <ul className="space-y-1">
                     {unscored.map(a => (
                       <li key={a.id} className="flex items-center gap-2 text-[length:calc(12.5px*var(--ts))]">
                         <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: domainColor(a.domain) }} />
                         <span className="truncate text-text-primary">{a.name}</span>
-                        {a.date && <span className="text-[length:calc(10.5px*var(--ts))] text-text-tertiary">{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                        {onOpenAssessment && <button onClick={() => onOpenAssessment(a)} className="ml-auto text-[length:calc(11px*var(--ts))] text-navy hover:underline whitespace-nowrap">{ko ? '채점하기' : 'Open sheet'}</button>}
+                        {a.date && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{new Date(a.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        {onOpenAssessment && <button onClick={() => onOpenAssessment(a)} className="ml-auto text-[length:calc(11.5px*var(--ts))] text-navy hover:underline whitespace-nowrap">{ko ? '채점하기' : 'Open sheet'}</button>}
                       </li>
                     ))}
                   </ul>
@@ -434,7 +434,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
           <div className="bg-surface border border-border rounded-xl overflow-hidden">
             <table className="w-full text-[length:calc(12px*var(--ts))] table-fixed">
               <colgroup><col /><col className="w-[88px]" /><col className="w-[64px]" /><col className="w-[120px]" /><col className="w-[72px]" /><col className="w-[72px]" /></colgroup>
-              <thead><tr className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary bg-surface-alt/60">
+              <thead><tr className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary bg-surface-alt/60">
                 <th className="text-left px-5 py-2">{ko ? '평가' : 'Assessment'}</th><th className="text-left px-3 py-2">{ko ? '점수' : 'Score'}</th><th className="text-left px-3 py-2">%</th><th className="text-left px-3 py-2">{ko ? '반 분포' : 'In the class'}</th><th className="text-right px-3 py-2">{ko ? '반 평균' : 'Class avg'}</th><th className="text-right px-3 py-2">{ko ? '차이' : 'vs. class'}</th>
               </tr></thead>
               {DOMAINS.map(domain => {
@@ -452,13 +452,13 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                           <button onClick={() => setOpen(p => ({ ...p, [domain]: collapsed }))} className="inline-flex items-center gap-2 text-[length:calc(12px*var(--ts))] font-semibold uppercase tracking-wider" style={{ color: DOMAIN_COLOR[domain] }}>
                             {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}<span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: DOMAIN_COLOR[domain] }} />{DOMAIN_LABELS[domain][lang]}
                           </button>
-                          <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{d.rows.length} {ko ? '개 평가' : d.rows.length === 1 ? 'assessment' : 'assessments'}</span>
-                          <button onClick={() => setShowWhy(p => ({ ...p, [domain]: !why }))} className="text-[length:calc(11px*var(--ts))] text-navy hover:underline">{why ? (ko ? '계산 숨기기' : 'hide how it is computed') : (ko ? '어떻게 계산되나' : 'how is this computed?')}</button>
+                          <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{d.rows.length} {ko ? '개 평가' : d.rows.length === 1 ? 'assessment' : 'assessments'}</span>
+                          <button onClick={() => setShowWhy(p => ({ ...p, [domain]: !why }))} className="text-[length:calc(11.5px*var(--ts))] text-navy hover:underline">{why ? (ko ? '계산 숨기기' : 'hide how it is computed') : (ko ? '어떻게 계산되나' : 'how is this computed?')}</button>
                           <span className="ml-auto flex items-baseline gap-3">
                             {sem && (sem.final_grade != null || sem.calculated_grade != null) && (
-                              <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary" title={ko ? '성적표에 들어갈 값' : 'What the report card will show'}>{ko ? '성적표' : 'report card'} <span className="font-semibold text-text-secondary tabular-nums">{(sem.final_grade ?? sem.calculated_grade)!.toFixed(1)}%</span>{sem.final_grade != null && sem.calculated_grade != null && Math.abs(sem.final_grade - sem.calculated_grade) >= 0.05 && <span className="text-amber-700"> · {ko ? '교사 조정' : 'teacher override'}</span>}</span>
+                              <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary" title={ko ? '성적표에 들어갈 값' : 'What the report card will show'}>{ko ? '성적표' : 'report card'} <span className="font-semibold text-text-secondary tabular-nums">{(sem.final_grade ?? sem.calculated_grade)!.toFixed(1)}%</span>{sem.final_grade != null && sem.calculated_grade != null && Math.abs(sem.final_grade - sem.calculated_grade) >= 0.05 && <span className="text-amber-700"> · {ko ? '교사 조정' : 'teacher override'}</span>}</span>
                             )}
-                            {d.classAvg != null && <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary tabular-nums">{ko ? '반' : 'class'} {d.classAvg.toFixed(1)}%</span>}
+                            {d.classAvg != null && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums">{ko ? '반' : 'class'} {d.classAvg.toFixed(1)}%</span>}
                             {d.avg != null && <span className={`text-[length:calc(14px*var(--ts))] font-bold tabular-nums ${toneOf(d.avg)}`}>{d.avg.toFixed(1)}%</span>}
                           </span>
                         </div>
@@ -482,10 +482,10 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                         <tr key={r.key} className="border-t border-border/50 hover:bg-surface-alt/40">
                           <td className="px-5 py-2 min-w-0">
                             <span className="font-medium text-text-primary">{r.name}</span>
-                            <span className="text-text-tertiary ml-1.5 text-[length:calc(10px*var(--ts))]">{r.a.type !== 'formative' ? typeLabel(r.a.type, ko) : ''}{r.date ? `${r.a.type !== 'formative' ? ' · ' : ''}${new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
-                            {r.whole && <span className="block text-[length:calc(10px*var(--ts))] text-text-tertiary tabular-nums">{ko ? '시험지 전체' : 'whole paper'} {r.whole.score != null ? `${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${pct1(r.whole.pct)}` : '—'}{r.whole.classPct != null && <span className="ml-1.5">({ko ? '반' : 'class'} {pct1(r.whole.classPct)})</span>}</span>}
+                            <span className="text-text-tertiary ml-1.5 text-[length:calc(11.5px*var(--ts))]">{r.a.type !== 'formative' ? typeLabel(r.a.type, ko) : ''}{r.date ? `${r.a.type !== 'formative' ? ' · ' : ''}${new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+                            {r.whole && <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums">{ko ? '시험지 전체' : 'whole paper'} {r.whole.score != null ? `${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${pct1(r.whole.pct)}` : '—'}{r.whole.classPct != null && <span className="ml-1.5">({ko ? '반' : 'class'} {pct1(r.whole.classPct)})</span>}</span>}
                           </td>
-                          <td className="px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-text-tertiary text-[length:calc(10px*var(--ts))] uppercase tracking-wider">{r.flag}</span> : <span className="text-amber-700 text-[length:calc(10px*var(--ts))] uppercase tracking-wider">{ko ? '미채점' : 'unscored'}</span>}</td>
+                          <td className="px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">{r.flag}</span> : <span className="text-amber-700 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">{ko ? '미채점' : 'unscored'}</span>}</td>
                           <td className={`px-3 py-2 font-semibold tabular-nums ${toneOf(r.pct)}`}>{r.pct != null ? `${r.pct.toFixed(1)}%` : '—'}</td>
                           <td className="px-3 py-1.5"><PositionStrip vals={r.classVals} me={selected.id} color={DOMAIN_COLOR[domain]} /></td>
                           <td className="px-3 py-2 text-right text-text-secondary tabular-nums">{r.classPct != null ? `${r.classPct.toFixed(1)}%` : '—'}</td>
@@ -504,8 +504,8 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
           {standards.length > 0 && (
             <div className="bg-surface border border-border rounded-xl p-4">
               <div className="flex items-baseline justify-between mb-1 flex-wrap gap-2">
-                <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{ko ? '기준별 도달' : 'Standards from the answer sheets'}</p>
-                <span className="text-[length:calc(10.5px*var(--ts))] text-text-tertiary">{ko ? `도달 ${bands.on}%+ · 근접 ${bands.approaching}%+` : `Met ${bands.on}%+ · Approaching ${bands.approaching}%+ · weakest first`}</span>
+                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{ko ? '기준별 도달' : 'Standards from the answer sheets'}</p>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{ko ? `도달 ${bands.on}%+ · 근접 ${bands.approaching}%+` : `Met ${bands.on}%+ · Approaching ${bands.approaching}%+ · weakest first`}</span>
               </div>
               <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">{ko ? '문항별로 채점한 평가에서만 집계됩니다.' : 'Only assessments marked question by question count here, so this is the "what to reteach" list for this student.'}</p>
               <div className="grid gap-1.5">
@@ -513,10 +513,10 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                   const b = stdBand(s.pct!)
                   return (
                     <div key={s.code} className="grid grid-cols-[80px_minmax(0,1fr)_72px_84px] gap-3 items-center text-[length:calc(12px*var(--ts))]">
-                      <span className="font-mono text-[length:calc(11px*var(--ts))] inline-flex items-center gap-1.5" style={{ color: domainColor(s.domain) }}><span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: domainColor(s.domain) }} />{s.code}</span>
-                      <span className="min-w-0"><span className="text-text-primary">{plainName(s.code)}</span><span className="block text-[length:calc(10.5px*var(--ts))] text-text-tertiary truncate">{s.where.map(w => `${w.name} Q${w.qs.join(', ')}`).join(' · ')}</span></span>
+                      <span className="font-mono text-[length:calc(11.5px*var(--ts))] inline-flex items-center gap-1.5" style={{ color: domainColor(s.domain) }}><span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: domainColor(s.domain) }} />{s.code}</span>
+                      <span className="min-w-0"><span className="text-text-primary">{plainName(s.code)}</span><span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary truncate">{s.where.map(w => `${w.name} Q${w.qs.join(', ')}`).join(' · ')}</span></span>
                       <span className="tabular-nums text-text-secondary">{fmtPts(s.earned)}/{fmtPts(s.possible)} · {Math.round(s.pct!)}%</span>
-                      <span className={`text-[length:calc(10.5px*var(--ts))] font-semibold px-2 py-0.5 rounded-full text-center ${b === 'met' ? 'bg-green-100 text-green-700' : b === 'approaching' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{b === 'met' ? (ko ? '도달' : 'Met') : b === 'approaching' ? (ko ? '근접' : 'Approaching') : (ko ? '미달' : 'Not yet')}</span>
+                      <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold px-2 py-0.5 rounded-full text-center ${b === 'met' ? 'bg-green-100 text-green-700' : b === 'approaching' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{b === 'met' ? (ko ? '도달' : 'Met') : b === 'approaching' ? (ko ? '근접' : 'Approaching') : (ko ? '미달' : 'Not yet')}</span>
                     </div>
                   )
                 })}
@@ -533,7 +533,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
 // A short strip: the class as faint dots, the average as a tick, the student
 // as the solid dot. Hover for the exact numbers.
 function PositionStrip({ vals, me, color }: { vals: { id: string; v: number }[]; me: string; color: string }) {
-  if (vals.length < 2) return <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">—</span>
+  if (vals.length < 2) return <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">—</span>
   const W = 110, H = 16
   const x = (v: number) => 4 + (Math.max(0, Math.min(100, v)) / 100) * (W - 8)
   const mine = vals.find(v => v.id === me)

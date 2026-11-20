@@ -101,7 +101,7 @@ export default function StandardPicker({ grade, domain, englishClass, onPick, on
   }, [q, gradeSel, strand, used])
 
   const all: { st: CcssStandard }[] = view === 'code' ? codeRows : [...usedHits, ...otherHits]
-  const chip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  const chip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   const groupBtn = (on: boolean) => `w-full text-left px-2.5 py-1.5 rounded text-[length:calc(12.5px*var(--ts))] ${on ? 'bg-surface text-ink font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'text-ink-2 hover:bg-surface/70'}`
 
   const CodeRow = ({ st, n, idx }: { st: CcssStandard; n: number; idx: number }) => (
@@ -109,16 +109,16 @@ export default function StandardPicker({ grade, domain, englishClass, onPick, on
       <span className="font-mono text-[length:calc(12px*var(--ts))] font-semibold text-info pt-0.5">{st.code}</span>
       <span className="min-w-0">
         <span className="block text-[length:calc(13px*var(--ts))] text-ink leading-snug">{st.text}</span>
-        <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 mt-0.5">{plainName(st.code)} · {st.cluster}{n > 0 ? ` · ${ko ? `이 반에서 ${n}회 사용` : `used on ${n} ${n === 1 ? 'assessment' : 'assessments'} in ${englishClass}`}` : ''}</span>
+        <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">{plainName(st.code)} · {st.cluster}{n > 0 ? ` · ${ko ? `이 반에서 ${n}회 사용` : `used on ${n} ${n === 1 ? 'assessment' : 'assessments'} in ${englishClass}`}` : ''}</span>
       </span>
     </button>
   )
   const Row = ({ st, n, idx }: { st: CcssStandard; n: number; idx: number }) => (
     <button onMouseEnter={() => setHi(idx)} onClick={() => onPick(st)} className={`w-full text-left px-4 py-2.5 grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 ${hi === idx ? 'bg-paper-2' : ''}`}>
       <span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink leading-snug">{plainName(st.code)}</span>
-      <span className="font-mono text-[length:calc(11px*var(--ts))] text-info bg-info-soft px-1.5 py-0.5 rounded self-start">{st.code}</span>
+      <span className="font-mono text-[length:calc(11.5px*var(--ts))] text-info bg-info-soft px-1.5 py-0.5 rounded self-start">{st.code}</span>
       <span className="text-[length:calc(12px*var(--ts))] text-ink-2 leading-snug col-span-2">{st.text}</span>
-      <span className="text-[length:calc(11px*var(--ts))] text-ink-3 col-span-2">{SKILLS[familyOf(st.code)]?.name}{n > 0 ? ` · ${lang === 'ko' ? `이 반에서 ${n}회 사용` : `used on ${n} ${n === 1 ? 'assessment' : 'assessments'} in ${englishClass}`}` : ''}</span>
+      <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 col-span-2">{SKILLS[familyOf(st.code)]?.name}{n > 0 ? ` · ${lang === 'ko' ? `이 반에서 ${n}회 사용` : `used on ${n} ${n === 1 ? 'assessment' : 'assessments'} in ${englishClass}`}` : ''}</span>
     </button>
   )
 
@@ -145,8 +145,8 @@ export default function StandardPicker({ grade, domain, englishClass, onPick, on
             {view === 'code' ? (<>
               <p className="eyebrow px-2.5 mb-1">{ko ? '영역' : 'Strand'}</p>
               <button onClick={() => { setStrand('all'); setHi(0) }} className={groupBtn(strand === 'all')}>{ko ? '전체' : 'All strands'}</button>
-              {CCSS_DOMAINS.map(d => <button key={d.key} onClick={() => { setStrand(d.key); setHi(0) }} className={groupBtn(strand === d.key)}><span className="font-mono text-[length:calc(11px*var(--ts))] text-info mr-1.5">{d.key}</span>{d.label}</button>)}
-              <p className="text-[length:calc(11px*var(--ts))] text-ink-3 px-2.5 mt-3 leading-snug">{ko ? '선택한 학년의 모든 기준을 코드 순서로, 공식 문구와 함께 보여줍니다.' : 'Every standard for the chosen grade, in code order, with the official wording.'}</p>
+              {CCSS_DOMAINS.map(d => <button key={d.key} onClick={() => { setStrand(d.key); setHi(0) }} className={groupBtn(strand === d.key)}><span className="font-mono text-[length:calc(11.5px*var(--ts))] text-info mr-1.5">{d.key}</span>{d.label}</button>)}
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 px-2.5 mt-3 leading-snug">{ko ? '선택한 학년의 모든 기준을 코드 순서로, 공식 문구와 함께 보여줍니다.' : 'Every standard for the chosen grade, in code order, with the official wording.'}</p>
             </>) : (<>
             <p className="eyebrow px-2.5 mb-1">{lang === 'ko' ? '기능별 찾기' : 'Browse by skill'}</p>
             <button onClick={() => setGroup('all')} className={groupBtn(group === 'all')}>{suggestedGroups.length && !q ? (lang === 'ko' ? `${domain} 관련` : `For ${domain}`) : (lang === 'ko' ? '전체' : 'All')}</button>

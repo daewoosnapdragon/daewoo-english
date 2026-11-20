@@ -22,13 +22,13 @@ interface LogRow { id: string; date: string; type: string; note: string; is_flag
 export interface TeacherRow { id: string; name: string; role: string; english_class: string }
 
 const TYPE_LABEL: Record<string, { en: string; ko: string; cls: string }> = {
-  positive: { en: 'Positive', ko: '긍정', cls: 'bg-green-100 text-green-700' },
-  concern: { en: 'Concern', ko: '우려', cls: 'bg-yellow-100 text-yellow-800' },
-  negative: { en: 'Negative', ko: '부정', cls: 'bg-red-100 text-red-700' },
-  abc: { en: 'Negative', ko: '부정', cls: 'bg-red-100 text-red-700' },
-  parent_contact: { en: 'Parent contact', ko: '학부모 연락', cls: 'bg-purple-100 text-purple-700' },
-  intervention: { en: 'Intervention', ko: '개입', cls: 'bg-orange-100 text-orange-700' },
-  note: { en: 'Note', ko: '메모', cls: 'bg-gray-100 text-gray-700' },
+  positive: { en: 'Positive', ko: '긍정', cls: 'bg-good-soft text-good' },
+  concern: { en: 'Concern', ko: '우려', cls: 'bg-warn-soft text-warn' },
+  negative: { en: 'Negative', ko: '부정', cls: 'bg-bad-soft text-bad' },
+  abc: { en: 'Negative', ko: '부정', cls: 'bg-bad-soft text-bad' },
+  parent_contact: { en: 'Parent contact', ko: '학부모 연락', cls: 'bg-info-soft text-info' },
+  intervention: { en: 'Intervention', ko: '개입', cls: 'bg-paper-3 text-ink' },
+  note: { en: 'Note', ko: '메모', cls: 'bg-paper-3 text-ink-2' },
 }
 // Dates come two ways: plain YYYY-MM-DD (a note's date, the action date) and
 // UTC timestamps (opened, read). Both are shown as the Seoul calendar day;
@@ -143,7 +143,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
       <div className={`px-5 py-3 flex items-center gap-2 border-b ${mode === 'admin' && open.length ? 'bg-bad-soft border-bad/30' : 'bg-paper-2 border-rule-2'}`}>
         <AlertTriangle size={16} className={mode === 'admin' && open.length ? 'text-bad' : 'text-ink-3'} />
         <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">{title}</h3>
-        {mode === 'admin' && open.length > 0 && <span className="text-[length:calc(11px*var(--ts))] text-ink-2 ml-2">{ko ? '읽었다고 표시하고 조치를 기록할 때까지 남아 있습니다' : 'Stays here until you mark it read and record the action'}</span>}
+        {mode === 'admin' && open.length > 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-2 ml-2">{ko ? '읽었다고 표시하고 조치를 기록할 때까지 남아 있습니다' : 'Stays here until you mark it read and record the action'}</span>}
         {canFold && <button onClick={fold} title={ko ? '새 사례가 열리면 다시 나타납니다' : 'Comes back on its own when a new case opens'} className="ml-auto h-7 px-2 rounded text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:bg-paper-3 inline-flex items-center gap-1"><X size={12} />{ko ? '접기' : 'Hide'}</button>}
         {studentId && closed.length > 0 && <button onClick={() => setShowHistory(h => !h)} className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1">{showHistory ? <ChevronDown size={12} /> : <ChevronRight size={12} />}{ko ? `지난 사례 ${closed.length}건` : `${closed.length} closed ${closed.length === 1 ? 'case' : 'cases'}`}</button>}
       </div>
@@ -158,11 +158,11 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <button onClick={() => setDetail(c)} className="text-[length:calc(14px*var(--ts))] font-semibold text-ink hover:underline">{c.students?.english_name}<span className="text-ink-3 font-normal text-[length:calc(12px*var(--ts))] ml-1.5">{c.students?.korean_name}</span></button>
-                    <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class}</span>
-                    <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
-                    {c.opened_reason === 'flag' && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '교사 표시' : 'flagged by teacher'}</span>}
-                    {overdue && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-bad text-white font-bold">{ko ? `${waiting}일 대기` : `waiting ${waiting} school days`}</span>}
-                    {c.reminder_at && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn text-white font-bold">{ko ? '자동 알림' : 'reminder sent'}</span>}
+                    <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-paper-2 text-ink-2">{c.students?.english_class}</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
+                    {c.opened_reason === 'flag' && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '교사 표시' : 'flagged by teacher'}</span>}
+                    {overdue && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-bad text-white font-bold">{ko ? `${waiting}일 대기` : `waiting ${waiting} school days`}</span>}
+                    {c.reminder_at && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-warn text-white font-bold">{ko ? '자동 알림' : 'reminder sent'}</span>}
                   </div>
                   <p className="text-[length:calc(12.5px*var(--ts))] text-ink mt-0.5">{c.step_label}{c.step_label ? ' · ' : ''}{ko ? `기록 ${c.log_ids.length}건` : `${c.log_ids.length} ${c.log_ids.length === 1 ? 'note' : 'notes'}`} · {ko ? '열림' : 'opened'} {fmtDate(c.created_at, ko)}{!overdue && waiting > 0 ? ` · ${waiting} ${ko ? '일 전' : waiting === 1 ? 'school day ago' : 'school days ago'}` : ''}</p>
                   {c.ask && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1"><span className="font-semibold text-ink">{ko ? '교사 요청:' : 'Teacher asks:'}</span> {c.ask}</p>}
@@ -179,7 +179,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
         })}
         {studentId && showHistory && closed.map(c => (
           <div key={c.id} className="px-5 py-2.5 text-[length:calc(12.5px*var(--ts))] text-ink-2 flex items-center gap-2 flex-wrap bg-paper-2/40">
-            <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-paper-3 text-ink-2 font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-paper-3 text-ink-2 font-semibold">{ko ? `${c.step}단계` : `Step ${c.step}`}</span>
             <span>{c.action_label} · {c.action_date ? fmtDate(c.action_date, ko) : '—'} · {nameOf(c.closed_by)}</span>
             {c.action_note && <span className="text-ink-3">· {c.action_note}</span>}
             <button onClick={() => setDetail(c)} className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '기록 보기' : 'notes'}</button>
@@ -241,7 +241,7 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
     const pw = window.open('', '_blank'); if (!pw || !logs) return
     const esc = (s: string) => String(s || '').replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch] as string))
     const rows = logs.map(l => `<tr><td style="padding:5px 8px;border:1px solid #e2e8f0;white-space:nowrap">${fmtDate(l.date, ko)}${l.time ? ` ${esc(l.time)}` : ''}</td><td style="padding:5px 8px;border:1px solid #e2e8f0">${esc(TYPE_LABEL[l.type]?.en || l.type)}${l.is_flagged ? ' · flagged' : ''}</td><td style="padding:5px 8px;border:1px solid #e2e8f0">${esc(l.note)}${(l.behaviors || []).length ? `<br><span style="color:#64748b;font-size:10px">Behavior: ${esc((l.behaviors || []).join(', '))}</span>` : ''}${(l.antecedents || []).length ? `<br><span style="color:#64748b;font-size:10px">Before: ${esc((l.antecedents || []).join(', '))}</span>` : ''}${(l.consequences || []).length ? `<br><span style="color:#64748b;font-size:10px">Response: ${esc((l.consequences || []).join(', '))}</span>` : ''}</td><td style="padding:5px 8px;border:1px solid #e2e8f0">${esc(l.teachers?.name || '')}</td></tr>`).join('')
-    pw.document.write(`<!DOCTYPE html><html><head><title>Behavior case - ${esc(c.students?.english_name || '')}</title><style>body{font-family:Inter,Arial,sans-serif;margin:24px;color:#1a1a2e;font-size:12px}@media print{@page{margin:15mm}}</style></head><body><h1 style="font-size:20px;margin:0 0 4px">${esc(c.students?.english_name || '')} <span style="font-weight:400;color:#64748b;font-size:14px">${esc(c.students?.korean_name || '')} · ${esc(c.students?.english_class || '')} · Grade ${c.students?.grade ?? ''}</span></h1><p style="margin:0 0 12px;color:#64748b">Behavior ladder step ${c.step}: ${esc(c.step_label)} · opened ${fmtDate(c.created_at, false)} · ${c.log_ids.length} notes${c.ask ? `<br><b style="color:#1a1a2e">Teacher asks:</b> ${esc(c.ask)}` : ''}</p><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f1f5f9"><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Date</th><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Type</th><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Note</th><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Teacher</th></tr></thead><tbody>${rows}</tbody></table>${c.status === 'closed' ? `<p style="margin-top:12px"><b>${esc(c.action_label)}</b> · ${c.action_date ? fmtDate(c.action_date, false) : ''} · ${esc(nameOf(c.closed_by))}${c.action_note ? `<br>${esc(c.action_note)}` : ''}</p>` : '<p style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:8px">Parent contact: date ________  spoke with ____________  outcome ______________________________</p>'}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
+    pw.document.write(`<!DOCTYPE html><html><head><title>Behavior case - ${esc(c.students?.english_name || '')}</title><style>h1,h2,h3{font-family:Georgia,'Iowan Old Style',serif}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;margin:24px;color:#1a1a2e;font-size:12px}@media print{@page{margin:15mm}}</style></head><body><h1 style="font-size:20px;margin:0 0 4px">${esc(c.students?.english_name || '')} <span style="font-weight:400;color:#64748b;font-size:14px">${esc(c.students?.korean_name || '')} · ${esc(c.students?.english_class || '')} · Grade ${c.students?.grade ?? ''}</span></h1><p style="margin:0 0 12px;color:#64748b">Behavior ladder step ${c.step}: ${esc(c.step_label)} · opened ${fmtDate(c.created_at, false)} · ${c.log_ids.length} notes${c.ask ? `<br><b style="color:#1a1a2e">Teacher asks:</b> ${esc(c.ask)}` : ''}</p><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#f1f5f9"><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Date</th><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Type</th><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Note</th><th style="padding:5px 8px;border:1px solid #e2e8f0;text-align:left">Teacher</th></tr></thead><tbody>${rows}</tbody></table>${c.status === 'closed' ? `<p style="margin-top:12px"><b>${esc(c.action_label)}</b> · ${c.action_date ? fmtDate(c.action_date, false) : ''} · ${esc(nameOf(c.closed_by))}${c.action_note ? `<br>${esc(c.action_note)}` : ''}</p>` : '<p style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:8px">Parent contact: date ________  spoke with ____________  outcome ______________________________</p>'}<p style="font-size:9px;color:#94a3b8;margin-top:16px">Daewoo Elementary English Program</p></body></html>`)
     pw.document.close(); pw.print()
   }
 
@@ -270,24 +270,24 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
           {/* The notes */}
           {!logs ? <div className="py-6 text-center"><Loader2 size={16} className="animate-spin text-ink-3 mx-auto" /></div> : (
             <div>
-              <div className="flex items-baseline justify-between mb-1.5"><p className="eyebrow">{ko ? `기록 ${logs.length}건` : `The ${logs.length} ${logs.length === 1 ? 'note' : 'notes'}`}</p><span className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? `긍정 기록 ${positives}건 (전체)` : `${positives} positive ${positives === 1 ? 'note' : 'notes'} on file for balance`}</span></div>
+              <div className="flex items-baseline justify-between mb-1.5"><p className="eyebrow">{ko ? `기록 ${logs.length}건` : `The ${logs.length} ${logs.length === 1 ? 'note' : 'notes'}`}</p><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? `긍정 기록 ${positives}건 (전체)` : `${positives} positive ${positives === 1 ? 'note' : 'notes'} on file for balance`}</span></div>
               <div className="divide-y divide-rule border border-rule-2 rounded-md">
                 {logs.map(l => (
                   <div key={l.id} className="px-3.5 py-2.5 text-[length:calc(12.5px*var(--ts))]">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="tabular-nums text-ink-2">{fmtDate(l.date, ko)}{l.time ? ` · ${l.time}` : ''}</span>
-                      <span className={`text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${TYPE_LABEL[l.type]?.cls || 'bg-paper-3 text-ink-2'}`}>{ko ? TYPE_LABEL[l.type]?.ko : TYPE_LABEL[l.type]?.en || l.type}</span>
-                      {l.is_flagged && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '표시됨' : 'flagged'}</span>}
-                      {(l.intensity || 1) > 1 && <span className="text-[length:calc(10px*var(--ts))] text-ink-3">{ko ? '강도' : 'intensity'} {l.intensity}</span>}
-                      <span className="ml-auto text-[length:calc(11px*var(--ts))] text-ink-3">{l.teachers?.name}</span>
+                      <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${TYPE_LABEL[l.type]?.cls || 'bg-paper-3 text-ink-2'}`}>{ko ? TYPE_LABEL[l.type]?.ko : TYPE_LABEL[l.type]?.en || l.type}</span>
+                      {l.is_flagged && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-warn-soft text-warn font-semibold">{ko ? '표시됨' : 'flagged'}</span>}
+                      {(l.intensity || 1) > 1 && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '강도' : 'intensity'} {l.intensity}</span>}
+                      <span className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-3">{l.teachers?.name}</span>
                     </div>
                     {l.note && <p className="text-ink mt-1">{l.note}</p>}
                     {l.activity && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">{ko ? '활동' : 'During'}: {l.activity}</p>}
                     {((l.antecedents || []).length > 0 || (l.behaviors || []).length > 0 || (l.consequences || []).length > 0) && (
                       <div className="flex flex-wrap gap-1 mt-1.5">
-                        {(l.antecedents || []).map((a, i) => <span key={`a${i}`} className="text-[length:calc(10px*var(--ts))] px-2 py-0.5 rounded-full bg-info-soft text-info">{a}</span>)}
-                        {(l.behaviors || []).map((b, i) => <span key={`b${i}`} className="text-[length:calc(10px*var(--ts))] px-2 py-0.5 rounded-full bg-bad-soft text-bad">{b}</span>)}
-                        {(l.consequences || []).map((x, i) => <span key={`c${i}`} className="text-[length:calc(10px*var(--ts))] px-2 py-0.5 rounded-full bg-good-soft text-good">{x}</span>)}
+                        {(l.antecedents || []).map((a, i) => <span key={`a${i}`} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full bg-info-soft text-info">{a}</span>)}
+                        {(l.behaviors || []).map((b, i) => <span key={`b${i}`} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full bg-bad-soft text-bad">{b}</span>)}
+                        {(l.consequences || []).map((x, i) => <span key={`c${i}`} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full bg-good-soft text-good">{x}</span>)}
                       </div>
                     )}
                   </div>

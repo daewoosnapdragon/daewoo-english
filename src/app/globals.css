@@ -19,7 +19,9 @@
   --white: 251 248 242;      /* raised surfaces: cards, modals, inputs */
   --ink: 27 24 18;
   --ink-2: 79 74 63;
-  --ink-3: 133 125 110;
+  /* ink-3 is the quietest text: labels, hints, breadcrumbs. 108 101 89 keeps
+     4.5:1 on paper, white and paper-2 while staying a clear step under ink-2. */
+  --ink-3: 108 101 89;
   --ink-block: 31 27 20;     /* dark panels that used to be navy */
   --rule: 216 208 190;
   --rule-2: 196 187 166;
@@ -27,11 +29,11 @@
   --accent-2: 110 30 31;     /* hover */
   --accent-soft: 241 220 218;
   --good: 46 107 58;   --good-soft: 220 233 214;
-  --warn: 154 106 18;  --warn-soft: 245 231 194;
+  --warn: 132 91 15;   --warn-soft: 245 231 194;
   --bad: 160 50 46;    --bad-soft: 243 217 213;
   --info: 47 92 138;   --info-soft: 217 228 240;
   /* Calendar event colours, as hex so inline styles can use them directly. */
-  --ev-good: #2E6B3A; --ev-accent: #8A2A2B; --ev-info: #2F5C8A; --ev-warn: #9A6A12; --ev-teal: #4E948A; --ev-other: #857D6E;
+  --ev-good: #2E6B3A; --ev-accent: #8A2A2B; --ev-info: #2F5C8A; --ev-warn: #845B0F; --ev-teal: #4E948A; --ev-other: #6C6559;
   --lily: 201 138 152; --camellia: 180 142 110; --daisy: 201 185 74;
   --sunflower: 94 168 156; --marigold: 95 134 176; --snapdragon: 141 125 181;
   --wet: 107 58 51;          /* fresh ink: unsaved words */
@@ -49,7 +51,7 @@ html.dark {
   --white: 31 28 21;
   --ink: 237 230 214;
   --ink-2: 194 185 165;
-  --ink-3: 142 133 116;
+  --ink-3: 152 143 125;
   --ink-block: 12 11 8;
   --rule: 51 46 36;
   --rule-2: 74 67 51;
@@ -61,7 +63,7 @@ html.dark {
   --bad: 224 122 114;   --bad-soft: 62 34 32;
   --info: 127 166 214;  --info-soft: 31 44 59;
   --wet: 232 180 168;
-  --ev-good: #6FAF78; --ev-accent: #D9736F; --ev-info: #7FA6D6; --ev-warn: #D8AE4E; --ev-teal: #6FB8AD; --ev-other: #8E8574;
+  --ev-good: #6FAF78; --ev-accent: #D9736F; --ev-info: #7FA6D6; --ev-warn: #D8AE4E; --ev-teal: #6FB8AD; --ev-other: #988F7D;
 }
 
 body {
@@ -87,17 +89,19 @@ html.dark input, html.dark textarea, html.dark select {
   background-color: rgb(var(--white)); color: rgb(var(--ink)); border-color: rgb(var(--rule-2));
 }
 html.dark option { background-color: rgb(var(--white)); color: rgb(var(--ink)); }
-html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 0 0 1px rgb(var(--rule)), 0 8px 24px rgba(0,0,0,0.5) !important; }
+/* The raised shadows (lg and up) tint with --ink, which is pale in dark mode
+   and would glow; keep their warm hairline and drop a plain black shadow
+   instead. shadow-sm (a 1px rule) and the neu-* names are hairlines in
+   tailwind.config already and switch with the tokens, so they need nothing. */
+html.dark .shadow-lg, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 0 0 1px rgb(var(--rule-2)), 0 8px 24px rgba(0,0,0,0.5) !important; }
 html.dark .table-row-hover:hover td { background-color: rgb(var(--ink) / 0.04) !important; }
 
 /* Dark mode -- accent/status backgrounds */
-html.dark .bg-accent-light { background-color: #1a2a3d !important; }
 html.dark .bg-blue-50 { background-color: #172336 !important; }
 html.dark .bg-green-50 { background-color: #14261a !important; }
 html.dark .bg-red-50 { background-color: #2a1619 !important; }
 html.dark .bg-amber-50, html.dark .bg-yellow-50 { background-color: #2a2414 !important; }
 html.dark .bg-purple-50 { background-color: #221a30 !important; }
-html.dark .bg-pink-50 { background-color: #2a1a24 !important; }
 html.dark .bg-gray-50 { background-color: #2A261D !important; }
 html.dark .bg-gray-100 { background-color: #2A261D !important; }
 
@@ -108,8 +112,8 @@ html.dark .text-green-700, html.dark .text-green-800 { color: #4ade80 !important
 html.dark .text-green-600 { color: #6ee7a0 !important; }
 html.dark .text-red-700, html.dark .text-red-800 { color: #f87171 !important; }
 html.dark .text-red-600 { color: #fca5a5 !important; }
-html.dark .text-amber-700, html.dark .text-amber-800, html.dark .text-yellow-800 { color: #fbbf24 !important; }
-html.dark .text-amber-600, html.dark .text-yellow-700 { color: #fcd34d !important; }
+html.dark .text-amber-700, html.dark .text-amber-800 { color: #fbbf24 !important; }
+html.dark .text-amber-600 { color: #fcd34d !important; }
 html.dark .text-purple-700 { color: #c084fc !important; }
 html.dark .text-pink-700 { color: #f472b6 !important; }
 
@@ -122,17 +126,13 @@ html.dark .border-amber-200, html.dark .border-yellow-200 { border-color: #3d321
 /* Dark mode -- status background badges */
 html.dark .bg-green-100 { background-color: #14291a !important; }
 html.dark .bg-red-100 { background-color: #2a1419 !important; }
-html.dark .bg-amber-100, html.dark .bg-yellow-100 { background-color: #2a2414 !important; }
+html.dark .bg-amber-100 { background-color: #2a2414 !important; }
 html.dark .bg-blue-100 { background-color: #17233a !important; }
 html.dark .bg-purple-100 { background-color: #221a30 !important; }
 
 /* Dark mode -- misc */
 html.dark .bg-surface-alt\/50 { background-color: rgba(42,38,29,0.5) !important; }
 html.dark .bg-black\/40 { background-color: rgba(0,0,0,0.6) !important; }
-html.dark .shadow-sm, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important; }
-html.dark .shadow-neu-raised { box-shadow: 4px 4px 10px rgba(0,0,0,0.5), -4px -4px 10px rgba(50,60,80,0.3) !important; }
-html.dark .shadow-neu-inset { box-shadow: inset 3px 3px 6px rgba(0,0,0,0.4), inset -3px -3px 6px rgba(50,60,80,0.2) !important; }
-html.dark option { background-color: #1F1C15; color: #EDE6D6; }
 
 /* ───────────────────────────────────────────────────
    Dark mode -- gap fill
@@ -145,63 +145,47 @@ html.dark option { background-color: #1F1C15; color: #EDE6D6; }
 
 /* Dark text -> light (neutrals) */
 html.dark .text-gray-900, html.dark .text-gray-800 { color: #EDE6D6 !important; }
-html.dark .text-gray-700, html.dark .text-slate-700 { color: #D9D1BE !important; }
+html.dark .text-gray-700 { color: #D9D1BE !important; }
 html.dark .text-gray-600, html.dark .text-slate-600 { color: #C2B9A5 !important; }
 
 /* Dark text -> light (hues) */
 html.dark .text-blue-900 { color: #60a5fa !important; }
-html.dark .text-red-900 { color: #f87171 !important; }
 html.dark .text-amber-900 { color: #fbbf24 !important; }
 html.dark .text-purple-600, html.dark .text-purple-800 { color: #c084fc !important; }
-html.dark .text-pink-800 { color: #f472b6 !important; }
 html.dark .text-emerald-600, html.dark .text-emerald-700 { color: #34d399 !important; }
-html.dark .text-teal-600, html.dark .text-teal-700, html.dark .text-teal-800 { color: #2dd4bf !important; }
-html.dark .text-sky-700, html.dark .text-sky-800 { color: #7dd3fc !important; }
-html.dark .text-indigo-600, html.dark .text-indigo-700, html.dark .text-indigo-900 { color: #a5b4fc !important; }
-html.dark .text-violet-700 { color: #c4b5fd !important; }
+html.dark .text-indigo-600 { color: #a5b4fc !important; }
 html.dark .text-orange-600, html.dark .text-orange-700,
 html.dark .text-orange-800, html.dark .text-orange-900 { color: #fb923c !important; }
 
 /* Light tint backgrounds -> dark */
-html.dark .bg-gray-200, html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color: #2A261D !important; }
+html.dark .bg-gray-200, html.dark .bg-slate-100 { background-color: #2A261D !important; }
 html.dark .bg-blue-200 { background-color: #1b2a45 !important; }
 html.dark .bg-green-200 { background-color: #17331f !important; }
 html.dark .bg-red-200 { background-color: #331a1e !important; }
 html.dark .bg-amber-200 { background-color: #332c18 !important; }
 html.dark .bg-pink-100 { background-color: #2a1a24 !important; }
-html.dark .bg-emerald-50, html.dark .bg-teal-50, html.dark .bg-teal-100 { background-color: #12241f !important; }
-html.dark .bg-sky-50, html.dark .bg-sky-100 { background-color: #16243a !important; }
-html.dark .bg-indigo-50, html.dark .bg-indigo-100, html.dark .bg-indigo-200,
-html.dark .bg-violet-50 { background-color: #1e1b33 !important; }
-html.dark .bg-orange-50, html.dark .bg-orange-100 { background-color: #2a1e14 !important; }
+html.dark .bg-emerald-50 { background-color: #12241f !important; }
+html.dark .bg-indigo-50 { background-color: #1e1b33 !important; }
+html.dark .bg-orange-50 { background-color: #2a1e14 !important; }
 
 /* Pale borders -> dark */
-html.dark .border-gray-100, html.dark .border-gray-200,
-html.dark .border-gray-300, html.dark .border-gray-400,
-html.dark .border-slate-200 { border-color: #3A3427 !important; }
-html.dark .border-blue-100, html.dark .border-blue-300,
-html.dark .border-blue-400, html.dark .border-sky-200 { border-color: #1e3a5f !important; }
-html.dark .border-green-100, html.dark .border-green-300, html.dark .border-green-400,
-html.dark .border-emerald-200, html.dark .border-teal-200 { border-color: #1a3d28 !important; }
+html.dark .border-gray-200, html.dark .border-gray-300 { border-color: #3A3427 !important; }
+html.dark .border-blue-100, html.dark .border-blue-300, html.dark .border-blue-400 { border-color: #1e3a5f !important; }
+html.dark .border-green-100, html.dark .border-green-300, html.dark .border-green-400, html.dark .border-emerald-200 { border-color: #1a3d28 !important; }
 html.dark .border-red-100, html.dark .border-red-400 { border-color: #3d1a1a !important; }
-html.dark .border-amber-100, html.dark .border-amber-300, html.dark .border-amber-400,
-html.dark .border-yellow-300, html.dark .border-yellow-400 { border-color: #3d3214 !important; }
-html.dark .border-purple-200, html.dark .border-indigo-200,
-html.dark .border-violet-200 { border-color: #2e2545 !important; }
-html.dark .border-pink-200 { border-color: #3d1f2e !important; }
+html.dark .border-amber-100, html.dark .border-amber-300, html.dark .border-amber-400 { border-color: #3d3214 !important; }
+html.dark .border-purple-200, html.dark .border-indigo-200 { border-color: #2e2545 !important; }
 html.dark .border-orange-200 { border-color: #3d2a14 !important; }
 
 /* Focus rings + dividers -> dark */
-html.dark .ring-gray-300, html.dark .ring-gray-400 { --tw-ring-color: #3A3427 !important; }
+html.dark .ring-gray-400 { --tw-ring-color: #3A3427 !important; }
 html.dark .ring-blue-300 { --tw-ring-color: #1e3a5f !important; }
 html.dark .ring-green-200, html.dark .ring-green-300,
 html.dark .ring-green-400, html.dark .ring-green-500 { --tw-ring-color: #1a3d28 !important; }
-html.dark .ring-red-200, html.dark .ring-red-300,
-html.dark .ring-red-400, html.dark .ring-red-500 { --tw-ring-color: #3d1a1a !important; }
-html.dark .ring-amber-200, html.dark .ring-amber-300, html.dark .ring-amber-400 { --tw-ring-color: #3d3214 !important; }
+html.dark .ring-red-200, html.dark .ring-red-300, html.dark .ring-red-400 { --tw-ring-color: #3d1a1a !important; }
+html.dark .ring-amber-300, html.dark .ring-amber-400 { --tw-ring-color: #3d3214 !important; }
 html.dark .ring-purple-200 { --tw-ring-color: #2e2545 !important; }
 html.dark .divide-blue-100 > * + * { border-color: #1e3a5f !important; }
-html.dark .divide-red-100 > * + * { border-color: #3d1a1a !important; }
 
 /* Opacity-modified utilities.
    Tailwind emits `bg-blue-50/50` as its own class (.bg-blue-50\/50), so the
@@ -228,21 +212,14 @@ html.dark .bg-red-50\/20 { background-color: rgba(42,22,25,0.2) !important; }
 html.dark .bg-red-50\/30 { background-color: rgba(42,22,25,0.3) !important; }
 html.dark .bg-red-50\/40 { background-color: rgba(42,22,25,0.4) !important; }
 html.dark .bg-red-50\/50 { background-color: rgba(42,22,25,0.5) !important; }
-html.dark .bg-red-50\/80 { background-color: rgba(42,22,25,0.8) !important; }
-html.dark .bg-red-100\/60 { background-color: rgba(42,20,25,0.6) !important; }
 html.dark .bg-purple-50\/20 { background-color: rgba(34,26,48,0.2) !important; }
 html.dark .bg-purple-50\/50 { background-color: rgba(34,26,48,0.5) !important; }
 html.dark .bg-emerald-50\/40 { background-color: rgba(18,36,31,0.4) !important; }
 html.dark .border-blue-200\/50 { border-color: rgba(30,58,95,0.5) !important; }
 html.dark .border-blue-200\/60 { border-color: rgba(30,58,95,0.6) !important; }
-html.dark .border-amber-200\/30 { border-color: rgba(61,50,20,0.3) !important; }
-html.dark .border-amber-200\/60 { border-color: rgba(61,50,20,0.6) !important; }
-html.dark .ring-amber-200\/50 { --tw-ring-color: rgba(61,50,20,0.5) !important; }
 html.dark .text-green-600\/70 { color: rgba(110,231,160,0.7) !important; }
 
 /* Gradients -> dark (the app uses the /80 opacity variants) */
-html.dark .from-blue-50\/80 { --tw-gradient-from: rgba(23,35,54,0.8) var(--tw-gradient-from-position) !important; }
-html.dark .to-indigo-50\/80 { --tw-gradient-to: rgba(30,27,51,0.8) var(--tw-gradient-to-position) !important; }
 
 /* ═══════════════════════════════════════════════════
    SCROLLBARS
@@ -293,6 +270,10 @@ textarea:focus, select:focus {
   outline: none;
 }
 
+/* Placeholders are hints, not missing text: ink-3 in both themes, which holds
+   4.5:1 on every surface an input sits on. Tailwind's default grey did not. */
+input::placeholder, textarea::placeholder { color: rgb(var(--ink-3)); opacity: 1; }
+
 /* ─── Card hover (kept for older screens; no lift, just a firmer rule) ── */
 .card-hover { transition: box-shadow 0.15s ease; }
 .card-hover:hover { box-shadow: 0 0 0 1px rgb(var(--rule-2)); }
@@ -326,8 +307,9 @@ textarea:focus, select:focus {
 .animate-page-enter { animation: page-enter 0.2s ease-out; }
 
 /* ─── Sticky save bar ─────────────────────────────── */
+/* Sits on top of the phone tab bar (--tabbar-h is 0 on desktop). */
 .sticky-save-bar {
-  position: sticky; bottom: 0; z-index: 40;
+  position: sticky; bottom: var(--tabbar-h, 0px); z-index: 40;
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   background: rgb(var(--paper) / 0.88);
   border-top: 1px solid rgb(var(--rule));
@@ -376,7 +358,7 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 /* ═══════════════════════════════════════════════════
    EDITORIAL PRIMITIVES — used by the rebuilt screens
    ═══════════════════════════════════════════════════ */
-.eyebrow { font-size: calc(11px * var(--ts)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
+.eyebrow { font-size: calc(11.5px * var(--ts)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
 .eyebrow-accent { color: rgb(var(--accent)); }
 .rule { border-top: 1px solid rgb(var(--rule)); }
 .rule-2 { border-top: 1px solid rgb(var(--rule-2)); }
@@ -394,8 +376,32 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 /* ─── Chart colours ─────────────────────────────────────────────────
    Hex, so SVG attributes can use them directly. One series colour, the
    accent for a comparison, status colours only for meaning. */
-:root { --paper-hex: #F5F1E8; --c-1: #2F5C8A; --c-2: #8A2A2B; --c-good: #2E6B3A; --c-warn: #9A6A12; --c-bad: #A0322E; --c-mute: #857D6E; --c-rule: #D8D0BE; --c-band: rgba(46,107,58,0.10); --c-text: #4F4A3F; --c-track: #E3DCCB; }
-html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FBF86; --c-warn: #D8AE4E; --c-bad: #E07A72; --c-mute: #8E8574; --c-rule: #332E24; --c-band: rgba(127,191,134,0.14); --c-text: #C2B9A5; --c-track: #2A261D; }
+:root { --paper-hex: #F5F1E8; --c-1: #2F5C8A; --c-2: #8A2A2B; --c-good: #2E6B3A; --c-warn: #845B0F; --c-bad: #A0322E; --c-mute: #6C6559; --c-rule: #D8D0BE; --c-band: rgba(46,107,58,0.10); --c-text: #4F4A3F; --c-track: #E3DCCB; }
+html.dark { --paper-hex: #16140F; --c-1: #7FA6D6; --c-2: #D9736F; --c-good: #7FBF86; --c-warn: #D8AE4E; --c-bad: #E07A72; --c-mute: #988F7D; --c-rule: #332E24; --c-band: rgba(127,191,134,0.14); --c-text: #C2B9A5; --c-track: #2A261D; }
+
+/* ─── Class chips ───
+   classToColor() / classToTextColor() in lib/utils read these. Light: the
+   pastel fill and a deep ink of the same hue (4.6:1 or better on the fill).
+   Dark: a deep fill and the pastel as its ink, so a class name written on the
+   page reads in both themes too. --lily etc. above stay the dots and flowers. */
+:root {
+  --cls-lily: #D4A5B0; --cls-lily-ink: #6D2D3A;
+  --cls-camellia: #C8A88E; --cls-camellia-ink: #523D20;
+  --cls-daisy: #E8DFA0; --cls-daisy-ink: #6B5E1A;
+  --cls-sunflower: #AED6CF; --cls-sunflower-ink: #255F53;
+  --cls-marigold: #91ADC8; --cls-marigold-ink: #283E60;
+  --cls-snapdragon: #B4A8CC; --cls-snapdragon-ink: #4B3373;
+  --cls-none: #C8CED8; --cls-none-ink: #4D5464;
+}
+html.dark {
+  --cls-lily: #4E262B; --cls-lily-ink: #D4A5B0;
+  --cls-camellia: #3E301C; --cls-camellia-ink: #C8A88E;
+  --cls-daisy: #4D4418; --cls-daisy-ink: #E8DFA0;
+  --cls-sunflower: #23443A; --cls-sunflower-ink: #AED6CF;
+  --cls-marigold: #243042; --cls-marigold-ink: #91ADC8;
+  --cls-snapdragon: #392A4D; --cls-snapdragon-ink: #B4A8CC;
+  --cls-none: #3B3E44; --cls-none-ink: #C8CED8;
+}
 
 /* ─── Legacy gold buttons ────────────────────────────────────────────
    Older screens pair bg-gold with dark text; gold is now the oxblood
@@ -428,20 +434,44 @@ html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb
 .page-fade { animation: page-fade 150ms ease-out; }
 .stats-in { animation: page-fade 200ms ease-out; }
 
+/* ─── Masthead: skip link, phone bar ───
+   "Skip to content" is the first thing Tab reaches on every page; it shows
+   only while focused. */
+.skip-link { position: fixed; left: 12px; top: 8px; z-index: 300; padding: 8px 14px; border-radius: 3px; background: rgb(var(--ink)); color: rgb(var(--paper));
+  font-size: calc(13px * var(--ts)); font-weight: 600; transform: translateY(-160%); transition: transform 120ms var(--ease, ease); }
+.skip-link:focus, .skip-link:focus-visible { transform: none; outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
+main:focus { outline: none; }
+
+/* The phone's bottom bar (components/layout/PhoneNav). --tabbar-h is its
+   full height, safe area included, and 0 wherever there is no bar: the page
+   pads its foot by it and sticky save bars sit at bottom: var(--tabbar-h). */
+:root { --tabbar-h: 0px; }
+@media (max-width: 639px) {
+  :root { --tabbar-h: calc(56px + env(safe-area-inset-bottom, 0px)); }
+}
+.phone-tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 45; display: flex; height: var(--tabbar-h);
+  padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  background: rgb(var(--white)); border-top: 1px solid rgb(var(--rule-2)); }
+@media (min-width: 640px) { .phone-tabbar { display: none; } }
+.phone-sheet { animation: sheet-up 220ms var(--ease, ease-out) both; }
+.phone-sheet-backdrop { animation: page-fade 200ms ease-out both; }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: .6; } to { transform: none; opacity: 1; } }
+
 /* ─── Masthead: the underline that stretches to the next page ─── */
 .nav-slider { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: rgb(var(--accent)); border-radius: 1px; pointer-events: none; opacity: 0; }
 .nav-slider.is-placed { opacity: 1; }
 .nav-slider.is-waiting { animation: nav-breath 1.1s ease-in-out infinite; }
 @keyframes nav-breath { 50% { opacity: .35; } }
 
-/* ─── The term line under the header ───
-   Hover, tap or focus it and a band opens underneath with the months, the
-   week, and what the oxblood notch is. */
+/* ─── The term line: the foot of the masthead ───
+   Fills across the semester with an oxblood notch at the report card
+   cutoff. The week and the cutoff are written in the context row above it;
+   the button there (or the pointer resting on the line) opens a band with
+   the months. The line itself is a picture, not a control. */
 .term-wrap { position: relative; }
-.term-line { position: relative; height: 3px; background: rgb(var(--paper-3)); cursor: pointer; outline: none; transition: height 150ms var(--ease); }
+.term-line { position: relative; height: 3px; background: rgb(var(--paper-3)); cursor: pointer; transition: height 150ms var(--ease); }
 .term-line::before { content: ""; position: absolute; left: 0; right: 0; top: -4px; bottom: -6px; }
 .term-wrap.is-open .term-line { height: 5px; }
-.term-line:focus-visible { box-shadow: 0 0 0 2px rgb(var(--accent) / .5); }
 .term-line .term-fill { position: absolute; inset: 0 auto 0 0; background: rgb(var(--ink)); animation: term-grow 900ms var(--ease) both; }
 .term-line .term-cut { position: absolute; top: -4px; bottom: 0; width: 2px; margin-left: -1px; background: rgb(var(--accent)); }
 @keyframes term-grow { from { width: 0; } }
@@ -449,7 +479,7 @@ html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb
   box-shadow: 0 8px 18px rgb(var(--ink) / .08); padding: 4px 0 7px; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 160ms ease, transform 160ms var(--ease); }
 .term-wrap.is-open .term-band { opacity: 1; transform: none; }
 .term-months { position: relative; height: 16px; }
-.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(10.5px * var(--ts)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--ink-3)); line-height: 16px; }
+.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(11.5px * var(--ts)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--ink-3)); line-height: 16px; }
 .term-facts { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 3px 16px 0; font-size: calc(12px * var(--ts)); color: rgb(var(--ink-2)); }
 .term-facts b { font-weight: 600; color: rgb(var(--ink)); }
 .term-due { display: inline-flex; align-items: center; gap: 6px; }
@@ -517,7 +547,7 @@ html.dark .stamp { mix-blend-mode: screen; }
   border-radius: 6px; box-shadow: 0 10px 28px rgb(0 0 0 / .22), 0 1px 2px rgb(0 0 0 / .2); overflow: hidden; }
 .toast-card .toast-row { display: flex; align-items: center; gap: 10px; padding: 11px 14px 10px 12px; font-size: calc(13.5px * var(--ts)); font-weight: 500; line-height: 1.4; }
 .toast-card svg.drawn-check { stroke: rgb(var(--good-soft)); }
-.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: calc(11px * var(--ts)); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.toast-card .toast-bang { flex: none; width: 16px; height: 16px; border-radius: 9999px; background: rgb(var(--bad-soft)); color: rgb(var(--bad)); font-size: calc(11.5px * var(--ts)); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .toast-card .toast-action { flex: none; margin-left: 6px; color: rgb(var(--accent-soft)); font-weight: 600; font-size: calc(13px * var(--ts)); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .toast-card .toast-time { height: 2px; background: rgb(var(--paper) / .28); transform-origin: left; animation: toast-time linear forwards; }
 @keyframes toast-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }
@@ -527,9 +557,9 @@ html.dark .stamp { mix-blend-mode: screen; }
 .toast-out { animation: toast-out 160ms ease-in both; }
 
 /* ─── Welcome, right after logging in ─── */
-.welcome { position: fixed; inset: 0; z-index: 200; background: rgb(var(--paper)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; cursor: pointer; transition: opacity 250ms ease; }
+.welcome { position: fixed; inset: 0; z-index: 200; background: rgb(var(--paper)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; cursor: pointer; transition: opacity 200ms ease; }
 .welcome.is-leaving { opacity: 0; pointer-events: none; }
-.welcome-line { font-size: calc(30px * var(--ts)); color: rgb(var(--ink)); animation: set-in 400ms var(--ease) 350ms both; }
+.welcome-line { font-size: calc(30px * var(--ts)); color: rgb(var(--ink)); text-align: center; padding: 0 16px; animation: set-in 350ms var(--ease) 250ms both; }
 
 /* ─── Wordmark: the ink soaks in ─── */
 @keyframes ink-soak { from { opacity: 0; filter: blur(10px); letter-spacing: .14em; color: rgb(var(--wet)); } 55% { opacity: 1; } to { opacity: 1; filter: blur(0); letter-spacing: -0.01em; color: rgb(var(--ink)); } }
@@ -552,3 +582,69 @@ html[data-font="clean"] { --font-serif: var(--font-clean, system-ui); --font-san
 html[data-font="readable"] { --font-serif: var(--font-readable, system-ui); --font-sans: var(--font-readable, system-ui); }
 html[data-font="system"] { --font-serif: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; }
 html[data-font] h1, html[data-font] h2, html[data-font] .font-display { letter-spacing: -0.005em; }
+
+/* ═══════════════════════════════════════════════════
+   PHONE WIDTHS
+   Attendance gets taken on a phone in the hallway. These keep the page from
+   scrolling sideways and give the controls room for a thumb. Desktop is
+   untouched: everything layout-related below sits under max-width 639px.
+   ═══════════════════════════════════════════════════ */
+
+/* Korean wraps between words, never inside one: 이서연 no longer breaks into
+   이서 / 연. keep-all leaves Latin text as it was. break-word (not anywhere)
+   lets a long unbroken string wrap without letting a table squeeze Korean
+   back down to a syllable per line when it sizes its columns. */
+:lang(ko) { word-break: keep-all; overflow-wrap: break-word; }
+/* Korean names sit next to English ones in either language mode. */
+.ko-name { word-break: keep-all; white-space: nowrap; }
+
+/* The keyboard hint ("press P A T") means nothing on a touch screen. */
+@media (hover: none) and (pointer: coarse) { .hide-on-touch { display: none !important; } }
+
+/* Scroll edges: a soft fade on whichever side has more to scroll to. Driven by
+   the element's own scroll position; where scroll timelines are unsupported,
+   or nothing overflows, there is simply no fade. */
+@property --fade-l { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --fade-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@keyframes scroll-edges {
+  0% { --fade-l: 0px; --fade-r: 28px; }
+  10%, 90% { --fade-l: 28px; --fade-r: 28px; }
+  100% { --fade-l: 28px; --fade-r: 0px; }
+}
+
+@media (max-width: 639.98px) {
+  /* Chip rows and segmented controls: one row that scrolls sideways instead of
+     wrapping into a stack. Chips are 36px tall here; the 4px of padding above
+     and below each is still part of its tap area (44px in all). */
+  .chip-scroll {
+    display: flex; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; scrollbar-width: none;
+    max-width: 100%; padding-block: 4px; margin-block: -4px;
+    /* Snap a chip clear of the edge fade; also keeps the row at 0 on load. */
+    scroll-padding-inline: 16px;
+  }
+  .chip-scroll::-webkit-scrollbar { display: none; }
+  .chip-scroll > * { flex-shrink: 0; scroll-snap-align: start; white-space: nowrap; position: relative; }
+  .chip-scroll > button, .chip-scroll > a, .chip-scroll > label { min-height: 36px; }
+  .chip-scroll > button::after, .chip-scroll > a::after { content: ''; position: absolute; inset: -4px 0; }
+
+  /* A wide data table scrolls inside its own box, never the page. A tab bar
+     (.scroll-row) does the same without the chip spacing. */
+  .table-scroll { overflow-x: auto; overscroll-behavior-x: contain; max-width: 100%; }
+  .scroll-row { display: flex; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; max-width: 100%; }
+  .scroll-row::-webkit-scrollbar { display: none; }
+  .scroll-row > * { flex-shrink: 0; white-space: nowrap; }
+
+  .chip-scroll, .table-scroll, .scroll-row {
+    mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  }
+  @supports (animation-timeline: scroll()) {
+    .chip-scroll, .table-scroll, .scroll-row { animation: scroll-edges linear both; animation-timeline: scroll(self inline); }
+  }
+  /* A table whose first column is pinned: no fade over the names. */
+  .table-scroll.pin-first { --fade-l: 0px !important; }
+
+  .sticky-save-bar { padding: 10px 16px; }
+}
+

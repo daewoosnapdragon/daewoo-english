@@ -139,9 +139,9 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{studentName}</p>
-                <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{koreanName} -- Grade {grade}</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{koreanName} -- Grade {grade}</p>
               </div>
-              <span className="px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-bold" style={{ backgroundColor: classToColor(englishClass as EnglishClass), color: classToTextColor(englishClass as EnglishClass) }}>{englishClass}</span>
+              <span className="px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classToColor(englishClass as EnglishClass), color: classToTextColor(englishClass as EnglishClass) }}>{englishClass}</span>
             </div>
           </div>
 
@@ -154,8 +154,8 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                 <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ backgroundColor: widaInfo.bg }}>
                   <span className="text-[length:calc(18px*var(--ts))] font-bold" style={{ color: widaInfo.color }}>L{widaRounded}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[length:calc(11px*var(--ts))] font-semibold" style={{ color: '#374151' }}>{widaInfo.name}</p>
-                    <div className="flex gap-2 text-[length:max(10px,calc(9px*var(--ts)))] text-text-secondary mt-0.5">
+                    <p className="text-[length:calc(11.5px*var(--ts))] font-semibold" style={{ color: '#374151' }}>{widaInfo.name}</p>
+                    <div className="flex gap-2 text-[length:calc(11.5px*var(--ts))] text-text-secondary mt-0.5">
                       {WIDA_DOMAINS.map(d => {
                         const v = data.wida[d]
                         const label = d === 'listening' ? 'L' : d === 'speaking' ? 'S' : d === 'reading' ? 'R' : 'W'
@@ -163,18 +163,18 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                       })}
                     </div>
                   </div>
-                  <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary max-w-[120px] leading-tight">{widaInfo.scaffolds.split('.')[0]}.</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary max-w-[120px] leading-tight">{widaInfo.scaffolds.split('.')[0]}.</p>
                 </div>
               )}
 
               {/* Domain Grades */}
               {data.domainGrades.length > 0 && (
                 <div>
-                  <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Current Grades</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Current Grades</p>
                   <div className="flex gap-1.5">
                     {data.domainGrades.slice(0, 5).map((g, i) => (
                       <div key={i} className={`flex-1 text-center rounded-lg py-1.5 px-1 border ${g.score >= 80 ? 'bg-green-50 border-green-200' : g.score >= 65 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
-                        <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary uppercase truncate">{domainLabel(g.domain).slice(0, 4)}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase truncate">{domainLabel(g.domain).slice(0, 4)}</p>
                         <p className={`text-[length:calc(13px*var(--ts))] font-bold ${g.score >= 80 ? 'text-green-700' : g.score >= 65 ? 'text-amber-700' : 'text-red-700'}`}>{g.score.toFixed(0)}%</p>
                       </div>
                     ))}
@@ -186,7 +186,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               {data.reading.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold">Reading Fluency</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Reading Fluency</p>
                     {readingTrend === 'up' && <TrendingUp size={11} className="text-green-500" />}
                     {readingTrend === 'down' && <TrendingDown size={11} className="text-red-500" />}
                     {readingTrend === 'flat' && <Minus size={11} className="text-text-tertiary" />}
@@ -194,9 +194,9 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                   <div className="flex gap-1.5">
                     {data.reading.map((r, i) => (
                       <div key={i} className="flex-1 text-center bg-surface-alt rounded-lg py-1.5">
-                        <p className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary">{new Date(r.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{new Date(r.date + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                         <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{r.cwpm}</p>
-                        <p className="text-[length:max(10px,calc(7px*var(--ts)))] text-text-tertiary">CWPM</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">CWPM</p>
                       </div>
                     ))}
                   </div>
@@ -206,12 +206,12 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               {/* Assigned Scaffolds */}
               {data.scaffolds.length > 0 && (
                 <div>
-                  <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Active Scaffolds</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Active Scaffolds</p>
                   <div className="space-y-1">
                     {data.scaffolds.map((s, i) => (
                       <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-blue-50 border border-blue-100">
-                        <span className="text-[length:max(10px,calc(8px*var(--ts)))] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
-                        <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-800 leading-snug">{s.text}</p>
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-800 leading-snug">{s.text}</p>
                       </div>
                     ))}
                   </div>
@@ -220,7 +220,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
 
               {/* Teacher recommendation if present */}
               {data.anecdotal?.teacher_recommends && (
-                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold ${
+                <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold ${
                   data.anecdotal.teacher_recommends === 'move_up' ? 'bg-green-50 text-green-700' :
                   data.anecdotal.teacher_recommends === 'move_down' ? 'bg-red-50 text-red-700' :
                   'bg-blue-50 text-blue-700'
@@ -233,7 +233,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               )}
 
               {data.anecdotal?.notes && (
-                <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary italic px-1 leading-snug">"{data.anecdotal.notes}"</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic px-1 leading-snug">"{data.anecdotal.notes}"</p>
               )}
             </div>
           ) : null}

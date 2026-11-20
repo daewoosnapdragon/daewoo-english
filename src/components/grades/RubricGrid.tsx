@@ -75,9 +75,9 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
       <div className="border border-rule-2 rounded-lg overflow-x-auto">
         <table className="w-full text-[length:calc(12.5px*var(--ts))]">
           <thead>
-            <tr className="bg-paper-2 text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3">
+            <tr className="bg-paper-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3">
               <th className="text-left px-3 py-2 font-semibold">{ko ? '학생' : 'Student'}</th>
-              {criteria.map(c => <th key={c.key} className="px-2 py-2 font-semibold text-center" title={c.standard || undefined}><span className="block truncate max-w-[120px] mx-auto">{c.label}</span>{c.standard && <span className="block text-[length:max(10px,calc(9.5px*var(--ts)))] text-info normal-case tracking-normal">{c.standard}</span>}</th>)}
+              {criteria.map(c => <th key={c.key} className="px-2 py-2 font-semibold text-center" title={c.standard || undefined}><span className="block truncate max-w-[120px] mx-auto">{c.label}</span>{c.standard && <span className="block text-[length:calc(11.5px*var(--ts))] text-info normal-case tracking-normal">{c.standard}</span>}</th>)}
               <th className="text-right px-3 py-2 font-semibold whitespace-nowrap">/{assessment.max_score}</th>
             </tr>
           </thead>
@@ -91,7 +91,7 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
                   <td className="px-3 py-1.5 whitespace-nowrap"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span></td>
                   {criteria.map(c => {
                     const v = levels[s.id]?.[c.key]
-                    return <td key={c.key} className="px-2 py-1.5 text-center">{fl ? <span className="text-ink-3">—</span> : v == null ? <span className="text-ink-3">·</span> : <span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[length:calc(11px*var(--ts))] font-bold ${tone(v)}`}>{v}</span>}</td>
+                    return <td key={c.key} className="px-2 py-1.5 text-center">{fl ? <span className="text-ink-3">—</span> : v == null ? <span className="text-ink-3">·</span> : <span className={`inline-flex w-6 h-6 rounded items-center justify-center text-[length:calc(11.5px*var(--ts))] font-bold ${tone(v)}`}>{v}</span>}</td>
                   })}
                   <td className={`px-3 py-1.5 text-right tabular-nums whitespace-nowrap ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : started(s.id) ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${fmt(sc)} ✓` : started(s.id) && sc != null ? `${fmt(sc)} ~` : ''}</td>
                 </tr>
@@ -107,7 +107,7 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
           </tfoot>
         </table>
       </div>
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-2">{ko ? '학생을 클릭하면 전체 화면 루브릭 시트에서 채점합니다. 0–4 단계, 기준당 4점.' : 'Click a student to mark their work on the full-screen rubric sheet. Levels 0–4, 4 points per criterion.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{ko ? '학생을 클릭하면 전체 화면 루브릭 시트에서 채점합니다. 0–4 단계, 기준당 4점.' : 'Click a student to mark their work on the full-screen rubric sheet. Levels 0–4, 4 points per criterion.'}</p>
     </div>
   )
 }

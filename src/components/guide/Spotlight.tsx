@@ -62,7 +62,7 @@ export default function Spotlight() {
           <button onClick={() => setTour(null)} aria-label="Close" className="w-6 h-6 rounded hover:bg-paper-2 text-ink-3 hover:text-ink flex items-center justify-center flex-shrink-0"><X size={13} /></button>
         </div>
         <div className="flex items-center justify-between mt-3">
-          <span className="text-[length:calc(11px*var(--ts))] text-ink-3 tabular-nums">{tour.steps.length > 1 ? `${i + 1} / ${tour.steps.length}` : ''}{!rect && step.anchor ? (tour.steps.length > 1 ? ' · ' : '') + 'On this page' : ''}</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">{tour.steps.length > 1 ? `${i + 1} / ${tour.steps.length}` : ''}{!rect && step.anchor ? (tour.steps.length > 1 ? ' · ' : '') + 'On this page' : ''}</span>
           <button onClick={next} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover">{last ? 'Done' : 'Next'}</button>
         </div>
       </div>

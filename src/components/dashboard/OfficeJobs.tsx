@@ -42,7 +42,7 @@ export default function OfficeJobs() {
   return (
     <div>
       {head(todays ? (ko ? '오늘' : 'Today') : fmtDay(day.date, lang))}
-      {day.moved && <p className="text-[length:calc(11px*var(--ts))] text-warn mb-1.5">{ko ? `금요일이 쉬는 날(${day.reason || '휴일'})이라 하루 앞당깁니다` : `Friday is ${day.reason || 'a day off'}, so the jobs are a day early`}</p>}
+      {day.moved && <p className="text-[length:calc(11.5px*var(--ts))] text-warn mb-1.5">{ko ? `금요일이 쉬는 날(${day.reason || '휴일'})이라 하루 앞당깁니다` : `Friday is ${day.reason || 'a day off'}, so the jobs are a day early`}</p>}
       {day.everyone ? (
         <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '모두 함께 청소하는 날입니다.' : 'Everyone cleans together.'}</p>
       ) : (
@@ -63,7 +63,7 @@ export default function OfficeJobs() {
                     <span className={`inline-flex items-center gap-1.5 ${isMe ? 'font-semibold text-ink' : 'text-ink-2'}`}>{a.job.name}{a.job.description ? (isOpen ? <ChevronUp size={11} className="text-ink-3" /> : <ChevronDown size={11} className="text-ink-3" />) : null}</span>
                     <span className={`tabular-nums ${isMe ? 'font-semibold text-ink' : 'text-ink-3'}`}>{nameOf(a.personId)}</span>
                   </button>
-                  {isOpen && a.job.description && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 leading-snug pb-1 pr-6">{a.job.description}</p>}
+                  {isOpen && a.job.description && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-snug pb-1 pr-6">{a.job.description}</p>}
                 </li>
               )
             })}
@@ -72,9 +72,9 @@ export default function OfficeJobs() {
       )}
       <div className="flex items-baseline justify-between gap-2 mt-2">
         {following
-          ? <p className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '다음' : 'Next'}: {fmtDay(following.date, lang)}{following.everyone ? (ko ? ' · 모두 함께' : ' · everyone') : mineNext ? ` · ${ko ? '내 담당' : 'you'}: ${mineNext.job.name}` : ''}</p>
+          ? <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '다음' : 'Next'}: {fmtDay(following.date, lang)}{following.everyone ? (ko ? ' · 모두 함께' : ' · everyone') : mineNext ? ` · ${ko ? '내 담당' : 'you'}: ${mineNext.job.name}` : ''}</p>
           : <span />}
-        {isAdmin && <Link href="/settings#set-office" className="text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '설정에서 수정' : 'Edit in Settings'}</Link>}
+        {isAdmin && <Link href="/settings#set-office" className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink whitespace-nowrap">{ko ? '설정에서 수정' : 'Edit in Settings'}</Link>}
       </div>
     </div>
   )

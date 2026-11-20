@@ -69,7 +69,7 @@ export default function AddJob({ ko, today, activeSemester, semesters, me, onAdd
           </label>
         </div>
         <span className="inline-flex gap-1" role="radiogroup" aria-label={ko ? '크기' : 'Size'}>
-          {SIZES.map(z => <button key={z} onClick={() => setSize(z)} role="radio" aria-checked={size === z} title={SIZE_LABELS[z][ko ? 'ko' : 'en']} className={`h-7 px-2 rounded-full border ${size === z ? 'border-ink' : 'border-rule-2 opacity-60 hover:opacity-100'}`}><SizeMark size={z} ko={ko} word={size === z} className="text-[length:calc(11px*var(--ts))]" /></button>)}
+          {SIZES.map(z => <button key={z} onClick={() => setSize(z)} role="radio" aria-checked={size === z} title={SIZE_LABELS[z][ko ? 'ko' : 'en']} className={`h-7 px-2 rounded-full border ${size === z ? 'border-ink' : 'border-rule-2 opacity-60 hover:opacity-100'}`}><SizeMark size={z} ko={ko} word={size === z} className="text-[length:calc(11.5px*var(--ts))]" /></button>)}
         </span>
         <button onClick={save} disabled={!title.trim() || busy} className="h-8 px-3 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-40 inline-flex items-center gap-1"><Plus size={13} />{ko ? '추가' : 'Add'}</button>
       </div>

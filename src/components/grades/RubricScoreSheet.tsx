@@ -4,6 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
 import RubricPrintDialog from './RubricPrintDialog'
@@ -142,6 +143,10 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   }
   const exit = async () => { if (dirtyRef.current.size) await saveStudents(Array.from(dirtyRef.current)); onExit?.() }
 
+  // Leaving the page by any route saves what is still unsaved, as the
+  // autosave would; only a failed save asks (lib/unsaved.ts).
+  useUnsaved(dirty.size > 0, { save: () => saveStudents(Array.from(dirtyRef.current)) })
+
   useEffect(() => {
     const id = setInterval(() => { if (dirtyRef.current.size) saveStudents(Array.from(dirtyRef.current)) }, 30_000)
     const onLeave = (e: BeforeUnloadEvent) => { if (dirtyRef.current.size) { e.preventDefault(); e.returnValue = '' } }
@@ -238,9 +243,9 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                   <h3 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{active.english_name} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3 ml-1">{active.korean_name}</span></h3>
                   <div className="flex items-center gap-3">
                     <span className="font-display text-[length:calc(24px*var(--ts))] tabular-nums text-ink">{flags[active.id]?.absent ? 'ABS' : flags[active.id]?.exempt ? 'EXM' : (scoreOf(active.id) ?? '—')} <span className="font-sans text-[length:calc(12px*var(--ts))] text-ink-3">/ {assessment.max_score}</span></span>
-                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
-                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[length:calc(11px*var(--ts))] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
-                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 단계와 점수를 지웁니다' : 'Remove every level and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
+                    <button onClick={() => setFlag(active.id, 'absent')} className={`h-7 px-2 rounded border text-[length:calc(11.5px*var(--ts))] font-bold ${flags[active.id]?.absent ? 'bg-warn text-white border-warn' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>ABS</button>
+                    <button onClick={() => setFlag(active.id, 'exempt')} className={`h-7 px-2 rounded border text-[length:calc(11.5px*var(--ts))] font-bold ${flags[active.id]?.exempt ? 'bg-info text-white border-info' : 'border-rule-2 text-ink-3 hover:text-ink'}`}>EXM</button>
+                    <button onClick={() => clearStudent(active.id)} disabled={saving || !hasAnything(active.id)} title={lang === 'ko' ? '이 학생의 단계와 점수를 지웁니다' : 'Remove every level and the saved score for this student'} className="h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] font-bold text-ink-3 hover:text-bad hover:border-bad disabled:opacity-40 disabled:hover:text-ink-3 disabled:hover:border-rule-2 inline-flex items-center gap-1"><Eraser size={11} />{lang === 'ko' ? '지우기' : 'Clear'}</button>
                   </div>
                 </div>
                 {isOff ? (
@@ -254,7 +259,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                         <div key={c.key} data-row={i} onClick={() => setRow(i)} className={`rounded-md px-3 py-2.5 border ${current ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
                           <div className="flex items-baseline gap-2 mb-2">
                             <span className="text-[length:calc(15px*var(--ts))] font-semibold text-ink">{c.label}</span>
-                            {c.standard && <span className="text-[length:calc(11px*var(--ts))] text-info">{c.standard}</span>}
+                            {c.standard && <span className="text-[length:calc(11.5px*var(--ts))] text-info">{c.standard}</span>}
                             {v != null && <span className="ml-auto text-[length:calc(11.5px*var(--ts))] text-ink-3">{labels[v]}</span>}
                           </div>
                           <div className="grid grid-cols-[76px_repeat(4,minmax(0,1fr))] gap-2">
@@ -263,8 +268,8 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                               return (
                                 <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }} title={n === 0 ? zeroText : undefined}
                                   className={`text-left rounded-md border px-3 py-2.5 flex flex-col gap-1 transition-colors ${n === 0 ? 'items-center justify-center' : ''} ${on ? tone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
-                                  <span className="flex items-baseline gap-2"><span className="font-display text-[length:calc(22px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span>}</span>
-                                  {n === 0 ? <span className={`text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[0]}</span>
+                                  <span className="flex items-baseline gap-2"><span className="font-display text-[length:calc(22px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span>}</span>
+                                  {n === 0 ? <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[0]}</span>
                                     : <span className={`text-[length:calc(12.5px*var(--ts))] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
                                 </button>
                               )

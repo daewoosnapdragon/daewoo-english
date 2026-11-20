@@ -25,8 +25,8 @@ const area = 'w-full p-2 bg-surface border border-rule-2 rounded text-[length:ca
 const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
 const btnP = 'h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5 whitespace-nowrap'
 const btnS = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
-const chip = 'inline-flex items-center h-5 px-1.5 rounded text-[length:calc(10.5px*var(--ts))] font-semibold'
-const lbl = 'block text-[length:calc(11px*var(--ts))] text-ink-3 mb-1'
+const chip = 'inline-flex items-center h-5 px-1.5 rounded text-[length:calc(11.5px*var(--ts))] font-semibold'
+const lbl = 'block text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-1'
 const KST = 'Asia/Seoul'
 const fmtWhen = (iso: string, ko: boolean) => new Date(iso).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: KST, month: 'short', day: 'numeric' })
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
@@ -118,7 +118,7 @@ export default function BookshelfView() {
                             <span className="font-display text-[length:calc(26px*var(--ts))] leading-none min-w-9 text-center shrink-0" style={{ color: colorHex(s.color) }}>{levelShort(b.level_number) || '·'}</span>
                             <span className="min-w-0 flex-1">
                               <span className="block text-[length:calc(13px*var(--ts))] text-ink truncate">{b.title && b.title !== `${s.name} ${b.level_number}`.trim() ? b.title : `${s.name} ${b.level_number}`.trim()}</span>
-                              <span className="block text-[length:calc(11px*var(--ts))] text-ink-3 truncate">{countLine(counts, ko)}</span>
+                              <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 truncate">{countLine(counts, ko)}</span>
                             </span>
                             <StatusChip status={b.status} ko={ko} />
                           </button>
@@ -189,8 +189,8 @@ function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: Curric
     <div className="flex items-center gap-2 mb-1.5 group">
       <span className="w-2.5 h-2.5 rounded-sm" style={{ background: colorHex(s.color) }} />
       <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{s.name}</span>
-      {s.publisher && <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{s.publisher}</span>}
-      {s.kind === 'anthology' && <span className="text-[length:calc(10px*var(--ts))] text-ink-3 border border-rule-2 rounded px-1">{ko ? '선집' : 'anthology'}</span>}
+      {s.publisher && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{s.publisher}</span>}
+      {s.kind === 'anthology' && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 border border-rule-2 rounded px-1">{ko ? '선집' : 'anthology'}</span>}
       {canManage && <button onClick={() => { setD({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color, kind: s.kind }); setEditing(true) }} className="text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100" aria-label="Edit series"><Pencil size={10} /></button>}
     </div>
   )
@@ -284,18 +284,18 @@ function SkillList({ c, ko, canManage, fail }: { c: C; ko: boolean; canManage: b
         if (!ks.length) return null
         return (
           <div key={strand} className="mb-2">
-            <p className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3 mb-1">{ko ? STRAND_LABEL[strand].ko : STRAND_LABEL[strand].en}</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 mb-1">{ko ? STRAND_LABEL[strand].ko : STRAND_LABEL[strand].en}</p>
             <div className="flex flex-wrap gap-1">
               {ks.map(k => editing === k.code ? (
                 <span key={k.code} className="inline-flex items-center gap-1">
                   <input value={draft.label} onChange={e => setDraft({ ...draft, label: e.target.value })} className="h-6 px-1.5 bg-surface border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))] w-32" />
-                  <select value={draft.strand} onChange={e => setDraft({ ...draft, strand: e.target.value as Strand })} className="h-6 px-1 bg-surface border border-rule-2 rounded text-[length:calc(11px*var(--ts))]">{STRANDS.map(s => <option key={s} value={s}>{STRAND_LABEL[s].en}</option>)}</select>
+                  <select value={draft.strand} onChange={e => setDraft({ ...draft, strand: e.target.value as Strand })} className="h-6 px-1 bg-surface border border-rule-2 rounded text-[length:calc(11.5px*var(--ts))]">{STRANDS.map(s => <option key={s} value={s}>{STRAND_LABEL[s].en}</option>)}</select>
                   <button onClick={() => save(k.code)} className="text-good"><Check size={13} /></button>
                   <button onClick={() => setEditing(null)} className="text-ink-3"><X size={13} /></button>
                 </span>
               ) : (
                 <span key={k.code} className="inline-flex items-center gap-1 h-6 px-1.5 rounded bg-info-soft text-info">
-                  {k.label}<span className="text-[length:calc(10px*var(--ts))] opacity-70">{used[k.code] || 0}</span>
+                  {k.label}<span className="text-[length:calc(11.5px*var(--ts))] opacity-70">{used[k.code] || 0}</span>
                   {canManage && <><button onClick={() => { setEditing(k.code); setDraft({ label: k.label, strand: k.strand }) }} className="opacity-60 hover:opacity-100"><Pencil size={10} /></button><button onClick={() => remove(k)} className="opacity-60 hover:opacity-100"><X size={10} /></button></>}
                 </span>
               ))}
@@ -303,7 +303,7 @@ function SkillList({ c, ko, canManage, fail }: { c: C; ko: boolean; canManage: b
           </div>
         )
       })}
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '새 태그는 단원이나 차시에 쓰일 때 자동으로 추가됩니다.' : 'New tags are added when a unit or lesson uses them. The number is how many places use each one.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '새 태그는 단원이나 차시에 쓰일 때 자동으로 추가됩니다.' : 'New tags are added when a unit or lesson uses them. The number is how many places use each one.'}</p>
     </div>
   )
 }
@@ -594,7 +594,7 @@ function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: stri
   )
   return (
     <div className="mb-3 pb-2 border-b border-rule">
-      <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wider font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
       {rows.length === 0 && editId !== 'new' && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson Plans offers the lessons\' objectives until there are some.'}</p>}
       <ul>
         {rows.map(o => editId === o.id ? <li key={o.id}>{editor}</li> : (
@@ -602,7 +602,7 @@ function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: stri
             <div className="min-w-0 flex-1">
               <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</p>
               {(o.ccss_codes.length > 0 || o.wida.length > 0) && (
-                <div className="mt-0.5 flex flex-wrap items-center gap-1"><Tags tags={[]} codes={o.ccss_codes} />{o.wida.map(w => <span key={w} className="text-[length:calc(10.5px*var(--ts))] text-ink-3">{w}</span>)}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1"><Tags tags={[]} codes={o.ccss_codes} />{o.wida.map(w => <span key={w} className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{w}</span>)}</div>
               )}
             </div>
             {canManage && (
@@ -639,7 +639,7 @@ function LessonRow({ lesson, index, total, siblings, unitLabel, strand, c, ko, m
   return (
     <div className="py-2 border-b border-rule last:border-b-0">
       <div className="flex items-start gap-2">
-        <span className="text-[length:calc(11px*var(--ts))] text-ink-3 w-5 pt-0.5 text-right shrink-0">{index + 1}</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 w-5 pt-0.5 text-right shrink-0">{index + 1}</span>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[length:calc(13px*var(--ts))] font-medium text-ink">{lesson.title}</span>
@@ -649,7 +649,7 @@ function LessonRow({ lesson, index, total, siblings, unitLabel, strand, c, ko, m
           {lesson.notes && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-0.5">{lesson.notes}</p>}
           <div className="mt-1 flex items-center gap-2 flex-wrap">
             <Tags tags={lesson.skill_tags} codes={lesson.ccss_codes} />
-            <button onClick={() => setShowRes(s => !s)} className="text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink">{resources.length ? `${resources.length} ${ko ? '자료' : resources.length === 1 ? 'file' : 'files'}` : (ko ? '자료 추가' : 'Add a file')}</button>
+            <button onClick={() => setShowRes(s => !s)} className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{resources.length ? `${resources.length} ${ko ? '자료' : resources.length === 1 ? 'file' : 'files'}` : (ko ? '자료 추가' : 'Add a file')}</button>
           </div>
           {showRes && <Resources target={{ lesson_id: lesson.id }} items={resources} label={label} c={c} ko={ko} me={me} fail={fail} />}
         </div>

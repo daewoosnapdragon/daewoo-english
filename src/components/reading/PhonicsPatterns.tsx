@@ -50,7 +50,7 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
       {columns.map((c, i) => (
         <th key={c.key} className={`px-2 py-2 border-b border-rule-2 text-[length:calc(11.5px*var(--ts))] font-semibold text-ink text-center whitespace-nowrap ${c.total ? 'border-l-2 border-l-rule-2' : ''}`}>
           {c.dot && <span className={`inline-block w-2 h-2 rounded-full mr-1 ${c.dot}`} />}{c.label}
-          <span className="block text-[length:calc(10px*var(--ts))] font-normal text-ink-3">{obs[i].checked} {lang === 'ko' ? '명 점검' : 'checked'}</span>
+          <span className="block text-[length:calc(11.5px*var(--ts))] font-normal text-ink-3">{obs[i].checked} {lang === 'ko' ? '명 점검' : 'checked'}</span>
         </th>
       ))}
     </tr></thead>
@@ -79,7 +79,7 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
                       const pct = of ? Math.round((n / of) * 100) : 0
                       return <td key={c.key} className={`px-1 py-1 text-center ${c.total ? 'border-l-2 border-l-rule-2' : ''}`}>
                         {of === 0 ? <span className="text-ink-3/50">·</span> : n === 0 ? <span className="text-ink-3/60">—</span>
-                          : <span className={`inline-block min-w-[52px] px-1.5 py-0.5 rounded-sm ${shareTone(pct, kind, of)}`} title={`${n} of ${of} students`}>{pct}% <span className="text-[length:calc(10px*var(--ts))] font-normal opacity-70">{n}</span></span>}
+                          : <span className={`inline-block min-w-[52px] px-1.5 py-0.5 rounded-sm ${shareTone(pct, kind, of)}`} title={`${n} of ${of} students`}>{pct}% <span className="text-[length:calc(11.5px*var(--ts))] font-normal opacity-70">{n}</span></span>}
                       </td>
                     })}
                   </tr>
@@ -105,7 +105,7 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
                   const { sheet, pattern } = splitPatternKey(k)
                   return (
                     <tr key={k}>
-                      <td className="px-3 py-1.5 text-ink"><span className="font-semibold">{pattern}</span> <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">· {phonicsSkill(sheet)?.short || sheet}</span></td>
+                      <td className="px-3 py-1.5 text-ink"><span className="font-semibold">{pattern}</span> <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]">· {phonicsSkill(sheet)?.short || sheet}</span></td>
                       {columns.map((c, i) => {
                         const n = trouble[i].counts[k] || 0; const of = trouble[i].checkedBySheet[sheet] || 0
                         const pct = of ? Math.round((n / of) * 100) : 0
@@ -147,8 +147,8 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
                       <td className="px-3 py-1.5 font-display text-[length:calc(16px*var(--ts))] text-ink">{w.word}</td>
                       <td className="px-2 py-1.5 text-ink-2">{phonicsSkill(w.sheet)?.short}</td>
                       <td className="px-2 py-1.5 whitespace-nowrap"><span className="font-semibold text-bad">{w.missed}</span><span className="text-ink-3">/{w.read} · {Math.round((w.missed / w.read) * 100)}%</span></td>
-                      <td className="px-2 py-1.5 text-ink-2">{w.heard.length ? w.heard.slice(0, 4).map(([said, n]) => <span key={said} className="inline-block mr-2"><span className="italic">“{said}”</span>{n > 1 && <span className="text-ink-3 text-[length:calc(11px*var(--ts))]"> ×{n}</span>}</span>) : <span className="text-ink-3">—</span>}</td>
-                      <td className="px-2 py-1.5 text-[length:calc(11px*var(--ts))] text-ink-2">
+                      <td className="px-2 py-1.5 text-ink-2">{w.heard.length ? w.heard.slice(0, 4).map(([said, n]) => <span key={said} className="inline-block mr-2"><span className="italic">“{said}”</span>{n > 1 && <span className="text-ink-3 text-[length:calc(11.5px*var(--ts))]"> ×{n}</span>}</span>) : <span className="text-ink-3">—</span>}</td>
+                      <td className="px-2 py-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-2">
                         {Object.entries(byClass).map(([c, n]) => <span key={c} className="inline-block mr-2">{c} {n}</span>)}
                         <span className="block text-ink-3 truncate max-w-[260px]" title={w.studentIds.map(id => studentById[id]?.english_name).join(', ')}>
                           {w.studentIds.slice(0, 4).map((id, i) => <button key={id} onClick={() => studentById[id] && onOpenStudent(studentById[id])} className="hover:underline">{i ? ', ' : ''}{studentById[id] ? getDisplayName(studentById[id]) : ''}</button>)}

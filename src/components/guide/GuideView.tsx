@@ -29,7 +29,7 @@ export default function GuideView() {
   useEffect(() => { const id = window.location.hash.slice(1); if (id) setTimeout(() => document.getElementById(id)?.scrollIntoView({ block: 'start' }), 100) }, [])
 
   const rail = (id: string, label: string, sub?: string) => (
-    <a key={id} href={`#${id}`} className={`block px-3 py-1.5 rounded text-[length:calc(13px*var(--ts))] ${active === id ? 'bg-paper-2 text-ink font-semibold' : 'text-ink-2 hover:text-ink'}`}>{label}{sub && <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3 font-normal">{sub}</span>}</a>
+    <a key={id} href={`#${id}`} className={`block px-3 py-1.5 rounded text-[length:calc(13px*var(--ts))] ${active === id ? 'bg-paper-2 text-ink font-semibold' : 'text-ink-2 hover:text-ink'}`}>{label}{sub && <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 font-normal">{sub}</span>}</a>
   )
   const Section = ({ s }: { s: GuideSection }) => (
     <section id={s.id} data-guide-section={s.id} className="scroll-mt-[120px] border-t border-rule-2 pt-6 pb-10">

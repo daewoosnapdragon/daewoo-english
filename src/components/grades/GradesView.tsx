@@ -5,11 +5,12 @@ import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem } from '@/types'
-import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel } from '@/lib/utils'
+import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel, classDot } from '@/lib/utils'
 import { Plus, Loader2, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -231,8 +232,8 @@ export default function GradesView() {
 
   return (
     <div className="animate-fade-in">
-      <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
-        <div className="flex items-center justify-between">
+      <div className="px-4 sm:px-10 pt-8 pb-5 bg-surface border-b border-border">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="font-display text-[length:calc(30px*var(--ts))] leading-none text-ink">{t.grades.title}</h2>
             <p className="text-text-secondary text-sm mt-1">
@@ -242,13 +243,13 @@ export default function GradesView() {
           </div>
           <div className="flex items-center gap-2">
             {subView === 'entry' && !showCreateFlow && !editingAssessment && (
-              <button data-guide="grades.new" onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
+              <button data-guide="grades.new" onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 max-sm:h-11 px-4 whitespace-nowrap rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
                 <Plus size={15} /> {lang === 'ko' ? '새 평가' : 'New assessment'}
               </button>
             )}
           </div>
         </div>
-        <div className="flex gap-px bg-border/50 rounded-xl p-1 mt-4 overflow-x-auto">
+        <div className="scroll-row flex gap-px bg-border/50 rounded-xl p-1 mt-4 overflow-x-auto">
           {([
             { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
             { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch Grid' },
@@ -257,15 +258,15 @@ export default function GradesView() {
             { id: 'calendar' as SubView, icon: CalendarDays, label: lang === 'ko' ? '평가 일정' : 'Calendar' },
           ]).map(tab => (
             <button key={tab.id} onClick={() => setSubView(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-medium transition-all whitespace-nowrap ${subView === tab.id ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt hover:text-navy'}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all whitespace-nowrap ${subView === tab.id ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt hover:text-navy'}`}>
               <tab.icon size={13} /> {tab.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="px-10 py-6">
-        <div className="flex items-center gap-3 mb-5">
+      <div className="px-4 sm:px-10 py-6">
+        <div className="flex items-center gap-3 mb-5 flex-wrap sm:flex-nowrap">
           {/* Semester — a picker for admin/Snapdragon, a fixed label for everyone else */}
           {semesters.length > 0 && (canSwitchSemester ? (
             <select value={selectedSemester || ''} onChange={e => { leaveList(); setSelectedSemester(e.target.value || null) }}
@@ -281,16 +282,16 @@ export default function GradesView() {
               {(() => { const sem = semesters.find(s => s.id === selectedSemester) || semesters[0]; return (lang === 'ko' ? sem.name_ko : sem.name) })()}
             </span>
           ))}
-          <div className="w-px h-6 bg-border" />
+          <div className="hidden sm:block w-px h-6 bg-border" />
           <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; leaveList(); setSelectedGrade(g); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
             className="px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
           {availableClasses.length > 1 ? (
-            <div className="flex gap-1">
+            <div className="chip-scroll flex gap-1 max-sm:w-full">
               {availableClasses.map(cls => (
                 <button key={cls} onClick={() => { leaveList(); setSelectedClass(cls); localStorage.setItem('daewoo_grade_tab_class', cls) }}
-                  className={`px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
+                  className={`px-3 py-1.5 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
                   style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
                   {cls}
                 </button>
@@ -313,7 +314,7 @@ export default function GradesView() {
         {subView === 'entry' && !editingAssessment && (
           <ScoreEntryView selectedDomain={selectedDomain} setSelectedDomain={setSelectedDomain} assessments={assessments} allAssessments={allAssessments} selectedAssessment={selectedAssessment} setSelectedAssessment={setSelectedAssessment}
             students={students} loadingStudents={loadingStudents} listReady={listReady} lang={lang} catLabel={catLabel} selectedClass={selectedClass} selectedGrade={selectedGrade} selectedSemester={selectedSemester}
-            handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={a => { setShowCreateFlow(false); setEditingAssessment(a) }} onCreateAssessment={() => setShowCreateFlow(true)} createLabel={lang === 'ko' ? '새 평가' : 'New assessment'}
+            handleDeleteAssessment={handleDeleteAssessment} onEditAssessment={a => { setShowCreateFlow(false); setEditingAssessment(a) }}
             onSheetSaved={() => loadAllAssessments()} totalsOnly={totalsOnly} setTotalsOnly={setTotalsOnly} onPatched={patchAssessment} />
         )}
         {subView === 'batch' && <BatchGridView selectedDomain={selectedDomain} setSelectedDomain={(d: Domain) => setSelectedDomain(d)} allAssessments={allAssessments} students={students} selectedClass={selectedClass} selectedGrade={selectedGrade} lang={lang} />}
@@ -334,10 +335,10 @@ export default function GradesView() {
 // section entry, or the points sheet. "Totals only" puts an answer-key or
 // rubric assessment on the points sheet for that assessment alone.
 
-function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAssessments, selectedAssessment, setSelectedAssessment, students, loadingStudents, listReady, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleDeleteAssessment, onEditAssessment, onCreateAssessment, createLabel, onSheetSaved, totalsOnly, setTotalsOnly, onPatched }: {
+function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAssessments, selectedAssessment, setSelectedAssessment, students, loadingStudents, listReady, lang, catLabel, selectedClass, selectedGrade, selectedSemester, handleDeleteAssessment, onEditAssessment, onSheetSaved, totalsOnly, setTotalsOnly, onPatched }: {
   selectedDomain: Domain; setSelectedDomain: (d: Domain) => void; assessments: Assessment[]; allAssessments: Assessment[]; selectedAssessment: Assessment | null; setSelectedAssessment: (a: Assessment | null) => void
   students: StudentRow[]; loadingStudents: boolean; listReady: boolean; lang: LangKey; catLabel: (t: string) => string; selectedClass: EnglishClass; selectedGrade: Grade; selectedSemester: string | null
-  handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onCreateAssessment: () => void; createLabel: string; onSheetSaved: () => void
+  handleDeleteAssessment: (a: Assessment) => void; onEditAssessment: (a: Assessment) => void; onSheetSaved: () => void
   totalsOnly: string | null; setTotalsOnly: (id: string | null) => void; onPatched: (a: Assessment) => void
 }) {
   const { showToast } = useApp()
@@ -379,42 +380,43 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
         {DOMAINS.map(d => (
           <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[length:calc(12px*var(--ts))] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
             {SHORT[d] || DOMAIN_LABELS[d][lang]}
-            {(() => { const n = allAssessments.filter(a => a.domain === d || touchesDomain(a, d)).length; return n > 0 ? <span className="ml-1.5 text-[length:calc(10px*var(--ts))] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{n}</span> : null })()}
+            {(() => { const n = allAssessments.filter(a => a.domain === d || touchesDomain(a, d)).length; return n > 0 ? <span className="ml-1.5 text-[length:calc(11.5px*var(--ts))] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{n}</span> : null })()}
           </button>
         ))}
       </div>
 
       {assessments.length > 0 && (
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="chip-scroll flex items-center gap-2 mb-4 flex-wrap">
           <span className="eyebrow mr-1">{ko ? '평가' : 'Assessment'}</span>
           {assessments.map(x => {
             const on = a?.id === x.id
             const partHere = x.mixed && x.domain_split && Number(x.domain_split[selectedDomain] || 0) > 0 && x.domain !== selectedDomain
             return (
-              <button key={x.id} onClick={() => setSelectedAssessment(x)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
+              <button key={x.id} onClick={() => setSelectedAssessment(x)} className={`inline-flex items-center gap-1.5 h-8 px-3 whitespace-nowrap rounded-full border text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
                 <span>{x.name}</span>
                 <span className={on ? 'opacity-70' : 'text-ink-3'} title={partHere ? (ko ? `이 탭에는 ${x.max_score}점 중 ${x.domain_split![selectedDomain]}점이 반영됩니다` : `${x.domain_split![selectedDomain]} of the ${x.max_score} points count in this tab`) : undefined}>{partHere ? `/${x.domain_split![selectedDomain]} of ${x.max_score}` : `/${x.max_score}`}</span>
                 {x.mixed && x.domain_split
-                  ? <span className={`inline-flex items-center gap-1 text-[length:max(10px,calc(9.5px*var(--ts)))] px-1 py-0.5 rounded font-bold ${on ? 'bg-paper/20' : 'bg-paper-2'}`} title={Object.entries(x.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}>
+                  ? <span className={`inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] px-1 py-0.5 rounded font-bold ${on ? 'bg-paper/20' : 'bg-paper-2'}`} title={Object.entries(x.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => `${domainLabel(d)} ${v}`).join(' · ')}>
                       {Object.entries(x.domain_split).filter(([, v]) => Number(v) > 0).map(([d, v]) => <span key={d} style={{ color: on ? undefined : domainColor(d) }}>{domainShort(d)} {v}</span>)}
                     </span>
-                  : x._isMultiDomain && <span className={`text-[length:max(10px,calc(9.5px*var(--ts)))] px-1 py-0.5 rounded font-bold ${on ? 'bg-paper/20' : 'bg-paper-2 text-ink-2'}`}>Multi</span>}
-                {x.type !== 'formative' && <span className={`text-[length:calc(10px*var(--ts))] px-1 py-0.5 rounded ${on ? 'bg-paper/20' : 'bg-paper-2 text-ink-2'}`}>{catLabel(x.type)}</span>}
-                {x.date && <span className={`text-[length:calc(10.5px*var(--ts))] ${on ? 'opacity-60' : 'text-ink-3'}`}>{fmtDate(x.date)}</span>}
+                  : x._isMultiDomain && <span className={`text-[length:calc(11.5px*var(--ts))] px-1 py-0.5 rounded font-bold ${on ? 'bg-paper/20' : 'bg-paper-2 text-ink-2'}`}>Multi</span>}
+                {x.type !== 'formative' && <span className={`text-[length:calc(11.5px*var(--ts))] px-1 py-0.5 rounded ${on ? 'bg-paper/20' : 'bg-paper-2 text-ink-2'}`}>{catLabel(x.type)}</span>}
+                {x.date && <span className={`text-[length:calc(11.5px*var(--ts))] ${on ? 'opacity-60' : 'text-ink-3'}`}>{fmtDate(x.date)}</span>}
               </button>
             )
           })}
         </div>
       )}
 
+      {/* An empty semester gets the message only: "New assessment" is the
+          header button already (the What's-new tour points at it). */}
       <div className="bg-surface border border-rule-2 rounded-lg overflow-hidden">
         {loadingStudents || !listReady ? (
           <Loading rows={5} />
         ) : !a ? (
           assessments.length === 0
             ? <EmptyState title={ko ? '이번 학기 채점한 평가가 없습니다' : 'Nothing scored yet this semester'}
-                description={ko ? '간단한 퀴즈로 시작해 보세요. 답안지에서 입력하는 대로 채점됩니다.' : 'Start with a quick quiz. Name it, pick how it is scored, and the sheet scores it as you type.'}
-                action={{ label: createLabel, onClick: onCreateAssessment }} />
+                description={ko ? '간단한 퀴즈로 시작해 보세요. 답안지에서 입력하는 대로 채점됩니다.' : 'Start with a quick quiz. Name it, pick how it is scored, and the sheet scores it as you type.'} />
             : <EmptyState compact title={ko ? '평가를 선택하세요' : 'Pick an assessment above'} description={ko ? '위에서 평가를 고르면 채점 화면이 열립니다.' : 'Choose one of the assessments above to open its sheet.'} />
         ) : (
           <>
@@ -469,6 +471,8 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  // Any way out of the page asks first while scores are unsaved (lib/unsaved.ts).
+  useUnsaved(hasChanges)
 
   // Warn on page leave with unsaved changes
   useEffect(() => {
@@ -557,8 +561,8 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">{assessment.name}</span>
-            <span className="text-[length:calc(10px*var(--ts))] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(assessment.type)}</span>
-            <span className="text-[length:calc(10px*var(--ts))] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{sections.length} sections</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(assessment.type)}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{sections.length} sections</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[length:calc(12px*var(--ts))] text-text-secondary">{students.filter(s => hasAnyScore(s.id)).length}/{students.length} entered</span>
@@ -568,16 +572,16 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
       <div className="overflow-x-auto">
         <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
+            <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
             {sections.map((sec, si) => (
-              <th key={si} className="text-center px-2 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[70px]">
+              <th key={si} className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[70px]">
                 <div className="font-bold">{sec.label}</div>
-                <div className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary font-normal">/{sec.max_points}</div>
-                {sec.standard && <div className="text-[length:max(10px,calc(7px*var(--ts)))] text-purple-600 font-medium mt-0.5">{sec.standard}</div>}
+                <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-normal">/{sec.max_points}</div>
+                {sec.standard && <div className="text-[length:calc(11.5px*var(--ts))] text-purple-600 font-medium mt-0.5">{sec.standard}</div>}
               </th>
             ))}
-            <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Total /{assessment.max_score}</th>
-            <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">%</th>
+            <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Total /{assessment.max_score}</th>
+            <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">%</th>
           </tr></thead>
           <tbody>
             {students.map((s, si) => {
@@ -587,7 +591,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
               return (
                 <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                   <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">
-                    {s.english_name} <span className="text-text-tertiary font-normal text-[length:calc(10px*var(--ts))]">{s.korean_name}</span>
+                    {s.english_name} <span className="ko-name text-text-tertiary font-normal text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span>
                   </td>
                   {sections.map((sec, secIdx) => {
                     const val = sectionScores[s.id]?.[String(secIdx)]
@@ -617,7 +621,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
                     )
                   })}
                   <td className="px-3 py-2 text-center font-bold text-navy text-[length:calc(13px*var(--ts))]">{has ? total : ''}</td>
-                  <td className={`px-3 py-2 text-center text-[length:calc(11px*var(--ts))] font-semibold ${pct != null ? (pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>
+                  <td className={`px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-semibold ${pct != null ? (pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>
                     {pct != null ? `${pct.toFixed(0)}%` : ''}
                   </td>
                 </tr>
@@ -626,7 +630,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-navy/20 bg-surface-alt/50">
-              <td className="px-3 py-2 sticky left-0 bg-surface-alt/50 font-bold text-[length:calc(11px*var(--ts))] text-navy z-10">Class Average</td>
+              <td className="px-3 py-2 sticky left-0 bg-surface-alt/50 font-bold text-[length:calc(11.5px*var(--ts))] text-navy z-10">Class Average</td>
               {sections.map((sec, si) => {
                 const vals = students.map(s => sectionScores[s.id]?.[String(si)]).filter((v): v is number => v != null)
                 const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
@@ -644,7 +648,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
                 return (
                   <>
                     <td className="px-3 py-2 text-center font-bold text-navy text-[length:calc(13px*var(--ts))]">{allTotals.length > 0 ? totalAvg.toFixed(1) : ''}</td>
-                    <td className={`px-3 py-2 text-center text-[length:calc(11px*var(--ts))] font-bold ${totalPct >= 80 ? 'text-green-600' : totalPct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                    <td className={`px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-bold ${totalPct >= 80 ? 'text-green-600' : totalPct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
                       {allTotals.length > 0 ? `${totalPct.toFixed(0)}%` : ''}
                     </td>
                   </>
@@ -655,7 +659,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
         </table>
       </div>
       {/* Per-section stats */}
-      <div className="px-5 py-2.5 bg-surface-alt border-t border-border flex items-center gap-4 text-[length:calc(11px*var(--ts))] flex-wrap">
+      <div className="px-5 py-2.5 bg-surface-alt border-t border-border flex items-center gap-4 text-[length:calc(11.5px*var(--ts))] flex-wrap">
         {sections.map((sec, si) => {
           const vals = students.map(s => sectionScores[s.id]?.[String(si)]).filter((v): v is number => v != null)
           const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
@@ -664,7 +668,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
             <span key={si} className="inline-flex items-center gap-1">
               <span className="font-semibold text-navy">{sec.label}:</span>
               <span className={pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}>{avg.toFixed(1)}/{sec.max_points} ({pct.toFixed(0)}%)</span>
-              {sec.standard && <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-purple-600">{sec.standard}</span>}
+              {sec.standard && <span className="text-[length:calc(11.5px*var(--ts))] text-purple-600">{sec.standard}</span>}
             </span>
           )
         })}
@@ -693,6 +697,8 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  // Any way out of the page asks first while scores are unsaved (lib/unsaved.ts).
+  useUnsaved(hasChanges)
   const [expandedAssessment, setExpandedAssessment] = useState<string | null>(null)
 
   const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)
@@ -817,13 +823,13 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
           <div className="overflow-x-auto">
             <table className="w-full text-[length:calc(12px*var(--ts))]">
               <thead><tr className="bg-surface-alt">
-                <th className="text-left px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
                 {columns.map((col, ci) => {
                   if (col.type === 'section') {
                     return (
-                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[length:max(10px,calc(8px*var(--ts)))] uppercase tracking-wider text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
+                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
                         <div className="whitespace-nowrap">{col.sectionLabel}</div>
-                        <div className="text-[length:max(10px,calc(7px*var(--ts)))] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_points || col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_points || col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
                       </th>
                     )
                   }
@@ -831,17 +837,17 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   const hasSections = Array.isArray(a.sections) && a.sections.length > 0
                   const isExpanded = expandedAssessment === a.id
                   return (
-                    <th key={a.id} className={`text-center px-3 py-2.5 text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
+                    <th key={a.id} className={`text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
                       onClick={() => hasSections && setExpandedAssessment(isExpanded ? null : a.id)} title={hasSections ? `Click to ${isExpanded ? 'collapse' : 'expand'} sections` : a.name}>
                       <div className="flex items-center justify-center gap-0.5 leading-tight">
                         {a.name}
                         {hasSections && <ChevronDown size={10} className={`flex-shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
                       </div>
-                      <div className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary font-normal">/{a.max_score}{hasSections ? ` (${a.sections.length} sec)` : ''}</div>
+                      <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-normal">/{a.max_score}{hasSections ? ` (${a.sections.length} sec)` : ''}</div>
                     </th>
                   )
                 })}
-                <th className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
+                <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
               </tr></thead>
               <tbody>
                 {students.map(s => {
@@ -855,14 +861,14 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   const avg = calcWeightedAvg(weightedItems, Number(selectedGrade), null, selectedClass, weightTable)
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
-                      <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[length:calc(10px*var(--ts))]">{s.korean_name}</span></td>
+                      <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="ko-name text-text-tertiary font-normal text-[length:calc(11.5px*var(--ts))]">{s.korean_name}</span></td>
                       {columns.map((col, ci) => {
                         if (col.type === 'section') {
                           const secVal = sectionScores[s.id]?.[col.assessment.id]?.[String(col.sectionIdx)] ?? ''
                           return (
                             <td key={`sec-${col.assessment.id}-${col.sectionIdx}-${s.id}`} className="px-1 py-1.5 text-center bg-purple-50/20">
                               <input type="number" step="0.5" value={secVal ?? ''} onChange={e => handleSectionChange(s.id, col.assessment.id, col.sectionIdx!, e.target.value, col.assessment.sections)}
-                                className="batch-input w-14 px-1 py-1.5 border rounded-lg text-center text-[length:calc(11px*var(--ts))] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 border-purple-200" />
+                                className="batch-input w-14 px-1 py-1.5 border rounded-lg text-center text-[length:calc(11.5px*var(--ts))] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 border-purple-200" />
                             </td>
                           )
                         }
@@ -982,11 +988,11 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
                 const headers = ['Domain', 'Average %', 'Assessments', 'Scores Entered']
                 const rows = DOMAINS.map(d => [DOMAIN_LABELS[d][lang], stats[d].avg?.toFixed(1) ?? 'N/A', stats[d].assessmentCount, stats[d].count])
                 exportToCSV(`grades-overview-${selectedClass}-G${selectedGrade}`, headers, rows)
-              }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+              }} className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
                 <Download size={12} /> CSV
               </button>
               <div className="text-right">
-              <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</p>
               <p className="text-3xl font-display font-bold text-navy">{overallAvg.toFixed(1)}%</p>
             </div>
             </div>
@@ -1010,17 +1016,17 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
               <div className="p-4 space-y-2">
                 {s.assessments.length > 0 ? s.assessments.map((a: { name: string; avg: number; whole?: number | null }, i: number) => (
                   <div key={i} className="flex items-center gap-2">
-                    <span className="text-[length:calc(10px*var(--ts))] text-text-secondary w-28 truncate text-right" title={a.name}>{a.name}</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] text-text-secondary w-28 truncate text-right" title={a.name}>{a.name}</span>
                     <div className="flex-1 h-5 bg-surface-alt rounded overflow-hidden">
                       <div className="h-full rounded transition-all duration-500 flex items-center" style={{ width: `${Math.max(a.avg, 3)}%`, backgroundColor: `${color}CC` }}>
-                        {a.avg > 15 && <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-bold text-white ml-1.5">{a.avg.toFixed(0)}%</span>}
+                        {a.avg > 15 && <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-white ml-1.5">{a.avg.toFixed(0)}%</span>}
                       </div>
                     </div>
-                    {a.avg <= 15 && <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-medium text-text-tertiary">{a.avg.toFixed(0)}%</span>}
-                    {a.whole != null && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary whitespace-nowrap" title={lang === 'ko' ? '시험지 전체 평균' : 'Class average on the whole paper'}>{lang === 'ko' ? '전체' : 'whole'} {a.whole.toFixed(0)}%</span>}
+                    {a.avg <= 15 && <span className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary">{a.avg.toFixed(0)}%</span>}
+                    {a.whole != null && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary whitespace-nowrap" title={lang === 'ko' ? '시험지 전체 평균' : 'Class average on the whole paper'}>{lang === 'ko' ? '전체' : 'whole'} {a.whole.toFixed(0)}%</span>}
                   </div>
                 )) : (
-                  <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary text-center py-2">No scores entered yet</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-center py-2">No scores entered yet</p>
                 )}
               </div>
             </div>
@@ -1069,20 +1075,20 @@ function CrossClassCompare({ assessmentName, domain, maxScore, currentClass, gra
 
   return (
     <div className="relative">
-      <button onClick={loadComparison} className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg border border-border text-text-secondary hover:bg-surface-alt font-medium flex items-center gap-1">
+      <button onClick={loadComparison} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border border-border text-text-secondary hover:bg-surface-alt font-medium flex items-center gap-1">
         {loading ? <Loader2 size={10} className="animate-spin" /> : <BarChart3 size={10} />} Compare
       </button>
       {show && (
         <div className="absolute right-0 top-8 bg-surface border border-border rounded-xl shadow-lg z-50 w-56 p-3">
-          <p className="text-[length:calc(10px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider mb-2">Same assessment in other classes</p>
-          {data.length === 0 ? <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary italic">Not shared with other classes</p> :
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider mb-2">Same assessment in other classes</p>
+          {data.length === 0 ? <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">Not shared with other classes</p> :
           <div className="space-y-1.5">{data.map(d => (
             <div key={d.cls} className="flex items-center justify-between">
-              <span className="text-[length:calc(11px*var(--ts))] font-medium" style={{ color: classToTextColor(d.cls as EnglishClass) }}>{d.cls}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-medium" style={{ color: classToTextColor(d.cls as EnglishClass) }}>{d.cls}</span>
               <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(d.avg, 100)}%`, backgroundColor: classToColor(d.cls as EnglishClass) }} /></div>
-                <span className="text-[length:calc(11px*var(--ts))] font-bold text-navy">{d.avg.toFixed(1)}%</span>
-                <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">n={d.count}</span>
+                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(d.avg, 100)}%`, backgroundColor: classDot(d.cls as EnglishClass) }} /></div>
+                <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">{d.avg.toFixed(1)}%</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">n={d.count}</span>
               </div>
             </div>
           ))}</div>}
@@ -1159,7 +1165,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
       </div>
       <div className="grid grid-cols-7">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={`${md.key}-h-${i}`} className={`py-1 text-center ${compact ? 'text-[length:max(10px,calc(7px*var(--ts)))]' : 'text-[length:max(10px,calc(9px*var(--ts)))]'} font-semibold text-text-tertiary uppercase border-b border-border bg-surface-alt/50`}>{d}</div>
+          <div key={`${md.key}-h-${i}`} className={`py-1 text-center ${compact ? 'text-[length:calc(11.5px*var(--ts))]' : 'text-[length:calc(11.5px*var(--ts))]'} font-semibold text-text-tertiary uppercase border-b border-border bg-surface-alt/50`}>{d}</div>
         ))}
         {md.days.map((day, i) => {
           if (day === null) return <div key={`${md.key}-e-${i}`} className={`${compact ? 'min-h-[40px]' : 'min-h-[72px]'} border-b border-r border-border/30 bg-surface-alt/20`} />
@@ -1173,7 +1179,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
               className={`${compact ? 'min-h-[40px]' : 'min-h-[72px]'} border-b border-r border-border/30 p-0.5 transition-all ${
                 isSelected ? 'bg-navy/5 ring-1 ring-navy/30' : dayAssessments.length > 0 ? 'cursor-pointer hover:bg-surface-alt' : ''
               } ${isWeekend ? 'bg-surface-alt/30' : ''}`}>
-              <div className={`${compact ? 'text-[length:max(10px,calc(9px*var(--ts)))]' : 'text-[length:calc(10px*var(--ts))]'} font-medium ${isToday ? 'text-white bg-navy rounded-full w-5 h-5 flex items-center justify-center mx-auto' : 'text-text-secondary text-right px-0.5'}`}>{day}</div>
+              <div className={`${compact ? 'text-[length:calc(11.5px*var(--ts))]' : 'text-[length:calc(11.5px*var(--ts))]'} font-medium ${isToday ? 'text-white bg-navy rounded-full w-5 h-5 flex items-center justify-center mx-auto' : 'text-text-secondary text-right px-0.5'}`}>{day}</div>
               {compact ? (
                 dayAssessments.length > 0 && (
                   <div className="flex flex-wrap gap-0.5 justify-center mt-0.5">
@@ -1187,10 +1193,10 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
                   {dayAssessments.slice(0, 3).map(a => (
                     <div key={a.id} className="flex items-center gap-1 rounded px-1 py-0.5" style={{ backgroundColor: `${DOMAIN_COLORS[a.domain]}10` }}>
                       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
-                      <span className="text-[length:max(10px,calc(8px*var(--ts)))] font-medium text-text-primary truncate leading-tight">{a.name}</span>
+                      <span className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-primary truncate leading-tight">{a.name}</span>
                     </div>
                   ))}
-                  {dayAssessments.length > 3 && <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary px-1">+{dayAssessments.length - 3} more</span>}
+                  {dayAssessments.length > 3 && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-1">+{dayAssessments.length - 3} more</span>}
                 </div>
               )}
             </div>
@@ -1211,7 +1217,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
             return pct > 0 ? <div key={d} style={{ width: `${pct}%`, backgroundColor: DOMAIN_COLORS[d] }} className="transition-all" title={`${DOMAIN_LABELS[d]}: ${domainCounts[d]} (${pct.toFixed(0)}%)`} /> : null
           })}
         </div>
-        <div className="flex gap-4 text-[length:max(10px,calc(9px*var(--ts)))]">
+        <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))]">
           {DOMAINS.map(d => (
             <span key={d} className="inline-flex items-center gap-1">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[d] }} />
@@ -1223,7 +1229,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 
       {/* Coverage gaps */}
       {gaps.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[length:calc(11px*var(--ts))] text-amber-800">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[length:calc(11.5px*var(--ts))] text-amber-800">
           <span className="font-bold">Coverage gap: </span>
           {gaps.map(d => DOMAIN_LABELS[d]).join(', ')} {gaps.length === 1 ? 'has' : 'have'} not been assessed in over 6 weeks.
         </div>
@@ -1233,8 +1239,8 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
       <div className="flex items-center justify-between">
         <button onClick={prevMonth} className="px-3 py-1.5 rounded-lg hover:bg-surface-alt text-text-secondary text-[length:calc(13px*var(--ts))] border border-border">&larr; {viewMode === '3' ? 'Prev 3' : 'Prev'}</button>
         <div className="flex items-center gap-2">
-          <button onClick={() => setViewMode('1')} className={`px-3 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${viewMode === '1' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>1 Month</button>
-          <button onClick={() => setViewMode('3')} className={`px-3 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${viewMode === '3' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>3 Months</button>
+          <button onClick={() => setViewMode('1')} className={`px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${viewMode === '1' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>1 Month</button>
+          <button onClick={() => setViewMode('3')} className={`px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${viewMode === '3' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>3 Months</button>
         </div>
         <button onClick={nextMonth} className="px-3 py-1.5 rounded-lg hover:bg-surface-alt text-text-secondary text-[length:calc(13px*var(--ts))] border border-border">{viewMode === '3' ? 'Next 3' : 'Next'} &rarr;</button>
       </div>
@@ -1258,7 +1264,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: DOMAIN_COLORS[a.domain] }} />
                 <div className="flex-1 min-w-0">
                   <span className="text-[length:calc(12px*var(--ts))] font-semibold text-text-primary">{a.name}</span>
-                  <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary ml-2">{DOMAIN_LABELS[a.domain]} · {a.type || 'formative'} · /{a.max_score}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-2">{DOMAIN_LABELS[a.domain]} · {a.type || 'formative'} · /{a.max_score}</span>
                 </div>
               </div>
             ))}
@@ -1275,10 +1281,10 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
         visibleAssessments.forEach(a => { byDom[a.domain] = (byDom[a.domain] || 0) + 1 })
         return (
           <div className="bg-surface border border-border rounded-xl p-4">
-            <h4 className="text-[length:calc(11px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider mb-2">{viewMode === '3' ? 'These 3 Months' : 'This Month'}: {visibleAssessments.length} assessments</h4>
+            <h4 className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider mb-2">{viewMode === '3' ? 'These 3 Months' : 'This Month'}: {visibleAssessments.length} assessments</h4>
             <div className="flex gap-3 flex-wrap">
               {DOMAINS.filter(d => byDom[d]).map(d => (
-                <span key={d} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[length:calc(10px*var(--ts))] font-medium" style={{ backgroundColor: `${DOMAIN_COLORS[d]}15`, color: DOMAIN_COLORS[d] }}>
+                <span key={d} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium" style={{ backgroundColor: `${DOMAIN_COLORS[d]}15`, color: DOMAIN_COLORS[d] }}>
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: DOMAIN_COLORS[d] }} />
                   {DOMAIN_LABELS[d]}: {byDom[d]}
                 </span>

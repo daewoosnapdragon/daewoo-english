@@ -170,7 +170,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
           <span className="text-[length:calc(12px*var(--ts))] text-ink-2 tabular-nums">
             <span className="text-good font-semibold">{counts.present}</span> P · <span className="text-bad font-semibold">{counts.absent}</span> A · <span className="text-warn font-semibold">{counts.tardy}</span> T
           </span>
-          <span className="text-[length:calc(11px*var(--ts))] text-ink-3 hidden sm:inline">P A T · ↑↓ · ⌘↩</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hidden sm:inline">P A T · ↑↓ · ⌘↩</span>
           <button onClick={save} disabled={saving || loading || students.length === 0}
             className="ml-auto h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-2">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}

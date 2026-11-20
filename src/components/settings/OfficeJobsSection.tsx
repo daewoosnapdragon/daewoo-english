@@ -3,6 +3,7 @@
 import { logActivity } from '@/lib/activity'
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import { useTeachers } from '@/hooks/useData'
 import { useOfficeJobs } from '@/components/dashboard/useOfficeJobs'
@@ -26,6 +27,8 @@ export default function OfficeJobsSection() {
   const { saved, loading, days, today } = useOfficeJobs(draft)
   useEffect(() => { if (!loading && draft === null) setDraft(saved || DEFAULT_OFFICE_JOBS_CONFIG) }, [loading, saved, draft])
   const [dirty, setDirty] = useState(false)
+  // Leaving the page before saving these settings asks first (lib/unsaved.ts).
+  useUnsaved(dirty)
   const [saving, setSaving] = useState(false)
   const [addId, setAddId] = useState('')
   const [skipDate, setSkipDate] = useState('')
@@ -90,7 +93,7 @@ export default function OfficeJobsSection() {
               <div>
                 <label htmlFor="oj-start" className="eyebrow block mb-1.5">{ko ? '첫 청소일' : 'First cleaning day'}</label>
                 <input id="oj-start" type="date" value={draft.start} disabled={!canEdit} onChange={e => upd({ start: e.target.value })} className={field} />
-                <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{ko ? '그날 첫 번째 사람이 첫 번째 일을 맡습니다.' : 'On that day the first person has the first job, the second the second, and so on.'}</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{ko ? '그날 첫 번째 사람이 첫 번째 일을 맡습니다.' : 'On that day the first person has the first job, the second the second, and so on.'}</p>
               </div>
               <DateList label={ko ? '건너뛰는 주' : 'Weeks with no cleaning'} help={ko ? '그 주의 아무 날이나 넣으세요. 순번은 멈춰 기다립니다.' : 'Any day of the week will do; the rotation waits.'} dates={draft.skip} value={skipDate} setValue={setSkipDate} canEdit={canEdit} lang={language}
                 onAdd={d => upd({ skip: Array.from(new Set([...draft.skip, fridayOf(d)])).sort() })} onRemove={d => upd({ skip: draft.skip.filter(x => x !== d) })} />
@@ -128,7 +131,7 @@ export default function OfficeJobsSection() {
               <div className="border-t border-rule-2 divide-y divide-rule">
                 {preview.map(d => (
                   <div key={d.date} className="grid grid-cols-[150px_minmax(0,1fr)] gap-3 py-1.5 text-[length:calc(12.5px*var(--ts))]">
-                    <span className="text-ink tabular-nums">{fmtDay(d.date, language)}{d.moved && <span className="block text-[length:calc(10.5px*var(--ts))] text-warn">{ko ? `금요일 쉼: ${d.reason || ''}` : `Fri off: ${d.reason || ''}`}</span>}</span>
+                    <span className="text-ink tabular-nums">{fmtDay(d.date, language)}{d.moved && <span className="block text-[length:calc(11.5px*var(--ts))] text-warn">{ko ? `금요일 쉼: ${d.reason || ''}` : `Fri off: ${d.reason || ''}`}</span>}</span>
                     <span className="text-ink-2 flex flex-wrap gap-x-3 gap-y-0.5">
                       {d.everyone ? <span>{ko ? '모두 함께' : 'Everyone together'}</span> : d.assignments.map(a => <span key={a.job.key}><span className="text-ink-3">{a.job.name}:</span> {nameOf(a.personId)}</span>)}
                     </span>
@@ -136,7 +139,7 @@ export default function OfficeJobsSection() {
                 ))}
               </div>
             )}
-            <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1.5">{ko ? '달력의 전교 휴일을 반영합니다. 종이 당번표와 다르면 건너뛰는 주를 조정하세요.' : 'Whole-school days off on the calendar are taken into account. If a date differs from the paper board, adjust the skipped weeks.'}</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1.5">{ko ? '달력의 전교 휴일을 반영합니다. 종이 당번표와 다르면 건너뛰는 주를 조정하세요.' : 'Whole-school days off on the calendar are taken into account. If a date differs from the paper board, adjust the skipped weeks.'}</p>
           </div>
           {!canEdit && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '관리자만 변경할 수 있습니다.' : 'Only an admin can change the rotation.'}</p>}
         </div>
@@ -161,7 +164,7 @@ function DateList({ label, help, dates, value, setValue, onAdd, onRemove, canEdi
           <button onClick={() => { if (value) { onAdd(value); setValue('') } }} disabled={!value} className="h-8 px-2.5 rounded border border-rule-2 text-[length:calc(12px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><Plus size={12} />{lang === 'ko' ? '추가' : 'Add'}</button>
         </div>
       )}
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{help}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{help}</p>
     </div>
   )
 }

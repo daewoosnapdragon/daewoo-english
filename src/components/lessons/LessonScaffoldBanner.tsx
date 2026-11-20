@@ -100,19 +100,19 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
       <button onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-2 px-4 py-2.5 text-left hover:bg-blue-50 transition-colors">
         <Lightbulb size={14} className="text-blue-600 flex-shrink-0" />
-        <span className="text-[length:calc(11px*var(--ts))] font-semibold text-blue-900">WIDA Scaffolding Reminder</span>
-        <span className="text-[length:calc(10px*var(--ts))] text-blue-700 ml-1">--</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-900">WIDA Scaffolding Reminder</span>
+        <span className="text-[length:calc(11.5px*var(--ts))] text-blue-700 ml-1">--</span>
         <div className="flex items-center gap-1 ml-1">
           {distribution.map(d => {
             const info = WIDA_LEVELS.find(w => w.level === d.level)
             return (
-              <span key={d.level} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-bold"
+              <span key={d.level} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold"
                 style={{ backgroundColor: info?.bg || '#f0f0f0', color: info?.color ? '#333' : '#666' }}>
                 L{d.level}: {d.count}
               </span>
             )
           })}
-          {noWIDA > 0 && <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-500">({noWIDA} unset)</span>}
+          {noWIDA > 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-blue-500">({noWIDA} unset)</span>}
         </div>
         <div className="ml-auto">
           {expanded ? <ChevronDown size={14} className="text-blue-400" /> : <ChevronRight size={14} className="text-blue-400" />}
@@ -124,10 +124,10 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
           {/* Grade tabs for quick switching */}
           {onGradeChange && (
             <div className="flex items-center gap-1.5 mb-3">
-              <span className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-blue-600 font-semibold mr-1">Grade:</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-blue-600 font-semibold mr-1">Grade:</span>
               {[1, 2, 3, 4, 5].map(g => (
                 <button key={g} onClick={() => onGradeChange(g as Grade)}
-                  className={`px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium transition-all ${grade === g ? 'bg-navy text-white' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'}`}>
+                  className={`px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${grade === g ? 'bg-navy text-white' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'}`}>
                   G{g}
                 </button>
               ))}
@@ -135,7 +135,7 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-blue-800 font-semibold mb-2">
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-blue-800 font-semibold mb-2">
                 <Users size={10} className="inline mr-1" />Class WIDA Distribution ({studentCount} students)
               </p>
               <div className="space-y-1">
@@ -144,16 +144,16 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
                   const pct = Math.round((d.count / studentCount) * 100)
                   return (
                     <div key={d.level} className="flex items-center gap-2">
-                      <span className="text-[length:calc(10px*var(--ts))] font-bold w-6" style={{ color: info?.color || '#666' }}>L{d.level}</span>
+                      <span className="text-[length:calc(11.5px*var(--ts))] font-bold w-6" style={{ color: info?.color || '#666' }}>L{d.level}</span>
                       <div className="flex-1 h-4 bg-white rounded-full border border-blue-100 overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: info?.color || '#ccc' }} />
                       </div>
-                      <span className="text-[length:calc(10px*var(--ts))] text-blue-700 font-medium w-16">{d.count} ({pct}%)</span>
+                      <span className="text-[length:calc(11.5px*var(--ts))] text-blue-700 font-medium w-16">{d.count} ({pct}%)</span>
                     </div>
                   )
                 })}
               </div>
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-600 mt-2 italic">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-2 italic">
                 {distribution.some(d => d.level <= 2) && distribution.some(d => d.level >= 4)
                   ? 'Wide range -- plan 3 tiers of scaffolding (Heavy / Moderate / Light).'
                   : distribution.every(d => d.level <= 2)
@@ -165,13 +165,13 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
               </p>
             </div>
             <div>
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-blue-800 font-semibold mb-2">
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-blue-800 font-semibold mb-2">
                 <Lightbulb size={10} className="inline mr-1" />Scaffolding Strategies
               </p>
               {/* Level filter tabs */}
               <div className="flex gap-1 mb-2 flex-wrap">
                 <button onClick={() => setLevelFilter(null)}
-                  className={`px-2 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-medium ${levelFilter === null ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200'}`}>
+                  className={`px-2 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-medium ${levelFilter === null ? 'bg-blue-600 text-white' : 'bg-white text-blue-700 border border-blue-200'}`}>
                   All
                 </button>
                 {[1, 2, 3, 4, 5, 6].map(lvl => {
@@ -180,7 +180,7 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
                   if (!hasScaffolds) return null
                   return (
                     <button key={lvl} onClick={() => setLevelFilter(lvl)}
-                      className={`px-2 py-0.5 rounded text-[length:max(10px,calc(9px*var(--ts)))] font-medium ${levelFilter === lvl ? 'text-white' : 'border border-blue-200'}`}
+                      className={`px-2 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-medium ${levelFilter === lvl ? 'text-white' : 'border border-blue-200'}`}
                       style={levelFilter === lvl ? { backgroundColor: info?.color || '#3b82f6' } : { backgroundColor: info?.bg || '#f0f9ff' }}>
                       L{lvl} {info?.name}
                     </button>
@@ -194,9 +194,9 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
                     const info = WIDA_LEVELS.find(w => w.level === levelFilter)
                     return info ? (
                       <div>
-                        <p className="text-[length:calc(10px*var(--ts))] font-bold" style={{ color: info.color }}>L{info.level} {info.name}</p>
-                        <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-800 mt-0.5">{info.desc}</p>
-                        <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-600 mt-1"><strong>Scaffolds:</strong> {info.scaffolds}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] font-bold" style={{ color: info.color }}>L{info.level} {info.name}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-800 mt-0.5">{info.desc}</p>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-1"><strong>Scaffolds:</strong> {info.scaffolds}</p>
                       </div>
                     ) : null
                   })()}
@@ -206,19 +206,19 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
               {(() => {
                 const filtered = levelFilter ? commonScaffolds.filter(s => s.level === levelFilter) : commonScaffolds
                 return filtered.length === 0 ? (
-                  <p className="text-[length:calc(10px*var(--ts))] text-blue-600 italic">{levelFilter ? `No assigned scaffolds for L${levelFilter} students.` : 'No scaffolds assigned yet.'}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 italic">{levelFilter ? `No assigned scaffolds for L${levelFilter} students.` : 'No scaffolds assigned yet.'}</p>
                 ) : (
                   <div className="space-y-1">
                     {(showAllScaffolds ? filtered : filtered.slice(0, 5)).map((s, i) => (
                       <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-white border border-blue-100">
-                        <span className="text-[length:max(10px,calc(8px*var(--ts)))] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
-                        <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-blue-800 leading-snug flex-1">{s.text}</p>
-                        <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-blue-500 flex-shrink-0 mt-px">{s.count}x</span>
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-800 leading-snug flex-1">{s.text}</p>
+                        <span className="text-[length:calc(11.5px*var(--ts))] text-blue-500 flex-shrink-0 mt-px">{s.count}x</span>
                       </div>
                     ))}
                     {filtered.length > 5 && (
                       <button onClick={() => setShowAllScaffolds(!showAllScaffolds)}
-                        className="text-[length:max(10px,calc(9px*var(--ts)))] font-medium text-blue-600 hover:text-blue-800 mt-1">
+                        className="text-[length:calc(11.5px*var(--ts))] font-medium text-blue-600 hover:text-blue-800 mt-1">
                         {showAllScaffolds ? 'Show fewer' : `Show ${filtered.length - 5} more...`}
                       </button>
                     )}

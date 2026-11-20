@@ -13,7 +13,7 @@ import { supabase } from '@/lib/supabase'
 import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, type Student, type EnglishClass, type Grade, type KoreanClass } from '@/types'
-import { getKSTDateString, percentToLetter } from '@/lib/utils'
+import { getKSTDateString, percentToLetter, formatHomeroom, classToColor, classToTextColor } from '@/lib/utils'
 import WIDABadge from '@/components/shared/WIDABadge'
 import BehaviorLadderPanel from '@/components/behavior/BehaviorLadderPanel'
 import BehaviorTracker from '@/components/behavior/BehaviorTracker'
@@ -37,10 +37,6 @@ import { itemsForDomain, touchesDomain } from '@/lib/domainSplit'
 // facts you always want and a section list that follows the scroll; the body
 // is every section in order of how often teachers look at it. No tabs.
 
-const CLASS_BG: Record<string, string> = {
-  Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy',
-  Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon',
-}
 
 interface Facts {
   overall: number | null; attendanceRate: number | null; absences: number; tardies: number
@@ -177,7 +173,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
   const fieldCls = 'h-9 px-3 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink w-full'
 
   return (
-    <div className="px-8 py-6">
+    <div className="px-4 sm:px-8 py-6">
       <Link href="/students" className="inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink mb-4"><ArrowLeft size={13} />{lang === 'ko' ? '학생 명단' : 'Students'}</Link>
       {student.needs_review && (
         <div className="mb-4 px-4 py-2.5 bg-warn-soft border border-rule rounded flex items-center justify-between gap-3 text-[length:calc(13px*var(--ts))] text-warn">
@@ -190,15 +186,15 @@ export default function StudentPage({ studentId }: { studentId: string }) {
         <aside className="lg:sticky lg:top-[140px] self-start space-y-4">
           <div>
             <h1 className="font-display text-[length:calc(30px*var(--ts))] leading-none text-ink">{student.english_name}</h1>
-            <p className="text-[length:calc(15px*var(--ts))] text-ink-2 mt-1">{student.korean_name}</p>
+            <p className="ko-name text-[length:calc(15px*var(--ts))] text-ink-2 mt-1">{student.korean_name}</p>
           </div>
           <div className="flex flex-wrap gap-1.5 items-center">
-            <span className={`px-2 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold text-white ${CLASS_BG[student.english_class] || 'bg-ink'}`}>{student.english_class}</span>
+            <span className="px-2 py-0.5 rounded-full text-[length:calc(12px*var(--ts))] font-semibold" style={{ backgroundColor: classToColor(student.english_class as EnglishClass), color: classToTextColor(student.english_class as EnglishClass) }}>{student.english_class}</span>
             <WIDABadge studentId={student.id} />
-            {(student as any).is_transfer && <span className="px-2 py-0.5 rounded-full text-[length:calc(11px*var(--ts))] font-semibold bg-info-soft text-info">{lang === 'ko' ? '전학' : 'Transfer'}{(student as any).transfer_date ? ` · ${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}</span>}
+            {(student as any).is_transfer && <span className="px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-semibold bg-info-soft text-info">{lang === 'ko' ? '전학' : 'Transfer'}{(student as any).transfer_date ? ` · ${new Date((student as any).transfer_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}` : ''}</span>}
           </div>
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[length:calc(12.5px*var(--ts))] tabular-nums">
-            <dt className="text-ink-3">{lang === 'ko' ? '학년' : 'Grade'}</dt><dd className="text-ink font-medium">{student.grade} · {student.korean_class} {student.class_number}</dd>
+            <dt className="text-ink-3">{lang === 'ko' ? '학년' : 'Grade'}</dt><dd className="text-ink font-medium">{student.grade} · {formatHomeroom(student)}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '담당' : 'Teacher'}</dt><dd className="text-ink font-medium">{student.teacher_name || '—'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '종합' : 'Overall'}</dt><dd className="text-ink font-medium">{facts ? (facts.overall != null ? `${facts.overall.toFixed(1)}% · ${letter}` : '—') : '…'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '출석' : 'Attendance'}</dt><dd className="text-ink font-medium">{facts ? (facts.attendanceRate != null ? `${facts.attendanceRate}% · ${facts.absences} ${lang === 'ko' ? '결석' : 'absent'}` : '—') : '…'}</dd>
@@ -206,28 +202,31 @@ export default function StudentPage({ studentId }: { studentId: string }) {
             <dt className="text-ink-3">{lang === 'ko' ? '레벨 테스트' : 'Level test'}</dt><dd className="text-ink font-medium">{facts ? (facts.placement ? `${facts.placement}${facts.placementTest ? ` · ${facts.placementTest}` : ''}` : '—') : '…'}</dd>
             <dt className="text-ink-3">{lang === 'ko' ? '행동 (30일)' : 'Behavior · 30d'}</dt><dd className="text-ink font-medium">{facts ? `${facts.behavior30} ${lang === 'ko' ? '건' : facts.behavior30 === 1 ? 'log' : 'logs'}` : '…'}</dd>
           </dl>
-          <nav className="border-t border-rule-2 pt-3 grid gap-0.5 text-[length:calc(12.5px*var(--ts))]" aria-label="Sections">
-            {sections.map(([id, l]) => <a key={id} href={`#sec-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className={`px-2 py-1 rounded ${active === id ? 'bg-surface text-ink font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'text-ink-2 hover:text-ink'}`}>{l}</a>)}
+          {/* Phones: the sections as one sideways-scrolling row of chips. */}
+          <nav className="chip-scroll border-t border-rule-2 pt-3 sm:grid gap-1 sm:gap-0.5 text-[length:calc(12.5px*var(--ts))]" aria-label="Sections">
+            {sections.map(([id, l]) => <a key={id} href={`#sec-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} aria-current={active === id ? 'location' : undefined} className={`px-2 py-1 max-sm:px-3 max-sm:inline-flex max-sm:items-center max-sm:rounded-full max-sm:border max-sm:border-rule-2 rounded transition-colors ${active === id ? 'bg-accent-soft text-accent font-semibold' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{l}</a>)}
           </nav>
-          <div className="border-t border-rule-2 pt-3 grid gap-1.5">
-            <button onClick={editing ? () => setEditing(false) : startEdit} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Pencil size={12} />{editing ? (lang === 'ko' ? '편집 취소' : 'Cancel edit') : (lang === 'ko' ? '정보 수정' : 'Edit details')}</button>
-            <button onClick={exportPDF} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Printer size={12} />{lang === 'ko' ? '포트폴리오 PDF' : 'Export portfolio'}</button>
-            {currentTeacher?.role === 'admin' && <button onClick={remove} disabled={deleting} className="h-8 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-bad inline-flex items-center gap-1.5">{deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}{lang === 'ko' ? '학생 삭제' : 'Delete student'}</button>}
+          <div className="border-t border-rule-2 pt-3 flex flex-wrap gap-2 sm:grid sm:gap-1.5">
+            <button onClick={editing ? () => setEditing(false) : startEdit} className="h-8 max-sm:h-11 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Pencil size={12} />{editing ? (lang === 'ko' ? '편집 취소' : 'Cancel edit') : (lang === 'ko' ? '정보 수정' : 'Edit details')}</button>
+            <button onClick={exportPDF} className="h-8 max-sm:h-11 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Printer size={12} />{lang === 'ko' ? '포트폴리오 PDF' : 'Export portfolio'}</button>
+            {currentTeacher?.role === 'admin' && <button onClick={remove} disabled={deleting} className="h-8 max-sm:h-11 px-3 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-bad inline-flex items-center gap-1.5">{deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}{lang === 'ko' ? '학생 삭제' : 'Delete student'}</button>}
           </div>
         </aside>
 
-        {/* Body */}
-        <div className="min-w-0 space-y-10">
+        {/* Body. Below lg it is the full width, and is the containing block that
+            clips: a screen-reader label in a clipped table (position: absolute,
+            so its overflow-hidden box let it through) pushed the page 90px wide. */}
+        <div className="min-w-0 space-y-10 max-lg:relative max-lg:overflow-x-clip">
           {editing && (
             <section className="border border-rule-2 rounded-lg p-4 bg-paper-2 grid gap-3">
               <h2 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '학생 정보 수정' : 'Edit details'}</h2>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '영어 이름' : 'English name'}</span><input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} className={fieldCls} /></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '한국어 이름' : 'Korean name'}</span><input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} className={fieldCls} /></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '대명사' : 'Pronoun'}</span><select value={form.pronoun || ''} onChange={e => setForm({ ...form, pronoun: e.target.value })} className={fieldCls}><option value="">{lang === 'ko' ? '미설정' : 'not set'}</option><option value="he">he / his</option><option value="she">she / her</option><option value="they">they / their</option></select></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '코멘트에 쓰는 이름' : 'Called (in comments)'}</span><input value={form.goes_by || ''} onChange={e => setForm({ ...form, goes_by: e.target.value })} placeholder={goesByFrom(form.english_name)} className={fieldCls} /></label>
               </div>
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '학년' : 'Grade'}</span><select value={form.grade} onChange={e => setForm({ ...form, grade: Number(e.target.value) as Grade })} className={fieldCls}>{GRADES.map(g => <option key={g} value={g}>{g}</option>)}</select></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '한국 반' : 'Korean class'}</span><select value={form.korean_class} onChange={e => setForm({ ...form, korean_class: e.target.value as KoreanClass })} className={fieldCls}>{KOREAN_CLASSES.map(k => <option key={k} value={k}>{k}</option>)}</select></label>
                 <label className="grid gap-1"><span className="eyebrow">{lang === 'ko' ? '번호' : 'Number'}</span><input type="number" min={1} max={35} value={form.class_number} onChange={e => setForm({ ...form, class_number: parseInt(e.target.value) || 1 })} className={fieldCls} /></label>
@@ -325,7 +324,7 @@ function LevelTestHistory({ studentId, lang }: { studentId: string; lang: string
             <td className="py-2 text-ink">{r.level_tests?.name || '—'}<span className="text-ink-3 ml-2 text-[length:calc(11.5px*var(--ts))]">G{r.level_tests?.grade}</span></td>
             <td className="py-2 text-ink-2">{r.previous_class || '—'}</td>
             <td className="py-2 text-right text-ink-2">{r.composite_index != null ? Math.round(Number(r.composite_index) * 100) : '—'}{r.composite_band ? <span className="text-ink-3 ml-1 text-[length:calc(11.5px*var(--ts))]">{r.composite_band}</span> : null}</td>
-            <td className="py-2 pl-4"><span className="font-semibold text-ink">{r.final_placement || '—'}</span>{r.is_overridden && <span className="text-[length:calc(11px*var(--ts))] text-warn ml-2" title={r.override_reason || ''}>{lang === 'ko' ? '교사 판단' : 'teacher decision'}{r.auto_placement ? ` · ${lang === 'ko' ? '제안' : 'suggested'} ${r.auto_placement}` : ''}</span>}</td>
+            <td className="py-2 pl-4"><span className="font-semibold text-ink">{r.final_placement || '—'}</span>{r.is_overridden && <span className="text-[length:calc(11.5px*var(--ts))] text-warn ml-2" title={r.override_reason || ''}>{lang === 'ko' ? '교사 판단' : 'teacher decision'}{r.auto_placement ? ` · ${lang === 'ko' ? '제안' : 'suggested'} ${r.auto_placement}` : ''}</span>}</td>
           </tr>
         ))}
       </tbody>
@@ -360,7 +359,7 @@ function ReadingTrend({ student, lang }: { student: Student; lang: string }) {
   return (
     <div className="mb-6">
       <LineChart points={points} band={band} height={200} unit="" />
-      <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">{lang === 'ko' ? '점 색은 정확도: 초록 96%+, 노랑 90–95%, 빨강 그 이하.' : 'Dot color is accuracy: green 96%+, amber 90–95%, red below.'}</p>
     </div>
   )
 }
@@ -408,7 +407,7 @@ function GradesAtAGlance({ student, semesterId, lang }: { student: Student; seme
               <p className="eyebrow truncate">{label(d.domain)}</p>
               <p className={`font-display text-[length:calc(24px*var(--ts))] leading-none mt-1 tabular-nums ${tone === 'bad' ? 'text-bad' : tone === 'warn' ? 'text-warn' : 'text-ink'}`}>{d.mine != null ? Math.round(d.mine) : '—'}</p>
               <div className="mt-1.5"><Sparkline values={d.series} tone={tone} width={110} height={22} /></div>
-              <p className="text-[length:calc(10.5px*var(--ts))] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">{d.series.length} {lang === 'ko' ? '개 평가' : d.series.length === 1 ? 'assessment' : 'assessments'}{drop >= 15 ? ` · ${lang === 'ko' ? '최근 하락' : 'recent drop'}` : ''}</p>
             </div>
           )
         })}

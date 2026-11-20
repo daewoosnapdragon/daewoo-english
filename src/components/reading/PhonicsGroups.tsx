@@ -122,8 +122,8 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
                     <p className="text-[length:calc(13px*var(--ts))] font-semibold text-ink leading-tight">{title(g)}</p>
                     <span className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 tabular-nums">{g.studentIds.length}</span>
                   </div>
-                  {by === 'family' && g.sheets.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mb-1">{g.sheets.map(id => phonicsSkill(id)?.short).join(' · ')}</p>}
-                  <p className="text-[length:calc(10.5px*var(--ts))] text-ink-3 mb-2">{Object.entries(mix).sort((a, b) => classRank(a[0]) - classRank(b[0])).map(([c, n]) => `${c} ${n}`).join(' · ')}</p>
+                  {by === 'family' && g.sheets.length > 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-1">{g.sheets.map(id => phonicsSkill(id)?.short).join(' · ')}</p>}
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{Object.entries(mix).sort((a, b) => classRank(a[0]) - classRank(b[0])).map(([c, n]) => `${c} ${n}`).join(' · ')}</p>
                   <div className="flex flex-wrap gap-1 mb-2">
                     {g.studentIds.map(id => {
                       const s = studentById[id]; const n = nextToTeach(latestByStudent[id] || {})
@@ -137,9 +137,9 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
                       )
                     })}
                   </div>
-                  {f.patterns.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '어려움: ' : 'Trouble: '}</span>{f.patterns.map(([p, n]) => `${p}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>}
-                  {f.words.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '틀린 단어: ' : 'Missed: '}</span>{f.words.join(', ')}</p>}
-                  {f.words.length > 0 && <button onClick={() => printGroupWords(g)} className="mt-1.5 inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink"><Printer size={10} /> {lang === 'ko' ? '단어 시트 인쇄' : 'Print their missed words'}</button>}
+                  {f.patterns.length > 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '어려움: ' : 'Trouble: '}</span>{f.patterns.map(([p, n]) => `${p}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>}
+                  {f.words.length > 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '틀린 단어: ' : 'Missed: '}</span>{f.words.join(', ')}</p>}
+                  {f.words.length > 0 && <button onClick={() => printGroupWords(g)} className="mt-1.5 inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink"><Printer size={10} /> {lang === 'ko' ? '단어 시트 인쇄' : 'Print their missed words'}</button>}
                 </div>
               )
             })}

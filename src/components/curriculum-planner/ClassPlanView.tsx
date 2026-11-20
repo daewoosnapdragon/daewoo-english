@@ -122,13 +122,13 @@ export default function ClassPlanView() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-end gap-3 flex-wrap">
-        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '반' : 'Class'}<br />
+        <label className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '반' : 'Class'}<br />
           <select value={cls} onChange={e => setCls(e.target.value)} className={sel}>{PLACED_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
         </label>
-        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '학년' : 'Grade'}<br />
+        <label className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '학년' : 'Grade'}<br />
           <select value={grade} onChange={e => setGrade(Number(e.target.value))} className={sel}>{GRADES.map(g => <option key={g} value={g}>{ko ? `${g}학년` : `Grade ${g}`}</option>)}</select>
         </label>
-        <label className="text-[length:calc(11px*var(--ts))] text-ink-3">{ko ? '학년도' : 'Year'}<br />
+        <label className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{ko ? '학년도' : 'Year'}<br />
           <select value={theYear} onChange={e => setYear(e.target.value)} className={sel}>{years.map(y => <option key={y} value={y}>{y}</option>)}</select>
         </label>
         <div className="flex gap-1 pb-px">
@@ -148,11 +148,11 @@ export default function ClassPlanView() {
               <div key={'h' + w.n} title={hol.names.get(w.n)} className="absolute top-0 bottom-0" style={{ left: left(i), width: `calc((100% - ${LABEL_W}px) / ${N})`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-3)) 0 6px, transparent 6px 10px)' }} />
             ))}
             <div className="relative flex h-9 border-b border-rule">
-              <div className="shrink-0 px-3 flex items-center text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3" style={{ width: LABEL_W }}>{ko ? '교재' : 'Book'}</div>
+              <div className="shrink-0 px-3 flex items-center text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3" style={{ width: LABEL_W }}>{ko ? '교재' : 'Book'}</div>
               <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${N}, minmax(0, 1fr))` }}>
                 {weeks.map((w, i) => {
                   const newMonth = i === 0 || w.monday.slice(5, 7) !== weeks[i - 1].monday.slice(5, 7)
-                  return <div key={w.n} title={`${fmtDay(w.monday)}${hol.names.get(w.n) ? ` · ${hol.names.get(w.n)}` : ''}`} className="border-l border-rule/60 text-[length:calc(10px*var(--ts))] text-ink-3 leading-tight px-0.5 pt-1 truncate">{newMonth ? fmtDay(w.monday) : w.monday.slice(8, 10).replace(/^0/, '')}</div>
+                  return <div key={w.n} title={`${fmtDay(w.monday)}${hol.names.get(w.n) ? ` · ${hol.names.get(w.n)}` : ''}`} className="border-l border-rule/60 text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-tight px-0.5 pt-1 truncate">{newMonth ? fmtDay(w.monday) : w.monday.slice(8, 10).replace(/^0/, '')}</div>
                 })}
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function ClassPlanView() {
                 <div key={l.pl.id} className="relative h-[64px] border-b border-rule last:border-b-0">
                   <div className="absolute left-0 top-0 bottom-0 px-3 py-2 flex flex-col justify-center bg-surface border-r border-rule z-[1]" style={{ width: LABEL_W }}>
                     <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink truncate" style={{ borderLeft: `3px solid ${l.color}`, paddingLeft: 6 }}>{labelOf(l.pl)}</span>
-                    <span className="text-[length:calc(10.5px*var(--ts))] text-ink-3 leading-snug pl-[9px]">
+                    <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-snug pl-[9px]">
                       {l.rows.length} {l.series?.kind === 'anthology' ? (l.rows.length === 1 ? 'story' : 'stories') : (l.rows.length === 1 ? 'unit' : 'units')} · {num(l.total)} wk{overTerm ? ` · ${num(l.total - l.length)} past the term` : ''}
                       {l.pl.aim_date ? <><br />{ko ? '목표' : 'aim'} {fmtDay(l.pl.aim_date)}{pastAim ? ` · ${num(l.total - l.aimW!)} wk after it` : ''}</> : null}
                     </span>
@@ -175,10 +175,10 @@ export default function ClassPlanView() {
                     return (
                       <button key={b.pacing.id} onClick={() => setOpenBar(on ? null : { placement: l.pl.id, unit: b.unit.id })}
                         title={`${b.unit.title} · ${num(b.pacing.weeks)} wk${isDone ? ' · done' : ''}`}
-                        className={`absolute top-3 h-[40px] rounded-sm px-1.5 text-left text-[length:calc(11px*var(--ts))] leading-tight text-white overflow-hidden ${on ? 'ring-2 ring-ink ring-offset-1' : ''}`}
+                        className={`absolute top-3 h-[40px] rounded-sm px-1.5 text-left text-[length:calc(11.5px*var(--ts))] leading-tight text-white overflow-hidden ${on ? 'ring-2 ring-ink ring-offset-1' : ''}`}
                         style={{ left: `calc(${left(b.viewStart - 1)} + 1px)`, width: `calc((100% - ${LABEL_W}px) * ${(b.viewEnd - b.viewStart + 1) / N} - 2px)`, background: l.color, opacity: isDone ? 0.45 : 1 }}>
                         <span className="block truncate font-medium">{isDone && <Check size={10} className="inline mr-0.5 -mt-px" />}{t.name}</span>
-                        {t.badge && <span className="block truncate opacity-80 text-[length:calc(10px*var(--ts))]">{t.badge}</span>}
+                        {t.badge && <span className="block truncate opacity-80 text-[length:calc(11.5px*var(--ts))]">{t.badge}</span>}
                       </button>
                     )
                   })}
@@ -216,19 +216,19 @@ export default function ClassPlanView() {
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               {bank.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
                   <ul className="space-y-1">{bank.map(o => <li key={o.text} className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</li>)}</ul>
                 </div>
               )}
               {lessons.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mb-1">{ko ? '차시' : 'Lessons'}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mb-1">{ko ? '차시' : 'Lessons'}</p>
                   <ol className="space-y-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-2">{lessons.map((x, i) => <li key={x.id}>{i + 1}. {x.title}</li>)}</ol>
                 </div>
               )}
             </div>
             {codes.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1">{codes.map(c => { const s = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[length:calc(10.5px*var(--ts))] px-1.5 py-0.5 rounded border border-rule text-ink-2 cursor-help">{s.code}{s.plain ? ` · ${s.plain}` : ''}</span> })}</div>
+              <div className="mt-3 flex flex-wrap gap-1">{codes.map(c => { const s = standardInfo(c); return <span key={c} title={standardTitle(c)} className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border border-rule text-ink-2 cursor-help">{s.code}{s.plain ? ` · ${s.plain}` : ''}</span> })}</div>
             )}
             {files.length > 0 && (
               <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1">{files.map(f => <li key={f.id}><a href={f.url} target="_blank" rel="noreferrer" className="text-[length:calc(12.5px*var(--ts))] text-accent inline-flex items-center gap-1 hover:underline"><ExternalLink size={11} />{f.name || 'File'}</a></li>)}</ul>
@@ -240,7 +240,7 @@ export default function ClassPlanView() {
       {canManage && N > 0 && (
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[length:calc(11px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mr-2">{ko ? `${cls} ${grade}학년 계획 편집` : `Edit ${cls} Grade ${grade}'s plan`}</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mr-2">{ko ? `${cls} ${grade}학년 계획 편집` : `Edit ${cls} Grade ${grade}'s plan`}</p>
             <button onClick={() => { setPlacing(v => !v); setCopying(false) }} className={`${btnS} ${placing ? 'bg-ink text-paper border-ink' : ''}`}><Plus size={11} />{ko ? '교재 추가' : 'Add a book'}</button>
             <button onClick={() => { setCopying(v => !v); setPlacing(false) }} className={`${btnS} ${copying ? 'bg-ink text-paper border-ink' : ''}`}><Copy size={11} />{ko ? '다른 학년에서 복사' : 'Copy another grade’s books'}</button>
           </div>

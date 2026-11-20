@@ -8,14 +8,15 @@ import { useWhatsNew } from './useWhatsNew'
 import { startTour } from '@/lib/tour'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 
-// ─── What's new modal ────────────────────────────────────────────
-// Opens once on the dashboard when a batch a teacher has not seen is out:
-// one card per highlight (a picture, what changed, how to use it, Try it),
-// then a last card listing the rest as one-liners. Done marks the batch
-// seen. Later closes it for this session; it comes back next time, and
-// the name menu keeps the count until Done.
+// ─── What's new popup ────────────────────────────────────────────
+// One card per highlight (a picture, what changed, how to use it, Try it),
+// then a last card listing the rest as one-liners. It no longer opens by
+// itself at login: a new batch shows as a quiet dot on the name button and
+// a count beside What's new in the name menu, and the What's new page lists
+// it with its Show me tours. The popup opens only when asked for, from that
+// page's "See the popup again". Done marks the batch seen; Later just
+// closes it.
 
-const LATER_KEY = 'daewoo_whats_new_later'
 // Set by the What's new page's "See the popup again" button: the next visit
 // to the dashboard shows the latest batch as a teacher who has not seen it
 // gets it, whatever this teacher's own seen date is.
@@ -33,17 +34,14 @@ export default function WhatsNewModal() {
     if (!loaded) return
     let wantReplay = false
     try { wantReplay = sessionStorage.getItem(REPLAY_KEY) === '1'; if (wantReplay) sessionStorage.removeItem(REPLAY_KEY) } catch {}
-    if (wantReplay && released.length) { setReplay(true); setI(0); setOpen(true); return }
-    if (!reallyUnseen.length) return
-    try { if (sessionStorage.getItem(LATER_KEY) === reallyUnseen[0].date) return } catch {}
-    setOpen(true)
-  }, [loaded, reallyUnseen, released])
+    if (wantReplay && released.length) { setReplay(true); setI(0); setOpen(true) }
+  }, [loaded, released])
 
   const highlights = unseen.filter(e => e.highlight)
   const rest = unseen.filter(e => !e.highlight)
   const cards = highlights.length + (rest.length ? 1 : 0)
   const last = i >= cards - 1
-  const later = () => { try { sessionStorage.setItem(LATER_KEY, unseen[0]?.date || '') } catch {}; setOpen(false) }
+  const later = () => setOpen(false)
   const done = () => { markSeen(); setOpen(false) }
   const tryIt = (e: typeof unseen[number]) => { later(); if (e.tour) startTour(e.tour, p => router.push(p)); else if (e.path) router.push(e.path) }
 

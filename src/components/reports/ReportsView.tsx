@@ -9,6 +9,7 @@ import { syncSemesterGrades } from '@/lib/semesterGrades'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -333,7 +334,7 @@ export default function ReportsView() {
 function InfoCell({ label, value, bold = false }: { label: string; value: any; bold?: boolean }) {
   return (
     <div className="py-1.5 border-b border-[#DFE4EB]">
-      <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8] font-semibold tracking-wide">{label}</div>
+      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] font-semibold tracking-wide">{label}</div>
       <div className={`text-[length:calc(13px*var(--ts))] text-[#1e293b] mt-0.5 ${bold ? 'font-bold' : 'font-semibold'}`}>{value}</div>
     </div>
   )
@@ -355,14 +356,14 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-        <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Recent Behavior Logs</p>
-        <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary italic">No behavior logs yet.</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Recent Behavior Logs</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">No behavior logs yet.</p>
       </div>
     )
   }
   return (
     <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-      <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Recent Behavior Logs ({logs.length})</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Recent Behavior Logs ({logs.length})</p>
       <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
         {logs.map((log: any) => {
           const style = BEHAVIOR_TYPE_STYLE[log.type] || BEHAVIOR_TYPE_STYLE.note
@@ -370,10 +371,10 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
           const summary = (log.note && log.note.trim()) || (log.behaviors && log.behaviors.length ? log.behaviors.join(', ') : '—')
           return (
             <div key={log.id} className={`flex items-start gap-2 px-2 py-1 rounded border ${style.bg}`}>
-              <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary font-semibold whitespace-nowrap mt-px w-10 flex-shrink-0">{dt}</span>
-              <span className={`text-[length:max(10px,calc(8px*var(--ts)))] font-bold uppercase ${style.text} whitespace-nowrap mt-px w-16 flex-shrink-0`}>{style.label}</span>
-              <span className="text-[length:calc(11px*var(--ts))] text-[#475569] leading-snug">{summary}</span>
-              {log.is_flagged && <span className="text-amber-600 text-[length:calc(10px*var(--ts))] flex-shrink-0">★</span>}
+              <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold whitespace-nowrap mt-px w-10 flex-shrink-0">{dt}</span>
+              <span className={`text-[length:calc(11.5px*var(--ts))] font-bold uppercase ${style.text} whitespace-nowrap mt-px w-16 flex-shrink-0`}>{style.label}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] text-[#475569] leading-snug">{summary}</span>
+              {log.is_flagged && <span className="text-amber-600 text-[length:calc(11.5px*var(--ts))] flex-shrink-0">★</span>}
             </div>
           )
         })}
@@ -401,21 +402,21 @@ function ComparisonBars({ domainGrades, domainNa, classAverages }: {
         if (na || v == null) {
           return (
             <div key={dom} className="grid items-center gap-3" style={{ gridTemplateColumns: '120px 1fr' }}>
-              <span className="text-[length:calc(11px*var(--ts))] font-semibold text-ink-2">{DOMAIN_SHORT[dom]}</span>
-              <span className="text-[length:calc(10px*var(--ts))] text-ink-3 italic">{na ? 'N/A — not assessed' : 'No grade recorded'}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2">{DOMAIN_SHORT[dom]}</span>
+              <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 italic">{na ? 'N/A — not assessed' : 'No grade recorded'}</span>
             </div>
           )
         }
         const w = Math.max(2, Math.min(100, v))
         return (
           <div key={dom} className="grid items-center gap-3" style={{ gridTemplateColumns: '120px 1fr 44px 62px' }}>
-            <span className="text-[length:calc(11px*var(--ts))] font-semibold text-ink-2">{DOMAIN_SHORT[dom]}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-2">{DOMAIN_SHORT[dom]}</span>
             <div className="relative h-2 rounded-sm" style={{ background: 'var(--c-track)' }}>
               <div className="absolute left-0 top-0 bottom-0 rounded-sm" style={{ width: `${w}%`, background: 'var(--c-1)' }} />
               {cv != null && <div className="absolute w-px" style={{ left: `${Math.min(100, cv)}%`, top: -3, bottom: -3, background: 'rgb(var(--ink))' }} />}
             </div>
             <span className="text-[length:calc(12px*var(--ts))] font-semibold whitespace-nowrap text-right text-ink tabular-nums">{v.toFixed(1)}</span>
-            <span className="text-[length:calc(10.5px*var(--ts))] whitespace-nowrap text-right text-ink-3 tabular-nums">{cv != null ? `avg ${cv.toFixed(1)}` : ''}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] whitespace-nowrap text-right text-ink-3 tabular-nums">{cv != null ? `avg ${cv.toFixed(1)}` : ''}</span>
           </div>
         )
       })}
@@ -849,7 +850,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           {reviewStatus && (reviewStatus.admin_approved
             ? <span className="mr-2"><Stamp kind="approved" size="sm" /></span>
             : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-gray-100 text-text-tertiary">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-gray-100 text-text-tertiary">
               <Circle size={11} /> Awaiting admin approval
             </span>
           ))}
@@ -857,7 +858,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         </div>
         <div className="flex items-center gap-2">
           {reviewStatus && !reviewStatus.admin_approved && (
-            <span className="text-[length:calc(10px*var(--ts))] text-amber-600">Needs admin approval to print</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-amber-600">Needs admin approval to print</span>
           )}
           <button onClick={handlePrint}
             disabled={reviewStatus != null && !reviewStatus.admin_approved}
@@ -873,9 +874,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Header ─── */}
         <div className="bg-navy px-7 py-5 text-white flex justify-between items-center">
           <div>
-            <div className="text-[length:calc(10px*var(--ts))] opacity-50 tracking-[2.5px] uppercase font-medium">Daewoo Elementary School</div>
+            <div className="text-[length:calc(11.5px*var(--ts))] opacity-50 tracking-[2.5px] uppercase font-medium">Daewoo Elementary School</div>
             <div className="text-[length:calc(22px*var(--ts))] font-bold mt-1 font-display">{d.semesterName} Report Card</div>
-            <div className="text-[length:calc(11px*var(--ts))] opacity-75 mt-0.5 font-semibold tracking-wide">Daewoo English Village</div>
+            <div className="text-[length:calc(11.5px*var(--ts))] opacity-75 mt-0.5 font-semibold tracking-wide">Daewoo English Village</div>
           </div>
           <div className="w-[52px] h-[52px] rounded-full bg-white/95 flex items-center justify-center shadow-lg flex-shrink-0">
             <img src="/logo.png" alt="" className="w-9 h-9 object-contain" onError={(e: any) => { (e.target as HTMLImageElement).style.display = 'none' }} />
@@ -902,7 +903,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <div className="text-[length:calc(26px*var(--ts))] font-extrabold text-navy leading-none">{d.overallLetter}</div>
                   <div className="text-[length:calc(13px*var(--ts))] font-semibold text-text-tertiary mt-0.5">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}%` : ''}</div>
-                  {(() => { const dl = hideGrowth ? null : growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[length:max(10px,calc(9px*var(--ts)))] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
+                  {(() => { const dl = hideGrowth ? null : growthDelta(d.overallGrade, d.prevOverall); return dl ? <div className="text-[length:calc(11.5px*var(--ts))] font-bold leading-tight" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div> : null })()}
                 </div>
               </div>
             </div>
@@ -917,7 +918,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Score Tiles ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
-            <div className="text-[length:calc(10px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{!hideGrowth && d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
+            <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{!hideGrowth && d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
             {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
@@ -930,10 +931,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 setEditGradeValues(eg)
                 setEditNaValues(en)
                 setEditingGrades(true)
-              }} className="text-[length:calc(10px*var(--ts))] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
+              }} className="text-[length:calc(11.5px*var(--ts))] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
             ) : null) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(10px*var(--ts))] text-text-tertiary hover:text-red-500">Cancel</button>
+                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-red-500">Cancel</button>
                 <button onClick={async () => {
                   const student = students.find((s: any) => s.id === studentId)
                   // Save to semester_grades with class snapshot
@@ -967,7 +968,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   showToast('Grades saved')
                   logActivity('saved', `Report card grades edited by hand · ${student?.english_name || ''} · ${DOMAINS.filter(dom => !isNaN(parseFloat(editGradeValues[dom]))).map(dom => `${dom} ${editGradeValues[dom]}`).join(', ')}${editGradeValues.behavior ? ` · behavior ${editGradeValues.behavior}` : ''}`)
                   loadReport()
-                }} className="px-3 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
+                }} className="px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
               </div>
             )}
           </div>
@@ -978,7 +979,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 const isNa = classNa || !!editNaValues[dom]
                 return (
                   <div key={dom} className={`rounded-xl border-[1.5px] ${isNa ? 'border-[#94a3b8] bg-[#f5f5f5]' : 'border-border bg-white'} p-3.5 text-center`}>
-                    <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
                     {isNa ? (
                       <div className="text-[length:calc(18px*var(--ts))] font-bold text-[#94a3b8] py-2 leading-none">N/A</div>
                     ) : (
@@ -987,14 +988,14 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                           onChange={e => setEditGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
                           className="w-full text-center text-[length:calc(18px*var(--ts))] font-bold px-2 py-1.5 border border-border rounded-lg outline-none focus:border-navy"
                           placeholder="--" />
-                        <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-1">%</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">%</div>
                       </>
                     )}
                     {classNa ? (
-                      <div className="text-[length:max(10px,calc(8px*var(--ts)))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
+                      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
                     ) : (
                       <button onClick={() => setEditNaValues(prev => ({ ...prev, [dom]: !prev[dom] }))}
-                        className={`text-[length:max(10px,calc(9px*var(--ts)))] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
+                        className={`text-[length:calc(11.5px*var(--ts))] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
                         {isNa ? 'Remove N/A' : 'Mark N/A'}
                       </button>
                     )}
@@ -1007,9 +1008,9 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             {DOMAINS.map((dom) => {
               if (d.domainNa[dom]) return (
                 <div key={dom} className="rounded-xl border border-border bg-[#f5f5f5] p-3.5 text-center flex flex-col justify-center" style={{ minHeight: 90 }}>
-                  <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                   <div className="text-[length:calc(20px*var(--ts))] font-bold text-[#94a3b8] mt-2 leading-none">N/A</div>
-                  <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8] mt-1">Not assessed</div>
+                  <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-1">Not assessed</div>
                 </div>
               )
               const v = d.domainGrades[dom]
@@ -1018,10 +1019,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               const dl = hideGrowth ? null : growthDelta(v, d.prevDomainGrades?.[dom])
               return (
                 <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3.5 text-center`}>
-                  <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                  <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                   <div className="text-[length:calc(28px*var(--ts))] font-extrabold text-[#1e293b] mt-2 leading-none">{v.toFixed(1)}%</div>
                   <div className="text-[length:calc(15px*var(--ts))] font-bold mt-1" style={{ color: letterColor(g) }}>{g}</div>
-                  {dl && <div className="text-[length:calc(10px*var(--ts))] font-bold mt-0.5" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div>}
+                  {dl && <div className="text-[length:calc(11.5px*var(--ts))] font-bold mt-0.5" style={{ color: dl.color }}>{dl.arrow} {dl.val}</div>}
                 </div>
               )
             })}
@@ -1031,16 +1032,16 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Class Comparison (bars: student vs class) ─── */}
         <div className="bg-white px-7 pt-5 pb-4" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[length:calc(10px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Class Comparison</div>
+            <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Class Comparison</div>
             <div className="flex items-center gap-4">
               {!hideComparison && (
-                <div className="flex items-center gap-3 text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">
+                <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">
                   <span className="flex items-center gap-1"><span className="inline-block w-3.5 h-2 rounded-sm" style={{ background: RADAR_STUDENT }} /> This student</span>
                   <span className="flex items-center gap-1"><span className="inline-block h-2.5" style={{ borderLeft: `2px dashed ${RADAR_CLASS}` }} /> Class average</span>
                 </div>
               )}
               {canEdit && (
-                <label className="print:hidden flex items-center gap-1.5 text-[length:calc(10px*var(--ts))] text-text-secondary cursor-pointer select-none">
+                <label className="print:hidden flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-text-secondary cursor-pointer select-none">
                   <input type="checkbox" checked={hideComparison} onChange={toggleHideComparison} />
                   Hide for this student
                 </label>
@@ -1048,7 +1049,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             </div>
           </div>
           {hideComparison ? (
-            <div className="text-[length:calc(11px*var(--ts))] text-[#94a3b8] italic py-2">Class comparison hidden for this student (not assessed against the class average).</div>
+            <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] italic py-2">Class comparison hidden for this student (not assessed against the class average).</div>
           ) : (
             <ComparisonBars domainGrades={d.domainGrades} domainNa={d.domainNa} classAverages={d.classAverages} />
           )}
@@ -1061,23 +1062,23 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
               <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>
-                  <label htmlFor="rc-comment" className="block text-[length:max(10px,calc(9px*var(--ts)))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Report card comment</label>
-                  <div className="text-[length:calc(14px*var(--ts))] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[length:calc(11px*var(--ts))]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
+                  <label htmlFor="rc-comment" className="block text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Report card comment</label>
+                  <div className="text-[length:calc(14px*var(--ts))] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[length:calc(11.5px*var(--ts))]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
                 </div>
                 {canEdit && (
                   <div className="print:hidden flex items-center gap-4 flex-wrap mt-1">
-                    <div className="flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-text-secondary" role="group" aria-label="Pronoun">
+                    <div className="flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-text-secondary" role="group" aria-label="Pronoun">
                       <span className={pronoun ? '' : 'text-amber-700 font-semibold'}>{pronoun ? 'Pronoun' : 'Pronoun?'}</span>
                       {PRONOUNS.map(p => (
                         <button key={p} type="button" onClick={() => savePronoun(p)} aria-pressed={pronoun === p}
-                          className={`px-1.5 py-0.5 rounded text-[length:calc(11px*var(--ts))] ${pronoun === p ? 'bg-ink text-paper font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]'}`}>{p}</button>
+                          className={`px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] ${pronoun === p ? 'bg-ink text-paper font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]'}`}>{p}</button>
                       ))}
                     </div>
-                    <label className="flex items-center gap-1.5 text-[length:calc(11px*var(--ts))] text-text-secondary">
+                    <label className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-text-secondary">
                       <span>Called</span>
                       <input value={calledDraft} onChange={(e: any) => setCalledDraft(e.target.value)} onBlur={saveCalled} onKeyDown={(e: any) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
                         aria-label="Name used in comments" className={`h-6 px-1.5 rounded border text-[length:calc(11.5px*var(--ts))] w-[120px] bg-white text-[#1e293b] outline-none focus:border-navy ${goesBy ? 'border-[#C8CED8]' : 'border-dashed border-[#94a3b8]'}`} />
-                      {!goesBy && <span className="text-[length:calc(10px*var(--ts))] text-[#94a3b8]">suggested, press Enter to keep</span>}
+                      {!goesBy && <span className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">suggested, press Enter to keep</span>}
                     </label>
                   </div>
                 )}
@@ -1093,12 +1094,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 <div className="mb-2.5 rounded-lg border border-orange-200 bg-orange-50 p-2.5 print:hidden">
                   <div className="flex items-center gap-1.5 mb-1">
                     <AlertTriangle size={13} className="text-orange-600" />
-                    <span className="text-[length:calc(11px*var(--ts))] font-semibold text-orange-800">Reviewer feedback{d.reviewerNoteByName ? ` from ${d.reviewerNoteByName}` : ''} — please review</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-orange-800">Reviewer feedback{d.reviewerNoteByName ? ` from ${d.reviewerNoteByName}` : ''} — please review</span>
                   </div>
                   <p className="text-[length:calc(12px*var(--ts))] text-orange-900 whitespace-pre-wrap leading-relaxed">{d.reviewerNote}</p>
                   <div className="flex justify-end mt-1.5">
                     <button onClick={acknowledgeReviewerNote} disabled={ackingNote}
-                      className="px-2.5 py-1 rounded-md text-[length:calc(10px*var(--ts))] font-medium bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-40">
+                      className="px-2.5 py-1 rounded-md text-[length:calc(11.5px*var(--ts))] font-medium bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-40">
                       {ackingNote ? 'Saving…' : 'Mark as reviewed'}
                     </button>
                   </div>
@@ -1134,7 +1135,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 text-[length:calc(10px*var(--ts))] text-[#94a3b8] italic mt-2"><Lock size={11} /> Viewing {selectedClass}&apos;s report card — leave feedback in Review &amp; Approve.</div>
+                <div className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] italic mt-2"><Lock size={11} /> Viewing {selectedClass}&apos;s report card — leave feedback in Review &amp; Approve.</div>
               )}
             </div>
             {canEdit && builderOpen && (
@@ -1152,16 +1153,16 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
         {/* ─── Grading Scale + Footer ─── */}
         <div className="bg-white px-7 py-4">
-          <div className="text-[length:calc(10px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Grading Scale</div>
+          <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Grading Scale</div>
           <div className="flex gap-1 flex-wrap">
             {SCALE_DISPLAY.map((r: any) => (
-              <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#EDF1F8] border border-[#C8CED8] text-[length:calc(10px*var(--ts))] inline-flex gap-1">
+              <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#EDF1F8] border border-[#C8CED8] text-[length:calc(11.5px*var(--ts))] inline-flex gap-1">
                 <strong style={{ color: letterColor(r.letter) }}>{r.letter}</strong>
                 <span className="text-[#94a3b8]">{r.range}</span>
               </span>
             ))}
           </div>
-          <div className="text-center mt-4 pt-3 text-[length:calc(10px*var(--ts))] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #C8CED8' }}>
+          <div className="text-center mt-4 pt-3 text-[length:calc(11.5px*var(--ts))] text-[#b8b0a6] tracking-wider" style={{ borderTop: '1px solid #C8CED8' }}>
             Daewoo Elementary School &middot; Daewoo English Village &middot; {d.semesterName}
           </div>
         </div>
@@ -1707,7 +1708,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div>
               <div className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Preview &middot; {isGrade ? `${progress.total} report cards · Grade ${grade}` : kind === 'report_card' ? `${students.length} report cards` : `${students.length} progress reports · ${summary.sheets} ${summary.sheets === 1 ? 'sheet' : 'sheets'} of A4`}</div>
-              <div className="text-[length:calc(11px*var(--ts))] text-text-secondary mt-0.5 flex items-center gap-3 flex-wrap">
+              <div className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mt-0.5 flex items-center gap-3 flex-wrap">
                 <span>Choose <strong>Save as PDF</strong> as the destination in the print dialog to download the whole class as one file.</span>
                 {!isGrade && kind !== 'report_card' && (
                   <>
@@ -1914,7 +1915,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         <div className="rounded-xl border border-border overflow-hidden">
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
-            <div className="text-[length:calc(10px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Domain Performance</div>
+            <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Domain Performance</div>
             {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
@@ -1926,10 +1927,10 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                 setEditGradeValues(eg)
                 setEditNaValues(en)
                 setEditingGrades(true)
-              }} className="text-[length:calc(10px*var(--ts))] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
+              }} className="text-[length:calc(11.5px*var(--ts))] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
             ) : null) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(10px*var(--ts))] text-text-tertiary hover:text-red-500">Cancel</button>
+                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-red-500">Cancel</button>
                 <button onClick={async () => {
                   const student = students.find((st: any) => st.id === studentId)
                   for (const dom of DOMAINS) {
@@ -1956,7 +1957,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   showToast('Grades saved')
                   logActivity('saved', `Progress report grades edited by hand · ${student?.english_name || ''} · ${DOMAINS.filter(dom => !isNaN(parseFloat(editGradeValues[dom]))).map(dom => `${dom} ${editGradeValues[dom]}`).join(', ')}`)
                   loadReport()
-                }} className="px-3 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
+                }} className="px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
               </div>
             )}
           </div>
@@ -1967,7 +1968,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                 const isNa = classNa || !!editNaValues[dom]
                 return (
                   <div key={dom} className={`rounded-xl border-[1.5px] ${isNa ? 'border-[#94a3b8] bg-[#f5f5f5]' : 'border-border bg-white'} p-3.5 text-center`}>
-                    <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold mb-2">{DOMAIN_SHORT[dom]}</div>
                     {isNa ? (
                       <div className="text-[length:calc(18px*var(--ts))] font-bold text-[#94a3b8] py-2 leading-none">N/A</div>
                     ) : (
@@ -1976,14 +1977,14 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                           onChange={e => setEditGradeValues(prev => ({ ...prev, [dom]: e.target.value }))}
                           className="w-full text-center text-[length:calc(18px*var(--ts))] font-bold px-2 py-1.5 border border-border rounded-lg outline-none focus:border-navy"
                           placeholder="--" />
-                        <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary mt-1">%</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">%</div>
                       </>
                     )}
                     {classNa ? (
-                      <div className="text-[length:max(10px,calc(8px*var(--ts)))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
+                      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
                     ) : (
                       <button onClick={() => setEditNaValues(prev => ({ ...prev, [dom]: !prev[dom] }))}
-                        className={`text-[length:max(10px,calc(9px*var(--ts)))] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
+                        className={`text-[length:calc(11.5px*var(--ts))] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
                         {isNa ? 'Remove N/A' : 'Mark N/A'}
                       </button>
                     )}
@@ -1996,22 +1997,22 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
               {DOMAINS.map((dom) => {
                 if (d.domainNa[dom]) return (
                   <div key={dom} className="rounded-xl border border-border bg-[#f5f5f5] p-3.5 text-center flex flex-col justify-center" style={{ minHeight: 96 }}>
-                    <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                     <div className="text-[length:calc(20px*var(--ts))] font-bold text-[#94a3b8] mt-2 leading-none">N/A</div>
-                    <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8] mt-1">Not assessed</div>
+                    <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-1">Not assessed</div>
                   </div>
                 )
                 const v = d.domainGrades[dom]
                 if (v == null) return (
                   <div key={dom} className="rounded-xl border border-border p-3.5 text-center flex flex-col justify-center" style={{ minHeight: 96 }}>
-                    <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                     <div className="text-[length:calc(22px*var(--ts))] font-bold text-[#94a3b8] mt-2 leading-none">—</div>
                   </div>
                 )
                 const g = getLetterGrade(v)
                 return (
                   <div key={dom} className={`rounded-xl border-[1.5px] ${tileBgClass(v)} p-3.5 text-center flex flex-col justify-center`} style={{ minHeight: 96 }}>
-                    <div className="text-[length:calc(11px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
+                    <div className="text-[length:calc(11.5px*var(--ts))] text-[#64748b] font-semibold">{DOMAIN_SHORT[dom]}</div>
                     <div className="text-[length:calc(28px*var(--ts))] font-extrabold text-[#1e293b] mt-2 leading-none">{v.toFixed(1)}%</div>
                     <div className="text-[length:calc(15px*var(--ts))] font-bold mt-1" style={{ color: letterColor(g) }}>{g}</div>
                   </div>
@@ -2027,7 +2028,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
           {showRefPanel && (
             <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[length:calc(11px*var(--ts))] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
                 <button onClick={() => {
                   const lines = [
                     `${s.english_name} (${s.korean_name}) -- ${s.english_class} -- Grade ${s.grade}`,
@@ -2050,46 +2051,46 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   ]
                   navigator.clipboard.writeText(lines.join('\n'))
                   showToast('Copied to clipboard')
-                }} className="px-2.5 py-1 rounded-lg text-[length:calc(10px*var(--ts))] font-medium bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">
+                }} className="px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">
                   Copy to Clipboard
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
                   {DOMAINS.map(dom => {
                     const isNa = !!d.domainNa[dom]
                     const v = d.domainGrades[dom]
                     return (
                       <div key={dom} className="flex items-center justify-between py-0.5">
-                        <span className="text-[length:calc(11px*var(--ts))] text-[#64748b]">{DOMAIN_LONG[dom]}</span>
-                        <span className="text-[length:calc(11px*var(--ts))] font-bold" style={{ color: isNa ? '#94a3b8' : (v != null ? letterColor(getLetterGrade(v)) : '#94a3b8') }}>
+                        <span className="text-[length:calc(11.5px*var(--ts))] text-[#64748b]">{DOMAIN_LONG[dom]}</span>
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-bold" style={{ color: isNa ? '#94a3b8' : (v != null ? letterColor(getLetterGrade(v)) : '#94a3b8') }}>
                           {isNa ? 'N/A' : (v != null ? `${v.toFixed(1)}% (${getLetterGrade(v)})` : '--')}
                         </span>
                       </div>
                     )
                   })}
                   <div className="border-t border-[#e2e8f0] mt-1 pt-1 flex items-center justify-between">
-                    <span className="text-[length:calc(11px*var(--ts))] font-semibold text-navy">Overall</span>
-                    <span className="text-[length:calc(11px*var(--ts))] font-bold text-navy">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : '--'}</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Overall</span>
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">{d.overallGrade != null ? `${d.overallGrade.toFixed(1)}% (${d.overallLetter})` : '--'}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                    <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
                     <div className="flex gap-4">
-                      <div><p className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">CWPM</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
-                      <div><p className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">Lexile</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
-                      <div><p className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">Acc.</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
-                      <div><p className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">NAEP</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.naep_fluency ? `L${d.latestReading.naep_fluency}` : '--'}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">CWPM</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Lexile</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Acc.</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.accuracy_rate != null ? `${d.latestReading.accuracy_rate.toFixed(1)}%` : '--'}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">NAEP</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.naep_fluency ? `L${d.latestReading.naep_fluency}` : '--'}</p></div>
                     </div>
                   </div>
                   <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                    <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
                     <div className="flex gap-4">
-                      <div><p className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">Attendance</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
-                      <div><p className="text-[length:max(10px,calc(9px*var(--ts)))] text-[#94a3b8]">Behavior Logs</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.behaviorCount}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Attendance</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Behavior Logs</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.behaviorCount}</p></div>
                     </div>
                   </div>
                 </div>
@@ -2099,11 +2100,11 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               {d.scaffolds && d.scaffolds.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
-                  <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {d.scaffolds.map((sc: any, i: number) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[length:calc(10px*var(--ts))] text-blue-800">
-                        <span className="font-bold uppercase text-[length:max(10px,calc(8px*var(--ts)))]">{sc.domain}</span> {sc.scaffold_text}
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[length:calc(11.5px*var(--ts))] text-blue-800">
+                        <span className="font-bold uppercase text-[length:calc(11.5px*var(--ts))]">{sc.domain}</span> {sc.scaffold_text}
                         {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
                         {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
                       </span>
@@ -2114,10 +2115,10 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               {d.goals && d.goals.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
                   <div className="space-y-0.5">
                     {d.goals.map((g: any, i: number) => (
-                      <div key={i} className="flex items-center gap-1.5 text-[length:calc(10px*var(--ts))]">
+                      <div key={i} className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))]">
                         <span>{g.completed_at ? '[done]' : '[ ]'}</span>
                         <span className={g.completed_at ? 'line-through text-text-tertiary' : 'text-[#475569]'}>{g.goal_text}</span>
                       </div>
@@ -2135,7 +2136,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[length:max(10px,calc(9px*var(--ts)))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Progress report comment</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Progress report comment</p>
             <p className="text-[length:calc(13.5px*var(--ts))] font-semibold text-ink">{d.teacherName} <span className="font-normal text-ink-3">· {s.english_class} class</span></p>
           </div>
           {canEdit ? (
@@ -2150,7 +2151,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
               </label>
             </div>
           ) : (
-            <span className="flex items-center gap-1.5 text-[length:calc(11px*var(--ts))] text-ink-3 italic"><Lock size={11} /> {ko ? `읽기 전용: ${selectedClass} 반 교사만 수정할 수 있습니다.` : `Read-only: only ${selectedClass}'s teacher can edit this comment.`}</span>
+            <span className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 italic"><Lock size={11} /> {ko ? `읽기 전용: ${selectedClass} 반 교사만 수정할 수 있습니다.` : `Read-only: only ${selectedClass}'s teacher can edit this comment.`}</span>
           )}
         </div>
         <textarea value={comment} onChange={(e: any) => setComment(e.target.value)} rows={6}
@@ -2254,6 +2255,8 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
   const setText = (id: string, text: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], text, dirty: true } }))
   const toggleSkip = (id: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], skipped: !prev[id].skipped, dirty: true } }))
   const dirtyIds = Object.keys(rows).filter(id => rows[id]?.dirty)
+  // Leaving the page with comments typed but not saved asks first (lib/unsaved.ts).
+  useUnsaved(dirtyIds.length > 0)
 
   const switchDoc = async (next: ReportDocument) => {
     if (next === docType) return
@@ -2303,14 +2306,14 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
         </div>
         {canEdit ? (
           <div className="flex items-center gap-3">
-            {dirtyIds.length > 0 && <span className="text-[length:calc(11px*var(--ts))] text-amber-600 font-medium">{dirtyIds.length} unsaved</span>}
+            {dirtyIds.length > 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-amber-600 font-medium">{dirtyIds.length} unsaved</span>}
             <button onClick={saveAll} disabled={saving || dirtyIds.length === 0}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
               <Save size={14} /> {saving ? 'Saving…' : 'Save All'}
             </button>
           </div>
         ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-amber-50 text-amber-700 border border-amber-200"><Lock size={12} /> Read-only</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-amber-50 text-amber-700 border border-amber-200"><Lock size={12} /> Read-only</span>
         )}
       </div>
 
@@ -2328,7 +2331,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
                 <div className="flex items-center gap-3">
                   <span className="text-[length:calc(12px*var(--ts))] text-text-secondary">Overall: <strong className="text-navy">{o.pct != null ? `${o.pct.toFixed(1)}% (${o.letter})` : 'N/A'}</strong></span>
                   {canEdit && (
-                    <label className="flex items-center gap-1.5 text-[length:calc(11px*var(--ts))] text-text-secondary cursor-pointer select-none">
+                    <label className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-text-secondary cursor-pointer select-none">
                       <input type="checkbox" checked={r.skipped} onChange={() => toggleSkip(student.id)} /> Skip
                     </label>
                   )}
@@ -2523,11 +2526,11 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
           <div className="flex gap-4 text-center">
             <div>
               <p className="text-[length:calc(22px*var(--ts))] font-bold text-green-600">{adminCount}/{students.length}</p>
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary">Admin Approved · Ready to Print</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary">Admin Approved · Ready to Print</p>
             </div>
             <div>
               <p className={`text-[length:calc(22px*var(--ts))] font-bold ${flaggedCount > 0 ? 'text-orange-500' : 'text-text-tertiary'}`}>{flaggedCount}</p>
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary">Needs Changes</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary">Needs Changes</p>
             </div>
           </div>
         </div>
@@ -2554,9 +2557,9 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[auto,1fr,8rem,6rem] items-center gap-4">
           <span className="w-4" />
-          <span className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
-          <span className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold text-center">Admin Approval</span>
-          <span className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold text-center">Status</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold text-center">Admin Approval</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold text-center">Status</span>
         </div>
         {students.map(student => {
           const r = reviews[student.id]
@@ -2575,22 +2578,22 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                 <span className="text-text-tertiary">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                   <span className="text-[length:calc(13px*var(--ts))] font-medium text-navy">{student.english_name}</span>
-                  <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary">{student.korean_name}</span>
-                  {flag && <span className={`text-[length:max(10px,calc(9px*var(--ts)))] px-1.5 py-0.5 rounded border font-medium ${flag.cls}`}>{flag.label}</span>}
-                  {noteUnack && <span className="text-[length:max(10px,calc(9px*var(--ts)))] px-1.5 py-0.5 rounded border font-medium bg-orange-50 text-orange-700 border-orange-200 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{student.korean_name}</span>
+                  {flag && <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border font-medium ${flag.cls}`}>{flag.label}</span>}
+                  {noteUnack && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border font-medium bg-orange-50 text-orange-700 border-orange-200 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
                 </div>
                 <div className="flex justify-center" onClick={e => e.stopPropagation()}>
                   {isAdmin ? (
                     <button onClick={() => toggleApproval(student.id)}
                       disabled={saving === student.id}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium transition-all ${
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${
                         adminOk ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-green-300'
                       }`}>
                       {adminOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
                       {adminOk ? 'Approved' : 'Approve'}
                     </button>
                   ) : (
-                    <span className={`text-[length:calc(11px*var(--ts))] font-medium ${adminOk ? 'text-green-600' : 'text-text-tertiary'}`}>
+                    <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ${adminOk ? 'text-green-600' : 'text-text-tertiary'}`}>
                       {adminOk ? 'Approved' : 'Pending'}
                     </span>
                   )}
@@ -2599,7 +2602,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   {ready ? (
                     <Stamp kind="approved" size="sm" date={r?.admin_approved_at} land={justApproved.has(student.id)} />
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-amber-600"><Circle size={13} /> Pending</span>
+                    <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-amber-600"><Circle size={13} /> Pending</span>
                   )}
                 </div>
               </div>
@@ -2608,7 +2611,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                 <div className="px-4 pb-4 pl-11 grid gap-3 bg-surface-alt/20">
                   {/* Teacher comment (read-only) */}
                   <div>
-                    <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold mb-1">Teacher's Comment</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold mb-1">Teacher's Comment</p>
                     <div className="bg-white border border-border rounded-lg p-3 text-[length:calc(12px*var(--ts))] leading-relaxed text-text-primary whitespace-pre-wrap">
                       {c?.is_skipped ? <span className="italic text-text-tertiary">Comment skipped for this student.</span>
                         : (c?.text?.trim() ? c.text : <span className="italic text-text-tertiary">No comment entered yet.</span>)}
@@ -2616,7 +2619,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   </div>
                   {/* Reviewer feedback */}
                   <div>
-                    <p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold mb-1">Reviewer Feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold mb-1">Reviewer Feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
                     {canLeaveFeedback ? (
                       <>
                         <textarea value={noteDraft[student.id] ?? r?.reviewer_note ?? ''}
@@ -2625,11 +2628,11 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                           placeholder="Leave a note for the teacher (e.g. 'Please expand the Writing comment')…"
                           className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy resize-none bg-white" />
                         <div className="flex items-center justify-between mt-1.5">
-                          <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">
+                          <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
                             {hasNote ? (r?.reviewer_note_ack ? '✓ Acknowledged by teacher' : 'Flagged — awaiting teacher') : 'Saving a note flags it for the teacher to review.'}
                           </span>
                           <button onClick={() => saveNote(student.id)} disabled={saving === student.id}
-                            className="px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
+                            className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
                             {saving === student.id ? 'Saving…' : 'Save Feedback'}
                           </button>
                         </div>
@@ -2637,7 +2640,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                     ) : (
                       <div className="bg-white border border-border rounded-lg p-3 text-[length:calc(12px*var(--ts))] text-text-primary whitespace-pre-wrap">
                         {hasNote ? r?.reviewer_note : <span className="italic text-text-tertiary">No reviewer feedback yet.</span>}
-                        {hasNote && <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-1.5">{r?.reviewer_note_ack ? '✓ You marked this reviewed' : 'Flagged for your review'}</div>}
+                        {hasNote && <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1.5">{r?.reviewer_note_ack ? '✓ You marked this reviewed' : 'Flagged for your review'}</div>}
                       </div>
                     )}
                   </div>
@@ -2753,7 +2756,7 @@ function PrintCenter({ students, semesterId, selectedClass, selectedGrade, isAdm
               {isAdmin && <option value="grade">Whole Grade {selectedGrade} · every English class</option>}
               <optgroup label="One student">{students.map((x: any) => <option key={x.id} value={x.id}>{x.english_name} ({x.korean_name})</option>)}</optgroup>
             </select>
-            {rcWho === 'grade' && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">Sorted by Korean homeroom (대 → 솔 → 매), then class number.</p>}
+            {rcWho === 'grade' && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">Sorted by Korean homeroom (대 → 솔 → 매), then class number.</p>}
           </div>
           <div>
             <p className="eyebrow mb-1.5">Options</p>
@@ -2893,31 +2896,31 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
         <div className="flex gap-6">
           {DOMAINS.map((d) => (
             <div key={d} className="text-center">
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold">{DOMAIN_SHORT[d]}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{DOMAIN_SHORT[d]}</p>
               <p className="text-lg font-bold text-navy">{classAvgs[d] > 0 ? `${classAvgs[d]}%` : '\u2014'}</p>
             </div>
           ))}
         </div>
-        <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11px*var(--ts))] font-medium border border-border hover:bg-surface-alt"><Printer size={13} /> Print</button>
+        <button onClick={handlePrint} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-border hover:bg-surface-alt"><Printer size={13} /> Print</button>
       </div>
 
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-[length:calc(13px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-            <th className="text-left px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-            {DOMAINS.map((d) => <th key={d} className="text-center px-3 py-2.5 text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">{DOMAIN_SHORT[d]}</th>)}
-            <th className="text-center px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Overall</th>
-            <th className="text-center px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Grade</th>
+            <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
+            <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
+            {DOMAINS.map((d) => <th key={d} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">{DOMAIN_SHORT[d]}</th>)}
+            <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Overall</th>
+            <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Grade</th>
           </tr></thead>
           <tbody>
             {summaries.map((s: any, i: number) => (
               <tr key={s.student.id} className="border-t border-border table-row-hover">
                 <td className="px-4 py-2.5 text-text-tertiary">{i + 1}</td>
-                <td className="px-4 py-2.5"><span className="font-medium">{s.student.english_name}</span><span className="text-text-tertiary ml-2 text-[length:calc(11px*var(--ts))]">{s.student.korean_name}</span></td>
+                <td className="px-4 py-2.5"><span className="font-medium">{s.student.english_name}</span><span className="text-text-tertiary ml-2 text-[length:calc(11.5px*var(--ts))]">{s.student.korean_name}</span></td>
                 {DOMAINS.map((d) => (
                   <td key={d} className="px-3 py-2.5 text-center">
-                    {s.domainNa?.[d] ? <span className="text-[length:calc(11px*var(--ts))] font-semibold text-text-tertiary">N/A</span> : s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">&mdash;</span>}
+                    {s.domainNa?.[d] ? <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary">N/A</span> : s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">&mdash;</span>}
                   </td>
                 ))}
                 <td className="px-4 py-2.5 text-center font-bold text-navy">{s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
@@ -3130,12 +3133,12 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
                 {DOMAINS.map(d => (
                   <td key={d} className="text-center py-2 px-1">
                     {status[d] === 'graded' && <span title="Graded" className="inline-block w-2.5 h-2.5 rounded-full bg-good" />}
-                    {status[d] === 'na' && <span title="N/A" className="text-[length:calc(10px*var(--ts))] font-semibold text-ink-3">N/A</span>}
+                    {status[d] === 'na' && <span title="N/A" className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink-3">N/A</span>}
                     {status[d] === 'empty' && <span title="No grade" className="inline-block w-2.5 h-2.5 rounded-full border border-rule-2" />}
                   </td>
                 ))}
                 <td className="text-center py-2 px-2">
-                  {commentSkipped ? <span title="Comment skipped" className="text-ink-3 text-[length:calc(10.5px*var(--ts))] font-semibold">SKIP</span> : hasComment ? <span title="Comment written" className="text-good font-bold">&#10003;</span> : <span title="No comment" className="text-ink-3">&mdash;</span>}
+                  {commentSkipped ? <span title="Comment skipped" className="text-ink-3 text-[length:calc(11.5px*var(--ts))] font-semibold">SKIP</span> : hasComment ? <span title="Comment written" className="text-good font-bold">&#10003;</span> : <span title="No comment" className="text-ink-3">&mdash;</span>}
                 </td>
                 <td className="text-right py-2 px-2 text-ink-3"><ChevronRight size={14} className={isComplete ? '' : 'opacity-50'} /></td>
               </tr>

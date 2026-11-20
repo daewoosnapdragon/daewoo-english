@@ -137,13 +137,13 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
     <div className="grid grid-cols-[210px_minmax(0,1fr)_240px] border border-rule-2 rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 220px)', minHeight: 520 }}>
       {/* Students */}
       <div className="border-r border-rule-2 bg-paper-2 overflow-y-auto">
-        <div className="px-3 py-2.5 border-b border-rule-2 flex items-center justify-between"><span className="eyebrow">{ko ? '학생' : 'Students'}</span><span className="text-[length:calc(11px*var(--ts))] text-ink-3 tabular-nums">{fully}/{students.length}</span></div>
+        <div className="px-3 py-2.5 border-b border-rule-2 flex items-center justify-between"><span className="eyebrow">{ko ? '학생' : 'Students'}</span><span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">{fully}/{students.length}</span></div>
         {students.map((s, i) => {
           const on = i === idx
           return (
             <button key={s.id} onClick={() => goTo(i, 0)} className={`w-full text-left px-3 py-2 border-b border-rule flex items-center gap-2 ${on ? 'bg-surface border-l-2 border-l-accent' : 'border-l-2 border-l-transparent hover:bg-surface/60'}`}>
               <span className={`flex-1 truncate text-[length:calc(13px*var(--ts))] ${on ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
-              <span className="flex gap-0.5">{WIDA_DOMAINS.map(d => <span key={d} className={`w-3.5 h-3.5 rounded-sm text-[length:max(10px,calc(9px*var(--ts)))] font-bold flex items-center justify-center ${levels[s.id]?.[d] ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-3'}`}>{d[0].toUpperCase()}</span>)}</span>
+              <span className="flex gap-0.5">{WIDA_DOMAINS.map(d => <span key={d} className={`w-3.5 h-3.5 rounded-sm text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center ${levels[s.id]?.[d] ? 'bg-ink text-paper' : 'bg-paper-3 text-ink-3'}`}>{d[0].toUpperCase()}</span>)}</span>
             </button>
           )
         })}
@@ -159,7 +159,7 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
           <div className="ml-auto flex border border-rule-2 rounded overflow-hidden">
             {WIDA_DOMAINS.map((d, di) => {
               const lv = levels[student.id]?.[d]
-              return <button key={d} onClick={() => goTo(idx, di)} className={`h-11 px-3.5 text-left border-r border-rule-2 last:border-r-0 ${di === domIdx ? 'bg-ink text-paper' : 'bg-surface hover:bg-paper-2'}`}><span className="block text-[length:calc(10px*var(--ts))] uppercase tracking-wider opacity-70">{dl(d)}</span><span className="block text-[length:calc(14px*var(--ts))] font-semibold tabular-nums leading-tight">{lv ?? '—'}{lv ? <span className="text-[length:calc(10px*var(--ts))] font-normal opacity-70 ml-1">{widaLevelName(lv)}</span> : null}</span></button>
+              return <button key={d} onClick={() => goTo(idx, di)} className={`h-11 px-3.5 text-left border-r border-rule-2 last:border-r-0 ${di === domIdx ? 'bg-ink text-paper' : 'bg-surface hover:bg-paper-2'}`}><span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider opacity-70">{dl(d)}</span><span className="block text-[length:calc(14px*var(--ts))] font-semibold tabular-nums leading-tight">{lv ?? '—'}{lv ? <span className="text-[length:calc(11.5px*var(--ts))] font-normal opacity-70 ml-1">{widaLevelName(lv)}</span> : null}</span></button>
             })}
           </div>
         </div>
@@ -177,11 +177,11 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
                 <div key={lv} className={`grid grid-cols-[120px_minmax(0,1fr)] gap-4 rounded-md px-3 py-2.5 border ${cur ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
                   <div>
                     <span className={`font-display text-[length:calc(24px*var(--ts))] tabular-nums leading-none ${cur ? 'text-ink' : 'text-ink-3'}`}>{lv}</span>
-                    <span className="block text-[length:calc(10.5px*var(--ts))] uppercase tracking-wide text-ink-3 mt-0.5">{widaLevelName(lv)}</span>
+                    <span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 mt-0.5">{widaLevelName(lv)}</span>
                     <span className="block h-1 rounded-sm bg-paper-3 mt-1.5 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
                     {suggestion.strength[lv] === 1
-                      ? <button onClick={() => { setDraft(ticksClearFrom(domain, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-bad">{ko ? '여기부터 해제' : 'Clear from here'}</button>
-                      : <button onClick={() => { setDraft(ticksThrough(domain, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '여기까지 전부' : 'All through here'}</button>}
+                      ? <button onClick={() => { setDraft(ticksClearFrom(domain, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-bad">{ko ? '여기부터 해제' : 'Clear from here'}</button>
+                      : <button onClick={() => { setDraft(ticksThrough(domain, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '여기까지 전부' : 'All through here'}</button>}
                   </div>
                   <div className="grid gap-1.5">
                     {WIDA_CAN_DO[domain][band][lv].map(item => (

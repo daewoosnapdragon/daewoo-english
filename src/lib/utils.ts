@@ -69,28 +69,33 @@ export function letterToColor(letter: string): string {
   return '#991b1b'
 }
 
-export function classToColor(cls: EnglishClass): string {
-  const colors: Record<string, string> = {
-    Lily: '#D4A5B0',
-    Camellia: '#C8A88E',
-    Daisy: '#E8DFA0',
-    Sunflower: '#AED6CF',
-    Marigold: '#91ADC8',
-    Snapdragon: '#B4A8CC',
-  }
-  return colors[cls] || '#C8CED8'
+// Class colours live in globals.css (--cls-<name> and --cls-<name>-ink) so the
+// chip can turn over in dark mode: a pastel fill with a deep ink of the same hue
+// in light, a deep fill with the pastel as ink in dark. Each ink holds 4.5:1 on
+// its fill, on a classTint() of it, and on the page.
+const CLASS_VAR: Record<string, string> = {
+  Lily: 'lily', Camellia: 'camellia', Daisy: 'daisy', Sunflower: 'sunflower', Marigold: 'marigold', Snapdragon: 'snapdragon',
 }
 
+/** The class chip fill, as a CSS colour (a var(), so not a hex string). */
+export function classToColor(cls: EnglishClass): string {
+  return `var(--cls-${CLASS_VAR[cls] || 'none'})`
+}
+
+/** Words on the class fill, or the class name written in its colour on the page. */
 export function classToTextColor(cls: EnglishClass): string {
-  const colors: Record<string, string> = {
-    Lily: '#8B3A4A',
-    Camellia: '#7A5A30',
-    Daisy: '#6B5E1A',
-    Sunflower: '#2A6B5E',
-    Marigold: '#3A5A8A',
-    Snapdragon: '#5A3D8A',
-  }
-  return colors[cls] || '#5A6275'
+  return `var(--cls-${CLASS_VAR[cls] || 'none'}-ink)`
+}
+
+/** The class as a mark (dot, bar, chart point): the mid-tone --lily etc.,
+ *  which reads on paper in both themes. Not for a fill under words. */
+export function classDot(cls: EnglishClass): string {
+  return CLASS_VAR[cls] ? `rgb(var(--${CLASS_VAR[cls]}))` : 'rgb(var(--ink-3))'
+}
+
+/** A see-through wash of the class fill; `pct` is how much of the fill shows (0-100). */
+export function classTint(cls: EnglishClass, pct: number): string {
+  return `color-mix(in srgb, ${classToColor(cls)} ${pct}%, transparent)`
 }
 
 // ─── Permissions ─────────────────────────────────────────────────────
@@ -139,6 +144,15 @@ export function weightedAverage(
   const totalWeight = valid.reduce((a, b) => a + b.weight, 0)
   if (totalWeight === 0) return null
   return valid.reduce((a, b) => a + b.value! * b.weight, 0) / totalWeight
+}
+
+// A student's homeroom (Korean class, then number in it) as one token, "대-3".
+// Printed with a space the two read as one number: class 1, number 1 became "1 1",
+// which reads as eleven.
+export function formatHomeroom(s: { korean_class?: string | null; class_number?: number | null }): string {
+  const kc = s.korean_class || ''
+  const n = s.class_number ?? ''
+  return kc && n !== '' ? `${kc}-${n}` : `${kc}${n}`
 }
 
 // ─── Sorting ─────────────────────────────────────────────────────────

@@ -1000,7 +1000,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
         <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
           <div>
             <h3 className="font-display text-lg font-semibold text-navy">Passage {level}: {passage.title}</h3>
-            <p className="text-[length:calc(10px*var(--ts))] text-text-secondary">{passage.wordCount} words | {passage.lexile}</p>
+            <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">{passage.wordCount} words | {passage.lexile}</p>
           </div>
           <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
         </div>
@@ -1011,12 +1011,12 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
             in once there is a timed reading to judge. */}
         <div className="px-6 py-2 border-b border-border bg-surface-alt/40 shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-text-tertiary font-semibold mr-0.5">Reading level</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mr-0.5">Reading level</span>
             {refBands.map(b => {
               const live = elapsed > 0 && b.key === liveBand
               return (
                 <span key={b.key} title={b.action}
-                  className={`text-[length:max(10px,calc(9.5px*var(--ts)))] px-2 py-1 rounded-lg border transition-all ${
+                  className={`text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border transition-all ${
                     live
                       ? b.key === 'frustration' ? 'bg-red-100 border-red-300 text-red-800 font-bold'
                       : b.key === 'instructional' ? 'bg-amber-100 border-amber-300 text-amber-800 font-bold'
@@ -1037,7 +1037,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
             but a tired or shy student does not always need a re-read, so the
             call stays with the teacher. */}
         {finished && elapsed > 0 && liveBand === 'frustration' && (
-          <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-[length:calc(10px*var(--ts))] text-red-800 shrink-0 flex items-start gap-2">
+          <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-[length:calc(11.5px*var(--ts))] text-red-800 shrink-0 flex items-start gap-2">
             <Info size={12} className="mt-0.5 shrink-0" />
             <span>
               <strong>{accuracy}% accuracy is Frustration level</strong> for this passage.
@@ -1074,28 +1074,28 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
             )}
             {finished && (
               <button onClick={handleReset}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[length:calc(11px*var(--ts))] font-medium">
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[length:calc(11.5px*var(--ts))] font-medium">
                 <RotateCcw size={11} /> Reset
               </button>
             )}
             <span className={`text-[length:calc(24px*var(--ts))] font-mono font-bold tabular-nums ${pausedForBreak ? 'text-amber-300' : ''}`}>{formatTime(elapsed)}</span>
             {pausedForBreak && (
-              <span className="text-[length:calc(10px*var(--ts))] font-semibold text-amber-300 uppercase tracking-wider">
+              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-amber-300 uppercase tracking-wider">
                 Paused {'\u2014'} clock stopped for a break
               </span>
             )}
           </div>
-          <div className="flex items-center gap-5 text-[length:calc(11px*var(--ts))]">
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-white/60 text-[length:max(10px,calc(8px*var(--ts)))] uppercase">Errors</div></div>
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-white/60 text-[length:max(10px,calc(8px*var(--ts)))] uppercase">SC</div></div>
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-gold">{elapsed > 0 ? cwpm : '\u2014'}</div><div className="text-white/60 text-[length:max(10px,calc(8px*var(--ts)))] uppercase">CWPM</div></div>
-            <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-green-400' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '\u2014'}</div><div className="text-white/60 text-[length:max(10px,calc(8px*var(--ts)))] uppercase">Acc</div></div>
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[length:max(10px,calc(8px*var(--ts)))] uppercase">Words</div></div>
+          <div className="flex items-center gap-5 text-[length:calc(11.5px*var(--ts))]">
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">Errors</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">SC</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-gold">{elapsed > 0 ? cwpm : '\u2014'}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">CWPM</div></div>
+            <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-green-400' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '\u2014'}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">Acc</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">Words</div></div>
           </div>
         </div>
 
         {/* Click instructions */}
-        <div className="px-6 py-1.5 bg-accent-light border-b border-border text-[length:calc(10px*var(--ts))] text-navy shrink-0">
+        <div className="px-6 py-1.5 bg-accent-light border-b border-border text-[length:calc(11.5px*var(--ts))] text-navy shrink-0">
           <strong>Click:</strong> 1x = <span className="text-red-600 font-bold">error</span> {'\u00B7'} 2x = <span className="text-amber-600 font-bold">self-correct</span> {'\u00B7'} 3x = <span className="text-red-600 font-bold">last word read</span> {'\u00B7'} 4x = reset
         </div>
 
@@ -1104,17 +1104,17 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
           {/* Last-word-read banner */}
           {lastWordIdx !== null && (
             <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
-              <span className="text-[length:calc(11px*var(--ts))] text-blue-800 font-medium">
+              <span className="text-[length:calc(11.5px*var(--ts))] text-blue-800 font-medium">
                 Last word: &ldquo;{words[lastWordIdx]}&rdquo; &mdash; <span className="font-bold">{lastWordIdx + 1}/{words.length}</span>
                 {lastWordIdx + 1 < words.length && <span className="text-blue-600 ml-1">(didn&apos;t finish)</span>}
               </span>
-              <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(10px*var(--ts))] text-red-500 hover:text-red-700 font-medium">Clear</button>
+              <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700 font-medium">Clear</button>
             </div>
           )}
           <div className="leading-[2.8]">
             {lines.map((line, li) => (
               <div key={li} className="flex flex-wrap gap-x-1 mb-1">
-                <span className="text-[length:max(10px,calc(8px*var(--ts)))] text-text-tertiary w-5 text-right mr-2 mt-2 shrink-0">{li * 10 + 1}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary w-5 text-right mr-2 mt-2 shrink-0">{li * 10 + 1}</span>
                 {line.map(({ word, idx }) => {
                   const mark = wordMarks[idx] || null
                   const isPastLast = lastWordIdx !== null && idx > lastWordIdx
@@ -1129,7 +1129,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
                         'hover:bg-surface-alt border-2 border-transparent text-text-primary'
                       }`} style={{ touchAction: 'manipulation' }}>
                       {word}
-                      {mark === 'self_correct' && !isPastLast && <span className="text-[length:max(10px,calc(8px*var(--ts)))] align-super ml-0.5">SC</span>}
+                      {mark === 'self_correct' && !isPastLast && <span className="text-[length:calc(11.5px*var(--ts))] align-super ml-0.5">SC</span>}
                     </button>
                   )
                 })}
@@ -1142,9 +1142,9 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
         <div className="px-6 py-3 border-t border-border bg-surface-alt/30 shrink-0 space-y-2">
           <input value={notes} onChange={(e: any) => setNotes(e.target.value)}
             placeholder="Quick notes (e.g. struggled with blends, good expression)..."
-            className="w-full px-3 py-1.5 border border-border rounded-lg text-[length:calc(11px*var(--ts))] outline-none focus:border-navy bg-white" />
+            className="w-full px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy bg-white" />
           <div className="flex items-center justify-between">
-            <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary">
+            <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
               {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> {'\u00B7'} Accuracy: <strong className={accuracy >= INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> {'\u00B7'} </>}
               Errors: <strong className="text-red-600">{errCount}</strong> {'\u00B7'} SC: <strong className="text-amber-600">{scCount}</strong>
               {elapsed > 0 && liveBand === 'independent' && <span className="ml-2 text-green-600">(Independent)</span>}
@@ -1225,8 +1225,8 @@ function PhonicsClickableGrid({ sc, studentId, updateScore, rows, max, stoppingR
         return (
           <div key={ri}>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[length:calc(11px*var(--ts))] font-semibold text-text-secondary">{row.label}</span>
-              <span className={`text-[length:calc(11px*var(--ts))] font-bold ${rowCount >= 4 ? 'text-green-600' : rowCount >= 2 ? 'text-amber-600' : 'text-text-tertiary'}`}>
+              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary">{row.label}</span>
+              <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${rowCount >= 4 ? 'text-green-600' : rowCount >= 2 ? 'text-amber-600' : 'text-text-tertiary'}`}>
                 {rowCount}/{row.max}
               </span>
             </div>
@@ -1245,18 +1245,18 @@ function PhonicsClickableGrid({ sc, studentId, updateScore, rows, max, stoppingR
               })}
             </div>
             {!stoppingRule && rowCount <= 1 && initialized && rows[ri].words.some((_, wi) => wordStatus[`${ri}-${wi}`] !== undefined) && (
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-amber-600 mt-1 italic">Stopping rule: 0-1 correct -- this is the ceiling. Stop here.</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600 mt-1 italic">Stopping rule: 0-1 correct -- this is the ceiling. Stop here.</p>
             )}
             {/* Fall 2026 stops on two consecutive rows missed outright, so the
                 warning belongs on the second such row, not on any weak one. */}
             {stoppingRule && ri > 0 && rowCount === 0 && getRowCount(ri - 1) === 0 && initialized && (
-              <p className="text-[length:max(10px,calc(9px*var(--ts)))] text-amber-600 mt-1 italic">Stopping rule met: all 5 missed on two rows in a row. Stop here and move on.</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600 mt-1 italic">Stopping rule met: all 5 missed on two rows in a row. Stop here and move on.</p>
             )}
           </div>
         )
       })}
       {stoppingRule && (
-        <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary italic">Stopping rule: {stoppingRule}</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">Stopping rule: {stoppingRule}</p>
       )}
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Total: {totalCorrect} / {max}</span>
@@ -1268,12 +1268,12 @@ function PhonicsClickableGrid({ sc, studentId, updateScore, rows, max, stoppingR
               updateScore(studentId, `phonics_row${ri + 1}`, row.max)
             })
             setWordStatus(ws); setInitialized(true)
-          }} className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => {
             setWordStatus({})
             rows.forEach((_, ri) => { updateScore(studentId, `phonics_row${ri + 1}`, 0) })
             setInitialized(true)
-          }} className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
     </div>
@@ -1303,7 +1303,7 @@ function SyllableGrid({ sc, studentId, updateScore, words, max }: {
         return (
           <div key={w.key} className="flex items-center gap-3 bg-surface-alt/50 rounded-lg px-4 py-2.5">
             <span className="text-[length:calc(16px*var(--ts))] font-serif font-bold text-gray-800 flex-1">{w.word}</span>
-            <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary shrink-0">answer: {w.answer}</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary shrink-0">answer: {w.answer}</span>
             <div className="flex gap-1 shrink-0">
               {[0, 1].map(score => (
                 <button key={score} onClick={() => updateScore(studentId, w.key, val === score ? null : score)}
@@ -1323,9 +1323,9 @@ function SyllableGrid({ sc, studentId, updateScore, words, max }: {
         <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Total: {anyEntered ? total : '--'} / {max}</span>
         <div className="flex gap-2">
           <button onClick={() => words.forEach(w => updateScore(studentId, w.key, 1))}
-            className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+            className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => words.forEach(w => updateScore(studentId, w.key, null))}
-            className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+            className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
     </div>
@@ -1392,10 +1392,10 @@ function SentenceClickableGrid({ sc, studentId, updateScore, sentences }: {
           <div key={si} className="bg-surface-alt/50 rounded-xl p-4">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[length:calc(10px*var(--ts))] font-bold flex items-center justify-center shrink-0">{si + 1}</span>
-                <span className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{sent.focus}</span>
+                <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center shrink-0">{si + 1}</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{sent.focus}</span>
               </div>
-              <span className={`text-[length:calc(11px*var(--ts))] font-bold ${sentCount >= sent.max - 1 ? 'text-green-600' : sentCount >= Math.floor(sent.max / 2) ? 'text-amber-600' : 'text-text-tertiary'}`}>
+              <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${sentCount >= sent.max - 1 ? 'text-green-600' : sentCount >= Math.floor(sent.max / 2) ? 'text-amber-600' : 'text-text-tertiary'}`}>
                 {sentCount}/{sent.max}
               </span>
             </div>
@@ -1427,12 +1427,12 @@ function SentenceClickableGrid({ sc, studentId, updateScore, sentences }: {
               updateScore(studentId, `sent_${si + 1}`, sent.max)
             })
             setWordStatus(ws); setInitialized(true)
-          }} className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
           <button onClick={() => {
             setWordStatus({})
             sentences.forEach((_, si) => { updateScore(studentId, `sent_${si + 1}`, 0) })
             setInitialized(true)
-          }} className="text-[length:calc(10px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
+          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
     </div>
@@ -2026,7 +2026,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
             return (
               <button key={cls} onClick={() => { if (avail) { setActiveClass(cls); setSelectedIdx(0) } }}
                 disabled={!avail}
-                className={`px-2 py-1 rounded-lg text-[length:max(10px,calc(9px*var(--ts)))] font-bold transition-all ${
+                className={`px-2 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold transition-all ${
                   activeClass === cls ? 'text-white shadow-sm' :
                   avail ? 'text-text-secondary hover:bg-surface-alt' : 'opacity-30 cursor-not-allowed'
                 }`}
@@ -2038,8 +2038,8 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           })}
         </div>
         <div className="px-4 py-2 border-b border-border bg-surface">
-          <p className="text-[length:calc(11px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider">Students</p>
-          <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-0.5">
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider">Students</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
             {classStudents.filter(s => studentHasData(s.id)).length}/{classStudents.length} entered
           </p>
         </div>
@@ -2060,10 +2060,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   <p className={`text-[length:calc(12px*var(--ts))] truncate ${idx === selectedIdx ? 'font-semibold text-navy' : 'text-text-primary'}`}>
                     {s.english_name}
                   </p>
-                  <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary truncate">{s.korean_name}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary truncate">{s.korean_name}</p>
                 </div>
                 {studentSc.passage_level && (
-                  <span className="text-[length:max(10px,calc(9px*var(--ts)))] font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700">{studentSc.passage_level}</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-green-100 text-green-700">{studentSc.passage_level}</span>
                 )}
               </button>
             )
@@ -2087,13 +2087,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {/* Clear Student */}
                 {studentHasData(student.id) && (
                   <button onClick={() => clearStudent(student.id, student.english_name)}
-                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-red-500 hover:bg-red-50 border border-red-200">
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-red-500 hover:bg-red-50 border border-red-200">
                     <RotateCcw size={12} /> Clear
                   </button>
                 )}
                 <button onClick={() => { handleSave([student.id]); if (selectedIdx > 0) setSelectedIdx(selectedIdx - 1) }}
                   disabled={selectedIdx === 0 || saving}
-                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt disabled:opacity-30">
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt disabled:opacity-30">
                   <ChevronLeft size={14} /> Prev
                 </button>
                 <button onClick={() => handleSave([student.id])} disabled={saving}
@@ -2103,7 +2103,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 </button>
                 <button onClick={() => { handleSave([student.id]); if (selectedIdx < classStudents.length - 1) setSelectedIdx(selectedIdx + 1) }}
                   disabled={selectedIdx === classStudents.length - 1 || saving}
-                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt disabled:opacity-30">
+                  className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt disabled:opacity-30">
                   Next <ChevronRight size={14} />
                 </button>
               </div>
@@ -2125,26 +2125,26 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
             {config.hasPhonics && (
               <div className="flex gap-1 mb-5 bg-surface-alt rounded-xl p-1">
                 <button onClick={() => setActiveSection('phonics')}
-                  className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${activeSection === 'phonics' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
+                  className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${activeSection === 'phonics' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
                   1. Phonics
-                  {phonicsTotal > 0 && <span className="ml-1 text-[length:max(10px,calc(9px*var(--ts)))] opacity-70">({phonicsTotal}/{config.phonicsMax})</span>}
+                  {phonicsTotal > 0 && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] opacity-70">({phonicsTotal}/{config.phonicsMax})</span>}
                 </button>
                 {config.syllables && (
                   <button onClick={() => setActiveSection('syllables')}
-                    className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${activeSection === 'syllables' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
+                    className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${activeSection === 'syllables' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
                     2. Syllables
-                    {hasSyllableData && <span className="ml-1 text-[length:max(10px,calc(9px*var(--ts)))] opacity-70">({syllableTotal}/{config.syllableMax})</span>}
+                    {hasSyllableData && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] opacity-70">({syllableTotal}/{config.syllableMax})</span>}
                   </button>
                 )}
                 <button onClick={() => setActiveSection('sentences')}
-                  className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${activeSection === 'sentences' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
+                  className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${activeSection === 'sentences' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
                   {config.syllables ? '3' : '2'}. Sentences
-                  {sentTotal > 0 && <span className="ml-1 text-[length:max(10px,calc(9px*var(--ts)))] opacity-70">({sentTotal}/{config.sentenceMax})</span>}
+                  {sentTotal > 0 && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] opacity-70">({sentTotal}/{config.sentenceMax})</span>}
                 </button>
                 <button onClick={() => setActiveSection('passage')}
-                  className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11px*var(--ts))] font-semibold transition-all ${activeSection === 'passage' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
+                  className={`flex-1 px-4 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${activeSection === 'passage' ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface'}`}>
                   {config.syllables ? '4' : '3'}. Passage
-                  {passageLevel && <span className="ml-1 text-[length:max(10px,calc(9px*var(--ts)))] opacity-70">(Lv {passageLevel})</span>}
+                  {passageLevel && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] opacity-70">(Lv {passageLevel})</span>}
                 </button>
               </div>
             )}
@@ -2155,13 +2155,13 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1 flex items-center gap-2">
                   <Mic size={15} /> Component 1: Phonics Screener
                 </h4>
-                <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-4">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-4">
                   {config.scripts.phonics
                     ? <>Say: &ldquo;{config.scripts.phonics}&rdquo; Tap each word: green = correct, tap again = incorrect. Self-corrections count as correct.</>
                     : <>Show the word card. Say: &ldquo;Read each word out loud. Do your best.&rdquo; Tap each word: green = correct, tap again = incorrect. If student gets 0-1 on a row, stop.</>}
                 </p>
                 {g2Content && (
-                  <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary italic mb-3">{g2Content.oral.phonics.l1Note}</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic mb-3">{g2Content.oral.phonics.l1Note}</p>
                 )}
                 <PhonicsClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore}
                   rows={config.phonicsRows} max={config.phonicsMax}
@@ -2175,15 +2175,15 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1 flex items-center gap-2">
                   <Mic size={15} /> Component 2: Syllable Counting
                 </h4>
-                <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-3">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3">
                   Say: &ldquo;{config.scripts.syllables}&rdquo;
                 </p>
                 {g2Content?.oral.syllables.modelWord && (
-                  <p className="text-[length:calc(11px*var(--ts))] text-amber-700 bg-amber-50/60 border border-amber-100 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 bg-amber-50/60 border border-amber-100 rounded-lg px-3 py-2 mb-3">
                     Model <strong>{g2Content.oral.syllables.modelWord.word}</strong> ({g2Content.oral.syllables.modelWord.answer}) first. The model is not scored.
                   </p>
                 )}
-                <ul className="text-[length:calc(10px*var(--ts))] text-text-tertiary space-y-1 mb-4 list-disc pl-4">
+                <ul className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary space-y-1 mb-4 list-disc pl-4">
                   {g2Content?.oral.syllables.notes.map((n, i) => <li key={i}>{n}</li>)}
                 </ul>
                 <SyllableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore}
@@ -2197,7 +2197,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1 flex items-center gap-2">
                   <BookOpen size={15} /> Component {config.syllables ? 3 : 2}: Sentence Reading
                 </h4>
-                <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-4">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-4">
                   Say: &ldquo;{config.scripts.sentences || 'Now read these sentences out loud. Do your best.'}&rdquo; Tap each word: green = correct, tap again = incorrect.
                 </p>
                 <SentenceClickableGrid key={student.id} sc={sc} studentId={student.id} updateScore={updateScore}
@@ -2213,7 +2213,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3 flex items-center gap-2">
                     <BookOpen size={15} /> {config.hasPhonics ? 'Component 3: ' : ''}Passage Reading
                   </h4>
-                  <p className="text-[length:calc(11px*var(--ts))] text-text-secondary mb-3">
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-3">
                     Select a passage level based on the student's reading ability. Click "Open Passage" to do a timed reading with word-by-word marking.
                     You do not have to start at {config.levels[0]} {'\u2014'} start where the student will be comfortable.
                   </p>
@@ -2223,10 +2223,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       screen. */}
                   {config.scripts.reading && (
                     <div className="mb-4 rounded-lg border border-blue-100 bg-blue-50/60 px-3.5 py-2.5">
-                      <p className="text-[length:calc(11px*var(--ts))] font-semibold text-blue-800">Say: &ldquo;{config.scripts.reading}&rdquo;</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Say: &ldquo;{config.scripts.reading}&rdquo;</p>
                       <ul className="mt-1.5 space-y-0.5 pl-4 list-disc">
                         {STOPPING_NOTES.map((n, i) => (
-                          <li key={i} className="text-[length:calc(10px*var(--ts))] text-blue-700/90 leading-snug">{n}</li>
+                          <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-blue-700/90 leading-snug">{n}</li>
                         ))}
                       </ul>
                     </div>
@@ -2249,9 +2249,9 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                               : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80 border border-border'
                           }`}>
                           <div className="text-[length:calc(14px*var(--ts))] font-bold">{level}</div>
-                          <div className="text-[length:calc(10px*var(--ts))] mt-0.5 opacity-80">{p.title}</div>
-                          <div className="text-[length:max(10px,calc(9px*var(--ts)))] mt-0.5 opacity-60">{p.wordCount}w</div>
-                          <div className={`text-[length:max(10px,calc(8px*var(--ts)))] mt-0.5 font-semibold ${config.passageMultipliers[level] === 1.0 ? 'opacity-80' : 'opacity-60'}`}>×{config.passageMultipliers[level]?.toFixed(2)}</div>
+                          <div className="text-[length:calc(11.5px*var(--ts))] mt-0.5 opacity-80">{p.title}</div>
+                          <div className="text-[length:calc(11.5px*var(--ts))] mt-0.5 opacity-60">{p.wordCount}w</div>
+                          <div className={`text-[length:calc(11.5px*var(--ts))] mt-0.5 font-semibold ${config.passageMultipliers[level] === 1.0 ? 'opacity-80' : 'opacity-60'}`}>×{config.passageMultipliers[level]?.toFixed(2)}</div>
                         </button>
                       )
                     })}
@@ -2260,14 +2260,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   {/* Previous attempts -- click to restore */}
                   {Array.isArray(sc.passages_attempted) && sc.passages_attempted.length > 0 && (
                     <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2">
-                      <p className="text-[length:max(10px,calc(9px*var(--ts)))] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
                       <div className="flex gap-2 flex-wrap">
                         {sc.passages_attempted.map((att: any, i: number) => (
                           <button key={i} onClick={async () => {
                             if (!await confirmDialog({ title: `Restore the Level ${att.level} attempt?`, message: 'Current passage data will be swapped into the archive.', confirmLabel: 'Restore' })) return
                             restoreAttempt(student.id, i)
                           }}
-                            className="inline-flex items-center gap-1.5 text-[length:calc(10px*var(--ts))] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
+                            className="inline-flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
                             <RotateCcw size={10} />
                             <span className="font-bold">Lv {att.level}</span>
                             {att.orf_words_read != null && att.orf_errors != null && att.orf_time_seconds ? (
@@ -2293,7 +2293,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <div className="bg-green-50/50 rounded-lg px-4 py-3 border border-green-100 flex items-center justify-between">
                       <div>
                         <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Level {passageLevel}: {passage.title}</p>
-                        <p className="text-[length:calc(10px*var(--ts))] text-text-secondary">
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">
                           {passage.wordCount} words
                           {passage.genre ? ` | ${passage.genre}` : ''}
                           {` | weight ${(config.passageMultipliers[passageLevel] ?? 1).toFixed(2)}`}
@@ -2314,7 +2314,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-4">Oral Reading Fluency Results</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
-                        <label className="text-[length:calc(10px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Words Read</label>
+                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Words Read</label>
                         <input type="number" min={0} max={passage.wordCount}
                           value={sc.orf_words_read ?? ''}
                           onChange={e => updateScore(student.id, 'orf_words_read', e.target.value === '' ? null : Number(e.target.value))}
@@ -2323,7 +2323,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         />
                       </div>
                       <div>
-                        <label className="text-[length:calc(10px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Errors</label>
+                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Errors</label>
                         <input type="number" min={0}
                           value={sc.orf_errors ?? ''}
                           onChange={e => updateScore(student.id, 'orf_errors', e.target.value === '' ? null : Number(e.target.value))}
@@ -2332,7 +2332,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         />
                       </div>
                       <div>
-                        <label className="text-[length:calc(10px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Time (seconds)</label>
+                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Time (seconds)</label>
                         <input type="number" min={1}
                           value={sc.orf_time_seconds ?? ''}
                           onChange={e => updateScore(student.id, 'orf_time_seconds', e.target.value === '' ? null : Number(e.target.value))}
@@ -2341,14 +2341,14 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         />
                       </div>
                       <div>
-                        <label className="text-[length:calc(10px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">CWPM</label>
+                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">CWPM</label>
                         <div className={`px-3 py-2 rounded-lg text-[length:calc(16px*var(--ts))] font-bold text-center ${cwpm ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-surface-alt text-text-tertiary border border-border'}`}>
                           {cwpm ?? '--'}
                         </div>
                       </div>
                     </div>
                     {accuracy != null && (
-                      <div className="flex items-center gap-3 text-[length:calc(11px*var(--ts))]">
+                      <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))]">
                         <span className="text-text-secondary">Accuracy:</span>
                         <span className={`font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}`}>
                           {accuracy}%
@@ -2361,7 +2361,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                             <span className="text-text-tertiary mx-2">|</span>
                             <span className="text-text-secondary">Adjusted:</span>
                             <span className="font-bold text-navy">{weightedCwpm}</span>
-                            <span className="text-text-tertiary text-[length:max(10px,calc(9px*var(--ts)))]">
+                            <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">
                               ({cwpm} × {livePassageMult !== 1 ? `Lv${passageLevel}:${livePassageMult}` : ''}{livePassageMult !== 1 && liveNaepMult !== 1 ? ' × ' : ''}{liveNaepMult !== 1 ? `NAEP:${liveNaepMult}` : ''})
                             </span>
                           </>
@@ -2384,12 +2384,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                               : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80 border border-border'
                           }`}>
                           <div className="flex items-center gap-2">
-                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[length:calc(11px*var(--ts))] font-bold ${
+                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[length:calc(11.5px*var(--ts))] font-bold ${
                               sc.naep === n ? 'bg-white/20' : 'bg-navy/10 text-navy'
                             }`}>{n}</span>
                             <span className={`text-[length:calc(12px*var(--ts))] font-semibold ${sc.naep === n ? '' : 'text-navy'}`}>{NAEP_LABELS[n].label}</span>
                           </div>
-                          <p className={`text-[length:calc(10px*var(--ts))] mt-1 ${sc.naep === n ? 'opacity-80' : 'text-text-tertiary'}`}>
+                          <p className={`text-[length:calc(11.5px*var(--ts))] mt-1 ${sc.naep === n ? 'opacity-80' : 'text-text-tertiary'}`}>
                             {NAEP_LABELS[n].desc}
                           </p>
                         </button>
@@ -2402,7 +2402,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {passage && compQuestions.length > 0 && (
                   <div className="bg-surface border border-border rounded-xl p-5 mb-4">
                     <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Comprehension Questions</h4>
-                    <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mb-3">
+                    <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">
                       {compNotAdministered
                         ? 'Not administered — excluded from this student\'s score.'
                         : <>Score each question 0-{config.compScoreMax}. Total: {compTotal} / {config.compMax}</>}
@@ -2419,11 +2419,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         onChange={() => handleToggleCompNotAdministered(student.id, sc)}
                         className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-slate-600 focus:ring-slate-500 shrink-0" />
                       <span>
-                        <span className="text-[length:calc(11px*var(--ts))] font-semibold text-text-primary flex items-center gap-1.5">
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-primary flex items-center gap-1.5">
                           <Ban size={11} className="text-slate-500" />
                           Student struggled &mdash; comprehension not administered
                         </span>
-                        <span className="block text-[length:calc(10px*var(--ts))] text-text-tertiary mt-0.5">
+                        <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
                           Check this when the student was stopped during the passage and never heard the questions.
                           Comprehension is then excluded from the score rather than counted as zero.
                         </span>
@@ -2440,10 +2440,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         return (
                           <div key={qi} className="bg-surface-alt/50 rounded-lg p-3.5">
                             <div className="flex items-start gap-2 mb-2">
-                              <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[length:calc(10px*var(--ts))] font-bold flex items-center justify-center shrink-0 mt-0.5">{qi + 1}</span>
+                              <span className="w-5 h-5 rounded-full bg-navy/10 text-navy text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center shrink-0 mt-0.5">{qi + 1}</span>
                               <div className="flex-1">
                                 <p className="text-[length:calc(12px*var(--ts))] font-medium text-text-primary">{cq.q}</p>
-                                <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary mt-0.5">
+                                <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
                                   <span className={`font-semibold ${cq.dok === 'DOK 1' ? 'text-blue-600' : cq.dok === 'DOK 2' ? 'text-amber-600' : 'text-green-600'}`}>{cq.dok}</span>
                                   {!cq.anchors && <><span className="mx-1.5">--</span>Expected: {cq.expected}</>}
                                 </p>
@@ -2453,7 +2453,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                 {cq.anchors && (
                                   <ul className="mt-1 space-y-0.5">
                                     {cq.anchors.map((a, ai) => (
-                                      <li key={ai} className="text-[length:calc(10px*var(--ts))] text-text-tertiary flex gap-1.5">
+                                      <li key={ai} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary flex gap-1.5">
                                         <span className={`font-bold shrink-0 ${ai === 0 ? 'text-red-500' : ai === cq.anchors!.length - 1 ? 'text-green-600' : 'text-amber-600'}`}>{ai}</span>
                                         <span>{a}</span>
                                       </li>
@@ -2461,7 +2461,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                                   </ul>
                                 )}
                                 {cq.note && (
-                                  <p className="text-[length:calc(10px*var(--ts))] text-amber-700 bg-amber-50/60 border border-amber-100 rounded px-2 py-1 mt-1.5">{cq.note}</p>
+                                  <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 bg-amber-50/60 border border-amber-100 rounded px-2 py-1 mt-1.5">{cq.note}</p>
                                 )}
                               </div>
                               <div className="flex gap-1 shrink-0">
@@ -2487,7 +2487,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">
                         Comprehension Total: {compNotAdministered ? <span className="text-text-tertiary">Not administered</span> : `${compTotal} / ${config.compMax}`}
                       </span>
-                      <span className="text-[length:calc(10px*var(--ts))] text-text-tertiary">
+                      <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
                         {compNotAdministered
                           ? 'Excluded from scoring'
                           : compTotal >= config.compMax * 0.8 ? 'Strong comprehension'
@@ -2506,7 +2506,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       value={sc.notes || ''}
                       onChange={e => updateScore(student.id, 'notes', e.target.value || null)}
                       placeholder="Observations, reading behaviors, error patterns, intervention notes..."
-                      className="w-full min-h-[60px] px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface resize-y placeholder:text-text-tertiary/50"
+                      className="w-full min-h-[60px] px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 bg-surface resize-y placeholder:text-ink-3"
                     />
                   </div>
                 )}
@@ -2517,23 +2517,23 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-3">Summary for {student.english_name}</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="text-center">
-                        <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Passage</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Passage</div>
                         <div className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Level {passageLevel}</div>
-                        <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">{passage?.title}</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{passage?.title}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">CWPM</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">CWPM</div>
                         <div className="text-[length:calc(16px*var(--ts))] font-bold text-green-600">{cwpm}</div>
-                        {weightedCwpm && weightedCwpm !== cwpm && <div className="text-[length:max(10px,calc(9px*var(--ts)))] text-text-tertiary">Adjusted: {weightedCwpm} ({passageLevel})</div>}
+                        {weightedCwpm && weightedCwpm !== cwpm && <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Adjusted: {weightedCwpm} ({passageLevel})</div>}
                       </div>
                       <div className="text-center">
-                        <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Accuracy</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Accuracy</div>
                         <div className={`text-[length:calc(16px*var(--ts))] font-bold ${accuracy != null && accuracy >= INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy != null && accuracy >= FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}`}>
                           {accuracy}%
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Comprehension</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Comprehension</div>
                         <div className="text-[length:calc(16px*var(--ts))] font-bold text-navy" title={compNotAdministered ? 'Student was stopped during the passage; the questions were never asked.' : undefined}>
                           {compNotAdministered ? <span className="text-text-tertiary text-[length:calc(13px*var(--ts))]">n/a</span> : `${compTotal} / ${config.compMax}`}
                         </div>
@@ -2542,11 +2542,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     {config.hasPhonics && (
                       <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-navy/10">
                         <div className="text-center">
-                          <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Phonics</div>
+                          <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Phonics</div>
                           <div className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{phonicsTotal} / {config.phonicsMax}</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-[length:calc(10px*var(--ts))] text-text-tertiary uppercase">Sentences</div>
+                          <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Sentences</div>
                           <div className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{sentTotal} / {config.sentenceMax}</div>
                         </div>
                       </div>
@@ -2561,10 +2561,10 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       const met = stds.filter(s => s.met).length
                       return stds.length > 0 ? (
                         <div className="mt-3 pt-3 border-t border-navy/10">
-                          <p className="text-[length:calc(10px*var(--ts))] font-bold text-navy uppercase tracking-wider mb-2">CCSS Standards ({met}/{stds.length} met)</p>
+                          <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy uppercase tracking-wider mb-2">CCSS Standards ({met}/{stds.length} met)</p>
                           <div className="flex flex-wrap gap-1.5">
                             {stds.map((std, i) => (
-                              <span key={i} className={`px-2 py-0.5 rounded-full text-[length:max(10px,calc(9px*var(--ts)))] font-medium ${
+                              <span key={i} className={`px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${
                                 std.met ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'
                               }`}>{std.code}</span>
                             ))}
@@ -2596,7 +2596,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {sc.oral_complete ? 'Test complete' : 'Mark test complete'}
               </button>
               {!sc.oral_complete && !studentHasData(student.id) && (
-                <p className="text-[length:calc(10px*var(--ts))] text-text-tertiary text-center mb-3 -mt-1">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-center mb-3 -mt-1">
                   Use this for a student who sat the test but could not attempt anything &mdash; it records that the session happened.
                 </p>
               )}
@@ -2606,12 +2606,12 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                 {saving ? 'Saving...' : `Save ${student.english_name}`}
               </button>
               <div className="flex items-center justify-center gap-3 mt-2">
-                <span className={`text-[length:calc(11px*var(--ts))] ${studentDirtyNow(student.id) ? 'text-amber-600 font-semibold' : 'text-text-tertiary'}`}>
+                <span className={`text-[length:calc(11.5px*var(--ts))] ${studentDirtyNow(student.id) ? 'text-amber-600 font-semibold' : 'text-text-tertiary'}`}>
                   {studentDirtyNow(student.id) ? 'Unsaved changes' : 'All changes saved'}
                 </span>
                 {selectedIdx < classStudents.length - 1 && (
                   <button onClick={() => { handleSave([student.id]); setSelectedIdx(selectedIdx + 1) }} disabled={saving}
-                    className="inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))] font-semibold text-navy hover:underline disabled:opacity-40">
+                    className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] font-semibold text-navy hover:underline disabled:opacity-40">
                     Save and go to {classStudents[selectedIdx + 1].english_name} <ChevronRight size={13} />
                   </button>
                 )}
