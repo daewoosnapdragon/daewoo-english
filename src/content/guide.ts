@@ -1,22 +1,30 @@
 import type { Tour } from '@/lib/tour'
+import { canSeeAdminJobs } from '@/lib/adminAuth'
+import { canViewActivity, canManageWhatsNew } from '@/lib/activity'
 
 // ─── How to use this app ─────────────────────────────────────────
-// One section per page, in nav order, each with the same five parts. The
+// One section per page, in nav order. Each leads with what a teacher does
+// there ("To do X: 1, 2, 3"), then a short note of what the page shows, then
+// the rules worth knowing (bands, who sees what, what counts). Nothing about
+// how the app is built: if a teacher cannot act on it, it is not here. The
 // rule: a feature does not ship without its section updated in the same
-// commit, and the What's new entry links here. "Updated" is the date the
-// section text last changed. No screenshots: the tours point at the live
-// screen instead.
+// commit, and the What's new entry links here by section id. "Updated" is
+// the date the section text last changed. No screenshots: the tours point
+// at the live screen instead. Never write a week count or a date that goes
+// stale; say "the week count in the header".
 
 export interface GuideTask { title: string; steps: string[]; tour?: Tour }
 export interface GuideSection {
   id: string
   title: string
   updated: string        // YYYY-MM-DD
-  purpose: string
-  screen: string[]       // the controls, top to bottom
-  tasks: GuideTask[]
+  purpose: string        // one sentence: what the page is for
+  tasks: GuideTask[]     // shown first
+  screen: string[]       // at most a short paragraph or two of what the page shows
   rules: string[]
   watchOut: string[]
+  /** Pages only some accounts can open. Unset: everyone. */
+  audience?: 'admin' | 'jobs' | 'activity' | 'release'
 }
 export interface Workflow { id: string; title: string; when: string; steps: string[] }
 
@@ -74,261 +82,334 @@ export const WALKTHROUGHS: Walkthrough[] = [
 export const QUICK_START: { title: string; steps: string[] } = {
   title: 'Your first week',
   steps: [
-    'Log in by clicking your name. Your class is remembered, so every page opens on it.',
-    'Take attendance: Attendance in the top bar, tap a status per student, Save. Or click today’s period on the dashboard schedule.',
-    'Enter a grade: Grades → New assessment. Name it, pick how it is scored, and score it on the answer sheet.',
-    'Open a student: type their name in the box at the top left (or press ⌘K). Their page has the behavior log first.',
-    'Read the notice board under the header each morning; dismiss what you have read.',
-    'Press ⌘K whenever you are not sure where something is. Typing a page name or an action gets you there.',
+    'Log in: pick your name and press Log in. Your class is remembered, so every page opens on it.',
+    'Take attendance: Attendance in the top bar (on a phone, the first tab at the bottom). Press All present, tap Absent or Tardy for anyone who is not, then Save attendance.',
+    'Enter a grade: Grades → New assessment. Name it, pick how it is scored, and score it on the sheet that opens.',
+    'Open a student: type their name in Find anything at the top left (on a phone, the magnifier), or press ⌘K (Ctrl K on Windows). Their page opens on the behavior log.',
+    'Read the notice board under the header each morning and dismiss what you have read. To post one, click Post a notice at the right of the thin row under the links (on a phone, in More).',
+    'Stuck on a page? Help, beside Post a notice (on a phone, in More), opens this guide at that page.',
   ],
 }
 
 export const GUIDE_SECTIONS: GuideSection[] = [
+  // ─── Daily ───
   {
-    id: 'dashboard', title: 'Dashboard', updated: '2026-11-16',
-    purpose: 'The page that opens to “now”: what is due, what is unmarked, and what needs a look, with the month and the week’s agenda beside it.',
-    screen: [
-      'The header greets you with today’s date and the active semester. Two buttons jump to marking attendance and entering grades.',
-      'Under the date in the top bar, “Week 12 of 18” and a thin line that fills across the semester. The oxblood mark on it is when report card grades are due. The Attendance link gets a small check once every class you teach is marked for today.',
-      'Pages you opened in the last ten minutes come back whole at once, then update quietly if something changed. Resting the pointer on a menu link starts loading that page before you click, and the pages you use most are loaded in the background a few seconds after the app opens. Hover on the thin line under the header (or tap it) for the months, the week of the term and when report cards are due.',
-      'When you log in, your class flower draws itself above a greeting for about a second and a half; click or press any key to skip it. Your avatar at the top right is the same flower, and a page with nothing on it yet draws it too. While something is loading you see three small ink dots, and “Loading…” if it takes more than a second; a page that loads quickly shows nothing at all. Text size, in the menu under your name, makes all the text larger (Standard, Larger, Largest) on this computer.',
-      'The stats strip: attendance still unmarked today, ungraded assessments, days to the midterm cutoff, days until report card grades are due. Each one is a link.',
-      'The notice board sits under the header on every page. Teachers post notices; you dismiss your own copy. Urgent ones are shaded red until read.',
-      'The month calendar with the agenda beside it. Events come from the school calendar; five colors mark the kinds. Admins add events here.',
-      'The grading queue: every assessment with students still unmarked. Continue opens its sheet; ABS and EXM clear a student without leaving.',
-      'Needs attention: students whose grades have dropped or whose attendance has slipped, with the reason.',
-      'The weekly schedule strip. Click a period to mark that class’s attendance in a drawer.',
-      'Office jobs, under the schedule: this week’s cleaning day, your job in large type, everyone else’s underneath (click a job for what it involves), and your job next week. The day is Friday, or the day before when the calendar has a whole-school day off on that Friday. On the day itself the band under the header names your job on every page. Admin sets the rotation in Settings.',
-      'What’s new: a card that appears when something has changed since you were last here. Got it hides that batch.',
-    ],
+    id: 'dashboard', title: 'Dashboard', updated: '2026-11-20',
+    purpose: 'What needs doing today: unmarked attendance, ungraded work, students who need a look, and the calendar.',
     tasks: [
-      { title: 'Clear the grading queue', steps: ['Find the assessment under Ungraded.', 'Click Continue to open the sheet on the first unmarked student.', 'Or click ABS or EXM beside a name to mark a student absent or exempt right there.'], tour: { path: '/dashboard', steps: [{ anchor: '#grading', text: 'Every assessment with an unmarked student. Continue opens the sheet; ABS and EXM handle a student here.' }] } },
-      { title: 'Mark a class from the schedule', steps: ['Scroll to the weekly schedule.', 'Click the period.', 'Tap a status per student in the drawer and save.'] },
-      { title: 'Post a notice', steps: ['Press ⌘K and choose Post a notice, or use the notice board’s compose button.', 'Write it, pick who sees it, mark it urgent if it is, set when it expires.', 'Post. Each teacher dismisses their own copy.'] },
+      { title: 'Clear the grading queue', steps: ['Find the assessment in the grading queue at the foot of the page.', 'Continue opens its sheet on the first unmarked student.', 'Or press ABS or EXM beside a name to mark that student absent or exempt right there.'], tour: { path: '/dashboard', steps: [{ anchor: '#grading', text: 'Every assessment with an unmarked student. Continue opens the sheet; ABS and EXM handle a student here.' }] } },
+      { title: 'Mark a class from the schedule', steps: ['Find the period in the weekly schedule beside the calendar (Show weekly schedule if it is folded away).', 'Click the period. A drawer opens with that class.', 'Tap a status per student and save.'] },
+      { title: 'Post a notice', steps: ['Click Post a notice at the right of the thin row under the links (on a phone: More → Post a notice), or press ⌘K and type “notice”.', 'Write it, choose who sees it (everyone or selected teachers), tick Urgent if it is, and set Show until.', 'Post. Each teacher dismisses their own copy.'] },
+      { title: 'Find a student, page or action', steps: ['Click Find anything at the top left, or press ⌘K (Ctrl K on Windows). On a phone, tap the magnifier at the top.', 'Type part of a name, a page, or an action such as “new assessment”, then Enter.'] },
+      { title: 'Change how the app looks', steps: ['Click your name at the top right.', 'Switch the language (English or 한국어) and dark mode; Text size steps through Standard, Larger and Largest; Font steps through the typefaces.', 'Each choice is remembered on this computer.'] },
+    ],
+    screen: [
+      'The stats strip: students still unmarked today, ungraded assessments, days to the midterm cutoff, report card grades due, and behavior logs today. Under it the month calendar with what is coming up, the weekly schedule, office jobs, Needs attention and the grading queue.',
+      'The thin row under the links shows the semester, your class, the time, and the week count with the report card date; click the week count for the months of the term. A dot on your name means What’s new has something you have not read.',
     ],
     rules: [
-      'Report card grades due comes from the semester’s cutoff date in Settings.',
-      'A day off on the calendar means attendance is not expected and the stat shows a dash. The attendance page still records everyone absent for the day, with the holiday as the note, but those days never count toward Needs attention.',
-      'Needs attention flags a student whose domain average fell more than the threshold since the last assessment, or with three or more absences in two weeks.',
+      'Needs attention lists a student whose domain average has fallen since the last assessment, or who has three or more absences in two weeks, with the reason.',
+      'A day off on the calendar shows a dash for attendance, and those days never count toward Needs attention.',
+      'Report card grades due is the semester’s cutoff date in Settings.',
     ],
-    watchOut: ['The header can be collapsed with the arrow at the top right; click it again to bring the links back.', 'Notices expire on the date the poster set, so an old one disappears on its own.'],
+    watchOut: ['Notices disappear on their own on their Show until date.', 'The arrow at the top right folds the header to one row; click it again to bring the links back.'],
   },
   {
-    id: 'grades', title: 'Grades', updated: '2026-10-27',
-    purpose: 'Create assessments, score them question by question or with a rubric, and see how the class did.',
-    screen: [
-      'Chips under the title pick grade, class, and domain. The domain chip filters the assessment list.',
-      'Tabs: Score Entry (the scoring sheet), Batch Grid (one total per student for several assessments), Domain Overview (charts), Student View, Calendar.',
-      'New assessment opens a three-step flow: Set up, Answer key or Rubric, Score.',
-      'Each assessment opens on the view that fits it: the answer sheet for a key, the class grid for a rubric, the points sheet for one total per student. On a rubric assessment, Score with the rubric (or clicking a student) opens the full-screen rubric sheet; it never opens just from selecting the assessment. Totals only, in the bar above, puts a keyed or rubric assessment on the points sheet for that assessment alone. Switching domain tabs is instant.',
-      'On a keyed assessment, three views: Answer sheet, Class grid, Analysis. Save all and an autosave every 30 seconds.',
-      'A question the student left blank is wrong. Mark it with the — bubble or the minus key; a question you skip is shaded amber, and when you move to the next student anything still unmarked on that paper becomes a blank worth 0. A paper you have not started stays untouched.',
-      'Edit, in the bar above the sheet, reopens the set-up flow with everything filled in: name, date, category, the key or rubric, and standards. Delete is next to it.',
-      'The standards picker, wherever you tag a standard, has two views. By skill asks what the students did and groups the standards under plain names. By code lists every standard for the grade in code order with the official wording, by strand, for teachers who know the standards; type a code with or without the dots. The picker remembers which view you used.',
-    ],
+    id: 'attendance', title: 'Attendance', updated: '2026-11-20',
+    purpose: 'Mark today in a few taps, fix a past day, and print the record for the office.',
     tasks: [
-      { title: 'Score a test with an answer key', steps: ['New assessment. Name it, choose the domain and category, and pick Answer key under “How will you score it?”.', 'Next. Describe the paper as sections: type the letters for multiple choice, count the written questions and set their points, pick a rubric for a writing task.', 'Tag a standard on each section if you want mastery tracked. Use “Tag every section with one standard” when it is all one skill.', 'Save key and start scoring. Type A–D or T/F for choice items, a number for written ones, − when the student left it blank, Enter for the next student, X for absent, ⇧X for exempt.', 'Save all when the class is done, or let the autosave do it.'], tour: { path: '/grades', steps: [{ anchor: 'grades.new', text: 'New assessment starts the flow.' }, { anchor: 'grades.scoring', text: 'Answer key scores question by question. Rubric scores criteria 0–4. Points only is one total per student.' }] } },
-      { title: 'Score with a rubric', steps: ['New assessment, pick Rubric under “How will you score it?”, Next.', 'Choose a template or a saved rubric. The assessment is created and scoring opens as a full page.', 'For each criterion click the level whose descriptor fits, 0 to 4. Keys 0–4 mark and move down; Enter goes to the next student.'] },
-      { title: 'Mix multiple choice, short answers, and a rubric on one assessment', steps: ['In the sections builder, add a section for each part in the order they appear.', 'Tag standards on sections or questions. A standard from another domain (RL/RI reading, RF phonics, W writing, SL speaking, L language) sends those points to that domain on its own; a note under the key shows the split.', 'Score as usual. On the sheet, questions that count in another tab are tinted and labelled with their domain, and the points per domain sit next to the total. The domain overview and the student drill-down show each part with the whole-paper score beside it.'] },
-      { title: 'Read one student’s grades', steps: ['Open the Student view in Grades and click a name in the roster on the left, or press ↑ ↓ to move.', 'Each domain tile carries a small chart: the student’s running average as a solid line, the class’s as a dashed one, on one scale across the five tiles. Hover a point for the assessment and the numbers. “Worth a look” lists anything unusual; “Not yet scored” links straight to the sheet.', 'Under each domain in the table, “how is this computed?” shows the quizzes, tests and tasks behind the number and the weights. The standards list at the bottom comes from answer sheets and is the reteach list for that student.'] },
-      { title: 'See what to reteach', steps: ['Open the assessment and click Analysis.', 'Read the score spread, then Standards mastery: click a standard for the names in each band.', 'Question by question shows the most missed and why; click a row for who missed it.'], tour: { path: '/grades', steps: [{ anchor: 'grades.views', text: 'Answer sheet for scoring, Class grid for the whole class, Analysis for what to reteach.' }] } },
-      { title: 'Enter one total per student', steps: ['New assessment, pick Points only, set the total, tag standards if you want them, Create and enter scores.', 'Type each total down the list. Enter, Tab or ↓ moves to the next student and saves the score you just typed; 7/10 enters a fraction of the total; ABS and EXM sit on each row.', 'The rail on the right shows the average, high and low, and the spread as the numbers go in. Batch Grid does the same for several assessments at once.'] },
-      { title: 'Change an assessment after it is made', steps: ['Edit above the sheet. Change the name, date, category, notes or standards and Save changes.', 'For a keyed assessment, Next: answer key shows the sections as you built them. Fix a letter or a point value and save: papers already marked are re-scored against the new key, and a question you added shows as unmarked on them.', 'For a rubric assessment, Next: rubric keeps the current rubric or lets you pick another.', 'Once papers are scored the scoring method is fixed. Clear all first to change it.'] },
+      { title: 'Mark today', steps: ['Open Attendance (on a phone, the first tab at the bottom), or click the period on the dashboard schedule.', 'Press All present, then tap Absent or Tardy for the exceptions. On a computer you can click a row and press P, A or T; ↑ ↓ move between students.', 'Add a note where it helps, then Save attendance. “All marked” appears beside the date.'], tour: { path: '/attendance', steps: [{ anchor: 'attendance.save', text: 'Save writes the day. The dot on the Attendance link clears once every class you teach today is marked.' }] } },
+      { title: 'Fix a past day', steps: ['Pick the date with the arrows or the date box, change the statuses, and Save attendance.', 'Or switch to Month and click the day.'] },
+      { title: 'Print for the office', steps: ['Print month prints the month on screen.', 'Or open Print selected weeks, tick the weeks (they can span months), and print.'] },
+    ],
+    screen: [
+      'Day is where you mark, one row per student; Month is the record, a cell per class day. The Attendance link carries a dot while one of your grades is unmarked today and a check once all are. After 3:30 on a class day, a reminder band on every other page names the grade you have not marked.',
     ],
     rules: [
-      'Formative, summative, and performance task are weighted into the composite by the weights in Settings.',
-      'Points on a mixed assessment go to the domain of each question’s standard; untagged questions go to the assessment’s domain. Standards tagged on the assessment itself (the chips above the key) do not move points; only the standard on the question does.',
-      'A rubric item is worth 4 points per criterion. The score is the sum of levels over the maximum, scaled to the item’s points.',
-      'Absent leaves the student out of averages; exempt does the same but records that the work was waived.',
+      'A day off or field trip on the school calendar marks every student absent with the day as the note. Change anyone who came in. These days are left out of every absence total: report cards, the student page and the dashboard.',
+      'Weekends have no class, and neither do the weekdays Settings marks as no class for a grade.',
     ],
-    watchOut: ['A 0 on a rubric is a real zero, not “not assessed”. Leave the criterion unmarked if you have not seen it.', 'Half points are allowed on written items when scoring, not on the key.', 'Deleting a rubric from the library does not change any assessment already scored with it.', 'Clear on a student (or Clear all) removes the saved score for good, not just the marks on screen.'],
+    watchOut: ['Leaving with marks not saved asks first: Stay, Discard, or Save first.'],
   },
   {
-    id: 'attendance', title: 'Attendance', updated: '2026-11-16',
-    purpose: 'Today’s attendance in a few taps, the month at a glance, and printing for the office.',
-    screen: [
-      'Day and Month at the top. Day is where you mark; Month is the record.',
-      'Grade and class chips, a date picker, and Today to jump back.',
-      'One row per student with Present, Absent, and Tardy, and a note field.',
-      'Save attendance at the top right. Print selected weeks opens a chooser. Once the day is saved with every student marked, a check and “All marked” appear beside the date.',
-      'The Attendance link in the top bar shows a dot until today is saved, and a reminder appears at 3:30 if it is not.',
-    ],
+    id: 'grades', title: 'Grades', updated: '2026-11-20',
+    purpose: 'Create an assessment, score it, and see what to reteach.',
     tasks: [
-      { title: 'Mark today', steps: ['Open Attendance (or click the period on the dashboard schedule).', 'Everyone starts present. Tap Absent or Tardy where needed and add a note if useful.', 'Save attendance.'], tour: { path: '/attendance', steps: [{ anchor: 'attendance.save', text: 'Save writes the day. The masthead dot clears once every class you teach is done.' }] } },
-      { title: 'Fix a past day', steps: ['Pick the date, change the statuses, Save.', 'Or open Month and click the cell.'] },
-      { title: 'Print for the office', steps: ['Click Print, tick the weeks, Print selected.'] },
+      { title: 'Score a test with an answer key', steps: ['New assessment. Name it, choose the domain and category, and pick Answer key under “How will you score it?”.', 'Next: answer key. Describe the paper as sections: type the letters for multiple choice, count the written questions and set their points, pick a rubric for a writing task.', 'Tag a standard on each section if you want mastery tracked (“Tag every section with one standard” when it is all one skill).', 'Save and start scoring. Type A–D or T/F for choice items, a number for written ones, − for a question left blank, Enter for the next student, X for absent, ⇧X for exempt.', 'Save all when the class is done, or let the autosave do it.'], tour: { path: '/grades', steps: [{ anchor: 'grades.new', text: 'New assessment starts the flow.' }, { anchor: 'grades.scoring', text: 'Answer key scores question by question. Rubric scores criteria 0–4. Points only is one total per student.' }] } },
+      { title: 'Score with a rubric', steps: ['New assessment, pick Rubric under “How will you score it?”, then Next: choose a rubric.', 'Choose a template or a saved rubric. Scoring opens as a full page.', 'For each criterion click the level that fits, 0 to 4. Keys 0–4 mark and move down; Enter goes to the next student.'] },
+      { title: 'Enter one total per student', steps: ['New assessment, pick Points only, set the total, then Create and enter scores.', 'Type each total down the list. Enter, Tab or ↓ saves and moves on; 7/10 enters a fraction of the total; ABS and EXM sit on each row.', 'For several assessments at once, use Batch Grid.'] },
+      { title: 'Mix multiple choice, short answers, and a rubric on one assessment', steps: ['In the sections builder, add a section for each part in the order they appear.', 'Tag standards on sections or questions. A standard from another domain (RL/RI reading, RF phonics, W writing, SL speaking, L language) sends those points to that domain; a note under the key shows the split.', 'Score as usual. Questions that count in another domain are tinted and labelled on the sheet.'] },
+      { title: 'See what to reteach', steps: ['Open the assessment and click Analysis.', 'Read the score spread, then Standards mastery: click a standard for the names in each band.', 'Question by question shows the most missed; click a row for who missed it.'], tour: { path: '/grades', steps: [{ anchor: 'grades.views', text: 'Answer sheet for scoring, Class grid for the whole class, Analysis for what to reteach.' }] } },
+      { title: 'Read one student’s grades', steps: ['Student View, then click a name (or press ↑ ↓).', 'Each domain shows the student’s running average against the class’s. “Worth a look” lists anything unusual; “Not yet scored” links to the sheet.', '“How is this computed?” under a domain lists the work and the weights behind the number.'] },
+      { title: 'Change an assessment after it is made', steps: ['Edit, above the sheet. Change the name, date, category, notes or standards and Save changes.', 'To fix the key, go on to the answer key, change a letter or a point value, and save: papers already marked are scored again against the new key.', 'Once papers are scored the scoring method is fixed. Clear all first to change it.'] },
+    ],
+    screen: [
+      'Grade, class and domain chips along the top. Tabs: Score Entry, Batch Grid, Domain Overview, Student View, Calendar. A keyed assessment opens on its answer sheet, with Class grid and Analysis beside it; a rubric assessment opens on the class grid.',
     ],
     rules: [
-      'A day off or a field trip on the school calendar marks every student absent with the day as the note, automatically, the first time attendance is opened afterwards. Days from the last two months are filled in too, so a holiday nobody opened still shows on the record. Change any student who came in. These days are left out of every absence total: report cards, the student page, hover cards, and the dashboard.',
-      'Weekends have no class. Grade 5 has no Monday class if that rule is on in Settings.',
+      'Formative, summative and performance task are weighted into the composite by the weights in Settings.',
+      'A question left blank is wrong. When you move to the next student, anything still unmarked on that paper counts as blank; a paper you have not started stays untouched.',
+      'A rubric is worth 4 points per criterion: the sum of levels over the maximum, scaled to the item’s points.',
+      'Absent leaves the student out of averages; exempt does the same and records that the work was waived.',
     ],
-    watchOut: ['Leaving the page with unsaved changes asks first.', 'The dashboard stat counts students still unmarked across all your classes today.'],
+    watchOut: ['A 0 on a rubric is a real zero. Leave a criterion unmarked if you have not seen it.', 'Half points are allowed when scoring written items, not on the key.', 'Clear (one paper) and Clear all remove the saved scores for good.'],
   },
   {
-    id: 'lessons', title: 'Lesson plans', updated: '2026-09-25',
-    purpose: 'The month for one class, one card per day, printed for parents.',
-    screen: [
-      'Grade and class chips and the month arrows.',
-      'Each week starts with a Weekly HW line and a Copy last week button.',
-      'Each day card holds one or more subjects (Reading, Writing, and so on), what is covered, and a “Students will” objective. Click a day to edit it below the grid.',
-      'Days off and field trips are hatched and cannot be planned. A midterm or testing day is tinted when it is on the parent calendar.',
-      'Save month writes everything. Print opens the parent version.',
-    ],
+    id: 'reading', title: 'Reading', updated: '2026-11-20',
+    purpose: 'Running records against the class targets, and phonics checks: where each student’s decoding stands, sheet by sheet.',
     tasks: [
-      { title: 'Plan a week fast', steps: ['Click Copy last week on the new week.', 'Change the days that differ.', 'Save month.'], tour: { path: '/lesson-plans', steps: [{ anchor: 'lessons.copy', text: 'Copies the week above into this one. Then edit only what changes.' }] } },
-      { title: 'Add a second subject to a day', steps: ['Click the day.', 'Click Another subject under the first, choose the label, write the plan.'] },
+      { title: 'Record a running record', steps: ['Add reading record.', 'Pick the student and passage, enter words correct and errors (or CWPM and accuracy), and the Lexile if you have it.', 'Save. The class overview and the student’s trend update.'], tour: { path: '/reading', steps: [{ anchor: 'reading.add', text: 'One record per student per passage. The class overview and the student page update at once.' }] } },
+      { title: 'Change the targets', steps: ['Class overview → Edit these targets.', 'Set the mid-year and end-of-year CWPM and the Lexile range, then Save.'] },
+      { title: 'Run a phonics check', steps: ['Phonics → Check a student, or the check button beside a name on the heat map.', 'Tick the sheets to check: one, several, or All. For a student you know, Not yet mastered picks what was weak last time.', 'As the student reads the printed sheet, tap each word: once for correct, twice for an error, three times for partly right. The pencil on a tile records what they said. Leave a word untouched if you stopped early.', 'Tick how they decoded and what gave trouble, then Save check, or Save and next student to keep the same sheets for the next child.'], tour: { path: '/reading?tab=phonics', steps: [{ anchor: 'reading.phonics.mode', text: 'Heat map for the whole class; Check a student to sit with one.' }, { anchor: 'reading.phonics.skills', text: 'Tick the sheets for this sitting. The dot on a chip is the student’s last result.' }, { anchor: 'reading.phonics.words', text: 'A tile per word, in the sheet’s four columns. Tap as the student reads: correct, error, partly, clear.' }, { anchor: 'reading.phonics.save', text: 'Saved to the student, never graded. The heat map, the student page and the leveling hover card all read it.' }] } },
+      { title: 'Recheck only the words a student missed', steps: ['Phonics → Check a student, pick the student, and choose Missed before.', 'Every word missed on their latest check of each sheet is on one card; ×2 marks words missed on two or more checks.', 'Mark the words as they read. Those words replace their old marks and each sheet is scored again. Print for the student prints the words in large type.'] },
+      { title: 'Fix or remove a check', steps: ['Click the cell on the heat map → Edit this attempt; or Check a student → So far, then Edit or Delete beside the check.', 'Change the marks and Save changes.'] },
+      { title: 'Group students for phonics teaching', steps: ['Phonics → set the scope to Whole grade or All grades → Groups.', 'Students are grouped by the sheet to teach next. Turn class chips off to keep only classes that share a time slot.', 'Print groups for a list per grade, or Print their missed words for one group.'] },
+      { title: 'Find leveling candidates in phonics', steps: ['Phonics → Whole grade or All grades → Leveling.', 'Leveling candidates lists students ahead of or behind their class, with their gaps.', 'Tick up to six students anywhere and press Compare to see them side by side.'] },
+    ],
+    screen: [
+      'Tabs: Class overview (every student’s CWPM, accuracy, Lexile and band), Student detail (one student’s trend against the targets), Phonics, By passage, Passage library. Phonics opens on the class heat map: students down, sheets across, each cell the latest check coloured by band. Click a cell for the words and earlier attempts, or a name for that student’s progress.',
     ],
     rules: [
-      'A day blocked by the calendar keeps whatever was typed before it was blocked but does not print.',
-      'Only midterm and testing events that are checked for the parent calendar show on the plan. A teacher deadline filed as a midterm event stays off.',
-      '“No Grade 5 on Mondays” is a rule in Settings, not fixed in the app.',
+      'Reading bands: below, approaching, proficient, advanced, from the class targets. Level test oral scores show in the trend, marked as such.',
+      'Phonics checks are decoding only and never graded: no assessment, no grade, no report card line. They show on the student page and in the leveling hover card.',
+      'Phonics bands: under 70% Beginning, 70–89% Developing, 90% and up Mastered. A word left untouched is not read, not an error; a sheet with nothing marked is not given and never shows as 0.',
+      'The heat map shows the latest check per sheet; every earlier attempt is kept under Student progress.',
+      'Past one class (Whole grade, All grades) every teacher sees every class, for leveling.',
     ],
-    watchOut: ['Save month is per class and month; switching class without saving asks first.'],
+    watchOut: ['Targets are per class and grade; check you are on the right one before editing.', 'The sheets you ticked stay ticked for the next student; glance at them before starting another child.'],
   },
   {
-    id: 'students', title: 'Students', updated: '2026-09-25',
-    purpose: 'The roster, and a full page per student that gathers everything the app knows about them.',
-    screen: [
-      'Search, grade and class filters, and a sort. Manage students opens roster upload, add, and bulk edit (admin).',
-      'Click a name to open the student page at its own address (/students/…), which you can share.',
-      'On the student page a rail on the left lists the sections: Behavior first, then Grades, Reading, Attendance, Standards, Level tests, Support, Notes and history.',
-      'Print at the top right builds a one-page PDF.',
-    ],
+    id: 'students', title: 'Students', updated: '2026-11-20',
+    purpose: 'The roster, and a page per student with everything the app knows about them.',
     tasks: [
-      { title: 'Log a behavior note', steps: ['Open the student. Behavior is the first section.', 'Add a note with the type (positive, concern, parent contact, and so on).', 'The badge next to the heading shows how many concern or negative notes the student has toward the next ladder step. Flag a note to open a case for admin at once.'] },
-      { title: 'Behavior ladder', steps: ['When a student reaches the step’s number of concern or negative notes (three by default), a case opens on its own: the notes together, an urgent notice to admin and to you, and a line on your dashboard.', 'Add one line about what you need from admin when the case opens, or later from Open the notes.', 'A concern or negative note you add while the case is open joins it, so admin sees it in the same place; it does not open a second case.', 'Your dashboard and the student page say whether admin has read it and how many school days it has waited. Admin records “Parents contacted”, which writes a parent-contact entry on the student’s log and closes the case; the count then starts again.', 'Thresholds, step names and the overdue bar are in Settings → Behavior ladder.'] },
-      { title: 'Read a student’s grades', steps: ['Grades at a glance shows each domain’s current average with a bar; below it the assessments of this semester.', 'For older semesters use Notes and history.'] },
-      { title: 'See WIDA levels and scaffolds', steps: ['Support shows the four levels, active scaffolds, and history, read-only.', 'Click Change on the WIDA page to update them.'] },
+      { title: 'Open a student', steps: ['Type their name in Find anything (⌘K) and press Enter, or click a name on Students.', 'The page opens on Behavior. The list of sections (a row of chips on a phone) jumps to Grades, Reading, Attendance, Standards, Level tests, Support, and Notes and history.'] },
+      { title: 'Log a behavior note', steps: ['Open the student. Behavior is the first section.', 'Add a note and pick its type (positive, concern, parent contact, and so on).', 'Flag a note to open a case for admin at once.'] },
+      { title: 'Behavior ladder', steps: ['When a student reaches a step’s number of concern or negative notes (three by default), a case opens on its own: admin and you get an urgent notice, and it shows on your dashboard.', 'Add one line about what you need from admin, then or later from Open the notes.', 'Your dashboard and the student page say whether admin has read it and how many school days it has waited. When admin records the step’s action (such as Parents contacted), the case closes and the count starts again.'] },
+      { title: 'Edit details or export the page', steps: ['Edit details changes names, pronoun, the name used in comments, grade, class and number.', 'Export portfolio makes a PDF of the student’s page.'] },
+      { title: 'Add students or upload the roster', steps: ['Students → Manage Students.', 'Upload the roster file, or add one student.'] },
     ],
-    rules: ['Grades at a glance covers the active semester only.', 'The reading trend merges running records with level test oral scores.', 'Only concern and negative notes count toward the ladder; positives and plain notes do not, and nothing offsets a count.'],
-    watchOut: ['Removing a student deactivates them; their records stay.', 'A case cannot be dismissed; it closes only when the step’s action is recorded.'],
-  },
-  {
-    id: 'reading', title: 'Reading', updated: '2026-11-16',
-    purpose: 'Fluency and Lexile over time, against the class’s targets, and phonics checks: where each student’s decoding stands, skill by skill.',
     screen: [
-      'Tabs: Class overview, Student detail, Phonics, By passage, Passage library.',
-      'Grade and class chips. Add reading record at the top right.',
-      'Class overview lists every student with CWPM, accuracy, Lexile, and band. Edit these targets under it changes the class’s mid-year and end-of-year targets and Lexile range.',
-      'Student detail is the trend line for one student with the targets as a band.',
-      'Phonics is the Phonics Quick Checks packet in the app, with three faces. Class heat map: every student in the class down the side, the four alphabet sheets (letter names and letter sounds, each in capitals and in lower case) and then the packet’s twenty sheets across the top in its order (CVC, digraphs, blends, ck/tch/floss, closed syllable exceptions, open syllables, silent e, dge/ge/ce/ve, vowel teams, r-controlled, oo/ou, oi/oy/au/aw, then the seven two-syllable sheets), each cell the accuracy of the latest check, coloured by the packet’s bands, with an arrow for the change since the attempt before. Working on names the first sheet that is not yet mastered. Click a cell for the words, what the student said on each error or partly, the observations, every earlier attempt, and which words were missed on each. Click a name for that student’s progress.',
-      'Student progress: one student, the sheets they have been checked on down the side, every sitting across the top in date order, each cell that attempt’s accuracy, and a Change column with the move since the attempt before. Every check is kept; nothing is overwritten by a recheck.',
-      'Alphabet sheets: letter names in capitals, letter names in lower case, letter sounds in capitals and letter sounds in lower case, each all 26 letters in order of how often they are used in English, in four rows; the check screen counts each row. They are scored like any sheet but do not count toward a student’s position, which stays 0–20 on the word sheets. A class past the alphabet can untick Alphabet sheets above the heat map: the four sheets then leave that class’s heat map, sheet picker, printing, CSV and student pages for every teacher, and on Whole grade its row reads Skipped across those columns. Saved results are kept and come back if you tick it again. Letter sheets and Word sheets print the student sheets in large type, one a page; Save as PDF in the print dialog keeps a copy.',
-      'Under each sheet, tick what you heard. This sheet lists the error patterns that sheet is there to find, written as what you hear with a word from the sheet (silent e: e ignored, vowel short, made → mad). On any sheet lists word-level errors (guessed from the first letter, swapped in a real word that looks alike, could not blend, changed the letter order, dropped the final sound, used the newest rule everywhere). Korean transfer lists sounds Korean does not have (f → p, v → b, z → j, th, r and l, an extra vowel after a consonant, short vowel pairs): there decoding is fine and the sound is not, so it is speech practice, not more phonics. How they decoded is the packet’s strategy boxes. Error patterns on Whole grade counts all of it class against class.',
-      'Check a student: the roster on the left, the student’s results so far, then the sheets to check as chips (All, None, Not yet mastered, Not checked yet, Missed before) and a card per sheet with the words in the packet’s four columns. Tap a word once for correct, twice for an error, three times for partly right (nearly there: it counts as half a word), again to clear; the pencil on an error or partly tile records what they said. Under the words, the packet’s teacher checkboxes: how they decoded and which patterns gave trouble. Missed before puts every word the student missed on the latest check of each sheet on one card, sheet by sheet, with ×2 on words missed on two or more checks. The words read again replace their old marks, the rest carry over, and each sheet is scored again, so a student who fixes their misses moves up without rereading the whole sheet. Print for the student prints those words in large type; on Groups, Print their missed words does the same for a teaching group. Save, or Save and next student.',
-      'Word sheets prints the twenty sheets in large type, one a page, for when the printed packet is not to hand.',
-      'Phonics has a scope switch: This class, Whole grade, All grades. Past one class every teacher sees every class, for leveling. Classes compared: a row per class (and in All grades a row for each whole grade), each sheet how many of that class’s checked students have mastered it, as 5/8 for five of the eight checked, coloured by the share; the outlined cell is the class’s edge, the first sheet under 70% mastered. Students: every student in scope against the twenty sheets, grouped by class or ranked By position, with their position: the furthest sheet they have, of 20, and ⚠ when a sheet below it is still under 90%. Mastered is 90% or more on the latest check of the sheet; the teacher checkboxes are notes and do not change the score. Cells from fewer than three students checked are greyed. Checks since limits everything to checks from a date on. Click a name to open that student in their own class’s Phonics view.',
-      'Leveling, between the two tables: a strip per grade, a lane per class from Lily up, a dot per checked student at their position (0–20). The shaded band is the class’s middle half, the bar its median. A dot ringed green has reached the median of the class above; ringed red sits at or under the median of the class below; ringed amber is the same but was never tested past that point, so check further before moving them. A class is only compared with a neighbour that is actually ahead or behind it on phonics, and Unplaced students are left out. Leveling candidates lists the flagged students with their gaps.',
-      'Tick students anywhere in the comparison (up to six, any class or grade) and press Compare to see them side by side: the sheets down the side, their latest result on each with the patterns that gave trouble, and How they decoded, the teacher checkboxes counted across their sheets, so a guesser and an automatic reader with the same scores are told apart.',
-      'The comparison has four tabs: Classes & students, Leveling, Error patterns, Groups. Error patterns sets classes side by side (grades, in All grades) with a column for everyone: How they decoded, the share of checked students with each teacher checkbox ticked on at least one of their latest sheets (red for concerns like guessing); Patterns that gave trouble, the twenty graphemes ticked most, as students out of those checked on that sheet; and Words missed most, missed by two or more, with what students said instead and which classes they are in.',
-      'Groups gathers students across classes by the sheet to teach next: the lowest sheet under their position still under 90%, or else the sheet after their position. By sheet or By family (short vowels, long vowels, other vowels, two-syllable). An amber chip is a hole below the student’s position; a ? means they were never checked on that sheet. Each card names the patterns ticked and the words missed on its sheets, so the lesson can start there. Turn class chips off to keep only classes that share a time slot, and Print groups for a list per grade. The CSV gains a Next to teach column.',
-    ],
-    tasks: [
-      { title: 'Record a running record', steps: ['Add reading record.', 'Pick the student and passage, enter words correct and errors (or CWPM and accuracy), Lexile if you have it.', 'Save. The trend updates.'], tour: { path: '/reading', steps: [{ anchor: 'reading.add', text: 'One record per student per passage. The class overview and the student page update at once.' }] } },
-      { title: 'Change the targets', steps: ['Class overview → Edit these targets.', 'Set mid-year and end-of-year CWPM and the Lexile range, Save.'] },
-      { title: 'Run a phonics check', steps: ['Phonics → Check a student, or Check beside a name on the heat map.','Tick the sheets to check: one (CVC), several, or All. For a student you know, Not yet mastered picks what was weak last time.', 'Put the printed sheet in front of the student and let them read left to right. Tap each word as they go: once for correct, twice for an error, three times for partly right; the pencil on an error or partly records what they said. Leave a word untouched if you stopped the sheet early.', 'Tick how they decoded and what gave trouble, then Save, or Save and next student to keep the same sheets for the next child.'], tour: { path: '/reading?tab=phonics', steps: [{ anchor: 'reading.phonics.mode', text: 'Heat map for the whole class; Check a student to sit with one.' }, { anchor: 'reading.phonics.skills', text: 'Tick the sheets for this sitting. The dot on a chip is the student’s last result.' }, { anchor: 'reading.phonics.words', text: 'A tile per word, in the sheet’s four columns. Tap as the student reads: correct, error, partly, clear.' }, { anchor: 'reading.phonics.save', text: 'Saved to the student, never graded. The heat map, the student page and the leveling hover card all read it.' }] } },
-      { title: 'Fix or remove a check', steps: ['Heat map → click the cell → Edit this check; or Check a student → So far → the pencil or the bin beside a check.', 'The sheets of a saved check are fixed; change the marks and Save changes.'] },
+      'Students is the roster with search, grade and class filters, and sorting. A student’s page has their facts at the top (grade, teacher, overall grade, attendance, reading, level test, behavior in 30 days), then the sections. Its address can be shared.',
     ],
     rules: [
-      'Bands: below, approaching, proficient, advanced, from the class targets.',
-      'Level test oral scores appear as points in the trend, marked as such.',
-      'Phonics checks are decoding only and never graded: no assessment, no grade, no report card line. They show on the student page under Reading and in the leveling meeting’s hover card.',
-      'Phonics bands are the packet’s: under 70% Beginning (needs intervention), 70–89% Developing (needs guided practice), 90% and up Mastered. A word left untouched counts as not read, not as an error, and a sheet with no word marked at all is not given: it is left out of the check and shows as not checked, never as 0. Not given on a sheet’s card takes it out for that student; while editing a saved check, untick the sheet.',
-      'The class heat map shows the latest check per sheet, so rechecking one sheet leaves the others as they were. Earlier attempts stay under Student progress and in the cell detail.',
+      'Grades on the student page cover the active semester; older semesters are under Notes and history.',
+      'Only concern and negative notes count toward the ladder. Positive and plain notes do not, and nothing offsets a count.',
+      'A case cannot be dismissed; it closes only when the step’s action is recorded.',
     ],
-    watchOut: ['Targets are per class and grade; check you are on the right one before editing.', 'The sheets you ticked are remembered for the next student; glance at the chips before you start another child.'],
+    watchOut: ['Delete student (admin) removes the student and every record linked to them for good. To move a student to another class, use Edit details instead.'],
   },
+
+  // ─── Planning ───
   {
-    id: 'reports', title: 'Reports', updated: '2026-11-23',
-    purpose: 'Report cards and progress reports from the grades already entered, reviewed and approved before printing.',
-    screen: [
-      'Tabs: Report card, Progress report, Comments, Class summary, Review & approve, Print. The page opens on the document being written now: the progress report until three weeks after the midterm cutoff, the report card after that.',
-      'Comments is the whole class on one page. The switch at its top says which document the comments go on; check it before you type.',
-      'The progress report is one page: a navy band, the student’s details, one table with each area’s grade, score and a bar against the class average, and the comment when there is one. What you see on screen is the printed page at print size.',
-      'A progress report prints as a half page, two to an A4 sheet with a dashed line to cut along, whenever the comment fits in about five lines or there is none. A longer comment gets a full page of its own; nothing is shrunk to fit. The line above the preview says which size, and the class print says how many sheets and offers full pages for everyone.',
-      '“Hide the class comparison for this student”, next to Skip comment on a progress report, drops the bars and class averages from that student’s table.',
-      'A picker for the whole class or one student.',
-      'On a report card, a fact sheet sits to the left of the comment box: each area’s letter with the change since the progress report and since last semester, attendance, reading level now and at the first check of the semester, WIDA level, how many behavior notes, then “What the app noticed” (the weakest and strongest areas, the last rubric piece criterion by criterion, the most-missed standard, the latest reading and behavior notes) then “Rubrics this semester” (every rubric-scored piece, newest first, with each criterion’s level; tap one to read what the rubric says for the level the student got), and “What parents already read”: this semester’s progress-report comment in full, then every earlier report card and progress-report comment, newest first, each with Show all. It is for your eyes; nothing on it is inserted or printed. Absences count this semester only, with holidays and field trips taken out. The change since the progress report is what that report printed (every print of a progress report, single or batch, keeps the grades it showed); before any print it is rebuilt from the assessments dated up to the midterm, and the note under the table says which.',
-      'The comment saves itself a second after you stop typing (the line under the box says Saved and the time, with a check). Words not saved yet show in a slightly red ink and turn black once they are saved. There is no Save button and no Skip: every student gets a report card comment.',
-      'An approved report card carries an oxblood APPROVED stamp, on the card and in the Status column of Review & approve.',
-      'Pronoun, above the box: he, she or they, set once per student and remembered on the roster (also on the student page and the add-student form). The phrase bank fills its sentences with it; until it is set the sentences keep {his} and the hint line says so.',
-      'Called, next to it: the name used in comments. The app suggests it from the roster entry, the English name in brackets or the given name after the family name (Kim Bo Min (Sophia) → Sophia; Kim Bo Min → Bo Min). Press Enter to keep it or type another; it is saved once and remembered, also on the student page.',
-      'Build a comment, under the box, opens one screen to tick what applies: an opener, each area on the tier its letter points to (switchable), behavior on the behavior grade (a fourth tier, serious concern, opens for a D or E: plain statements of what happens, its effect and what must change, with no softening), next steps for the weakest area on the suggested band with the home activities, and a closer. Under each area, Taught lists the skills the class has covered, worked out from the lesson plans (the units they link and those units’ objectives), the Standards page and any standards tagged on assessments; a chip can be unticked and + add a skill adds one, and the ticks are remembered for the class and semester. The sentences for those skills come first; the rest sit behind Show more. Nothing is ever hidden, only folded, and a class with nothing marked yet sees everything. Sentences are offered least-used-first in your class with the count shown. The draft at the bottom assembles as you tick, in reading order: opener, strongest area, the other areas, behavior, next steps, closer. Put in the box, or Replace / Add to the end when there is already text, then edit it for your own voice. It is a first draft, not the comment. Pronoun, top right of the builder, sets the student’s pronoun without leaving it. Sentences with blanks for numbers the fact sheet has (words per minute now and in September, reading level then and now, days absent, the last rubric’s ideas and organization scores) arrive filled; other blanks stay for you. In a paragraph the second and third sentences use the pronoun instead of the name. Spelling, top right of the builder, switches between American (the bank’s own, matching the curriculum) and British; it converts the listed words as sentences fill and is remembered on this computer.',
-      'Under the box, a grey line of hints: the word count against about 200, another student’s name in the text, a leftover he/she or blank, any mention of moving levels or comparing with the class, how much of the text also appears in one of your other comments, more than three things to work on, and the template phrases to avoid. Hints never block anything.',
-      'Next goes to the next student in the class without a comment and saves first. The header counts how many of the class are written and shows the comments-due date.',
-      'Not assessed on the …, on the class overview: chips mark an area N/A for the whole class, one set for the progress report and another for the report card. Under them the app says which areas have no assessments yet and which are N/A but assessed, and on the report card lists the areas October had as N/A with one click to carry them over.',
-      'Print: progress reports and report cards, each with who (the whole class, one student, or for admin the whole grade of report cards) and options: full pages for everyone, hide the class comparison on every report. Class and grade prints of report cards wait for the grade to be marked ready; one student prints any time.',
-    ],
+    id: 'lessons', title: 'Lesson Plans', updated: '2026-11-20',
+    purpose: 'The month for one class, a card per day, printed for parents.',
     tasks: [
-      { title: 'Write report cards', steps: ['Enter every grade first; the composite is computed, not typed.', 'Report card, pick a student. Read the fact sheet, then write. The box saves itself; the grey line under it tells you the word count and anything to fix.', 'Press Next: it saves and opens the next student without a comment. The header counts how many are written.', 'Admin reviews and approves under Review & approve, then prints.'] },
+      { title: 'Plan a week fast', steps: ['Click Copy last week on the new week.', 'Change the days that differ.'], tour: { path: '/lesson-plans', steps: [{ anchor: 'lessons.copy', text: 'Copies the week above into this one. Then edit only what changes.' }] } },
+      { title: 'Plan a day', steps: ['Click the day. Pick a subject, or start typing a unit.', 'Say what students are doing, and fill the “Students will” line.', 'It saves as you type. Save Month writes the whole month at once.'] },
+      { title: 'Add a second subject to a day', steps: ['Click the day.', 'Click + Another subject under the first, choose the label, and write the plan.'] },
+      { title: 'Push the plans back a day', steps: ['When a day is lost, click Move a day later on it.', 'That day’s plan and every later one move a class day on.'] },
+      { title: 'Print for parents', steps: ['Print Month prints the month for the grade on screen.', 'Or open Print Selected Weeks, tick the weeks, and print; it can also print every grade of your class.'] },
     ],
-    rules: ['The composite weights formative, summative, and performance task by the weights in Settings.', 'Only the class’s own teacher, or an admin, can edit its comments and grades.', 'A student has one comment per document: one for the progress report, one for the report card. Each comment box is labelled with its document.'],
-    watchOut: ['Grades due on the dashboard is the report card cutoff. After it, entries still count but the review may already be under way.', 'A comment typed under Report card does not appear on the progress report, or the other way round. If the box says Report card comment mid-semester, use the link above it to go to the progress report.'],
+    screen: ['Grade and class chips and the month. Each week starts with a Weekly HW line and Copy last week. Days off and field trips from the school calendar are hatched and cannot be planned.'],
+    rules: [
+      'A day blocked by the calendar keeps what was typed before it was blocked, but does not print.',
+      'Midterm and testing days are tinted only when they are on the parent calendar.',
+    ],
+    watchOut: [],
   },
   {
-    id: 'leveltests', title: 'Level tests', updated: '2026-09-25',
-    purpose: 'The twice-yearly test that places students into English classes: scores from several teachers, a suggested placement, and the teachers’ decision.',
-    screen: [
-      'A list of level tests by semester. Open one for its sections and scores.',
-      'Sections: word reading, passage CWPM, comprehension, written multiple choice, writing, plus four teacher ratings on a 1–4 scale.',
-      'Placement shows the composite, the suggested class, and the current class, with the cap per class.',
-    ],
+    id: 'bookshelf', title: 'Curriculum', updated: '2026-11-20',
+    purpose: 'What each class teaches and when: a class’s books as a timeline, every class this week side by side, and the bookshelf of units and lessons.',
     tasks: [
-      { title: 'Enter your part of the scores', steps: ['Open the test, pick the section you scored.', 'Enter scores for your students and save. Only your section is written, so colleagues can enter theirs at the same time.'] },
-      { title: 'Decide placements (admin)', steps: ['Read the suggestion, then set the class. The composite suggests; teachers decide.', 'Keep each class at or under fifteen.'] },
+      { title: 'See what my class is teaching this term', steps: ['Curriculum → Class plans. Your class and grade are picked; choose another class, grade or year to see theirs.', 'Each book is a lane and each unit a bar at its suggested length, with today as a line and a flag at the book’s aim date.', 'Click a unit for its lessons, objectives and Drive files.'] },
+      { title: 'Find who is teaching the same thing this week', steps: ['Curriculum → All classes this week. Each row is the unit a class is on; a letter marks a unit another class is on the same week.', 'Plan together lists classes on the same unit, and classes that already finished a unit another class is on, so their slides and notes are ready.', 'Previous week and Next week move through the term; Open plan opens a class’s plan.'] },
+      { title: 'Set a class plan (admin)', steps: ['Curriculum → Books by class, and pick the year.', 'Place a book in a level and grade’s cell: pick the book and the term (Sp, F or Yr), tick the units this class will do (or All units), Place.', 'Click the book’s chip for its list: change a length, reorder, drop or add units, and set Aim to finish by. Fit to the term gives every unit an even share.', 'Copy another grade’s books here brings a grade over to adjust.'] },
+      { title: 'Add a book (admin)', steps: ['Curriculum → Bookshelf → Add a book. Pick the series (or New series…), the level, and a title if the series name is not enough.', 'Retire takes a book out of use without deleting it.'] },
+      { title: 'Index a book from its contents', steps: ['Open the book → Draft units and lessons from the contents → set the CCSS grade → Copy the prompt.', 'Give Claude the prompt with photos or text of the table of contents and the guide’s objective pages.', 'Paste the lines it writes → Read the lines → check the preview → Save as suggested.'] },
+      { title: 'Confirm what Claude drafted', steps: ['Open the book and read it through. Fix anything with Edit on the unit or lesson.', 'Confirm each unit and lesson, Confirm these lessons on a unit, or Confirm all once the book is right.'] },
+      { title: 'Link the files in Drive', steps: ['Paste the book’s or a unit’s Drive folder link in Edit.', 'For one file: open the unit or lesson → Add a Drive link.'] },
     ],
-    rules: ['Scoring follows the teacher’s guide; what was printed follows the student copy.', 'Oral scores feed the Reading page and the student page.'],
-    watchOut: ['Two teachers can be on one student’s written paper; each saves only their own section.'],
+    screen: ['Tabs: Class plans, All classes this week, Books by class (admin and the head teacher), Bookshelf. Holiday weeks from the school calendar are hatched and not counted; a unit that spans one stretches across it.'],
+    rules: [
+      'Class plans are read-only for teachers; admin and the head teacher set them on Books by class.',
+      'Pacing has no dates. Each unit has an order and a number of weeks, counted from the start of the term in Settings. The school year starts in March: spring is the first half, fall the second.',
+      'Units and lessons start as Claude’s suggestion and stay marked that way until admin confirms them.',
+      'Retire a book rather than deleting it once any class has used it, so past plans still make sense.',
+    ],
+    watchOut: ['A class plan shows no weeks until the term has start and end dates in Settings.'],
   },
   {
-    id: 'standards', title: 'Standards', updated: '2026-09-25',
+    id: 'standards', title: 'Standards', updated: '2026-11-20',
     purpose: 'Common Core mastery from every scored question, and a checklist of what has been taught.',
-    screen: [
-      'Tabs: Mastery (the heat map), Standards checklist, About CCSS.',
-      'Mastery is students down, standards across, colored by band. Hover a cell for the evidence. Standards with no evidence are not shown.',
-      'The checklist groups standards by cluster for the grade, with a status and an intervention note per standard.',
-      'Wherever a standard is picked in the app, search by plain words (“main idea”), filter by grade, and see which ones your class has used.',
-    ],
     tasks: [
-      { title: 'Find who needs reteaching on a standard', steps: ['Mastery, find the column.', 'Red and amber cells are below and approaching. Hover for the assessments behind it.', 'For one assessment, the Analysis view on Grades lists names by band.'] },
+      { title: 'Find who needs reteaching on a standard', steps: ['Mastery, then find the standard’s column.', 'Red and amber cells are below and approaching. Hover a cell for the assessments behind it.', 'For one assessment, Analysis on the Grades page lists names by band.'] },
+      { title: 'Record what has been taught', steps: ['Standards Checklist lists the grade’s standards by cluster.', 'Set a status and, where needed, an intervention note per standard.'] },
     ],
-    rules: ['Bands come from the mastery thresholds in Settings (above, on, approaching, below).', 'Evidence is every scored question tagged with the standard, plus rubric criteria tagged with it, in the active semester.'],
+    screen: ['Tabs: Mastery (students down, standards across, coloured by band), Standards Checklist, About CCSS. Standards with no evidence yet are not shown.'],
+    rules: ['Bands come from each class’s mastery thresholds (Thresholds, on the Mastery tab): above, on, approaching, below.', 'Evidence is every scored question and rubric criterion tagged with the standard, in the active semester.'],
     watchOut: ['Untagged questions never reach the heat map. Tag sections when you build the key.'],
   },
   {
-    id: 'wida', title: 'WIDA', updated: '2026-09-25',
+    id: 'wida', title: 'WIDA', updated: '2026-11-20',
     purpose: 'English language proficiency for every student: levels by domain, how they change, and the scaffolds that go with them.',
-    screen: [
-      'Tabs: Levels, Progress, Scaffolds, Guide. Grade and class chips.',
-      'Levels is the class grid: one row per student, listening, speaking, reading, writing, overall, last updated. Click a cell to open that domain’s questionnaire on the right.',
-      'Assess the class opens the full-page questionnaire, student by student.',
-      'Save snapshot freezes today’s levels for comparing later; Print makes a one-pager.',
-      'Progress is the timeline of overall levels by month. Scaffolds assigns strategies. Guide explains the six levels and WIDA against CCSS.',
-    ],
     tasks: [
-      { title: 'Level the whole class', steps: ['Assess the class.', 'For the first student and domain, press the number of the level they clearly do everything through (1–6). That ticks all the statements up to it.', 'Tick anything they also do at the next level. Read the suggested level; override with a button or a decimal if you disagree.', 'Enter saves and moves to the next domain, then the next student. Esc exits; anything changed is saved on the way out.'], tour: { path: '/wida', steps: [{ anchor: 'wida.assess', text: 'The full-page questionnaire. Keys 1–6 skip ahead, Enter saves and moves on.' }] } },
-      { title: 'Update one domain for one student', steps: ['Click the cell in the grid.', 'Adjust the ticks, Save.'] },
+      { title: 'Level the whole class', steps: ['Assess the class.', 'For each student and domain, press the number of the level they clearly do everything through (1–6). That ticks every statement up to it.', 'Tick anything they also do at the next level. Read the suggested level; override it with a button or a decimal if you disagree.', 'Enter saves and moves to the next domain, then the next student. Esc leaves; anything changed is saved on the way out.'], tour: { path: '/wida', steps: [{ anchor: 'wida.assess', text: 'The full-page questionnaire. Keys 1–6 skip ahead, Enter saves and moves on.' }] } },
+      { title: 'Update one domain for one student', steps: ['Click the cell in the grid.', 'Adjust the ticks and Save.'] },
       { title: 'Compare with earlier in the year', steps: ['Save snapshot at the start of a term.', 'Later, click the snapshot chip above the grid: each cell shows the change.'] },
     ],
+    screen: ['Tabs: Levels (a row per student: listening, speaking, reading, writing, overall), Progress (overall levels by month), Scaffolds, Guide (the six levels, and WIDA against CCSS).'],
     rules: ['A level is met when three of its four statements are ticked and every level below is met.', 'The decimal is the share of the next level ticked: all of 3 and half of 4 is 3.5.', 'Scaffold suggestions follow the whole-number level.'],
     watchOut: ['Tick what you see in class, not what you hope. The statements are written for observation.', 'Snapshots are per class and grade.'],
+  },
+  {
+    id: 'leveltests', title: 'Level Tests', updated: '2026-11-20',
+    purpose: 'The twice-yearly test that places students into English classes: scores from several teachers, a suggested class, and the teachers’ decision.',
+    tasks: [
+      { title: 'Enter your part of the scores', steps: ['Level Tests → open the test, then the part you scored: Oral Test, Written Test or Teacher Ratings.', 'Enter your students’ scores. Only your part is saved, so colleagues can enter theirs at the same time.', 'When a written paper is fully marked, press Mark test graded.'] },
+      { title: 'Decide placements', steps: ['Results ranks the grade by composite, with the suggested class beside the current one.', 'In the Leveling Meeting, move students and keep each class at or under fifteen. The composite suggests; teachers decide.'] },
+    ],
+    screen: ['A list of tests by semester. A test opens on its parts: the oral and written tests, teacher ratings, results, history, and the leveling meeting.'],
+    rules: [
+      'Teacher ratings are notes for the placement conversation and are not in the composite.',
+      'A written section nobody has marked carries no score until Mark test graded; from then on every empty section scores 0.',
+      'Oral scores also show on the Reading page and the student page.',
+    ],
+    watchOut: ['Check by eye any student marked comp n/a or with a warning sign before placing them: a student stopped for a reason other than reading scores lower than they should.'],
+  },
+  {
+    id: 'reports', title: 'Reports', updated: '2026-11-20',
+    purpose: 'Progress reports and report cards from the grades already entered, reviewed and approved before printing.',
+    tasks: [
+      { title: 'Write report cards', steps: ['Reports → Report card. Check the semester, grade and class, then pick a student.', 'Read the fact sheet beside the box, then write; or press Build a comment, tick the sentences that are true, Put in the box, and make it yours.', 'The box saves itself a second after you stop typing. The grey line under it counts words and flags anything to fix.', 'Next saves and opens the next student without a comment.'] },
+      { title: 'Write progress reports', steps: ['Reports → Progress report, pick a student, and write in the box.', 'Or open Comments for the whole class on one page; check that the switch at its top says Progress report.'] },
+      { title: 'Set the pronoun and the name used in comments', steps: ['Above the comment box, click he, she or they. It is remembered for the student.', 'Called is the name in comments; press Enter to keep the suggestion or type another.'] },
+      { title: 'Mark an area not assessed', steps: ['On the class overview, use the Not assessed chips to mark an area N/A for the whole class, separately for the progress report and the report card.', 'The app says which areas have no assessments yet.'] },
+      { title: 'Get comments approved and printed', steps: ['Admin reads and approves every comment under Review & approve; an approved card carries an APPROVED stamp.', 'If admin leaves a note on a student, it shows above the box with Mark as reviewed. Fix the comment, then mark it.', 'Print: progress reports or report cards for the class or one student. Class prints of report cards wait until the grade is marked ready.'] },
+    ],
+    screen: [
+      'Tabs: Report card, Progress report, Comments, Class summary, Review & approve, Print. The page opens on the document being written now. A progress report prints as a half page, two to a sheet, when the comment fits in about five lines; a longer comment gets a full page.',
+    ],
+    rules: [
+      'The composite weights formative, summative and performance task by the weights in Settings; it is computed, never typed.',
+      'Only the class’s own teacher, or an admin, can edit its comments and grades.',
+      'A student has one comment per document. A comment typed under Report card does not appear on the progress report, or the other way round.',
+      'The fact sheet is for your eyes; nothing on it is printed or inserted.',
+    ],
+    watchOut: ['Grades entered after the report card cutoff still count, but the review may already be under way.'],
+  },
+
+  // ─── More ───
+  {
+    id: 'behavior', title: 'Behavior', updated: '2026-11-20',
+    purpose: 'Every behavior ladder case with its story so far, and every behavior note, in one place.',
+    tasks: [
+      { title: 'See whether admin has followed up', steps: ['More → Behavior.', 'Read the case’s line: read by admin and when, then the action, or not read yet with how long it has waited.'] },
+      { title: 'Send a reminder', steps: ['On a case that is waiting, click Send a reminder.', 'Admin gets an urgent notice with no name on it. One reminder a day per case; the button says Reminded today after that.'] },
+    ],
+    screen: ['Ladder cases first (Needs action, Closed, All), then behavior notes newest first, with the window, the kind, flagged only, and a student search. Open the notes shows a case the way the dashboard does.'],
+    rules: ['Teachers see their own class. Admin, the head teacher and the Snapdragon teacher see every class.', 'Who sent a reminder is not recorded anywhere.', 'School days count weekdays only.'],
+    watchOut: [],
+  },
+  {
+    id: 'jobs', title: 'Jobs', updated: '2026-11-20', audience: 'jobs',
+    purpose: 'The office and admin work: what needs doing, by when, who has it, and how it is done. For the admin account and the Snapdragon teacher.',
+    tasks: [
+      { title: 'Add a job', steps: ['Type the title in the add line, pick when, press Enter.', 'It lands under Nobody yet and opens: add the steps and the category, and take it or leave it for the other account.'] },
+      { title: 'Take a job', steps: ['Open the card and tap your name. Hand to passes it to the other account.'] },
+      { title: 'Give a job its steps', steps: ['Open the card. Type a step and press Enter, or paste a whole list and press Add: each line becomes a step.', 'To share a job, choose Shared as the owner and tap an initial beside each step to say whose it is.', 'Give a step its own day with the calendar beside it; it then shows in that week and on the dashboard.'] },
+      { title: 'Keep a long job moving', steps: ['Press ▶ on the step you are on and type where you are.', 'Press Worked on it today after a stint with no step to tick.'] },
+      { title: 'Set a routine for the term', steps: ['The year → the routine → set the date for a term.', 'Every job in the routine appears on the board, dated from the event.'] },
+      { title: 'Ask when stuck', steps: ['Open the card → Stuck? → type the question → Send.', 'The answer is saved as a step on the job and on its routine, so it is there next time.'] },
+    ],
+    screen: ['Big jobs first, then a column each for you, Nobody yet and the other account (working on, this week, later this month, next month), then Later, and One day for wishes. The dashboard shows your jobs due this week at the top.'],
+    rules: ['Nothing is owned by default. A job under Nobody yet shows on both dashboards until someone takes it.', 'Marking a job done writes “Finished a job” to the activity log.'],
+    watchOut: [],
+  },
+  {
+    id: 'supplies', title: 'Supplies', updated: '2026-11-20',
+    purpose: 'The office stock, what people need, and the receipts and counts that keep the numbers right. Every receipt also feeds the Budget page.',
+    tasks: [
+      { title: 'Say something is running low', steps: ['Stock → the item → Low.', 'It shows as low for everyone, with your name and the day, until the next count.'] },
+      { title: 'Ask for something', steps: ['Requests → type what, how many, what for, and a link if there is one → Add request.', 'Someone who needs the same thing presses Me too instead of adding it again.'] },
+      { title: 'Enter a receipt', steps: ['Receipts → Copy the prompt. Give Claude the scanned receipt with that prompt; it writes one line per item.', 'Paste the lines in, set the date and the shop, then Read the lines.', 'Check each line: the stock item it adds to, or the teacher or event a one-off is for, and the request it answers.', 'Save the receipt. Stock goes up, purchases reach the Budget page, and matched requests are marked arrived.'] },
+      { title: 'Do the quick count', steps: ['Count → Quick count (the dashboard card has the button). Print the sheet first if you want paper.', 'Type the packs and loose where they differ, and Save. Saving records the count even if nothing changed, and clears the Low flags.'] },
+      { title: 'Do the full count', steps: ['Admin, once a month: Count → Full count. Every item is listed. Count, type the numbers, Save.'] },
+    ],
+    screen: ['Tabs: Stock (what is on hand as packs and loose, the least to keep, and a status), Requests (Needed, Ordered, Arrived), Receipts, Count. A card on the dashboard shows what is low and whose quick count it is.'],
+    rules: ['Nobody records what they take. Receipts put stock up; counts put it right. A request marked Arrived does not change stock by itself.', 'The quick count belongs to whoever has the chosen office job that week, from the rotation in Settings.', 'Every change to a number is kept with who and when; open an item’s history to see it.'],
+    watchOut: ['Keep an item’s other names current, so Claude’s receipt lines match it without fixing.'],
+  },
+  {
+    id: 'overtime', title: 'Overtime', updated: '2026-11-20',
+    purpose: 'Log non-instructional overtime as you go, and print the school’s overtime sheet for the weeks you choose.',
+    tasks: [
+      { title: 'Log overtime', steps: ['More → Overtime, or Add on the dashboard’s overtime line.', 'Type the times the way you would say them: 4:30 and 6:45 (or 4:30-6:45 in From). The time and won show beside them.', 'Type what the work was, or tap a recent reason, then Add or Enter.'] },
+      { title: 'Fix or delete an entry', steps: ['Find it under its week. The pencil turns the row into fields; Save, or Escape to leave it. The bin deletes it after asking.'] },
+      { title: 'Print your sheet', steps: ['Print sheet at the top right.', 'Pick This month, Last month or Last 2 weeks, or type From and To. The sheet beside it changes as you do.', 'Print.'] },
+      { title: 'Print everyone’s sheets (admin)', steps: ['Overtime → Print or export.', 'Pick Who and the dates, then Print, or Export to Excel.'] },
+      { title: 'Change the rate or the wording (admin)', steps: ['Settings → Overtime. Type the rate in won an hour, edit the policy paragraph and the reasons everyone can tap, and Save.'] },
+    ],
+    screen: ['The month as one table laid out like the paper sheet: the first row is where you log, then the weeks with their totals, then the month’s total and the hourly rate.'],
+    rules: [
+      'Weekends and whole-school days off on the calendar are not overtime and cannot be logged.',
+      'Times with no am or pm are read as after school: 1 to 6 is afternoon, 7 to 11 morning, 12 noon. Type am or pm, or 24-hour time, to say otherwise.',
+      'Entries the same day cannot overlap.',
+      'Won is always the minutes at the rate in Settings, so a new rate changes every figure, past months included.',
+      'Admin sees everyone’s sheets; everyone else sees their own.',
+    ],
+    watchOut: ['Print opens a new window. If nothing happens, allow pop-ups for the site.'],
+  },
+  {
+    id: 'budget', title: 'Budget', updated: '2026-11-20',
+    purpose: 'What the office has spent this semester, from the receipts entered on Supplies: each teacher’s one-off purchases against their allowance, the office’s spending, and the totals by month.',
+    tasks: [
+      { title: 'See what I have left', steps: ['More → Budget. Your line shows the allowance, what has been charged to you, and what is left.'] },
+      { title: 'Set the allowances', steps: ['Pick the semester at the top.', 'Click an allowance, type the amount in won, Enter. The office line is the budget for stock and events.'] },
+      { title: 'Move a purchase to the right person', steps: ['Purchases → Edit on the line.', 'Change the kind, the teacher (or Office or event), what it was for, or the price.'] },
+    ],
+    screen: ['By teacher (allowance, spent, left), By month, and Purchases: every receipt line with its date, what, who it was for, and the price.'],
+    rules: ['A purchase is charged to a teacher only when the receipt line was entered as a one-off for them; stock is the office’s.', 'Admin, the head teacher and the Snapdragon teacher see every teacher; a teacher sees their own.'],
+    watchOut: ['A receipt line entered without a price counts as zero until it is edited.'],
+  },
+  {
+    id: 'activity', title: 'Activity', updated: '2026-11-20', audience: 'activity',
+    purpose: 'Who signed in and what they did, down to the class, student and sheet. Only the Snapdragon account can open it.',
+    tasks: [
+      { title: 'See when someone last signed in', steps: ['More → Activity.', 'Read their card in the strip at the top, or pick Sign-ins and sign-outs in the action filter.'] },
+      { title: 'See what was done on a day', steps: ['Set the window and, if you like, the teacher.', 'Scroll to the day. Scoring shows the assessment and how many saves; prints show what was printed and for whom.'] },
+    ],
+    screen: ['A strip of every teacher with their last sign-in, filters (Today, 7 days, 30 days; teacher; kind of action), then the list by day, newest first. ×N means the same action repeated within ten minutes.'],
+    rules: ['Only actions taken in the app appear.', 'A sign-in is recorded when a teacher picks their name and logs in, not when a page is reloaded.'],
+    watchOut: [],
+  },
+  {
+    id: 'admin-settings', title: 'Settings', updated: '2026-11-20',
+    purpose: 'The dates, weights and thresholds the rest of the app works from. Everyone can read them; most are changed by admin.',
+    tasks: [
+      { title: 'Open a new semester (admin)', steps: ['Semesters: add the semester with its dates (midterm cutoff, report card grades due) and make it active.', 'Check the assessment weights still fit.', 'Remind teachers to Save snapshot on WIDA.'] },
+      { title: 'Set a weekday with no class', steps: ['Days with no class: tick the grade and weekday. Lesson plans and attendance follow.', 'Admin, the head teacher or the Snapdragon teacher can change it.'] },
+      { title: 'Change the behavior ladder (admin)', steps: ['Behavior ladder: set each step’s number of notes, its name and the action that closes it, and after how many school days an unread case turns red. Save.'] },
+    ],
+    screen: ['Sections: Display, Teachers, Semesters, Days with no class, Office jobs, Program benchmarks, Assessment weights, Behavior ladder, then Overtime and Classes for admin, and School information.'],
+    rules: ['Only one semester is active; the dashboard dates, the student page and the Standards heat map read from it.', 'Changing a weight changes composites everywhere, past and present.', 'Reading targets can also be edited on the Reading page; both change the same targets.'],
+    watchOut: [],
   },
 ]
 
 export const WORKFLOWS: Workflow[] = [
-  { id: 'wf-start', title: 'Start of semester', when: 'The week before classes', steps: ['Admin: check the semester dates in Settings (midterm cutoff, report card grades due).', 'Admin: roster is uploaded and classes are right under Students.', 'Everyone: read the calendar on the dashboard; days off and field trips are already blocking lesson plans.', 'Everyone: Assess the class on WIDA if levels are stale, and Save snapshot.', 'Everyone: plan the first two weeks under Lesson plans.'] },
-  { id: 'wf-test', title: 'From a test to the gradebook', when: 'The day of a quiz or unit test', steps: ['Grades → New assessment. Build the key as sections and tag standards.', 'Score on the answer sheet with the keyboard; mark absentees with X.', 'Open Analysis; note the standards below target and who is in that band.', 'Reteach; the heat map on Standards updates as later work is scored.'] },
+  { id: 'wf-start', title: 'Start of semester', when: 'The week before classes', steps: ['Admin: check the semester dates in Settings (midterm cutoff, report card grades due).', 'Admin: check the roster and classes under Students → Manage Students.', 'Everyone: read the calendar on the dashboard; days off and field trips already block lesson plans.', 'Everyone: Assess the class on WIDA if levels are out of date, and Save snapshot.', 'Everyone: plan the first two weeks under Lesson Plans.'] },
+  { id: 'wf-test', title: 'From a test to the gradebook', when: 'The day of a quiz or unit test', steps: ['Grades → New assessment. Build the key as sections and tag standards.', 'Score on the answer sheet with the keyboard; mark absentees with X.', 'Open Analysis; note the standards below target and who is in that band.', 'Reteach; the Mastery heat map on Standards updates as later work is scored.'] },
   { id: 'wf-reports', title: 'Report card week', when: 'The two weeks before grades are due', steps: ['Dashboard: the Ungraded stat must reach zero. Clear the queue.', 'Reports → Report card: write comments student by student. Class summary shows who is missing one.', 'Admin: Review & approve, then print.'] },
-  { id: 'wf-wida', title: 'Leveling the class in WIDA', when: 'Twice a year, or when a student changes fast', steps: ['WIDA → Levels → Assess the class.', 'Keys 1–6 to skip ahead, tick the next level, Enter.', 'Save snapshot when done; the Progress tab shows change over the year.'] },
-  { id: 'wf-dayoff', title: 'A field trip or day off', when: 'When the office announces it', steps: ['Admin: add the event on the dashboard calendar with the grades it applies to.', 'Attendance for that day handles itself: everyone is marked absent with the day as the note the next time attendance is opened.', 'Lesson plans block the day.'] },
-  { id: 'wf-leveltest', title: 'Level test week', when: 'Twice a year', steps: ['Admin: create the level test for the semester under Level tests.', 'Each teacher enters the sections they scored; saves write only that section.', 'Admin: read the placement suggestions, decide, keep classes at or under fifteen.'] },
+  { id: 'wf-wida', title: 'Leveling the class in WIDA', when: 'Twice a year, or when a student changes fast', steps: ['WIDA → Levels → Assess the class.', 'Keys 1–6 to skip ahead, tick the next level, Enter.', 'Save snapshot when done; Progress shows change over the year.'] },
+  { id: 'wf-dayoff', title: 'A field trip or day off', when: 'When the office announces it', steps: ['Admin: add the event on the dashboard calendar with the grades it applies to.', 'Attendance for that day fills itself in: everyone absent, with the day as the note.', 'Lesson plans block the day.'] },
+  { id: 'wf-leveltest', title: 'Level test week', when: 'Twice a year', steps: ['Admin: create the level test for the semester under Level Tests.', 'Each teacher enters the parts they scored; saving writes only that part.', 'Teachers meet over Results and the Leveling Meeting, decide, and keep classes at or under fifteen.'] },
 ]
 
 export const DEFINITIONS: { term: string; text: string }[] = [
   { term: 'Domain', text: 'One of the areas a grade is kept in: Reading, Phonics, Writing, Speaking & Listening, Language. Assessments belong to one; mixed papers can split across several by standard.' },
-  { term: 'Composite', text: 'A domain’s average with formative, summative, and performance task weighted by the settings. It is computed, never typed.' },
+  { term: 'Composite', text: 'A domain’s average with formative, summative and performance task weighted by the settings. It is computed, never typed.' },
   { term: 'Formative, summative, performance task', text: 'Quizzes and classwork; unit tests and exams; projects and presentations. The category sets the weight.' },
-  { term: 'Mastery band', text: 'Above, on target, approaching, below: a percent on a standard compared to the class thresholds in Settings.' },
+  { term: 'Mastery band', text: 'Above, on target, approaching, below: a percent on a standard compared to the class’s thresholds on the Standards page.' },
   { term: 'Standard', text: 'A Common Core code such as RL.3.2, with a plain name in the app (“Main idea and key details”). Prefix: RL/RI reading, RF phonics, W writing, SL speaking and listening, L language.' },
   { term: 'Rubric', text: 'Criteria scored 0 to 4 with a descriptor per level. 0 is “none”; leave a criterion blank if it was not assessed.' },
   { term: 'WIDA level', text: '1 Entering, 2 Emerging, 3 Developing, 4 Expanding, 5 Bridging, 6 Reaching, per domain. May carry one decimal.' },
@@ -339,213 +420,63 @@ export const DEFINITIONS: { term: string; text: string }[] = [
   { term: 'Level test', text: 'The placement test that sorts students into English classes, scored by several teachers and decided by teachers.' },
 ]
 
+// Only admins see these, after everything else.
 export const ADMIN_SECTIONS: GuideSection[] = [
   {
-    id: 'admin-settings', title: 'Settings', updated: '2026-10-27',
-    purpose: 'The dates, weights, and thresholds the rest of the app computes with. Admin only.',
-    screen: [
-      'A rail of sections on the left: semesters, assessment weights, mastery thresholds, reading targets, schedule rules, teachers, and the rest.',
-      'Semesters: the active semester, its midterm cutoff, and the report card grades due date drive the dashboard stats.',
-      'Assessment weights: formative, summative, performance task per grade. They should add to 1.',
-      'Mastery thresholds: above, on, approaching, per class. These color the heat map and the Analysis bands.',
-      'Schedule rules: which grades have no class on which weekday (“No Grade 5 on Mondays”).',
-      'Office jobs: the people in rotation order, the jobs with what each involves, the first cleaning day, weeks with no cleaning, and days everyone cleans together, with a preview of the next six cleaning days as the dashboard will show them. Whole-school days off on the calendar move a Friday’s jobs to the day before on their own.',
-    ],
+    id: 'admin-calendar', title: 'Calendar events', updated: '2026-11-20', audience: 'admin',
+    purpose: 'Days off, field trips, exams, deadlines and events on the shared calendar.',
     tasks: [
-      { title: 'Open a new semester', steps: ['Add the semester with its dates and make it active.', 'Check weights and thresholds still fit.', 'Tell teachers to Save snapshot on WIDA.'] },
+      { title: 'Add a day off', steps: ['On the dashboard calendar, add an event with the type Day off, its dates, and the grades it applies to (none means everyone).', 'Attendance and lesson plans pick it up the same day.'] },
     ],
-    rules: ['Changing a weight recomputes composites everywhere, past and present.', 'Reading targets can also be edited on the Reading page; both write the same record.'],
-    watchOut: ['Only one semester is active. Grades at a glance, the heat map, and the academic history read from it.'],
-  },
-  {
-    id: 'admin-calendar', title: 'Calendar events', updated: '2026-09-29',
-    purpose: 'Days off, field trips, exams, deadlines, and events on the shared calendar. Admin only.',
-    screen: ['Add an event from the dashboard calendar: title, type, date and end date, which grades, and whether it shows on the parent calendar.'],
-    tasks: [{ title: 'Add a day off', steps: ['Type: day off. Set the grades it applies to (or none for everyone).', 'Attendance and lesson plans pick it up the same day.'] }],
-    rules: ['Day off and field trip always block lesson plans and drive attendance, whether or not they are on the parent calendar.', 'Midterm and testing only tint the lesson plan when they are marked for the parent calendar.'],
+    screen: ['An event has a title, a type, a date and end date, the grades, and whether it shows on the parent calendar.'],
+    rules: ['Day off and field trip always block lesson plans and fill in attendance, whether or not they are on the parent calendar.', 'Midterm and testing only tint the lesson plan when they are on the parent calendar.'],
     watchOut: ['A multi-day event needs its end date, or only the first day is blocked.'],
   },
   {
-    id: 'admin-people', title: 'Teachers, roster, notices', updated: '2026-09-25',
+    id: 'admin-people', title: 'Teachers, roster, notices', updated: '2026-11-20', audience: 'admin',
     purpose: 'Who can log in, who is in which class, and school-wide notices.',
-    screen: ['Teachers in Settings: name, class, role. A teacher sees their own class; admin sees all.', 'Students → Manage students: upload the roster, add one, bulk edit, transfer between classes.', 'Notices: any teacher can post; admin can post to everyone and sees delivery errors.'],
-    tasks: [{ title: 'Move a student to another class', steps: ['Students → Manage students → edit the student, change the class.', 'The transfer is logged on their page.'] }],
-    rules: ['Flagged behavior notes count on the dashboard link for admin.'],
-    watchOut: ['Deactivating a teacher keeps everything they entered.'],
+    tasks: [
+      { title: 'Move a student to another class', steps: ['Open the student → Edit details → change the English class → Save.'] },
+      { title: 'Add or change a teacher', steps: ['Settings → Teachers: name, class and role.'] },
+    ],
+    screen: ['A teacher sees their own class; admin sees every class. Any teacher can post a notice; admin can post to everyone.'],
+    rules: ['Flagged behavior notes count on the Dashboard link for admin.'],
+    watchOut: ['Removing a teacher from the list keeps everything they entered.'],
   },
   {
-    id: 'behavior', title: 'Behavior', updated: '2026-10-27',
-    purpose: 'Every ladder case with its story so far, and every behavior note, in one place. Opened from the user menu.',
-    screen: [
-      'Ladder cases first: each with the student, the step, and the story as one line of steps: opened and how many notes, the teacher’s ask, read by admin and when, the action recorded, or what has not happened yet and for how many school days. Needs action, Closed and All.',
-      'Behavior notes under that, newest first, with the window (30, 60 or 180 days), the kind, flagged only, and a student search.',
-      'Teachers see their own class. Admin, the head teacher and the Snapdragon teacher see every class, with a class filter that applies to both lists.',
-      'Open the notes shows the case the way the dashboard does: the notes in order, the ask, and the action.',
-    ],
+    id: 'admin-release', title: 'What’s new and this guide', updated: '2026-11-20', audience: 'release',
+    purpose: 'How changes reach teachers, and how to hold, move or drop an announcement.',
     tasks: [
-      { title: 'See whether admin has followed up', steps: ['Open Behavior from the user menu.', 'Read the case’s line: Read by … and when, then the action, or Not read yet with the wait.'] },
-      { title: 'Send a reminder', steps: ['On a case that is waiting, click Send a reminder.', 'Admin gets an urgent notice with no name on it, and the case shows when it went out and whether admin has seen it.', 'One reminder a day per case; the button says Reminded today after that.'] },
+      { title: 'Release a batch', steps: ['Entries are dated the Monday they go out. Read them on What’s new before that day; Coming up lists them.', 'To go early, click Release today on the batch; to wait, change its Move to date.'] },
+      { title: 'Hold back one entry', steps: ['Click Manage on What’s new.', 'Turn the entry off, or give it a later date. Reset puts it back on its original date.'] },
     ],
-    rules: ['A reminder is written as the app’s own follow-up. Who sent it is not stored anywhere, not in the case and not in the activity log.', 'Reading the case or recording the action retires the reminder notice, so nothing lingers once it is dealt with.'],
-    watchOut: ['Admin runs supabase/migration-behavior-reminders.sql once; until then the reminder button reports that.', 'School days count weekdays only; a holiday week still counts as five.'],
-  },
-  {
-    id: 'supplies', title: 'Supplies', updated: '2026-10-27',
-    purpose: 'The office stock, what people need, and the receipts and counts that keep the numbers right. Opened from the user menu; a card on the dashboard shows what is low. Every receipt also feeds the Budget page.',
-    screen: [
-      'Stock: the staples by category (or by cabinet and shelf, once those are filled in), each with what is on hand as packs and loose, the least to keep, and a status. Under the least to keep, or flagged by someone, it shows as low. Add an item, edit one (what it is counted in, whether it comes in packs and of how many, keep-at-least, whether it is in the quick count, a link to buy it, the other names receipts use for it, where it lives), or open its history. The last price paid shows under the name.',
-      'Requests: what someone needs, how many, what for, a link, and everyone who needs it. Needed, then Ordered, then Arrived. A receipt line that answers a request marks it arrived and shows what it cost.',
-      'Receipts: the prompt to give Claude with a scanned receipt, a box to paste the lines it writes (name, quantity, price), and a check of each line before it is saved: which stock item it adds to, or that it is a one-off for a teacher or an event, and which request it answers. Every receipt entered is listed under that with its total.',
-      'Count: whose quick count it is this week and whether it is done, when the last full count was, a button to print the sheet for the clipboard, and the count itself: packs and loose for each item.',
-    ],
-    tasks: [
-      { title: 'Say something is running low', steps: ['Stock → the item → Low.', 'It shows as low for everyone, with your name and the day, until the next count.'] },
-      { title: 'Ask for something', steps: ['Requests → type what, how many, what for, and a link if there is one → Add request.', 'If it is a stock item the request links to it and shows what is on hand.', 'Someone else who needs the same thing presses Me too instead of adding it again.'] },
-      { title: 'Enter a receipt', steps: ['Receipts → Copy the prompt. Put the scanned receipt into Claude with that prompt; it writes one line per item as name | quantity | price, using the stock names.', 'Paste the lines in, set the date and the shop, Read the lines.', 'Check each line. A stock line shows the item it adds to and whether the quantity is packs or singles; fix either. A one-off line (anything that is not stock) gets the teacher it is for, or Office or event with what it was for. A line that answers a request is matched; pick one if not.', 'Save the receipt. Stock goes up, the purchases land on the Budget page, and matched requests are marked arrived.'] },
-      { title: 'Do the quick count', steps: ['Whoever has the chosen office job that week (Reading Garden to start) does it on the cleaning day; the dashboard card has the button.', 'Count → Print the sheet if you want paper on the clipboard: the items with boxes for packs and loose.', 'Count → Quick count: only the staples are listed. Type the packs and loose where they differ. Save.', 'Saving records that you counted even if nothing changed, and clears the Low flags.'] },
-      { title: 'Do the full count', steps: ['Admin, once a month: Count → Full count. Every item is listed. Print the sheet, count, type the numbers. Save.', 'The dashboard and the Count tab say when it is due.'] },
-      { title: 'Get ready for cabinets and shelves', steps: ['Nothing to do until the materials are organised. Then edit each item and fill in Where it lives: the cabinet and the shelf.', 'Once any item has a place, the Stock tab can list by place, and the count sheet and the count go cabinet by cabinet.'] },
-    ],
-    rules: ['Nobody records what they take. Receipts put stock up; counts put it right. A request marked Arrived does not change the stock by itself; the receipt does, so nothing is counted twice.', 'Stock is kept in single units (reams, markers, rolls) and shown as packs and loose: 1 box + 2 reams. A receipt line in boxes is multiplied out.', 'A Low flag is cleared by the next count of that item, quick or full.', 'Every change to a number is kept with who and when; open an item’s history to see it. Counts, receipts, requests and edits are also in the activity log.', 'Which office job carries the quick count, and how often the full count is due, are set at the bottom of the Count tab by admin, the head teacher or the Snapdragon teacher.'],
-    watchOut: ['Admin runs supabase/migration-supplies.sql once (and again after an update; it only adds). It starts the stock with a short list of staples to edit.', 'The quick-count person comes from the office jobs rotation, so that has to be set up in Settings first.', 'The receipt prompt lists the stock names, their other names and what they come in, so keep an item’s “also called” names current and Claude’s lines will match without fixing.'],
-  },
-  {
-    id: 'budget', title: 'Budget', updated: '2026-10-27',
-    purpose: 'What the office has spent this semester, from the receipts entered on the Supplies page: each teacher’s one-off purchases against their allowance, the office’s stock and event spending, and the totals by month. Opened from the user menu.',
-    screen: [
-      'By teacher: allowance, spent, left, and a bar. Admin, the head teacher and the Snapdragon teacher see every teacher and the office line; a teacher sees their own.',
-      'By month: stock, one-off and total for each month of the semester, with the semester total.',
-      'Purchases: every receipt line, with the date, what, who or what it was for, and the price. Filter by teacher or the office.',
-    ],
-    tasks: [
-      { title: 'Set the allowances', steps: ['Pick the semester at the top.', 'Click an allowance, type the amount in won, Enter. The office line is the budget for stock and events.'] },
-      { title: 'Move a purchase to the right person', steps: ['Purchases → Edit on the line.', 'Change the kind, the teacher (or Office or event), what it was for, or the price. The receipt’s total follows.'] },
-      { title: 'See what I have left', steps: ['Open Budget from the user menu. Your line shows the allowance, what has been charged to you, and what is left.'] },
-    ],
-    rules: ['A purchase is charged to a teacher only when the receipt line was entered as a one-off for them. Stock purchases are the office’s.', 'The semester’s dates (from Settings) decide which receipts count.'],
-    watchOut: ['Prices come from the receipt lines; a line entered without a price counts as zero until it is edited.'],
-  },
-  {
-    id: 'overtime', title: 'Overtime', updated: '2026-11-09',
-    purpose: 'Your non-instructional overtime, logged as you go, and the school’s overtime sheet printed from it for the weeks you choose. Opened from the user menu; a line on the dashboard shows this month so far. Admin sees every teacher’s month and prints everyone’s sheets at once.',
-    screen: [
-      'At the top right: the month with arrows, and Print sheet.',
-      'One table, laid out like the paper sheet, with the headings once: Date, From – To, Time, Won, What was the work.',
-      'Its first row is where you log: the date (today unless you change it), From and To as clock times, and the time and won filling their columns as soon as both are typed, then what the work was and Add. Under it, chips of your recent reasons and Same as last time.',
-      'Then the month’s weeks, oldest first as they print, each a row with its total, then its entries. A day off shows as a grey line. Weeks that have not started yet are left out. The pencil edits an entry in place; the bin deletes it.',
-      'The last row is the month’s total and the hourly rate.',
-      'Admin: the month with arrows, its total, Print or export, and one row per teacher with their entries, time, won, last entry, Open and Print.',
-      'Print sheet (or Print or export) opens the print view: on the left the dates, by quick pick (This month, Last month, Last 2 weeks) or From and To in any months, what they come to, and Print; on the right the sheet itself, exactly as it will print. Admin also picks Who (everyone with overtime, or one teacher) and has Export to Excel.',
-    ],
-    tasks: [
-      { title: 'Log overtime', steps: ['Open Overtime from the user menu, or Add on the dashboard line.', 'Type the times the way you would say them: 4:30 and 6:45. You can also type 4:30-6:45 into From. The time and won show beside them.', 'Type what the work was, or tap a chip. Add, or press Enter.'] },
-      { title: 'Fix or delete an entry', steps: ['Find it under its week. The pencil turns the row into fields; change anything and Save, or Escape to leave it. The bin deletes it after asking.'] },
-      { title: 'Print your sheet', steps: ['Print sheet at the top right.', 'Pick This month, Last month or Last 2 weeks, or type From and To, such as Oct 1 and Nov 7. The sheet on the right changes as you do.', 'Check the sheet, then Print. Back to the log when done.'] },
-      { title: 'Print everyone’s sheets (admin)', steps: ['Open Overtime → Print or export.', 'Who: Everyone with overtime, or one teacher. Pick the dates the office wants, by quick pick or From and To.', 'The preview shows every sheet, a page each. Print, or Export to Excel for the same dates. Print on a teacher’s row opens the same view with that teacher picked.'] },
-      { title: 'Fix a teacher’s entry (admin)', steps: ['Open on their row shows their page as they see it. Edit, delete or add, then Back to all teachers.'] },
-      { title: 'Change the rate or the wording (admin)', steps: ['Settings → Overtime. Type the rate in won an hour; every won figure follows it.', 'Edit the policy paragraph that prints at the top of the sheet; {rate} becomes the rate. Add reasons everyone can tap, one per line. Save.'] },
-    ],
-    rules: [
-      'Weekends and days off on the school calendar (for the whole school) are not overtime, so they cannot be logged. An entry that is on a day later marked off stays on the page, crossed out and not counted.',
-      'Times with no am or pm are read as after school: 1 to 6 is afternoon, 7 to 11 is morning, 12 is noon. Type am or pm, or 24-hour time, to say otherwise.',
-      'Entries the same day cannot overlap. A stint that ends at 6:00 and another that starts at 6:00 are fine.',
-      'Only times and minutes are saved. Won is always the minutes at the rate in Settings, so a new rate changes every figure, past months included.',
-      'Admin sees everyone’s sheets. Everyone else sees their own.',
-      'Each teacher’s sheet always prints on one page, in large type. Up to twelve entries print at full size; with more, the rows get shorter and the type smaller so everything still fits on the page.',
-    ],
-    watchOut: ['Admin runs supabase/migration-overtime.sql once; until then the page says Not set up yet.', 'Print opens a new window. If nothing happens, allow pop-ups for the site.', 'Days off only count when they are on the school calendar as a Day Off for every grade.'],
-  },
-  {
-    id: 'bookshelf', title: 'Curriculum', updated: '2026-11-09',
-    purpose: 'What each class teaches and when. Two tabs under Curriculum in the top bar. Class boards, for everyone: Board shows any class and grade’s term week by week, a row per book grouped by strand, the units as bars where the plan’s weeks put them, holidays hatched and today marked; the class’s own teacher can move and stretch bars, say “we’re here”, skip units and add blocks of their own; Program map shows every class and grade across the term on one page and, for any week, what they share. Ladder shows one level across Grades 1 to 5, the books per grade, with checks on the progression. Curriculum map, for admin: Map is the grid of which book each class and grade uses for spring (the first half, from March), fall (the second) or the whole year, as a list of the units or stories the class will do; Review lists every teacher plan that differs from the master; Bookshelf is the catalogue behind it, every book’s units and lessons with “students will” lines, CCSS codes, skill tags and Drive links.',
-    screen: [
-      'Class boards → Board: pick the class (yours is marked), grade, year, and Spring, Fall or Year (it opens on today’s half; Year shows both with a heavy line at the summer). The weeks run across with their Monday dates; a holiday week from the school calendar (three or more days off or away for that grade) is hatched and named, and it is not counted as a teaching week, so a unit that spans it is drawn across it. Today is a red line. Each placed book is a row, grouped by strand, with the book names staying put when you scroll sideways; each unit is a bar in the series colour. A bar cut flat at an edge continues in the other half. Click a bar for the unit’s lessons, “students will” lines and Drive files. The My plan / Master switch shows the class teacher’s own plan or the master; a thin rail under a row is the master when the plan differs, with red ticks where it does. A red flag is where the teacher last said “we’re here”, with a dotted line to today. Our class at the bottom holds the teacher’s own blocks. Under the rows, Standards in this plan: every CCSS code on a unit or lesson here, outlined when it is in the plan and filled once a lesson carrying it was marked done, with the count; click one and only the units that teach it stay bright. Click a week number to open that week.',
-      'The week: the five days as they are on the Lesson Plans page, beside the units running that week with their lessons as chips. The class’s own teacher presses a day letter on a chip and the lesson goes into that day: a subject row, the “students will” line, the notes. The day keeps a link to the lesson, so it can be taken out again with the ×, and Mark done on the day counts its lessons and their standards as taught.',
-      'Class boards → Program map: every class and grade that has something placed, a row each under its level, the books as thin strips and the units as segments in the book’s colour, holidays hatched, today a red line. A dot on a week number means two or more classes share something that week. Click the week: lines join the rows that share a unit (dark) or a skill in different books (red), and the panel lists them under Plan together, with Stack these rows to dim everyone else, then Everyone this week with each class’s units and, where another class finished a unit earlier, who and how long ago. Each row shows its teacher’s own plan where there is one. The arrow on a row opens that class’s board.',
-      'Class boards → Ladder: pick the level and year. Grade 5 at the top, Grade 1 at the bottom, each with the books placed for that grade as cards: the series level as a big numeral in the series colour, the strand, and Fall, Spring or Year. Filter to one strand to see each book’s skill tags instead. The checks on the right say where a series goes down a level between grades, where a strand has a hole, and where one series hands over to another.',
-      'Curriculum map → Map (admin): pick the year. One grid: a row per level, a column per grade, each placed book a chip tagged Sp, F or Yr for its term. Place in a cell adds a book for a term: its contents open as a checklist grouped by module or section; tick what this class will do, press All units for a whole sequence book, or start from another grade’s pick, and Place. No weeks to type: the term is shared across what you picked. Click a chip and its list opens under the grid: the units or stories in order, each with a ≈ share of the term, where it lands (week 3 to 5), up and down, and Drop. Pin one to give it a fixed length and the rest re-share around it; Share evenly unpins them all. Add units or Add stories opens the checklist again. The copy button brings another grade, class or year’s placements and pacing over. Under the year, the line of grading periods the app found tells you why a half has no weeks.',
-      'Curriculum map → Bookshelf: the shelf on the left: books grouped by strand and series, the level as a big numeral in the series colour, a Retired chip where it applies, and how far the book is indexed. Retired books are hidden until you tick Show retired. Under the shelf, the skill tags the catalogue uses, with how many places use each.',
-      'The open book on the right: its name, status, strand, Drive folder and notes, with Edit for admin. Then the draft box: the prompt to give Claude with the table of contents and the teacher’s guide pages, and the box to paste the lines it writes. Then the units in order, each with its weeks, summary, tags and codes, and a chip saying whether it was suggested by Claude or confirmed and by whom.',
-      'Open a unit to see its lessons: title, the “students will” line, notes, tags and codes, and the Drive links for that lesson. Confirm, edit, reorder and delete are on each unit and lesson for admin. Anyone can add a Drive link to a unit or a lesson.',
-    ],
-    tasks: [
-      { title: 'See what my class is teaching this term', steps: ['Curriculum → Class boards → Board. Pick the grade; the class and the half of the year are already yours. Pick another class to see theirs.', 'Read the rows. Click a bar for the unit’s lessons and files.'] },
-      { title: 'Keep a reading list honest', steps: ['Into Reading stories are open bars on your board, a ≈ share of the term each. Click a story and press Done with this story when you finish it; it fills in solid.', 'The line above the board says 4 of 9 done · 1 story behind, against even pace. That is the whole bookkeeping. Skip a story you will not read; add one the master did not pick.'] },
-      { title: 'We fell behind (or got ahead)', steps: ['On your own board, click the unit you are starting now → We’re here: this unit starts in week N.', 'Behind: a gap opens before it and everything after moves later. Ahead: the units before it get shorter. A red chip above the board says if the plan now runs past the term; shorten or skip something to fit.', 'Your plan is now your own copy of the master; the rail under the row shows where the master was. Back to master on the unit drops all your changes to that book.'] },
-      { title: 'Move or stretch a unit', steps: ['Drag a bar to move it a week or more; drag its right edge to make it longer. Or open it and use 1 wk earlier / later and the − and + on the weeks. Every bar is draggable, stories too.', 'Until you touch anything, the units share the term evenly (the ≈ on each). Your first drag pins every unit at its current length, so moving one pushes the others instead of re-sharing them.', 'Skip takes a unit out of your plan; Add puts one back at the end.'] },
-      { title: 'Put this week’s lessons into my daily plan', steps: ['On your board, click the week number. The five days show what is on the Lesson Plans page already.', 'On the right, the units running that week. Press M, T, W, T or F on a lesson and it goes into that day: the book as the subject, the lesson title, the students-will line in the objective, the notes.', 'Open Lesson Plans to print or edit the words as usual; the link to the lesson stays.', 'When the day is taught, Mark done on it. Its standards fill in under the board.'] },
-      { title: 'Add something of our own', steps: ['Our class → Add a block. Name it, say which week it starts and how many weeks. A strand and a skill tag are optional; with them it shows on the map and the ladder beside the books.', 'Click a block to edit or delete it.'] },
-      { title: 'Find who is teaching the same thing as me', steps: ['Curriculum → Class boards → Program map. Click this week (or any week with a dot).', 'Plan together lists the classes on the same unit, and the classes on the same skill in different books. Stack these rows to see just those classes; the arrows open their boards.', 'Under Everyone this week, a grey line under a unit names a class that finished it earlier, so their files and notes already exist.'] },
-      { title: 'See my whole level across the grades', steps: ['Curriculum → Class boards → Ladder. Pick the level and year.', 'Read the numerals up the stairs and the checks on the right.'] },
-      { title: 'Review teachers’ plans', steps: ['Curriculum → Curriculum map → Review. Every teacher plan that differs from the master is a card: who, the book, and the differences unit by unit (later, longer, skipped, added).', 'Seen marks it as it is now, with an optional note the teacher sees above their board. A plan changed after that comes back.', 'Adopt as master makes the teacher’s pacing the master for that class and grade. Revert drops their changes and the master applies to their board again.'] },
-      { title: 'Set the master plan for a class and grade', steps: ['Curriculum → Curriculum map → Map → pick the year.', 'Place in the level and grade’s cell → pick the book and the term. Tick what this class will do (or press All units, or a sister grade’s name to start from its pick) → Place.', 'Click the chip. Reorder with the arrows and drop what you will not do; the weeks share themselves. Pin a length only where one unit really needs more or less.', 'Do the next grade, or use the copy button in its cell to bring over the grade you just did and adjust.'] },
-      { title: 'Add a book', steps: ['Curriculum → Curriculum map → Bookshelf → Add a book. Pick the series (or New series with its strand and colour), type the level and, if the series name is not enough, a title. A book is in use from the moment it is added; Retire on the open book takes it out of placing without deleting it.', 'The book appears on the shelf as Not indexed yet.'] },
-      { title: 'Index a book from its contents', steps: ['Open the book → Draft units and lessons from the contents → set the CCSS grade → Copy the prompt.', 'Give Claude the prompt with photos or pasted text of the table of contents and the guide’s objective pages. It writes one Unit line per unit and one “-” line per lesson, with the students-will line, codes and tags.', 'Paste the lines in → Read the lines. The preview shows the units, their weeks and lessons, and any new skill tags.', 'Save as suggested. Everything lands marked “Suggested by Claude”.'] },
-      { title: 'Confirm what Claude drafted', steps: ['Open the book and read through. Fix anything with Edit on the unit or lesson; the chip changes to Not confirmed until you confirm it.', 'Confirm on each unit and lesson, Confirm these lessons on a unit, or Confirm all on the book once it is right.'] },
-      { title: 'Link the files in Drive', steps: ['Paste the book’s folder link in Edit on the book, and a unit’s folder link in Edit on the unit.', 'For one file: open the unit or lesson → Add a Drive link → name, the link (the kind is guessed from it), and for a handout how many copies.'] },
-      { title: 'Tidy the skill tags', steps: ['Skill tags under the shelf. Admin renames a tag or moves it to another strand with the pencil, or removes it with the ×. Units and lessons keep the word either way.'] },
-    ],
-    rules: ['A book exists once however many classes use it. Which class uses it and when is a placement, always per class AND grade, since grades inside a level use different books. A book that runs the whole year is one placement whose units carry on across the winter break.', 'Pacing has no dates. Each unit has an order and a number of weeks; the board adds them up from the start of the term, taken from the earliest start and latest end of that half’s grading periods in Settings. Change a unit’s weeks and everything after it moves.', 'The school year starts in March: spring is the first half and fall the second. A whole-year placement runs spring then fall.', 'Every placement is a list of the units or stories a class chose, with the term shared across them; nobody types weeks unless one unit is pinned. A series is a sequence or an anthology, set on the Bookshelf: sequences (phonics, speaking) get the “we’re here” tools, drag and the master rail, and dragging or stretching a unit pins its length; anthologies (Into Reading) count stories, not weeks, and get Done ticks with a progress line.', 'A teacher’s plan starts as the master and becomes their own copy the first time they change it; nobody waits for approval. Admin sees every difference on Review and can comment, adopt or revert. The master itself only changes on the map or by adopting.', 'A pin is where the teacher last said “we’re here”; the dotted line to today is how long ago that was, not a judgement.', 'Importing a lesson copies its words into the day, so editing them on Lesson Plans changes nothing in the catalogue. The link to the lesson is what makes Mark done count its standards.', 'Units and lessons start as Claude’s suggestion and stay marked that way until admin confirms them; the boards will show which is which so teachers know what to trust.', 'Skill tags are the program’s own short words (long a vce, main idea, describing objects). CCSS codes are too coarse to show overlap on their own, so both are kept. A tag the list does not know is added to it when a unit or lesson is saved with it.', 'Retire a book rather than deleting it once any class has used it, so past plans still resolve. Delete removes its units, lessons and links.'],
-    watchOut: ['The board has no weeks until the grading periods for that half have start and end dates in Settings.', 'Admin runs supabase/migration-curriculum-teacher-plans.sql once for teachers’ own plans, pins, blocks and the review queue; until then the board shows the master only.', 'Admin runs supabase/migration-curriculum-lesson-log.sql once for importing lessons into days and Mark done.', 'Admin runs supabase/migration-curriculum-anthology.sql once for the series kind, fixed story lengths and Done ticks; it also repairs titles mangled by the first seed.', 'Admin runs supabase/migration-curriculum-placements.sql once, after the catalogue migration.', 'Admin runs supabase/migration-curriculum-catalogue.sql once. It seeds the series the lesson plans already name and a starting phonics vocabulary.', 'The prompt lists the skill tags for the book’s strand, so keep the tags tidy and Claude’s lines will match without fixing.'],
-  },
-  {
-    id: 'activity', title: 'Activity', updated: '2026-11-12',
-    purpose: 'Who signed in and exactly what they did, down to the class, student and sheet. Only the Snapdragon account can open it, from the user menu.',
-    screen: [
-      'A strip of every teacher with their last sign-in and when they were last seen, in the chosen window. Click one to filter the list to them.',
-      'Filters: Today, 7 days or 30 days; one teacher or everyone; one kind of action or everything.',
-      'The list, newest first, by day: the time, who, what kind of action, and what it was. An Opened line names what was on screen (Grades · Snapdragon · Grade 4 · Unit 3 Quiz score sheet), not just the page. ×N means the same action was repeated that many times within ten minutes and folded into one line.',
-    ],
-    tasks: [
-      { title: 'See when someone last signed in', steps: ['Open Activity from the user menu.', 'Read their card in the strip at the top, or pick Sign-ins and sign-outs in the action filter.'] },
-      { title: 'See what was done on a day', steps: ['Set the window and, if you like, the teacher.', 'Scroll to the day. Scoring shows the assessment and how many saves; prints show what was printed and for whom.'] },
-    ],
-    rules: ['Recorded: sign-ins and sign-outs, every page opened with what was on it, scoring on any sheet, attendance, lesson plans, comments, report card approvals and reviewer notes, level tests, reading records and passages, WIDA levels and scaffolds, student details, notes and goals, behavior notes and cases, assessments and rubrics created, edited and deleted, standards mastery, calendar events, prints, notices, and every Settings section.', 'The app writes the log, so only actions taken in the app appear; a change made directly in the database does not.', 'Before the log existed, saves can be rebuilt from the records: admin runs supabase/backfill-activity-log.sql once after the migration. Those lines show “backfill” as their page; attendance lines are placed at 15:30 on their day because the records carry no time. Sign-ins before the log cannot be rebuilt.'],
-    watchOut: ['A sign-in is recorded when a teacher picks their name and signs in, not when a page is reloaded in a tab that was already signed in.', 'Admin runs supabase/migration-activity-log.sql once; until then the page says so and nothing is recorded.'],
-  },
-  {
-    id: 'admin-release', title: 'What’s new and this guide', updated: '2026-11-15',
-    purpose: 'How changes reach teachers, and how admin holds, moves or drops an announcement.',
-    screen: ['Entries live in the code with a release date. An entry dated in the future is held; admins see it marked scheduled on the What’s new page. On the Snapdragon account only, a Coming up box at the top lists each future batch with its entries.', 'Manage, top right of What’s new on the Snapdragon account, shows a switch and a date on every entry: turn one off so nobody sees it, move it to another day, or Release today. A changed entry says what the code has, with Reset to put it back. Changes save at once and apply to everyone: the page, the popup, the dot under your name and ⌘K.', 'Each teacher’s “Got it” is remembered, so the card only shows what they have not seen.', 'Every guide section shows when its text last changed; the Guide page lists the stalest first in the rail.'],
-    tasks: [
-      { title: 'Release a batch', steps: ['Ask for the entries to be dated the Monday you want.', 'Read them on the What’s new page before that day; Coming up lists them.', 'To go early, click Release today on the batch; to wait, change its Move to date.'] },
-      { title: 'Hold back one entry', steps: ['Click Manage.', 'Turn the entry off, or give it a later date.', 'Reset puts it back on the date in the code.'] },
-    ],
-    rules: ['No feature ships without its guide section updated in the same change.', 'Turning an entry off hides it; the feature itself is unchanged.'],
-    watchOut: ['Moving a batch earlier than a teacher’s last “Got it” means that teacher gets no popup for it; it is still on the page.'],
-  },
-  {
-    id: 'jobs', title: 'Jobs', updated: '2026-11-19',
-    purpose: 'The office and admin work, for the admin account and the Snapdragon teacher only: what needs doing, by when, who has it, how it is done, and who did it. Opened from the user menu; the dashboard shows your own jobs due this week at the top every day.',
-    screen: [
-      'Dashboard: Your jobs. Your overdue, today and this-week jobs in large type with a tick to mark each done, steps of long jobs dated this week, long-term goals you have not started, every Shared job with how many of its steps are yours, and how many jobs nobody has yet. All jobs opens the page.',
-      'Jobs page, the add line: a title, when (Today, This week, the next six months by name meaning by the end of that month, End of semester, Next semester, Whenever, One day, or an exact day from the small calendar) and the size. Enter adds it with nobody as owner. Next semester needs the next semester in Settings with its dates; the job reads “Next semester · Spring 2027” and sits on the Later shelf under that semester.',
-      'The board opens with Big jobs: this semester’s long jobs and anything Shared, as wide cards with a large percent, the bar with its pace tick, the next step (yours first), when it was last worked on, and the status. They stay there whatever their status, so they are never out of sight. Shared ones have a red edge.',
-      'Then three columns, you, Nobody yet, the other account, each in parts: Working on (anything set to In progress or Waiting), This week (overdue, today, and due by Friday), Later this month, Next month. Each card: the title, when, category, the size as four rising blocks filled to how big it is with the word beside them (a few minutes, an hour or so, half a day, several days), steps done with the percent, when it was last worked on, and a thin bar for progress with a small tick where the work should be by today (amber when behind). A Shared job sits in both columns and each card counts that person’s steps. Under each column, what that person finished in the last two weeks. Click a card to open it.',
-      'A step with its own day shows as a slim line in that week’s section of the owner’s column (the step’s own person if one is named, or either column on a Shared job) with a tick, while the whole job stays where it lives with its percent. The dashboard shows these too.',
-      'Under the columns, Later: everything past next month as the same full cards, by month, then Whenever, each card naming its owner (Nobody yet in amber).',
-      'At the very bottom, One day: the wishes, if there were time. Dashed cards, no date or owner needed, never on the dashboard, never overdue. Open one and pick Whenever, This semester or a day to make it a real job. A job comes up into its column on its own as its date nears, or as soon as someone sets it to In progress. A next-semester goal waits on the shelf under that semester’s name.',
-      'An open job: the owner as four buttons (you, the other account, Shared, Nobody yet), the status tag, the size as the same four-block marks with a Worked on it today button beside them, a one-line note under them (what is in the way, what was agreed; its first line shows on the card in italics), the steps as a checklist with a box under them that takes one line or a pasted list (one step per line, numbers and dashes are dropped), a ▶ beside each step to say you are working on it with a line on where you are, an initial to make that step the other person’s and a calendar to give it a day, a Stuck box that sends a question to the other account, then Mark as done (asks for one optional line on what happened, which shows in the done log), Hand to and Delete (asks once). Closing the panel saves nothing extra; every change is saved as you make it. Details opens size, category, due, requested by, a link to the page in the app, who made and finished it, and the history.',
-      'The year: one line from March to February with every routine’s date as a coloured dot (hollow when the date is not set yet and the semester’s dates say where it would fall), the semester’s own dates as small ticks under it, and today in red. Under the line, a tile per month with its dates and the jobs due in it. Click a dot or a name to open that routine below.',
-      'Routines, under the tiles: the yearly templates. Each has jobs at day offsets from the event (28 days before, on the day), with a default owner, size and steps. Set the date for a term and every job is made at once; the dates already set are listed with a way to remove one and its unfinished jobs.',
-      'Done: every finished job by the day it was finished, with who did it. This term: a count per person, by size and by category, for the active semester.',
-    ],
-    tasks: [
-      { title: 'Add a job', steps: ['Type the title in the add line, tap when, press Enter. It lands under Nobody yet and opens at once with its details showing: add the steps, the category, who asked, and take it or leave it for the other account.', 'A job dated past four weeks goes to the Later shelf under the columns; the column header counts it as “+ 1 later”.'] },
-      { title: 'Take a job', steps: ['Open the card and tap your name. Hand to passes it to the other account.'] },
-      { title: 'Give a job its steps', steps: ['Open the card. Type a step and press Enter, or paste a whole list into the box and press Add: each line becomes a step.', 'To share a job, choose Shared as the owner and tap an initial beside each step to say whose it is. It shows in both columns.', 'For a long job, give a step a day with the calendar beside it: that step then shows on the board in its week and on the dashboard, on its own, while the whole job stays on the shelf with its percent.'] },
-      { title: 'Keep a long job moving', steps: ['Open it, press ▶ on the step you are on and type where you are (“cabinets A and B done, C next”). The card and the Big jobs band show “Working on: …” with that note.', 'Any tick on a step marks the job In progress and as worked on today.', 'Press Worked on it today after a stint with no step to tick. The card says when it was last touched and how many stints; the tick on the bar shows where the work should be by now.'] },
-      { title: 'Set a routine for the term', steps: ['The year → the routine → Set the date for a term. Pick the semester; if the routine follows a Settings date (report card grades due), it is filled in. Make the jobs.', 'Every template job appears on the board, dated from the event, owned by its default owner.'] },
-      { title: 'Ask when stuck', steps: ['Open the card → Stuck? → type the question → Send. The other account sees the count in the page header.', 'Answering writes the question and answer as a step on the job and on its routine, so it is there next time.'] },
-    ],
-    rules: ['Nothing is owned by default. A job under Nobody yet shows on both dashboards until someone takes it.', 'Only the admin account and the Snapdragon teacher see the card, the menu link and the page.', 'Marking a job done writes to the activity log as “Finished a job”.'],
-    watchOut: ['If the page says to run the migration, supabase/migration-admin-jobs.sql has not been run in the Supabase SQL Editor yet.'],
+    screen: ['Teachers see a dot on their name and a count beside What’s new in the name menu until they have read a batch. Each teacher’s read state is remembered. Coming up and Manage are on the Snapdragon account only; other admins see scheduled entries read-only.'],
+    rules: ['Changes on What’s new apply to everyone at once: the page, the dot and ⌘K.', 'Turning an entry off hides the announcement; the feature itself is unchanged.', 'No feature ships without its guide section updated at the same time.'],
+    watchOut: ['Moving a batch earlier than a teacher last read What’s new means it never shows as new for them; it is still on the page.'],
   },
 ]
 
 export const ALL_SECTIONS = () => [...GUIDE_SECTIONS, ...ADMIN_SECTIONS]
-/** The guide section for a view id, for “How this page works”. */
-export const SECTION_FOR_VIEW: Record<string, string> = {
-  dashboard: 'dashboard', grades: 'grades', attendance: 'attendance', lessonPlans: 'lessons', students: 'students',
-  readingLevels: 'reading', reports: 'reports', leveling: 'leveltests', curriculum: 'standards', wida: 'wida', settings: 'admin-settings', activity: 'activity', jobs: 'jobs', behavior: 'behavior', supplies: 'supplies', budget: 'budget', overtime: 'overtime', planner: 'bookshelf',
+
+type Viewer = { role?: string; english_class?: string; is_head_teacher?: boolean } | null | undefined
+
+/** Whether this account can open the page a section describes. */
+export function canSeeSection(s: GuideSection, t: Viewer): boolean {
+  switch (s.audience) {
+    case 'admin': return t?.role === 'admin'
+    case 'jobs': return canSeeAdminJobs(t)
+    case 'activity': return canViewActivity(t)
+    case 'release': return t?.role === 'admin' || canManageWhatsNew(t)
+    default: return true
+  }
+}
+
+/** Every section this account can use, in guide order: the pages, then the admin chapter. */
+export function guideSectionsFor(t: Viewer): GuideSection[] {
+  return ALL_SECTIONS().filter(s => canSeeSection(s, t))
+}
+
+/** The address of one how-to inside its section: /guide#grades--see-what-to-reteach. */
+export function taskAnchor(sectionId: string, title: string): string {
+  return `${sectionId}--${title.toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
 }

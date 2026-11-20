@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { ClipboardCheck, Users, BookOpen, LayoutDashboard, MoreHorizontal, Megaphone, X } from 'lucide-react'
+import { ClipboardCheck, Users, BookOpen, LayoutDashboard, MoreHorizontal, Megaphone, CircleHelp, X } from 'lucide-react'
 import { useApp } from '@/lib/context'
-import { NAV_DAILY, NAV_PLANNING, PHONE_TABS, VIEW_PATHS, navLabel } from '@/lib/routes'
+import { NAV_DAILY, NAV_PLANNING, PHONE_TABS, VIEW_PATHS, navLabel, guideHrefFor } from '@/lib/routes'
 import { NavMarks, useMoreIds, gradesPhrase, type Signals } from '@/components/layout/navSignals'
 
 // ─── Phone navigation ────────────────────────────────────────────
@@ -113,7 +113,13 @@ export default function PhoneNav({ active, signals }: { active: string; signals:
                 </ul>
               </section>
             ))}
-            <div className="mt-2 border-t border-rule px-4 py-3" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+            <div className="mt-2 border-t border-rule px-4 py-3 flex flex-wrap gap-2" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
+              {active !== 'guide' && (
+                <Link href={guideHrefFor(active)} aria-label={ko ? '이 페이지 도움말' : 'Help with this page'}
+                  className="h-10 px-3 inline-flex items-center gap-2 rounded border border-rule-2 text-[length:calc(14px*var(--ts))] text-ink-2 hover:text-ink">
+                  <CircleHelp size={15} aria-hidden="true" />{ko ? '도움말' : 'Help'}
+                </Link>
+              )}
               <button type="button" onClick={() => { setOpen(false); window.dispatchEvent(new Event('daewoo:compose-notice')) }}
                 className="h-10 px-3 inline-flex items-center gap-2 rounded border border-rule-2 text-[length:calc(14px*var(--ts))] text-ink-2 hover:text-ink">
                 <Megaphone size={15} />{ko ? '공지 남기기' : 'Post a notice'}

@@ -5,9 +5,9 @@ import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useApp } from '@/lib/context'
-import { NAV_DAILY, NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath, navLabel } from '@/lib/routes'
+import { NAV_DAILY, NAV_ORDER, VIEW_PATHS, PAGE_TITLES, viewForPath, navLabel, guideHrefFor } from '@/lib/routes'
 import { logActivity, logPageOpen } from '@/lib/activity'
-import { Search, Moon, Sun, Globe, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Type, Megaphone, CaseSensitive } from 'lucide-react'
+import { Search, Moon, Sun, Globe, LogOut, ChevronDown, ChevronUp, Bell, Sparkles, BookOpen, AlertTriangle, Type, Megaphone, CaseSensitive, CircleHelp } from 'lucide-react'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { OfficeJobsBand } from '@/components/dashboard/OfficeJobs'
 import { FlowerAvatar, flowerForClass } from '@/components/brand/ClassFlower'
@@ -148,6 +148,7 @@ function UserMenu({ compact = false }: { compact?: boolean }) {
 // elsewhere closes it. Resting the pointer on the line opens it too.
 function ContextRow({ now, ko, slim = false }: { now: Date | null; ko: boolean; slim?: boolean }) {
   const { currentTeacher, activeSemester, language } = useApp()
+  const view = viewForPath(usePathname())
   const [open, setOpen] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
   const btnRef = useRef<HTMLButtonElement>(null)
@@ -225,7 +226,15 @@ function ContextRow({ now, ko, slim = false }: { now: Date | null; ko: boolean; 
               </button>
             )}
           </div>
-          <span className="justify-self-end">
+          <span className="justify-self-end flex items-center gap-1">
+            {/* Help opens the guide at this page's section. A plain link, so the
+                unsaved-work guard asks before it leaves a page with edits. */}
+            {view !== 'guide' && (
+              <Link href={guideHrefFor(view)} aria-label={ko ? '이 페이지 도움말' : 'Help with this page'}
+                className="h-6 px-1.5 rounded inline-flex items-center gap-1.5 text-ink-2 hover:text-ink hover:bg-paper-3/70">
+                <CircleHelp size={12} aria-hidden="true" />{ko ? '도움말' : 'Help'}
+              </Link>
+            )}
             <button type="button" onClick={() => window.dispatchEvent(new Event('daewoo:compose-notice'))}
               className="h-6 px-1.5 -mr-1.5 rounded inline-flex items-center gap-1.5 text-ink-2 hover:text-ink hover:bg-paper-3/70">
               <Megaphone size={12} />{ko ? '공지 남기기' : 'Post a notice'}

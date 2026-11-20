@@ -9,7 +9,7 @@ import { startTour } from '@/lib/tour'
 import { canManageWhatsNew } from '@/lib/activity'
 import { setOverride, type EffectiveEntry, type WhatsNewOverrides } from '@/lib/whatsNewOverrides'
 import { REPLAY_KEY } from './WhatsNewModal'
-import { CalendarClock, RotateCcw } from 'lucide-react'
+import { CalendarClock, ChevronDown, RotateCcw } from 'lucide-react'
 
 // ─── What's new ──────────────────────────────────────────────────
 // Every released entry, newest batch first. Admins also see held entries,
@@ -19,6 +19,8 @@ import { CalendarClock, RotateCcw } from 'lucide-react'
 // or released now without a deploy; a changed entry says what the code
 // has, with Reset to put it back. Only the Snapdragon account gets the
 // Coming up box and Manage; other admins see scheduled entries read-only.
+// Batches older than 30 days fold behind Earlier updates, so the page opens
+// on what is actually new.
 
 const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 const fmtShort = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -26,17 +28,23 @@ const dateInp = 'h-7 px-1.5 bg-surface border border-rule-2 rounded text-[length
 const smallBtn = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(12px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3 disabled:opacity-40'
 
 export default function WhatsNewView() {
-  const { currentTeacher, showToast } = useApp()
+  const { currentTeacher, showToast, language } = useApp()
+  const ko = language === 'ko'
   const { entries, scheduled, unseen, loaded, today, markSeen, overrides, saveOverrides } = useWhatsNew()
   const router = useRouter()
   const isAdmin = currentTeacher?.role === 'admin'
   const canManage = canManageWhatsNew(currentTeacher)
   const [manage, setManage] = useState(false)
+  const [showEarlier, setShowEarlier] = useState(false)
 
   const shown = entries
     .filter(e => (isAdmin || canManage) ? (manage || !e.off) : (!e.off && e.date <= today))
     .sort((a, b) => b.date.localeCompare(a.date))
   const dates = Array.from(new Set(shown.map(e => e.date)))
+  const cutoff = (() => { const d = new Date(today + 'T12:00:00'); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10) })()
+  const recentDates = dates.filter(d => d >= cutoff)
+  const earlierDates = dates.filter(d => d < cutoff)
+  const earlierCount = shown.filter(e => e.date < cutoff).length
   const unseenIds = new Set(unseen.map(e => e.id))
   const offCount = entries.filter(e => e.off).length
 
@@ -55,6 +63,43 @@ export default function WhatsNewView() {
     save(next, `${ids.length} ${ids.length === 1 ? 'entry' : 'entries'} moved from ${fmtShort(from)} to ${fmtShort(to)}`)
   }
   const batchDates = Array.from(new Set(scheduled.map(e => e.date)))
+
+  // One release date's entries.
+  const renderBatch = (d: string) => (
+    <section key={d} className="mb-8">
+      <h2 className="eyebrow border-b border-rule-2 pb-1.5 mb-3 flex items-center gap-2">{fmt(d)}{d > today && <span className="px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))]">scheduled</span>}</h2>
+      <div className="divide-y divide-rule">
+        {shown.filter(e => e.date === d).map(e => (
+          <article key={e.id} className={`py-3 grid grid-cols-[14px_minmax(0,1fr)] gap-3 ${e.off ? 'opacity-60' : ''}`}>
+            <span className={`mt-2 w-2 h-2 rounded-full ${unseenIds.has(e.id) ? 'bg-accent' : 'bg-transparent'}`} />
+            <div>
+              {manage && canManage && (
+                <div className="flex items-center gap-3 flex-wrap mb-2 text-[length:calc(12px*var(--ts))]">
+                  <button role="switch" aria-checked={!e.off} onClick={() => setOff(e, !e.off)} title={e.off ? 'Off: nobody sees it. Click to turn on.' : 'On. Click to turn off.'}
+                    className={`relative w-9 h-5 rounded-full transition-colors ${e.off ? 'bg-rule-2' : 'bg-accent'}`}>
+                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${e.off ? 'left-0.5' : 'left-[18px]'}`} />
+                  </button>
+                  <span className={`font-medium ${e.off ? 'text-ink-3' : e.date > today ? 'text-warn' : 'text-ink-2'}`}>{e.off ? 'Off' : e.date > today ? 'Scheduled' : 'Live'}</span>
+                  <label className="flex items-center gap-1.5 text-ink-3">Date<input type="date" value={e.date} onChange={ev => setDate(e, ev.target.value)} className={dateInp} /></label>
+                  {e.date > today && <button onClick={() => setDate(e, today)} className={smallBtn}>Release today</button>}
+                  {e.overridden && <button onClick={() => reset(e)} className={`${smallBtn} inline-flex items-center gap-1`} title="Back to what the code says"><RotateCcw size={11} />Reset{e.date !== e.codeDate && <span className="text-ink-3">· code says {fmtShort(e.codeDate)}</span>}</button>}
+                </div>
+              )}
+              {e.highlight && <img src={e.highlight.image} alt="" className="w-full max-w-[520px] rounded border border-rule-2 mb-3" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />}
+              <h3 className="text-[length:calc(15px*var(--ts))] font-semibold text-ink flex items-center gap-2">{e.title}{e.off && <span className="px-1.5 py-0.5 rounded bg-paper-2 text-ink-3 text-[length:calc(11.5px*var(--ts))] font-medium">off</span>}</h3>
+              <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 leading-relaxed mt-1 max-w-[65ch]">{e.body}</p>
+              {e.highlight && <p className="text-[length:calc(13px*var(--ts))] text-ink leading-relaxed mt-1 max-w-[65ch]"><span className="font-semibold">To use it:</span> {e.highlight.how}</p>}
+              <p className="mt-1.5 flex gap-4 text-[length:calc(12.5px*var(--ts))]">
+                {e.tour && <button onClick={() => startTour(e.tour!, p => router.push(p))} className="text-accent hover:underline">Show me</button>}
+                {e.path && !e.tour && <Link href={e.path} className="text-accent hover:underline">Open</Link>}
+                {e.guide && <Link href={`/guide#${e.guide}`} className="text-ink-3 hover:text-ink">In the guide</Link>}
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  )
 
   return (
     <div className="px-8 py-6 animate-fade-in max-w-[860px]">
@@ -100,42 +145,19 @@ export default function WhatsNewView() {
         </section>
       )}
 
-      {dates.map(d => (
-        <section key={d} className="mb-8">
-          <h2 className="eyebrow border-b border-rule-2 pb-1.5 mb-3 flex items-center gap-2">{fmt(d)}{d > today && <span className="px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))]">scheduled</span>}</h2>
-          <div className="divide-y divide-rule">
-            {shown.filter(e => e.date === d).map(e => (
-              <article key={e.id} className={`py-3 grid grid-cols-[14px_minmax(0,1fr)] gap-3 ${e.off ? 'opacity-60' : ''}`}>
-                <span className={`mt-2 w-2 h-2 rounded-full ${unseenIds.has(e.id) ? 'bg-accent' : 'bg-transparent'}`} />
-                <div>
-                  {manage && canManage && (
-                    <div className="flex items-center gap-3 flex-wrap mb-2 text-[length:calc(12px*var(--ts))]">
-                      <button role="switch" aria-checked={!e.off} onClick={() => setOff(e, !e.off)} title={e.off ? 'Off: nobody sees it. Click to turn on.' : 'On. Click to turn off.'}
-                        className={`relative w-9 h-5 rounded-full transition-colors ${e.off ? 'bg-rule-2' : 'bg-accent'}`}>
-                        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all ${e.off ? 'left-0.5' : 'left-[18px]'}`} />
-                      </button>
-                      <span className={`font-medium ${e.off ? 'text-ink-3' : e.date > today ? 'text-warn' : 'text-ink-2'}`}>{e.off ? 'Off' : e.date > today ? 'Scheduled' : 'Live'}</span>
-                      <label className="flex items-center gap-1.5 text-ink-3">Date<input type="date" value={e.date} onChange={ev => setDate(e, ev.target.value)} className={dateInp} /></label>
-                      {e.date > today && <button onClick={() => setDate(e, today)} className={smallBtn}>Release today</button>}
-                      {e.overridden && <button onClick={() => reset(e)} className={`${smallBtn} inline-flex items-center gap-1`} title="Back to what the code says"><RotateCcw size={11} />Reset{e.date !== e.codeDate && <span className="text-ink-3">· code says {fmtShort(e.codeDate)}</span>}</button>}
-                    </div>
-                  )}
-                  {e.highlight && <img src={e.highlight.image} alt="" className="w-full max-w-[520px] rounded border border-rule-2 mb-3" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />}
-                  <h3 className="text-[length:calc(15px*var(--ts))] font-semibold text-ink flex items-center gap-2">{e.title}{e.off && <span className="px-1.5 py-0.5 rounded bg-paper-2 text-ink-3 text-[length:calc(11.5px*var(--ts))] font-medium">off</span>}</h3>
-                  <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 leading-relaxed mt-1 max-w-[65ch]">{e.body}</p>
-                  {e.highlight && <p className="text-[length:calc(13px*var(--ts))] text-ink leading-relaxed mt-1 max-w-[65ch]"><span className="font-semibold">To use it:</span> {e.highlight.how}</p>}
-                  <p className="mt-1.5 flex gap-4 text-[length:calc(12.5px*var(--ts))]">
-                    {e.tour && <button onClick={() => startTour(e.tour!, p => router.push(p))} className="text-accent hover:underline">Show me</button>}
-                    {e.path && !e.tour && <Link href={e.path} className="text-accent hover:underline">Open</Link>}
-                    {e.guide && <Link href={`/guide#${e.guide}`} className="text-ink-3 hover:text-ink">In the guide</Link>}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
-      {loaded && dates.length === 0 && <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2">Nothing here yet.</p>}
+      {recentDates.map(renderBatch)}
+      {earlierDates.length > 0 && (
+        <div className="border-t border-rule-2 pt-3">
+          <button type="button" onClick={() => setShowEarlier(o => !o)} aria-expanded={showEarlier}
+            className="inline-flex items-center gap-1.5 h-8 px-1 -mx-1 rounded text-[length:calc(13.5px*var(--ts))] font-semibold text-ink-2 hover:text-ink">
+            {showEarlier ? (ko ? '지난 소식 접기' : 'Hide earlier updates') : (ko ? `지난 소식 ${earlierCount}개` : `Earlier updates (${earlierCount})`)}
+            <ChevronDown size={14} aria-hidden="true" className={`text-ink-3 transition-transform ${showEarlier ? 'rotate-180' : ''}`} />
+          </button>
+          {!showEarlier && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-0.5">{ko ? '30일이 지난 소식입니다.' : 'More than 30 days old.'}</p>}
+        </div>
+      )}
+      {showEarlier && <div className="mt-5">{earlierDates.map(renderBatch)}</div>}
+      {loaded && recentDates.length === 0 && earlierDates.length === 0 && <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2">Nothing here yet.</p>}
     </div>
   )
 }
