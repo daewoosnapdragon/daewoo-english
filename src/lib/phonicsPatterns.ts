@@ -22,9 +22,8 @@ import { masteryPosition } from '@/lib/phonicsCompare'
 type Latest = Record<string, LatestBySkill>
 type Checks = Record<string, PhonicsCheckRow>
 
-/** Checkboxes that point at a decoding problem, and those that point at strength. */
+/** Checkboxes that point at a decoding problem. */
 export const CONCERN_OBSERVATIONS = ['guessing', 'omitted', 'vowel_confusion', 'blend_struggle', 'first_syllable']
-export const STRENGTH_OBSERVATIONS = ['automatic', 'flexible']
 
 /** The latest result on each sheet with the check it came from, optionally only some sheets. */
 function eachLatest(sid: string, latest: Latest, checks: Checks, sheets?: string[], fn?: (sheet: string, check: PhonicsCheckRow | undefined) => void) {

@@ -3,7 +3,7 @@ import {
   PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_GROUPS, phonicsSkill, orderSkills,
   ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, LETTERS_BY_FREQUENCY, classSkills, groupsFor, sheetNo, withoutAlphabet,
   scoreSkill, scoreCheck, latestBySkill, phonicsBand, summarizeStudent, phonicsOneLiner, notYetSecure, nextMark, longestErrorRun,
-  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss,
+  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss, sheetGiven, givenSheets, DECODING_OBSERVATIONS,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
 
@@ -75,8 +75,8 @@ describe('scoring a check', () => {
     const c = check({ skills: ['cvc'], results: { digraphs: { shop: 'correct' } } })
     expect(scoreSkill(c, 'digraphs')).toBeNull()
   })
-  it('a sheet in the sitting with no marks is all unread, zero percent', () => {
-    expect(scoreSkill(check({ skills: ['open'] }), 'open')).toMatchObject({ correct: 0, errors: 0, unread: 16, total: 16, pct: 0 })
+  it('a sheet in the sitting with no marks was not given: no score, not zero percent', () => {
+    expect(scoreSkill(check({ skills: ['open'] }), 'open')).toBeNull()
   })
   it('still scores a word that has since left the sheet', () => {
     const c = check({ skills: ['cvc'], results: { cvc: { ...firstN('cvc', 20), zog: 'error' } } })
@@ -92,14 +92,30 @@ describe('scoring a check', () => {
     expect(isMiss('partial')).toBe(true)
     expect(isMiss('correct')).toBe(false)
   })
+  it('has no positive teacher boxes, only ones that help find a problem', () => {
+    const ids = DECODING_OBSERVATIONS.map(o => o.id)
+    expect(ids).not.toContain('automatic')
+    expect(ids).not.toContain('flexible')
+  })
   it('the observations never move the score', () => {
     const plain = check({ skills: ['cvc'], results: { cvc: firstN('cvc', 18) } })
     const ticked = check({ skills: ['cvc'], results: { cvc: firstN('cvc', 18) }, observations: { cvc: ['automatic', 'pattern:short a'] } })
     expect(scoreSkill(ticked, 'cvc')).toEqual(scoreSkill(plain, 'cvc'))
   })
   it('scoreCheck follows packet order whatever order sheets were saved in', () => {
-    const c = check({ skills: ['vowel_teams', 'cvc'] })
+    const c = check({ skills: ['vowel_teams', 'cvc'], results: { vowel_teams: firstN('vowel_teams', 3), cvc: firstN('cvc', 3) } })
     expect(scoreCheck(c).map(s => s.skill)).toEqual(['cvc', 'vowel_teams'])
+  })
+  it('a sheet ticked but never started is not given: no score, not a 0', () => {
+    const c = check({ skills: ['cvc', 'digraphs', 'blends'], results: { cvc: firstN('cvc', 20), digraphs: {} } })
+    expect(sheetGiven(c, 'cvc')).toBe(true)
+    expect(sheetGiven(c, 'digraphs')).toBe(false)
+    expect(sheetGiven(c, 'blends')).toBe(false)
+    expect(scoreSkill(c, 'digraphs')).toBeNull()
+    expect(givenSheets(c)).toEqual(['cvc'])
+    expect(Object.keys(latestBySkill([c]))).toEqual(['cvc'])
+    // One word marked is a sheet given: stopped early, the rest not read.
+    expect(scoreSkill(check({ skills: ['cvc'], results: { cvc: { hat: 'error' } } }), 'cvc')!.pct).toBe(0)
   })
 })
 

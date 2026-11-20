@@ -39,7 +39,8 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
     const counts: Record<string, number> = {}
     const latest = latestByStudent[s.id] || {}
     Object.entries(latest).forEach(([sk, l]) => {
-      (checksById[l.checkId]?.observations?.[sk] || []).forEach(o => { if (!o.startsWith(PATTERN_PREFIX)) counts[o] = (counts[o] || 0) + 1 })
+      // Only boxes still on the check screen: old ticks of a removed box are not shown.
+      (checksById[l.checkId]?.observations?.[sk] || []).forEach(o => { if (DECODING_OBSERVATIONS.some(d => d.id === o)) counts[o] = (counts[o] || 0) + 1 })
     })
     return [s.id, Object.entries(counts).sort((a, b) => b[1] - a[1])]
   })) as Record<string, [string, number][]>
@@ -127,7 +128,7 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
                   <td key={s.id} className="px-2 py-2 border-l border-rule text-[length:calc(11px*var(--ts))] leading-snug">
                     {howBy[s.id].length === 0 ? <span className="text-ink-3">—</span> : howBy[s.id].map(([o, n]) => {
                       const d = DECODING_OBSERVATIONS.find(x => x.id === o)
-                      const tone = o === 'guessing' || o === 'omitted' || o === 'vowel_confusion' ? 'text-bad' : o === 'automatic' || o === 'flexible' ? 'text-good' : 'text-ink-2'
+                      const tone = o === 'guessing' || o === 'omitted' || o === 'vowel_confusion' ? 'text-bad' : 'text-ink-2'
                       return <span key={o} className={`block ${tone}`}>{d ? (lang === 'ko' ? d.label_ko : d.label) : o} <span className="text-ink-3">×{n}</span></span>
                     })}
                   </td>

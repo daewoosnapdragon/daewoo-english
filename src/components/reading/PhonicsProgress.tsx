@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import type { Student } from '@/types'
 import {
   PHONICS_SKILLS, PHONICS_BAND_LABELS,
-  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, attemptsBySkill, latestDelta, latestBySkill, summarizeStudent, orderSkills, scoreText,
+  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, attemptsBySkill, latestDelta, latestBySkill, summarizeStudent, orderSkills, scoreText, givenSheets,
   type PhonicsCheckRow,
 } from '@/lib/phonics'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
@@ -52,9 +52,9 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
             <tr className="bg-paper-2">
               <th className="text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2">{lang === 'ko' ? '시트' : 'Sheet'}</th>
               {own.map((c, i) => (
-                <th key={c.id} className={`px-0.5 py-2 border-b border-rule-2 text-center align-bottom ${i > 0 ? 'border-l border-rule' : ''}`} title={`${fmtShort(c.date, lang)} · ${c.skills.length} ${c.skills.length === 1 ? 'sheet' : 'sheets'}${c.notes ? `\n${c.notes}` : ''}`}>
+                <th key={c.id} className={`px-0.5 py-2 border-b border-rule-2 text-center align-bottom ${i > 0 ? 'border-l border-rule' : ''}`} title={`${fmtShort(c.date, lang)} · ${givenSheets(c).length} ${givenSheets(c).length === 1 ? 'sheet' : 'sheets'}${c.notes ? `\n${c.notes}` : ''}`}>
                   <span className="block text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap overflow-hidden text-ellipsis">{fmtShort(c.date, lang)}</span>
-                  <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{c.skills.length}</span>
+                  <span className="block text-[length:calc(10px*var(--ts))] text-ink-3">{givenSheets(c).length}</span>
                 </th>
               ))}
               <th className="px-2 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-right align-bottom">{lang === 'ko' ? '변화' : 'Change'}</th>
@@ -68,7 +68,7 @@ export default function StudentProgressGrid({ student, checks, lang, onCell, com
                 <tr key={id}>
                   <td className="px-3 py-1 border-r border-rule-2 overflow-hidden"><span className={`block truncate text-ink ${compact ? 'text-[length:calc(11.5px*var(--ts))]' : ''}`} title={sk.covers}>{lang === 'ko' ? sk.label_ko : sk.label}</span></td>
                   {own.map((c, i) => {
-                    const s = c.skills.includes(id) ? scoreSkill(c, id) : null
+                    const s = scoreSkill(c, id)
                     const b = s ? phonicsBand(s) : null
                     return (
                       <td key={c.id} className={`p-[3px] ${i > 0 ? 'border-l border-rule' : ''}`}>

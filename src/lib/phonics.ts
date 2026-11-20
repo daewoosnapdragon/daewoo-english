@@ -267,6 +267,9 @@ export function orderSkills(ids: string[]): string[] {
 
 export interface DecodingObservation { id: string; label: string; label_ko: string }
 
+// Only what helps find a problem. The two positive boxes (read most words
+// whole; flexible with vowel sounds) are gone: a strength shows in the score.
+// Saved ticks of them stay in old checks and are simply not shown.
 export const DECODING_OBSERVATIONS: DecodingObservation[] = [
   { id: 'blend_struggle', label: 'Knew the letter-sounds, but struggled to blend', label_ko: '글자 소리는 알지만 합치지 못함' },
   { id: 'sound_by_sound', label: 'Sounded out slowly, sound by sound', label_ko: '소리 하나씩 천천히 읽음' },
@@ -275,11 +278,9 @@ export const DECODING_OBSERVATIONS: DecodingObservation[] = [
   { id: 'syllables', label: 'Broke the word into syllable parts (bas-ket)', label_ko: '음절로 나눠 읽음' },
   { id: 'first_syllable', label: 'Read the first syllable, not the second', label_ko: '첫 음절만 맞게 읽음' },
   { id: 'some_whole', label: 'Read some words whole, decoded others', label_ko: '일부는 통째로, 일부는 해독' },
-  { id: 'automatic', label: 'Read most words whole; automatic', label_ko: '대부분 통째로, 자동 인식' },
   { id: 'guessing', label: 'Guessing, not decoding or automatic recognition', label_ko: '해독 없이 추측' },
   { id: 'omitted', label: 'Omitted or substituted a sound', label_ko: '소리를 빠뜨리거나 바꿈' },
   { id: 'vowel_confusion', label: 'Short/long vowel confusion', label_ko: '단모음/장모음 혼동' },
-  { id: 'flexible', label: 'Flexible with adjusting vowel sounds when needed', label_ko: '모음 소리를 유연하게 조정' },
 ]
 
 export const PATTERN_PREFIX = 'pattern:'
@@ -359,9 +360,22 @@ export function wordsScored(check: Pick<PhonicsCheckRow, 'results'>, skillId: st
   return [...base, ...marked.filter(w => !base.includes(w))]
 }
 
-/** The score for one sheet of one check, or null if that sheet was not part of the sitting. */
+/**
+ * Whether a sheet was given in a check: ticked for the sitting and at least
+ * one word marked. A sheet ticked but never started (the student went home
+ * sick, the bell rang) is not a 0: it counts as not checked, everywhere.
+ */
+export function sheetGiven(check: Pick<PhonicsCheckRow, 'skills' | 'results'>, skillId: string): boolean {
+  return !!check.skills?.includes(skillId) && Object.keys(check.results?.[skillId] || {}).length > 0
+}
+/** The sheets given in a check, in packet order. */
+export function givenSheets(check: Pick<PhonicsCheckRow, 'skills' | 'results'>): string[] {
+  return orderSkills(check.skills || []).filter(id => sheetGiven(check, id))
+}
+
+/** The score for one sheet of one check, or null if that sheet was not given in the sitting. */
 export function scoreSkill(check: Pick<PhonicsCheckRow, 'skills' | 'results'>, skillId: string): SkillScore | null {
-  if (!check.skills?.includes(skillId)) return null
+  if (!sheetGiven(check, skillId)) return null
   const words = wordsScored(check, skillId)
   const marks = check.results?.[skillId] || {}
   let correct = 0, partial = 0, errors = 0
@@ -501,7 +515,7 @@ export interface WordHistory {
  * keeps tripping the student.
  */
 export function wordHistory(checks: PhonicsCheckRow[], skillId: string): WordHistory[] {
-  const attempts = sortChecksAsc(checks).filter(c => c.skills?.includes(skillId))
+  const attempts = sortChecksAsc(checks).filter(c => sheetGiven(c, skillId))
   if (attempts.length === 0) return []
   const words = phonicsSkill(skillId)?.words || []
   const extra = new Set<string>()

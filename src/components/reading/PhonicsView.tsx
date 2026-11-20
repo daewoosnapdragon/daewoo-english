@@ -377,12 +377,25 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
   const visible = sheets.map(s => s.id)
   // Remembered picks can hold sheets this class does not use (the alphabet,
   // ticked in another class): they are left out here. A saved check keeps its own.
-  const skills = editing ? orderSkills(editing.skills) : selected.filter(id => visible.includes(id))
+  // The sheets of a saved check, editable while it is open.
+  const [editSkills, setEditSkills] = useState<string[]>(editing ? orderSkills(editing.skills) : [])
+  // Sheets taken out for this student only (the student went home, the bell
+  // rang): they stay ticked for the next student.
+  const [dropped, setDropped] = useState<string[]>([])
+  const base = editing ? editSkills : selected.filter(id => visible.includes(id))
+  const skills = base.filter(id => !dropped.includes(id))
   const idx = students.findIndex(s => s.id === student.id)
   const touch = (fn: () => void) => { fn(); onDirty(true) }
 
-  const setSkills = (ids: string[]) => touch(() => onSelect(ids))
-  const toggleSkill = (id: string) => setSkills(skills.includes(id) ? skills.filter(s => s !== id) : [...skills, id])
+  const setSkills = (ids: string[]) => touch(() => editing ? setEditSkills(orderSkills(ids)) : onSelect(ids))
+  /** The quick picks (All, None…): a fresh set, nothing held back. */
+  const pickSkills = (ids: string[]) => { setDropped([]); setSkills(ids) }
+  const toggleSkill = (id: string) => {
+    if (skills.includes(id)) { setSkills(base.filter(s => s !== id)); return }
+    setDropped(d => d.filter(x => x !== id))
+    setSkills(base.includes(id) ? base : [...base, id])
+  }
+  const takeOut = (id: string) => touch(() => setDropped(d => d.includes(id) ? d : [...d, id]))
   const tap = (skill: string, word: string) => touch(() => setMarks(m => {
     const cur = { ...(m[skill] || {}) }
     const nxt = nextMark(cur[word])
@@ -423,7 +436,10 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
     const { error } = await savePhonicsCheck({ student_id: student.id, date, assessed_by: currentTeacher?.id || null, skills, results: marks, heard, observations, notes }, editing?.id, student.english_name)
     setSaving(false)
     if (error) { showToast(`Error: ${error}`); return }
-    showToast(editing ? (lang === 'ko' ? '점검 수정됨' : `Check updated for ${student.english_name}`) : (lang === 'ko' ? '파닉스 점검 저장됨' : `Phonics check saved for ${student.english_name}`))
+    // A sheet with nothing marked is not saved: not started is not a 0.
+    const empty = skills.filter(id => Object.keys(marks[id] || {}).length === 0).length
+    const left = empty ? (lang === 'ko' ? ` · 표시 없는 시트 ${empty}개 제외` : ` · ${empty} ${empty === 1 ? 'sheet' : 'sheets'} with nothing marked left out`) : ''
+    showToast((editing ? (lang === 'ko' ? '점검 수정됨' : `Check updated for ${student.english_name}`) : (lang === 'ko' ? '파닉스 점검 저장됨' : `Phonics check saved for ${student.english_name}`)) + left)
     setMarks({}); setHeard({}); setObservations({}); setNotes('')
     await onSaved(andNext)
   }
@@ -488,12 +504,12 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <p className="eyebrow">{lang === 'ko' ? '점검할 시트' : 'Sheets to check'}</p>
             {!editing && <>
-              <button onClick={() => setSkills(visible)} className={quick}>{lang === 'ko' ? '전체' : 'All'}</button>
-              <button onClick={() => setSkills([])} className={quick}>{lang === 'ko' ? '없음' : 'None'}</button>
-              <button onClick={() => setSkills(recheckable)} disabled={recheckable.length === 0} className={quick}>{lang === 'ko' ? '아직 미완성' : 'Not yet mastered'} ({recheckable.length})</button>
-              <button onClick={() => setSkills(untested)} disabled={untested.length === 0} className={quick}>{lang === 'ko' ? '미점검' : 'Not checked yet'} ({untested.length})</button>
+              <button onClick={() => pickSkills(visible)} className={quick}>{lang === 'ko' ? '전체' : 'All'}</button>
+              <button onClick={() => pickSkills([])} className={quick}>{lang === 'ko' ? '없음' : 'None'}</button>
+              <button onClick={() => pickSkills(recheckable)} disabled={recheckable.length === 0} className={quick}>{lang === 'ko' ? '아직 미완성' : 'Not yet mastered'} ({recheckable.length})</button>
+              <button onClick={() => pickSkills(untested)} disabled={untested.length === 0} className={quick}>{lang === 'ko' ? '미점검' : 'Not checked yet'} ({untested.length})</button>
             </>}
-            {editing && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko' ? '수정 중에는 시트 목록이 고정됩니다.' : 'The sheets of a saved check are fixed while editing.'}</span>}
+            {editing && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko' ? '시트를 해제하면 이 점검에서 빠지고 점수에 들어가지 않습니다.' : 'Untick a sheet to take it out of this check; it is then not scored at all.'}</span>}
           </div>
           <div className="space-y-1.5">
             {groupsFor(sheets).map(({ group: g, skills: gs }) => (
@@ -504,7 +520,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
                   const l = latest[s.id]
                   const b = l ? phonicsBand(l.score) : null
                   return (
-                    <button key={s.id} onClick={() => !editing && toggleSkill(s.id)} disabled={!!editing} title={`${s.label}\n${s.covers}${l ? `\n${lang === 'ko' ? '최근' : 'Last'}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[b!].en} · ${fmtShort(l.date, lang)}` : ''}`}
+                    <button key={s.id} onClick={() => toggleSkill(s.id)} title={`${s.label}\n${s.covers}${l ? `\n${lang === 'ko' ? '최근' : 'Last'}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[b!].en} · ${fmtShort(l.date, lang)}` : ''}`}
                       className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium disabled:cursor-default ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
                       {s.short}
                       {b && <span className={`w-2 h-2 rounded-full ${BAND_DOT[b]}`} />}
@@ -523,7 +539,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
           <div className="space-y-5" data-guide="reading.phonics.words">
             {skills.map(id => (
               <SkillCard key={id} skill={id} marks={marks[id] || {}} heard={heard[id] || {}} observations={observations[id] || []} lang={lang}
-                onTap={w => tap(id, w)} onHeard={w => askHeard(id, w)} onFill={how => fill(id, how)} onObs={o => toggleObs(id, o)} />
+                onTap={w => tap(id, w)} onHeard={w => askHeard(id, w)} onFill={how => fill(id, how)} onObs={o => toggleObs(id, o)} onTakeOut={() => takeOut(id)} />
             ))}
           </div>
         )}
@@ -551,9 +567,11 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
 // nothing → correct → error → partly → nothing. The pencil on an error or
 // partly tile records what the student said; the checkboxes under the
 // words are the packet's teacher-page observations.
-function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, onFill, onObs }: {
+function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, onFill, onObs, onTakeOut }: {
   skill: string; marks: Record<string, PhonicsMark>; heard: Record<string, string>; observations: string[]; lang: Lang
   onTap: (word: string) => void; onHeard: (word: string) => void; onFill: (how: 'all' | 'rest' | 'clear') => void; onObs: (id: string) => void
+  /** Not given after all: the sheet leaves this check and is not scored. */
+  onTakeOut: () => void
 }) {
   const sk = phonicsSkill(skill)
   if (!sk) return null
@@ -591,7 +609,13 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
           <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{lang === 'ko' ? sk.label_ko : sk.label} <span className="font-normal text-ink-3 text-[length:calc(12px*var(--ts))]">· {sk.covers}</span></h3>
           <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5"><span className="eyebrow mr-1.5">{lang === 'ko' ? '말하기' : 'Say'}</span>“{sk.say ? (lang === 'ko' ? sk.say_ko || sk.say : sk.say) : lang === 'ko' ? '이 단어들을 읽어 보세요. 모르겠으면 소리 내어 합쳐 보세요.' : 'Read these words for me. If you are not sure, sound it out.'}”</p>
         </div>
-        <span className={`text-[length:calc(13px*var(--ts))] font-semibold tabular-nums ${band ? BAND_TEXT[band] : 'text-ink-3'}`}>{halfText(correct, partial)} / {sk.words.length}{band && <span className="font-normal text-[length:calc(11.5px*var(--ts))] ml-1.5">{PHONICS_BAND_LABELS[band][lang]}</span>}</span>
+        <div className="flex items-center gap-3">
+          <span className={`text-[length:calc(13px*var(--ts))] font-semibold tabular-nums ${band ? BAND_TEXT[band] : 'text-ink-3'}`}>{halfText(correct, partial)} / {sk.words.length}{band && <span className="font-normal text-[length:calc(11.5px*var(--ts))] ml-1.5">{PHONICS_BAND_LABELS[band][lang]}</span>}</span>
+          <button onClick={onTakeOut} className="inline-flex items-center gap-1 h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink hover:border-ink-3"
+            title={lang === 'ko' ? '이 시트를 끝내지 못했나요? 이 점검에서 빼면 점수에 들어가지 않습니다(0이 아님).' : 'Did not get to this sheet, or stopped early for a reason that is not the student’s reading? Take it out: it is not scored, not a 0.'}>
+            <X size={11} /> {lang === 'ko' ? '이 점검에서 빼기' : 'Not given'}
+          </button>
+        </div>
       </div>
       {sk.sections ? (
         <div className="px-4 py-3 space-y-2">

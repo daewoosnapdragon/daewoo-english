@@ -6,7 +6,7 @@ import { getDisplayName } from '@/lib/utils'
 import { DECODING_OBSERVATIONS, phonicsSkill, PHONICS_SKILL_IDS, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
 import { MIN_TESTED } from '@/lib/phonicsCompare'
 import {
-  CONCERN_OBSERVATIONS, STRENGTH_OBSERVATIONS, observationCounts, troubleCounts, missedWords, splitPatternKey,
+  CONCERN_OBSERVATIONS, observationCounts, troubleCounts, missedWords, splitPatternKey,
 } from '@/lib/phonicsPatterns'
 
 // ─── Error patterns across classes ───────────────────────────────
@@ -20,10 +20,9 @@ export interface PatternColumn { key: string; label: string; dot?: string; stude
 const TOP_PATTERNS = 20
 const TOP_WORDS = 30
 
-function shareTone(pct: number, kind: 'concern' | 'strength' | 'neutral', of: number): string {
+function shareTone(pct: number, kind: 'concern' | 'neutral', of: number): string {
   if (of < MIN_TESTED) return 'text-ink-3'
   if (kind === 'concern') return pct >= 40 ? 'bg-bad-soft text-bad font-semibold' : pct >= 20 ? 'bg-warn-soft text-warn' : 'text-ink-2'
-  if (kind === 'strength') return pct >= 60 ? 'bg-good-soft text-good font-semibold' : 'text-ink-2'
   return pct >= 40 ? 'bg-paper-2 text-ink font-semibold' : 'text-ink-2'
 }
 
@@ -62,17 +61,17 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
       <section>
         <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '해독 방식' : 'How they decoded'}</h3>
         <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
-          ? `점검한 학생 중, 최근 시트 하나 이상에서 이 항목이 체크된 비율. 빨강은 걱정 신호, 초록은 강점. ${MIN_TESTED}명 미만은 색 없음.`
-          : `Of the students checked, the share with this box ticked on at least one of their latest sheets. Red marks a concern, green a strength; no colour from fewer than ${MIN_TESTED} students.`}</p>
+          ? `점검한 학생 중, 최근 시트 하나 이상에서 이 항목이 체크된 비율. 빨강은 걱정 신호. ${MIN_TESTED}명 미만은 색 없음.`
+          : `Of the students checked, the share with this box ticked on at least one of their latest sheets. Red marks a concern; no colour from fewer than ${MIN_TESTED} students.`}</p>
         <div className="border border-rule-2 rounded-md overflow-x-auto">
           <table className="w-full text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
             {head(lang === 'ko' ? '체크 항목' : 'Teacher checkbox')}
             <tbody className="divide-y divide-rule">
               {DECODING_OBSERVATIONS.map(o => {
-                const kind = CONCERN_OBSERVATIONS.includes(o.id) ? 'concern' : STRENGTH_OBSERVATIONS.includes(o.id) ? 'strength' : 'neutral'
+                const kind = CONCERN_OBSERVATIONS.includes(o.id) ? 'concern' : 'neutral'
                 return (
                   <tr key={o.id}>
-                    <td className={`px-3 py-1.5 ${kind === 'concern' ? 'text-bad' : kind === 'strength' ? 'text-good' : 'text-ink'}`}>{lang === 'ko' ? o.label_ko : o.label}</td>
+                    <td className={`px-3 py-1.5 ${kind === 'concern' ? 'text-bad' : 'text-ink'}`}>{lang === 'ko' ? o.label_ko : o.label}</td>
                     {columns.map((c, i) => {
                       const n = obs[i].counts[o.id] || 0; const of = obs[i].checked
                       const pct = of ? Math.round((n / of) * 100) : 0

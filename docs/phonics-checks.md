@@ -78,8 +78,15 @@ puts them (kept as reference text; the screen itself shows no panel):
   packet's "write what they read next to the word").
 - Under each sheet, the packet's teacher-page checkboxes: how the student
   decoded (struggled to blend, sound by sound, onset and rime, stretched,
-  syllable parts, some whole, automatic, guessing, omitted a sound,
-  short/long confusion, flexible) and the patterns that gave trouble.
+  syllable parts, some whole, guessing, omitted a sound, short/long
+  confusion) and the patterns that gave trouble. The packet's two positive
+  boxes (read most words whole; flexible with vowel sounds) are left out: a
+  strength shows in the score. On the alphabet sheets only the trouble
+  chips show.
+- A sheet ticked for the sitting with no word marked is not saved, and in
+  older checks is read as not given: no score, never a 0. *Not given* on a
+  sheet's card takes it out of this student's check (the next student keeps
+  it ticked); while editing a saved check, untick its chip.
 - Stop a sheet after five errors in a row. Untouched words are saved as *not
   read*, not as errors.
 
@@ -98,8 +105,7 @@ The packet's rubric. Accuracy is words correct over words on the sheet.
 | --- | --- | --- |
 | Beginning | under 70% | Needs intervention |
 | Developing | 70–89% | Needs guided practice |
-| Proficient | 90% and up | Practice for automaticity |
-| Mastered | 90% and up, *automatic* ticked | Reached automaticity |
+| Mastered | 90% and up | Has the pattern |
 
 - **Class heat map**: the class down the side, the sheets across the top,
   each cell the accuracy of the *latest* check of that sheet, with an arrow

@@ -5,7 +5,7 @@ import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import {
   PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
-  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, wordHistory, scoreText, isMiss,
+  phonicsSkill, phonicsBand, scoreSkill, sortChecksAsc, wordHistory, scoreText, isMiss, sheetGiven,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
 import { BAND_TONE, BAND_CHIP, MARK_TILE, MARK_SOFT, MARK_LABEL, fmtShort, fmtLong } from '@/components/reading/phonicsTones'
@@ -25,7 +25,7 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
 }) {
   const sk = phonicsSkill(skill)
   // Newest first for the chips; the grid of words runs oldest first.
-  const history = sortChecksAsc(checks.filter(c => c.student_id === student.id && c.skills.includes(skill))).reverse()
+  const history = sortChecksAsc(checks.filter(c => c.student_id === student.id && sheetGiven(c, skill))).reverse()
   const [showingId, setShowingId] = useState<string | null>(initialCheckId || history[0]?.id || null)
   const showing = history.find(c => c.id === showingId) || history[0]
   if (!sk || !showing) return null

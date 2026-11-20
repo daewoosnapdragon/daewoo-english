@@ -45,20 +45,22 @@ export interface PhonicsCheckInput {
 /** Inserts a new check, or replaces the contents of `id` when editing. */
 export async function savePhonicsCheck(input: PhonicsCheckInput, id?: string, studentName = ''): Promise<{ id: string | null; error: string | null }> {
   // Only the sheets in the sitting are kept; marks on a sheet the teacher
-  // un-ticked before saving are dropped. What was heard is kept only for
-  // words still marked as errors.
+  // un-ticked before saving are dropped, and so is a sheet with nothing
+  // marked (not started is not a 0). What was heard is kept only for words
+  // still marked as errors.
+  const skills = input.skills.filter(s => Object.keys(input.results[s] || {}).length > 0)
   const results: PhonicsCheckInput['results'] = {}
   const heard: PhonicsCheckInput['heard'] = {}
   const observations: PhonicsCheckInput['observations'] = {}
-  input.skills.forEach(s => {
+  skills.forEach(s => {
     results[s] = input.results[s] || {}
     const h: Record<string, string> = {}
     Object.entries(input.heard[s] || {}).forEach(([w, said]) => { if (isMiss(results[s][w]) && said.trim()) h[w] = said.trim() })
     heard[s] = h
     observations[s] = input.observations[s] || []
   })
-  const row = { ...input, results, heard, observations, content_version: PHONICS_CONTENT_VERSION }
-  const what = `Phonics check: ${studentName} · ${input.skills.length} ${input.skills.length === 1 ? 'sheet' : 'sheets'}`
+  const row = { ...input, skills, results, heard, observations, content_version: PHONICS_CONTENT_VERSION }
+  const what = `Phonics check: ${studentName} · ${skills.length} ${skills.length === 1 ? 'sheet' : 'sheets'}`
   if (id) {
     const { error } = await supabase.from('phonics_checks').update({ ...row, updated_at: new Date().toISOString() }).eq('id', id)
     if (error) return { id: null, error: error.message }
