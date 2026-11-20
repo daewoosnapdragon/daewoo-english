@@ -5,8 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { logActivity } from '@/lib/activity'
 
 // ─── Phonics: classes that skip the alphabet sheets ──────────────
-// A class past the alphabet can switch the letter names and letter sounds
-// sheets off. They then leave its heat map, sheet picker, printed sheets,
+// A class past the alphabet can switch the four letter names and letter
+// sounds sheets off. They then leave its heat map, sheet picker, printed sheets,
 // CSV and the student page, and on Whole grade and All grades its row reads
 // "Skipped" across those columns rather than a run of empty cells. Saved
 // results are kept and come back if the class switches them on again.

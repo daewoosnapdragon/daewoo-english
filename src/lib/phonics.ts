@@ -6,8 +6,9 @@
 // printed sheet (or the screen) and the teacher marks it. Meaning is never
 // asked.
 //
-// Ahead of the packet sit two alphabet sheets of our own, letter names and
-// letter sounds: all 26 letters, most used in English first, in four rows.
+// Ahead of the packet sit four alphabet sheets of our own, letter names and
+// letter sounds, each in capitals and in lower case: all 26 letters, most
+// used in English first, in four rows.
 // They are scored like any sheet but sit outside the twenty: a mastery
 // position counts the decoding sheets only, so a class may skip the
 // alphabet (phonicsClassSettings.ts) and its numbers mean the same.
@@ -70,16 +71,33 @@ export const LETTERS_BY_FREQUENCY: string[][] = [
 const CAPITALS = LETTERS_BY_FREQUENCY.map(row => row.map(l => l.toUpperCase()))
 
 export const PHONICS_SKILLS: PhonicsSkill[] = [
+  // Names and sounds, each in capitals and in lower case. The first sheet of
+  // each pair keeps the id it was released with (names in capitals, sounds
+  // in lower case), so checks saved before the split stay on their sheet.
   {
-    id: 'letter_names', group: ALPHABET_GROUP, label: 'Letter names', label_ko: '알파벳 이름', short: 'Names',
-    covers: 'All 26 capital letters, most common first, in four rows.', patterns: ['vowels', 'consonants', 'b d p q', 'look-alikes (M N, W M)'],
+    id: 'letter_names', group: ALPHABET_GROUP, label: 'Letter names: capitals', label_ko: '알파벳 이름: 대문자', short: 'Names A',
+    covers: 'All 26 capital letters, most common first, in four rows.', patterns: ['vowels', 'consonants', 'look-alikes (M N, W M)', 'E F, O Q'],
     sections: CAPITALS, words: CAPITALS.flat(),
     say: 'What is the name of this letter?', say_ko: '이 글자의 이름이 뭐예요?',
     ccss: ['RF.K.1d'],
   },
   {
-    id: 'letter_sounds', group: ALPHABET_GROUP, label: 'Letter sounds', label_ko: '알파벳 소리', short: 'Sounds',
-    covers: 'All 26 letters, most common first. Vowels: the short sound. c and g: hard or soft. x is /ks/, q is /kw/.', patterns: ['short vowels', 'consonants', 'b d p q', 'said the name, not the sound'],
+    id: 'letter_names_lower', group: ALPHABET_GROUP, label: 'Letter names: lower case', label_ko: '알파벳 이름: 소문자', short: 'Names a',
+    covers: 'All 26 lower-case letters, most common first, in four rows.', patterns: ['vowels', 'consonants', 'b d p q', 'look-alikes (h n, i l)'],
+    sections: LETTERS_BY_FREQUENCY, words: LETTERS_BY_FREQUENCY.flat(),
+    say: 'What is the name of this letter?', say_ko: '이 글자의 이름이 뭐예요?',
+    ccss: ['RF.K.1d'],
+  },
+  {
+    id: 'letter_sounds_upper', group: ALPHABET_GROUP, label: 'Letter sounds: capitals', label_ko: '알파벳 소리: 대문자', short: 'Sounds A',
+    covers: 'All 26 capital letters, most common first. Vowels: the short sound. C and G: hard or soft. X is /ks/, Q is /kw/.', patterns: ['short vowels', 'consonants', 'said the name, not the sound'],
+    sections: CAPITALS, words: CAPITALS.flat(),
+    say: 'What sound does this letter make?', say_ko: '이 글자는 무슨 소리가 나요?',
+    ccss: ['RF.K.3a', 'RF.K.3b'],
+  },
+  {
+    id: 'letter_sounds', group: ALPHABET_GROUP, label: 'Letter sounds: lower case', label_ko: '알파벳 소리: 소문자', short: 'Sounds a',
+    covers: 'All 26 lower-case letters, most common first. Vowels: the short sound. c and g: hard or soft. x is /ks/, q is /kw/.', patterns: ['short vowels', 'consonants', 'b d p q', 'said the name, not the sound'],
     sections: LETTERS_BY_FREQUENCY, words: LETTERS_BY_FREQUENCY.flat(),
     say: 'What sound does this letter make?', say_ko: '이 글자는 무슨 소리가 나요?',
     ccss: ['RF.K.3a', 'RF.K.3b'],
@@ -277,7 +295,7 @@ export const PHONICS_CHECK_NOTES: string[] = [
   'Correct: read accurately, including sounded out and then blended (/sh/ /i/ /p/, ship), and self-corrections. Partly: nearly there, one sound off or right only after a long struggle; it counts as half a word. Error: read wrongly, skipped, or nothing after about three seconds. Do not model, teach or correct during the check; the same warm tone for every word.',
   'On an error or a partly, tap the pencil on the tile and write what the student said. The packet asks for this: it is what makes error analysis possible later.',
   'Under each sheet, tick how the student decoded (sounded out, onset and rime, read whole and automatic, guessing) and the patterns that gave trouble. These are notes for teaching; they do not change the score.',
-  'The two alphabet sheets come before the packet: all 26 letters, most common first, in four rows. Letter names uses capitals; letter sounds lower case, where a vowel wants its short sound, c and g either sound, x /ks/ and q /kw/. A class can skip them (Alphabet sheets, above the heat map).',
+  'The four alphabet sheets come before the packet: letter names and letter sounds, each in capitals and in lower case, all 26 letters most common first, in four rows. For sounds a vowel wants its short sound, c and g either sound, x /ks/ and q /kw/. A class can skip them (Alphabet sheets, above the heat map).',
   'Stop a sheet after five errors in a row. Leave the remaining words untouched: they are saved as not read, not as errors.',
   'Accuracy is words correct over words on the sheet, a partly counting half. Beginning, under 70%, needs intervention; Developing, 70–89%, needs guided practice; Mastered, 90% and up, has the pattern.',
   'A phonics check is never graded. It sits on the student page and the leveling screens as information, so a reader who sounds fluent but has gaps in decoding is not missed.',

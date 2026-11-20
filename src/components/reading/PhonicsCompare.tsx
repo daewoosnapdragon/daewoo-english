@@ -44,7 +44,7 @@ import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, 
 // Groups: students gathered across classes by the sheet to teach next.
 // Tick students anywhere to compare them side by side.
 //
-// The two alphabet sheets lead the columns unless every class in view skips
+// The four alphabet sheets lead the columns unless every class in view skips
 // them; a class that skips them reads "Skipped" across those columns, and
 // its students' alphabet results (if any were saved before) are left out
 // everywhere here.

@@ -120,7 +120,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   }
 
   // The student sheets, one a page, in large type: the packet's word sheets,
-  // or the two alphabet sheets with their four rows (phonicsPrint.ts).
+  // or the four alphabet sheets with their four rows (phonicsPrint.ts).
   const printSheets = (which: 'letters' | 'words') => {
     const pw = window.open('', '_blank'); if (!pw) return
     const list = sheets.filter(s => isAlphabetSkill(s.id) === (which === 'letters'))

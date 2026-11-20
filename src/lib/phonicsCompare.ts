@@ -4,7 +4,7 @@
 // leveling: a student's mastery position, each class's share of students
 // who have mastered each sheet, and the first sheet a class has not got yet.
 // Mastered is 90% or more on the latest check of the sheet. A position counts
-// the twenty decoding sheets only; the two alphabet sheets in front of them
+// the twenty decoding sheets only; the four alphabet sheets in front of them
 // show as their own columns and, when not mastered, as gaps.
 
 import {

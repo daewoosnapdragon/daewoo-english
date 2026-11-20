@@ -83,6 +83,7 @@ describe('nextToTeach', () => {
   })
   it('teaches an alphabet sheet under 90% first, and goes on to CVC once the letters are mastered', () => {
     expect(nextToTeach(L(sc('letter_names', 100), sc('letter_sounds', 60)))).toEqual({ sheet: 'letter_sounds', reason: 'next', checked: true })
+    expect(nextToTeach(L(sc('letter_sounds', 60), sc('letter_names_lower', 50)))).toEqual({ sheet: 'letter_names_lower', reason: 'next', checked: true })
     expect(nextToTeach(L(sc('letter_sounds', 60), sc('cvc', 100)))).toEqual({ sheet: 'letter_sounds', reason: 'gap', checked: true })
     expect(nextToTeach(L(sc('letter_names', 100), sc('letter_sounds', 95)))).toEqual({ sheet: 'cvc', reason: 'next', checked: false })
   })

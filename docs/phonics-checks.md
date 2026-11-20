@@ -27,10 +27,12 @@ as printed (sixteen or twenty a sheet):
 | Other vowels | R-controlled vowels · Vowel teams for /ū/, /oo/, /ou/ · oi, oy, au, aw |
 | Two-syllable | Open and closed · Consonant -le · Y as a vowel · 1 and 2-syllable silent e · 2-syllable silent e · 2-syllable r-controlled · 2-syllable long vowel teams · 2-syllable more vowel teams |
 
-Ahead of them sit two alphabet sheets of our own, not in the packet:
-**Letter names** (the 26 capitals) and **Letter sounds** (the 26 lower-case
-letters; a vowel wants its short sound, c and g either sound, x /ks/, q /kw/).
-Both run in order of how often the letter is used in English, in four rows
+Ahead of them sit four alphabet sheets of our own, not in the packet:
+**Letter names** and **Letter sounds**, each once in capitals and once in
+lower case (for sounds a vowel wants its short sound, c and g either sound,
+x /ks/, q /kw/). Names in capitals and sounds in lower case keep the ids
+they were first released with (`letter_names`, `letter_sounds`); the other
+two are `letter_names_lower` and `letter_sounds_upper`. All four run in order of how often the letter is used in English, in four rows
 (`LETTERS_BY_FREQUENCY`):
 
 | Row | Letters |
@@ -52,7 +54,7 @@ sheets* above its heat map (one choice per grade and class, for every
 teacher; stored as the `phonics_skip_alphabet` row of `app_settings`, a JSON
 list of `grade|class` keys, `src/lib/phonicsClassSettings.ts`). They then
 leave that class's heat map, sheet picker, printing, CSV and student pages; on
-Whole grade and All grades its row reads *Skipped* across the two columns, and
+Whole grade and All grades its row reads *Skipped* across the four columns, and
 the columns go altogether when every class in view skips them. Saved results
 are kept and come back if the class switches them on again.
 
@@ -118,7 +120,7 @@ The packet's rubric. Accuracy is words correct over words on the sheet.
 - **Leveling meeting**: the hover card on a student's name shows the strip
   and the working-on sheet beside the level test numbers.
 - **CSV** exports the heat map; **Word sheets** prints the twenty sheets in
-  large type, one a page, and **Letter sheets** the two alphabet sheets
+  large type, one a page, and **Letter sheets** the four alphabet sheets
   (`src/lib/phonicsPrint.ts`). *Save as PDF* in the print dialog keeps a
   copy.
 

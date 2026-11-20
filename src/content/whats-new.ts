@@ -25,7 +25,7 @@ export interface WhatsNewEntry {
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'phonics-alphabet', date: '2026-11-23', title: 'Phonics: letter names and letter sounds sheets',
-    body: 'You can now check letter names and letter sounds in Phonics. Two new sheets come before CVC, all 26 letters each, in the order they are most used in English, in four rows (e t a o i n s · h r d l c u m · w f g y p b · v k j x q z); names are capitals, sounds lower case. Letter sheets beside Word sheets prints them in large type, one a page, or saves them as a PDF. They do not change a student’s position, which still counts the twenty word sheets. A class that is past the alphabet can untick Alphabet sheets above its heat map: the two sheets then disappear from that class everywhere, and on Whole grade its row says Skipped instead of a row of empty cells.',
+    body: 'You can now check letter names and letter sounds in Phonics. Four new sheets come before CVC: letter names in capitals, letter names in lower case, letter sounds in capitals and letter sounds in lower case, all 26 letters each, in the order they are most used in English, in four rows (e t a o i n s · h r d l c u m · w f g y p b · v k j x q z). Letter sheets beside Word sheets prints them in large type, one a page, or saves them as a PDF. They do not change a student’s position, which still counts the twenty word sheets. A class that is past the alphabet can untick Alphabet sheets above its heat map: the four sheets then disappear from that class everywhere, and on Whole grade its row says Skipped instead of a row of empty cells.',
     path: '/reading?tab=phonics', guide: 'reading',
   },
   {
