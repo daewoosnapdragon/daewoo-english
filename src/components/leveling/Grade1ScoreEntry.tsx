@@ -1430,7 +1430,7 @@ function Grade1ScoreEntry({ levelTest, isAdmin, teacherClass }: {
               : `Scored against the ${content.label} question set (${levelTest.academic_year} / ${levelTest.semester}).`}
             className={`ml-auto inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] font-medium px-2.5 py-1 rounded-full ${
               versionKey === G1_LEGACY_VERSION
-                ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                ? 'bg-warn-soft text-warn border border-warn/30'
                 : 'bg-surface-alt text-text-secondary border border-border'
             }`}>
             <FileText size={10} /> {content.label}
@@ -1536,7 +1536,7 @@ function computeG1Analytics(scores: Record<string, G1Scores>, students: Student[
     const diff = itemDifficulty[q.qNum]
     const p = diff.correct / n
     if (sdTotal === 0 || p === 0 || p === 1) {
-      discrimination[q.qNum] = { rpb: 0, flag: p === 1 ? 'TOO EASY' : p === 0 ? 'TOO HARD' : 'OK', flagColor: p === 1 ? 'text-blue-600' : p === 0 ? 'text-amber-600' : 'text-gray-500' }
+      discrimination[q.qNum] = { rpb: 0, flag: p === 1 ? 'TOO EASY' : p === 0 ? 'TOO HARD' : 'OK', flagColor: p === 1 ? 'text-info' : p === 0 ? 'text-warn' : 'text-ink-3' }
       return
     }
     const gotRight = studentIds.filter(sid => (scores[sid]?.written_answers || {})[q.qNum] === q.correct)
@@ -1545,12 +1545,12 @@ function computeG1Analytics(scores: Record<string, G1Scores>, students: Student[
     const m0 = gotWrong.length > 0 ? gotWrong.reduce((s, sid) => s + studentTotals[sid], 0) / gotWrong.length : 0
     const rpb = ((m1 - m0) / sdTotal) * Math.sqrt(p * (1 - p))
 
-    let flag = 'OK', flagColor = 'text-gray-500'
-    if (rpb < 0) { flag = 'CHECK KEY'; flagColor = 'text-red-600' }
-    else if (p > 0.9) { flag = 'TOO EASY'; flagColor = 'text-blue-600' }
-    else if (p < 0.2) { flag = 'TOO HARD'; flagColor = 'text-amber-600' }
-    else if (rpb <= 0.1) { flag = 'WEAK'; flagColor = 'text-red-500' }
-    else if (rpb > 0.2 && p >= 0.3 && p <= 0.9) { flag = 'KEEP'; flagColor = 'text-green-600' }
+    let flag = 'OK', flagColor = 'text-ink-3'
+    if (rpb < 0) { flag = 'CHECK KEY'; flagColor = 'text-bad' }
+    else if (p > 0.9) { flag = 'TOO EASY'; flagColor = 'text-info' }
+    else if (p < 0.2) { flag = 'TOO HARD'; flagColor = 'text-warn' }
+    else if (rpb <= 0.1) { flag = 'WEAK'; flagColor = 'text-bad' }
+    else if (rpb > 0.2 && p >= 0.3 && p <= 0.9) { flag = 'KEEP'; flagColor = 'text-good' }
     discrimination[q.qNum] = { rpb, flag, flagColor }
   })
 
@@ -1587,7 +1587,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
           const pct = d.total > 0 ? Math.round((d.correct / d.total) * 100) : 0
           return (
             <div key={sec} className="bg-surface border border-border rounded-lg p-3 text-center">
-              <div className={`text-[length:calc(20px*var(--ts))] font-bold ${pct >= 70 ? 'text-green-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>{pct}%</div>
+              <div className={`text-[length:calc(20px*var(--ts))] font-bold ${pct >= 70 ? 'text-good' : pct >= 50 ? 'text-warn' : 'text-bad'}`}>{pct}%</div>
               <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-medium">{G1_SECTION_LABELS[sec]}</div>
             </div>
           )
@@ -1621,8 +1621,8 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
                   <td className="px-3 py-1.5 text-center font-bold text-navy">{q.choices[q.correct.charCodeAt(0) - 97]}</td>
                   <td className="px-3 py-1.5 text-center">
                     <div className="flex items-center gap-1 justify-center">
-                      <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${pct >= 70 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${pct}%` }} />
+                      <div className="w-16 h-1.5 bg-paper-3 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${pct >= 70 ? 'bg-good' : pct >= 50 ? 'bg-warn' : 'bg-bad'}`} style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-[length:calc(11.5px*var(--ts))] w-8 text-right">{pct}%</span>
                     </div>
@@ -1644,7 +1644,7 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
               <div key={q.qNum} className="flex items-center gap-2 text-[length:calc(11.5px*var(--ts))]">
                 <span className="font-mono text-text-tertiary w-5">Q{q.qNum}</span>
                 <span className="text-text-secondary flex-1">{G1_SECTION_LABELS[q.section]}: {q.choices[q.correct.charCodeAt(0) - 97]}</span>
-                <span className="font-bold text-red-600">{Math.round(q.pct)}%</span>
+                <span className="font-bold text-bad">{Math.round(q.pct)}%</span>
               </div>
             ))}
           </div>
@@ -1885,13 +1885,13 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
             const dirty = isStudentDirty(s.id)
             return (
               <div key={s.id} onClick={() => setSelectedIdx(idx)}
-                className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[length:calc(11.5px*var(--ts))] transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
+                className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-[length:calc(11.5px*var(--ts))] transition-colors ${idx === selectedIdx ? 'bg-navy/10' : 'hover:bg-surface-alt'}`}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classDot(s.english_class as EnglishClass) }} />
                 <span className="flex-1 truncate">{s.english_name || s.korean_name}</span>
                 {hasData && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{answered}/{G1_MC_MAX}</span>}
-                {dirty ? <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" title="Unsaved changes" />
-                  : scores[s.id]?.written_complete ? <CheckCircle2 size={11} className="text-green-600 flex-shrink-0" aria-label="Test graded" />
-                  : hasData && <CheckCircle2 size={10} className="text-green-500 flex-shrink-0" />}
+                {dirty ? <span className="w-2 h-2 rounded-full bg-warn flex-shrink-0" title="Unsaved changes" />
+                  : scores[s.id]?.written_complete ? <CheckCircle2 size={11} className="text-good flex-shrink-0" aria-label="Test graded" />
+                  : hasData && <CheckCircle2 size={10} className="text-good flex-shrink-0" />}
               </div>
             )
           })}
@@ -1903,10 +1903,10 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
             return (
               <>
                 {dirtyCount > 0 && (
-                  <div className="text-[length:calc(11.5px*var(--ts))] text-amber-600 font-medium mb-1 text-center">{dirtyCount} unsaved</div>
+                  <div className="text-[length:calc(11.5px*var(--ts))] text-warn font-medium mb-1 text-center">{dirtyCount} unsaved</div>
                 )}
                 <button onClick={() => onSave(dirtyIds)} disabled={saving || dirtyCount === 0}
-                  className={`w-full py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all flex items-center justify-center gap-1.5 ${dirtyCount > 0 ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'} disabled:opacity-50 disabled:animate-none`}>
+                  className={`w-full py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all flex items-center justify-center gap-1.5 ${dirtyCount > 0 ? 'bg-accent text-white hover:bg-accent-hover animate-pulse' : 'bg-paper-2 text-ink-3'} disabled:opacity-50 disabled:animate-none`}>
                   {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                   {dirtyCount > 0 ? `Save ${dirtyCount} Changed` : 'All Saved'}
                 </button>
@@ -1942,8 +1942,8 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   </div>
                 )}
                 <div className="text-right mr-3">
-                  <div className="text-[length:calc(20px*var(--ts))] font-bold text-amber-600">{writingTotal}<span className="text-[length:calc(14px*var(--ts))] text-text-tertiary">/{G1_WRITING_MAX}</span></div>
-                  <div className="text-[length:calc(11.5px*var(--ts))] text-amber-600 flex items-center gap-0.5 justify-end"><Star size={9} /> {writingInTotal ? 'Writing' : 'Bonus'}</div>
+                  <div className="text-[length:calc(20px*var(--ts))] font-bold text-navy">{writingTotal}<span className="text-[length:calc(14px*var(--ts))] text-text-tertiary">/{G1_WRITING_MAX}</span></div>
+                  <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary flex items-center gap-0.5 justify-end"><Star size={9} className="text-accent" /> {writingInTotal ? 'Writing' : 'Bonus'}</div>
                 </div>
                 {writingInTotal && (
                   <div className="text-right mr-3 pl-3 border-l border-border">
@@ -1954,7 +1954,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   </div>
                 )}
                 {studentHasData && (
-                  <button onClick={clearStudent} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700 border border-red-200 px-2 py-1 rounded flex items-center gap-1">
+                  <button onClick={clearStudent} className="text-[length:calc(11.5px*var(--ts))] text-bad hover:bg-bad-soft border border-bad/30 px-2 py-1 rounded flex items-center gap-1">
                     <RotateCcw size={12} /> Clear
                   </button>
                 )}
@@ -2009,17 +2009,17 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                       const isWordQ = !isPositional && q.choices.some(c => c.length > 2)
                       return (
                         <div key={q.qNum} id={`g1-q-row-${q.qNum}`} onClick={() => setFocusedQ(q.qNum)}
-                          className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
+                          className={`flex items-center gap-3 px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-paper-2/50'} ${chosen && !isCorrect ? 'bg-bad-soft/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-info-soft/30' : ''}`}>
                           <span className={`w-5 text-[length:calc(11.5px*var(--ts))] text-right font-mono ${isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
                           <div className="flex gap-1">
                             {q.choices.map((choice, ci) => {
                               const letter = String.fromCharCode(97 + ci)
                               const isChosen = chosen === letter
                               const isCorrectAnswer = q.correct === letter
-                              let bg = 'bg-white border-gray-200 hover:border-navy/40'
-                              if (isChosen && isCorrect) bg = 'bg-green-500 border-green-500 text-white'
-                              else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
-                              else if (chosen && isCorrectAnswer) bg = 'bg-green-100 border-green-300 text-green-700'
+                              let bg = 'bg-white border-rule hover:border-navy/40'
+                              if (isChosen && isCorrect) bg = 'bg-good border-good text-white'
+                              else if (isChosen && !isCorrect) bg = 'bg-bad border-bad/60 text-white'
+                              else if (chosen && isCorrectAnswer) bg = 'bg-good-soft border-good/40 text-good'
                               return (
                                 <button key={letter} onClick={(e) => { e.stopPropagation(); updateWrittenAnswer(student.id, q.qNum, letter); setFocusedQ(q.qNum) }}
                                   title={isPositional ? choice : undefined}
@@ -2034,7 +2034,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                             {q.text}
                           </span>
                           <G1StandardBadge code={q.standard} description={q.standardDesc} />
-                          {chosen && (isCorrect ? <Check size={12} className="text-green-500" /> : <X size={12} className="text-red-400" />)}
+                          {chosen && (isCorrect ? <Check size={12} className="text-good" /> : <X size={12} className="text-bad" />)}
                         </div>
                       )
                     })}
@@ -2062,10 +2062,10 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                       className={`w-full flex items-start gap-3 px-3 py-2 text-left transition-all ${
                         shortScore === row.score
                           ? 'bg-navy/10 ring-1 ring-inset ring-navy/30'
-                          : ri % 2 === 0 ? 'bg-white hover:bg-surface-alt' : 'bg-gray-50/50 hover:bg-surface-alt'
+                          : ri % 2 === 0 ? 'bg-white hover:bg-surface-alt' : 'bg-paper-2/50 hover:bg-surface-alt'
                       }`}>
                       <span className={`w-7 h-7 rounded text-[length:calc(12px*var(--ts))] font-bold border-2 flex items-center justify-center shrink-0 ${
-                        shortScore === row.score ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200'
+                        shortScore === row.score ? 'bg-navy border-navy text-white' : 'bg-white border-rule'
                       }`}>{row.score}</span>
                       <span className="min-w-0">
                         <span className="block text-[length:calc(11.5px*var(--ts))] font-medium text-text-primary">{row.label}</span>
@@ -2076,7 +2076,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                 </div>
                 {shortWriting.notes.length > 0 && (
                   <details className="mt-1.5">
-                    <summary className="text-[length:calc(11.5px*var(--ts))] text-purple-600 cursor-pointer hover:underline font-medium">Scoring notes</summary>
+                    <summary className="text-[length:calc(11.5px*var(--ts))] text-accent cursor-pointer hover:underline font-medium">Scoring notes</summary>
                     <ul className="mt-1.5 space-y-1 pl-4 list-disc">
                       {shortWriting.notes.map((n, i) => (
                         <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-snug">{n}</li>
@@ -2092,11 +2092,11 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy flex items-center gap-1.5">
-                    <Star size={13} className="text-amber-500" />
+                    <Star size={13} className="text-warn" />
                     {writingInTotal ? 'Extended Writing' : 'Writing Bonus'}
                   </h4>
                   <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full font-semibold ${
-                    writingInTotal ? 'bg-navy/10 text-navy' : 'bg-amber-100 text-amber-700'
+                    writingInTotal ? 'bg-navy/10 text-navy' : 'bg-warn-soft text-warn'
                   }`}>
                     {writingInTotal
                       ? `Part of the written test -- ${G1_WRITING_MAX} of ${writtenTotalMax} points`
@@ -2121,12 +2121,12 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   if (cat.kind === 'checklist' && cat.checklist) {
                     const checked = new Set(sc.written_checklist?.[cat.key] || [])
                     return (
-                      <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                      <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-paper-2/50'}`}>
                         <div className="flex items-start gap-3 px-3 py-2">
                           <div className="w-44 shrink-0">
                             <div className="text-[length:calc(12px*var(--ts))] font-medium">{cat.label}</div>
                             <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
-                            <div className="text-[length:calc(11.5px*var(--ts))] text-amber-700 font-semibold mt-1">
+                            <div className="text-[length:calc(11.5px*var(--ts))] text-warn font-semibold mt-1">
                               Checklist -- check every feature present, in any order
                             </div>
                           </div>
@@ -2138,7 +2138,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                                   className="flex items-start gap-2 px-2 py-1 rounded hover:bg-surface-alt cursor-pointer">
                                   <input type="checkbox" checked={on}
                                     onChange={() => toggleWrittenChecklist(student.id, cat.key, box.key)}
-                                    className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500 shrink-0" />
+                                    className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-good focus:ring-good/60 shrink-0" />
                                   <span className="min-w-0">
                                     <span className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-primary">{box.label}</span>
                                     {showRubricGuide && (
@@ -2156,7 +2156,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   }
 
                   return (
-                    <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                    <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-paper-2/50'}`}>
                       <div className="flex items-start gap-3 px-3 py-2.5">
                         <div className="w-44 shrink-0 pt-1">
                           <div className="text-[length:calc(12.5px*var(--ts))] font-semibold">{cat.label}</div>
@@ -2173,7 +2173,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                               <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
                                 aria-pressed={on}
                                 className={`group relative text-left rounded-xl px-3 py-2.5 border transition-all text-[length:calc(11.5px*var(--ts))] leading-[1.45] min-h-[92px] ${
-                                  on ? 'bg-navy/[0.07] border-navy text-navy shadow-[inset_0_0_0_1px_var(--navy,#4E63A0)] font-medium'
+                                  on ? 'bg-navy/[0.07] border-navy text-navy shadow-[inset_0_0_0_1px_rgb(var(--ink))] font-medium'
                                      : 'bg-white border-border text-text-secondary hover:border-navy/40 hover:bg-navy/[0.02]'
                                 }`}>
                                 {on && (
@@ -2190,7 +2190,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                           <div className="flex gap-1">
                             {Array.from({ length: cat.max + 1 }, (_, i) => (
                               <button key={i} onClick={() => updateWrittenRubric(student.id, cat.key, i)}
-                                className={`w-9 h-9 rounded-lg text-[length:calc(12px*var(--ts))] font-bold border-2 transition-all ${val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'}`}>{i}</button>
+                                className={`w-9 h-9 rounded-lg text-[length:calc(12px*var(--ts))] font-bold border-2 transition-all ${val === i ? 'bg-navy border-navy text-white' : 'bg-white border-rule hover:border-navy/40'}`}>{i}</button>
                             ))}
                           </div>
                         )}
@@ -2202,7 +2202,7 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
               </div>
               {content.extendedWriting.notes.length > 0 && (
                 <details className="mt-1.5">
-                  <summary className="text-[length:calc(11.5px*var(--ts))] text-purple-600 cursor-pointer hover:underline font-medium">Scoring notes</summary>
+                  <summary className="text-[length:calc(11.5px*var(--ts))] text-accent cursor-pointer hover:underline font-medium">Scoring notes</summary>
                   <ul className="mt-1.5 space-y-1 pl-4 list-disc">
                     {content.extendedWriting.notes.map((n, i) => (
                       <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-snug">{n}</li>
@@ -2237,13 +2237,13 @@ function WrittenTestEntry({ content, students, scores, updateWrittenAnswer, upda
                   : 'Records that this paper has been marked. Any section still blank counts as 0 from then on, so a student who wrote nothing is scored rather than left out of the results as untested.'}
                 className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[length:calc(14px*var(--ts))] font-bold border-2 transition-all disabled:opacity-50 ${
                   writtenComplete
-                    ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                    ? 'bg-good-soft text-good border-good/40 hover:bg-good-soft'
                     : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
                 {writtenComplete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
                 {writtenComplete ? 'Test graded' : 'Mark test graded'}
               </button>
               {writtenComplete && blankSections.length > 0 && (
-                <p className="text-[length:calc(11.5px*var(--ts))] text-green-700 text-center mt-2">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-good text-center mt-2">
                   Marked. {blankSections.join(', ')} {blankSections.length === 1 ? 'counts' : 'count'} as 0.
                 </p>
               )}
@@ -2332,19 +2332,19 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Letter Names</p>
-          <span className={`text-[length:calc(12px*var(--ts))] font-bold ${nameCount >= NAME_MAX * 0.75 ? 'text-green-600' : nameCount >= NAME_MAX * 0.5 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          <span className={`text-[length:calc(12px*var(--ts))] font-bold ${nameCount >= NAME_MAX * 0.75 ? 'text-good' : nameCount >= NAME_MAX * 0.5 ? 'text-warn' : 'text-text-secondary'}`}>
             {nameCount}/{NAME_MAX}
           </span>
         </div>
-        <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-blue-700">Say: "Tell me the name of each letter." Point to each letter. Tap green = correct.</p>
+        <div className="bg-paper-2 rounded-lg px-4 py-2 border border-rule mb-2">
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2">Say: "Tell me the name of each letter." Point to each letter. Tap green = correct.</p>
         </div>
         <div className="grid grid-cols-8 gap-1.5">
           {ALPHABET_LETTERS.map((letter, i) => (
             <button key={`name-${i}`} onClick={() => toggleName(i)}
               className={`px-2 py-3 rounded-xl text-[length:calc(18px*var(--ts))] font-bold font-serif transition-all ${
-                nameStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-                'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+                nameStatus[i] === true ? 'bg-good-soft text-good border-2 border-good/60 shadow-sm' :
+                'bg-white text-ink border-2 border-rule hover:border-navy/40'
               }`} style={{ touchAction: 'manipulation' }}>
               {letter}
             </button>
@@ -2353,7 +2353,7 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
         <div className="flex gap-2 mt-2">
           <button onClick={() => {
             const ns: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ns[i] = true }); setNameStatus(ns); updateScore(studentId, 'o_alpha_names', ALPHABET_LETTERS.length); setInitialized(true)
-          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">All correct</button>
           <button onClick={() => { setNameStatus({}); updateScore(studentId, 'o_alpha_names', 0); setInitialized(true) }}
             className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
@@ -2363,19 +2363,19 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Letter Sounds</p>
-          <span className={`text-[length:calc(12px*var(--ts))] font-bold ${soundCount >= SOUND_MAX * 0.75 ? 'text-green-600' : soundCount >= SOUND_MAX * 0.5 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          <span className={`text-[length:calc(12px*var(--ts))] font-bold ${soundCount >= SOUND_MAX * 0.75 ? 'text-good' : soundCount >= SOUND_MAX * 0.5 ? 'text-warn' : 'text-text-secondary'}`}>
             {soundCount}/{SOUND_MAX}
           </span>
         </div>
-        <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-blue-700">Say: "Now tell me the sound each letter makes." Point to each letter. Tap green = correct sound.</p>
+        <div className="bg-paper-2 rounded-lg px-4 py-2 border border-rule mb-2">
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2">Say: "Now tell me the sound each letter makes." Point to each letter. Tap green = correct sound.</p>
         </div>
         <div className="grid grid-cols-8 gap-1.5">
           {ALPHABET_LETTERS.map((letter, i) => (
             <button key={`sound-${i}`} onClick={() => toggleSound(i)}
               className={`px-2 py-3 rounded-xl text-[length:calc(18px*var(--ts))] font-bold font-serif transition-all ${
-                soundStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-                'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+                soundStatus[i] === true ? 'bg-good-soft text-good border-2 border-good/60 shadow-sm' :
+                'bg-white text-ink border-2 border-rule hover:border-navy/40'
               }`} style={{ touchAction: 'manipulation' }}>
               /{letter}/
             </button>
@@ -2384,7 +2384,7 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
         <div className="flex gap-2 mt-2">
           <button onClick={() => {
             const ss: Record<number, boolean> = {}; ALPHABET_LETTERS.forEach((_, i) => { ss[i] = true }); setSoundStatus(ss); updateScore(studentId, 'o_alpha_sounds', ALPHABET_LETTERS.length); setInitialized(true)
-          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+          }} className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">All correct</button>
           <button onClick={() => { setSoundStatus({}); updateScore(studentId, 'o_alpha_sounds', 0); setInitialized(true) }}
             className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
@@ -2394,12 +2394,12 @@ function AlphabetGrids({ sc, studentId, updateScore, content }: {
       <div className="bg-surface-alt/50 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Words Given /5</p>
-          <span className={`text-[length:calc(12px*var(--ts))] font-bold ${wordsCount >= 4 ? 'text-green-600' : wordsCount >= 2 ? 'text-amber-600' : 'text-text-secondary'}`}>
+          <span className={`text-[length:calc(12px*var(--ts))] font-bold ${wordsCount >= 4 ? 'text-good' : wordsCount >= 2 ? 'text-warn' : 'text-text-secondary'}`}>
             {wordsCount}/5
           </span>
         </div>
-        <div className="bg-blue-50 rounded-lg px-4 py-2 border border-blue-100 mb-3">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-blue-700">Say: "Can you tell me a word that starts with [letter]?" Pick 5 letters from above. Check how many words they can produce.</p>
+        <div className="bg-paper-2 rounded-lg px-4 py-2 border border-rule mb-3">
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2">Say: "Can you tell me a word that starts with [letter]?" Pick 5 letters from above. Check how many words they can produce.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
@@ -2451,26 +2451,26 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
     <div className="space-y-4">
       {/* Teacher model word -- demonstrated, never scored */}
       {modelWord ? (
-        <div className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200">
+        <div className="bg-paper-2 rounded-xl px-5 py-4 border border-rule">
           <div className="flex items-center gap-2 mb-2">
-            <p className="text-[length:calc(12px*var(--ts))] font-bold text-amber-900">Teacher model first</p>
-            <span className="text-[length:calc(11.5px*var(--ts))] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-200 text-amber-900">
+            <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink">Teacher model first</p>
+            <span className="text-[length:calc(11.5px*var(--ts))] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-warn-soft text-warn">
               Not scored
             </span>
           </div>
-          <p className="text-[length:calc(11.5px*var(--ts))] text-amber-800 leading-relaxed">
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-relaxed">
             Demonstrate the task with <span className="font-bold font-serif">{modelWord.word}</span> before the student
             tries. This word appears on the student copy for this purpose only &mdash; do not record points for it.
           </p>
-          <div className="mt-2 bg-white/60 rounded-lg px-4 py-3 text-[length:calc(11.5px*var(--ts))] text-amber-900 space-y-1.5">
+          <div className="mt-2 bg-surface rounded-lg px-4 py-3 text-[length:calc(11.5px*var(--ts))] text-ink-2 space-y-1.5">
             <p><span className="font-bold">1.</span> Push a counter for each sound while saying <span className="font-semibold">{modelWord.sounds.join(' ')}</span></p>
             <p><span className="font-bold">2.</span> Say: <span className="font-semibold">"{modelWord.sounds.length} sounds. The first sound is {modelWord.sounds[0]}."</span></p>
           </div>
         </div>
       ) : (
-        <div className="bg-amber-50 rounded-xl px-5 py-4 border border-amber-200">
-          <p className="text-[length:calc(12px*var(--ts))] font-bold text-amber-900 mb-2">Teacher Model First!</p>
-          <p className="text-[length:calc(11.5px*var(--ts))] text-amber-800 leading-relaxed">
+        <div className="bg-paper-2 rounded-xl px-5 py-4 border border-rule">
+          <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink mb-2">Teacher Model First!</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-relaxed">
             Model the whole task with an example word before the student tries each word below.
           </p>
         </div>
@@ -2493,7 +2493,7 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
                   </div>
                 </div>
                 <span className={`text-[length:calc(12px*var(--ts))] font-bold ${
-                  wordTotal === wordMax ? 'text-green-600' : wordTotal > 0 ? 'text-amber-600' : 'text-text-tertiary'
+                  wordTotal === wordMax ? 'text-good' : wordTotal > 0 ? 'text-warn' : 'text-text-tertiary'
                 }`}>
                   {wordTotal}/{wordMax}
                 </span>
@@ -2507,7 +2507,7 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
                       className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-alt cursor-pointer transition-all">
                       <input type="checkbox" checked={checked}
                         onChange={() => updateScore(studentId, probe.key, !checked)}
-                        className="w-5 h-5 rounded border-2 border-navy/30 text-green-600 focus:ring-green-500" />
+                        className="w-5 h-5 rounded border-2 border-navy/30 text-good focus:ring-good/60" />
                       <div>
                         <span className="text-[length:calc(12px*var(--ts))] font-medium text-text-primary">{probe.label}</span>
                         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-2">&rarr; {probe.answer}</span>
@@ -2522,9 +2522,9 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
       </div>
 
       {l1Note && (
-        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800 mb-1">Note on L1 interference</p>
-          <p className="text-[length:calc(11.5px*var(--ts))] text-blue-700 leading-relaxed">{l1Note}</p>
+        <div className="bg-paper-2 border border-rule rounded-xl px-4 py-3">
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink mb-1">Note on L1 interference</p>
+          <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-relaxed">{l1Note}</p>
         </div>
       )}
 
@@ -2570,34 +2570,34 @@ function LevelBWordGrid({ score, onScore, content }: { score: number | null | un
 
   return (
     <div className="space-y-3">
-      <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
-        <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Say: "Read each word. Try your best."</p>
-        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-0.5">Point to each word. Give 3-5 seconds per word. Tap to mark correct (green), tap again to undo.</p>
+      <div className="bg-paper-2 rounded-lg px-4 py-3 border border-rule">
+        <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">Say: "Read each word. Try your best."</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-0.5">Point to each word. Give 3-5 seconds per word. Tap to mark correct (green), tap again to undo.</p>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {LEVEL_B_WORDS.map((word, i) => (
           <button key={i} onClick={() => toggle(i)}
             className={`px-3 py-3 rounded-xl text-[length:calc(16px*var(--ts))] font-serif font-bold transition-all ${
-              wordStatus[i] === true ? 'bg-green-100 text-green-800 border-2 border-green-400 shadow-sm' :
-              'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+              wordStatus[i] === true ? 'bg-good-soft text-good border-2 border-good/60 shadow-sm' :
+              'bg-white text-ink border-2 border-rule hover:border-navy/40'
             }`}>
             {word}
           </button>
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <span className={`text-[length:calc(13px*var(--ts))] font-bold ${correctCount >= bumpUp ? 'text-green-600' : correctCount >= bMax * 0.4 ? 'text-amber-600' : 'text-text-secondary'}`}>
+        <span className={`text-[length:calc(13px*var(--ts))] font-bold ${correctCount >= bumpUp ? 'text-good' : correctCount >= bMax * 0.4 ? 'text-warn' : 'text-text-secondary'}`}>
           {correctCount}/{bMax} correct
         </span>
         <div className="flex gap-2">
           <button onClick={() => { const ws: Record<number, boolean> = {}; LEVEL_B_WORDS.forEach((_, i) => { ws[i] = true }); setWordStatus(ws); onScore(LEVEL_B_WORDS.length); setInitialized(true) }}
-            className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+            className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">All correct</button>
           <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
             className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
-      {correctCount >= bumpUp && <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 font-medium">Score is {bumpUp}+. You may want to re-test at Level C.</p>}
-      {initialized && correctCount === 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600 font-medium">Cannot read any words. You may want to re-test at Level A.</p>}
+      {correctCount >= bumpUp && <p className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">Score is {bumpUp}+. You may want to re-test at Level C.</p>}
+      {initialized && correctCount === 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-warn font-medium">Cannot read any words. You may want to re-test at Level A.</p>}
     </div>
   )
 }
@@ -2636,9 +2636,9 @@ function LevelCSentences({ score, onScore, content }: { score: number | null | u
 
   return (
     <div className="space-y-3">
-      <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
-        <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Say: "Read these sentences out loud. Try your best."</p>
-        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-0.5">1 pt per word read correctly. Self-corrections count as correct. Tap to mark correct, tap again to undo.</p>
+      <div className="bg-paper-2 rounded-lg px-4 py-3 border border-rule">
+        <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">Say: "Read these sentences out loud. Try your best."</p>
+        <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-0.5">1 pt per word read correctly. Self-corrections count as correct. Tap to mark correct, tap again to undo.</p>
       </div>
       <div className="space-y-3">
         {LEVEL_C_SENTENCES.map((sent, si) => (
@@ -2650,8 +2650,8 @@ function LevelCSentences({ score, onScore, content }: { score: number | null | u
                 return (
                   <button key={key} onClick={() => toggle(key)}
                     className={`px-3 py-2 rounded-lg text-[length:calc(16px*var(--ts))] font-serif transition-all ${
-                      wordStatus[key] === true ? 'bg-green-100 text-green-800 border-2 border-green-400' :
-                      'bg-white text-gray-800 border-2 border-gray-200 hover:border-navy/40'
+                      wordStatus[key] === true ? 'bg-good-soft text-good border-2 border-good/60' :
+                      'bg-white text-ink border-2 border-rule hover:border-navy/40'
                     }`}>
                     {word}
                   </button>
@@ -2662,18 +2662,18 @@ function LevelCSentences({ score, onScore, content }: { score: number | null | u
         ))}
       </div>
       <div className="flex items-center justify-between">
-        <span className={`text-[length:calc(13px*var(--ts))] font-bold ${correctCount >= cMax * 0.8 ? 'text-green-600' : correctCount >= cMax * 0.45 ? 'text-amber-600' : 'text-text-secondary'}`}>
+        <span className={`text-[length:calc(13px*var(--ts))] font-bold ${correctCount >= cMax * 0.8 ? 'text-good' : correctCount >= cMax * 0.45 ? 'text-warn' : 'text-text-secondary'}`}>
           {correctCount}/{cMax} correct
         </span>
         <div className="flex gap-2">
           <button onClick={() => { const ws: Record<string, boolean> = {}; allWords.forEach(w => { ws[w.key] = true }); setWordStatus(ws); onScore(allWords.length); setInitialized(true) }}
-            className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100">All correct</button>
+            className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">All correct</button>
           <button onClick={() => { setWordStatus({}); onScore(0); setInitialized(true) }}
             className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-surface-alt text-text-tertiary hover:bg-surface">Reset</button>
         </div>
       </div>
-      {correctCount >= cMax * 0.8 && <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 font-medium">If they can give you a full sentence, you may want to re-test at Level D.</p>}
-      {initialized && correctCount === 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600 font-medium">Cannot read any words. You may want to re-test at Level B.</p>}
+      {correctCount >= cMax * 0.8 && <p className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">If they can give you a full sentence, you may want to re-test at Level D.</p>}
+      {initialized && correctCount === 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-warn font-medium">Cannot read any words. You may want to re-test at Level B.</p>}
     </div>
   )
 }
@@ -2808,14 +2808,14 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
   return (
     <>
       <button onClick={() => setShowPassage(true)}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-green-600 text-white hover:bg-green-700 transition-all">
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
         <BookOpen size={14} /> {finished ? 'Done -- ' : ''}Open Passage: "{passage.title}" ({passage.wordCount} words)
       </button>
 
       {showPassage && (
         <Overlay><div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowPassage(false)}>
           <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: any) => e.stopPropagation()}>
-            <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
+            <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-surface shrink-0">
               <div>
                 <h3 className="font-display text-lg font-semibold text-navy">Passage {level}: {passage.title}</h3>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">{passage.wordCount} words</p>
@@ -2836,9 +2836,9 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                     <span key={b.key} title={b.action}
                       className={`text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border transition-all ${
                         live
-                          ? b.key === 'frustration' ? 'bg-red-100 border-red-300 text-red-800 font-bold'
-                          : b.key === 'instructional' ? 'bg-amber-100 border-amber-300 text-amber-800 font-bold'
-                          : 'bg-green-100 border-green-300 text-green-800 font-bold'
+                          ? b.key === 'frustration' ? 'bg-bad-soft border-bad/40 text-bad font-bold'
+                          : b.key === 'instructional' ? 'bg-warn-soft border-warn/40 text-warn font-bold'
+                          : 'bg-good-soft border-good/40 text-good font-bold'
                           : 'bg-surface border-border text-text-secondary'
                       }`}>
                       <span className="font-semibold">{b.label}</span> {b.accuracy}
@@ -2855,7 +2855,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 student does not always need a re-read, so the call stays with
                 the teacher. */}
             {finished && elapsed > 0 && liveBand === 'frustration' && (
-              <div className="px-6 py-2 bg-red-50 border-b border-red-200 text-[length:calc(11.5px*var(--ts))] text-red-800 shrink-0 flex items-start gap-2">
+              <div className="px-6 py-2 bg-bad-soft border-b border-bad/30 text-[length:calc(11.5px*var(--ts))] text-bad shrink-0 flex items-start gap-2">
                 <Info size={12} className="mt-0.5 shrink-0" />
                 <span>
                   <strong>{accuracy}% accuracy is Frustration level</strong> for this passage.
@@ -2866,11 +2866,11 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
               </div>
             )}
 
-            <div className="flex items-center justify-between px-6 py-2.5 bg-navy-dark text-white shrink-0">
+            <div className="flex items-center justify-between px-6 py-2.5 bg-paper-2 border-b border-rule text-ink shrink-0">
               <div className="flex items-center gap-3">
                 {!timing && !finished && (
                   <button onClick={() => { setTiming(true); setFinished(false); setPausedForBreak(false) }}
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-green-500 hover:bg-green-600 text-white text-[length:calc(12px*var(--ts))] font-semibold">
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-accent hover:bg-accent-hover text-white text-[length:calc(12px*var(--ts))] font-semibold">
                     {canResume ? 'Resume' : 'Start'}
                   </button>
                 )}
@@ -2879,35 +2879,35 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                     counted in the CWPM -- which is the whole point of it. */}
                 {timing && (
                   <button onClick={() => { setTiming(false); setPausedForBreak(true) }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-[length:calc(12px*var(--ts))] font-semibold">
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-3 text-[length:calc(12px*var(--ts))] font-semibold">
                     Pause
                   </button>
                 )}
                 {(timing || canResume) && (
                   <button onClick={() => { setTiming(false); setPausedForBreak(false); setFinished(true) }}
-                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[length:calc(12px*var(--ts))] font-semibold ${timing ? 'animate-pulse' : ''}`}>
+                    className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-bad hover:bg-bad/90 text-white text-[length:calc(12px*var(--ts))] font-semibold ${timing ? 'animate-pulse' : ''}`}>
                     Stop
                   </button>
                 )}
                 {finished && (
                   <button onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[length:calc(11.5px*var(--ts))] font-medium">
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-3 text-[length:calc(11.5px*var(--ts))] font-medium">
                     Reset
                   </button>
                 )}
                 <span className={`text-[length:calc(24px*var(--ts))] font-mono font-bold tabular-nums ${
-                  pausedForBreak ? 'text-amber-300'
-                    : elapsed >= content.timing.ceilingSeconds ? 'text-red-400'
-                    : elapsed >= content.timing.struggleStopSeconds ? 'text-gold' : ''
+                  pausedForBreak ? 'text-warn'
+                    : elapsed >= content.timing.ceilingSeconds ? 'text-bad'
+                    : elapsed >= content.timing.struggleStopSeconds ? 'text-accent' : ''
                 }`}>{formatTime(elapsed)}</span>
                 {pausedForBreak && (
-                  <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-amber-300 uppercase tracking-wider">
+                  <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-warn uppercase tracking-wider">
                     Paused &mdash; clock stopped for a break
                   </span>
                 )}
                 {timing && elapsed >= content.timing.struggleStopSeconds && (
                   <span className={`text-[length:calc(11.5px*var(--ts))] leading-tight max-w-[230px] ${
-                    elapsed >= content.timing.ceilingSeconds ? 'text-red-300 font-semibold' : 'text-white/70'
+                    elapsed >= content.timing.ceilingSeconds ? 'text-bad font-semibold' : 'text-ink-2'
                   }`}>
                     {elapsed >= content.timing.ceilingSeconds
                       ? 'Two minutes. End the passage and move on.'
@@ -2916,26 +2916,26 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 )}
               </div>
               <div className="flex items-center gap-5 text-[length:calc(11.5px*var(--ts))]">
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">Errors</div></div>
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">SC</div></div>
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-gold">{elapsed > 0 ? cwpm : '--'}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">CWPM</div></div>
-                <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-green-400' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-amber-400' : elapsed > 0 ? 'text-red-400' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">Acc</div></div>
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase">Words</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Errors</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">SC</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-accent">{elapsed > 0 ? cwpm : '--'}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">CWPM</div></div>
+                <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-good' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-warn' : elapsed > 0 ? 'text-bad' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Acc</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Words</div></div>
               </div>
             </div>
 
             <div className="px-6 py-1.5 bg-accent-light border-b border-border text-[length:calc(11.5px*var(--ts))] text-navy shrink-0">
-              <strong>Click:</strong> 1x = <span className="text-red-600 font-bold">error</span> | 2x = <span className="text-amber-600 font-bold">self-correct</span> | 3x = <span className="text-red-600 font-bold">last word read</span> | 4x = reset
+              <strong>Click:</strong> 1x = <span className="text-bad font-bold">error</span> | 2x = <span className="text-warn font-bold">self-correct</span> | 3x = <span className="text-bad font-bold">last word read</span> | 4x = reset
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {lastWordIdx !== null && (
-                <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
-                  <span className="text-[length:calc(11.5px*var(--ts))] text-blue-800 font-medium">
+                <div className="mb-3 flex items-center justify-between bg-info-soft rounded-lg px-4 py-2 border border-info/30">
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">
                     Last word: "{words[lastWordIdx]}" -- <span className="font-bold">{lastWordIdx + 1}/{words.length}</span>
-                    {lastWordIdx + 1 < words.length && <span className="text-blue-600 ml-1">(didn't finish)</span>}
+                    {lastWordIdx + 1 < words.length && <span className="text-info ml-1">(didn't finish)</span>}
                   </span>
-                  <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700">Clear</button>
+                  <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-bad">Clear</button>
                 </div>
               )}
               <div className="leading-[2.8]">
@@ -2949,10 +2949,10 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                       return (
                         <button key={idx} onClick={() => handleWordClick(idx)}
                           className={`px-1.5 py-1 rounded-lg text-[length:calc(17px*var(--ts))] font-serif font-medium transition-all select-none ${
-                            isPastLast ? 'text-gray-300 border-2 border-transparent cursor-default' :
-                            isLastWord ? 'bg-red-500 text-white border-2 border-red-600 ring-2 ring-red-300 font-bold' :
-                            mark === 'error' ? 'bg-red-100 text-red-700 border-2 border-red-400 line-through decoration-2' :
-                            mark === 'self_correct' ? 'bg-amber-100 text-amber-700 border-2 border-amber-400' :
+                            isPastLast ? 'text-ink-3 border-2 border-transparent cursor-default' :
+                            isLastWord ? 'bg-bad text-white border-2 border-bad ring-2 ring-bad/40 font-bold' :
+                            mark === 'error' ? 'bg-bad-soft text-bad border-2 border-bad/60 line-through decoration-2' :
+                            mark === 'self_correct' ? 'bg-warn-soft text-warn border-2 border-warn/60' :
                             'hover:bg-surface-alt border-2 border-transparent text-text-primary'
                           }`} style={{ touchAction: 'manipulation' }}>
                           {word}
@@ -2971,11 +2971,11 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 className="w-full px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy bg-white" />
               <div className="flex items-center justify-between">
                 <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
-                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> | Accuracy: <strong className={accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-green-600' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-amber-600' : 'text-red-600'}>{accuracy}%</strong> | </>}
-                  Errors: <strong className="text-red-600">{errCount}</strong> | SC: <strong className="text-amber-600">{scCount}</strong>
-                  {elapsed > 0 && liveBand === 'independent' && <span className="ml-2 text-green-600">(Independent)</span>}
-                  {elapsed > 0 && liveBand === 'instructional' && <span className="ml-2 text-amber-600">(Instructional)</span>}
-                  {elapsed > 0 && liveBand === 'frustration' && <span className="ml-2 text-red-600">(Frustration -- consider one level down)</span>}
+                  {elapsed > 0 && <>CWPM: <strong className="text-navy">{cwpm}</strong> | Accuracy: <strong className={accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-good' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-warn' : 'text-bad'}>{accuracy}%</strong> | </>}
+                  Errors: <strong className="text-bad">{errCount}</strong> | SC: <strong className="text-warn">{scCount}</strong>
+                  {elapsed > 0 && liveBand === 'independent' && <span className="ml-2 text-good">(Independent)</span>}
+                  {elapsed > 0 && liveBand === 'instructional' && <span className="ml-2 text-warn">(Instructional)</span>}
+                  {elapsed > 0 && liveBand === 'frustration' && <span className="ml-2 text-bad">(Frustration -- consider one level down)</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {/* Stop the clock the moment the student finishes, without
@@ -2984,7 +2984,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                       running while they do. */}
                   {timing && (
                     <button onClick={() => { setTiming(false); setFinished(true) }}
-                      className="px-4 py-2 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-red-500 text-white hover:bg-red-600 transition-all animate-pulse">
+                      className="px-4 py-2 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-bad text-white hover:bg-bad/90 transition-all animate-pulse">
                       Done reading -- stop timer
                     </button>
                   )}
@@ -2994,7 +2994,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                     </span>
                   )}
                   <button onClick={handleSave}
-                    className="px-5 py-2 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy/90 transition-all">
+                    className="px-5 py-2 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
                     Save & Close
                   </button>
                 </div>
@@ -3092,11 +3092,11 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               <button key={s.id} onClick={() => onSelectIdx(idx)}
                 className={`w-full flex items-center gap-2 px-4 py-2 text-left transition-all ${
                   idx === selectedIdx
-                    ? 'bg-navy/10 border-r-2 border-navy'
+                    ? 'bg-navy/10'
                     : 'hover:bg-surface-alt'
                 }`}>
                 {done
-                  ? <CheckCircle2 size={13} className="text-green-500 flex-shrink-0" />
+                  ? <CheckCircle2 size={13} className="text-good flex-shrink-0" />
                   : <Circle size={13} className="text-text-tertiary flex-shrink-0" />
                 }
                 <div className="min-w-0 flex-1">
@@ -3107,7 +3107,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {getClassImpression(s.id) && (
-                    <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200" title={content.administration === 'single_sitting' ? 'Impression from the oral session' : 'Wave 1 impression'}>
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded bg-warn-soft text-warn border border-warn/30" title={content.administration === 'single_sitting' ? 'Impression from the oral session' : 'Wave 1 impression'}>
                       {getClassImpression(s.id)!.slice(0, 3)}
                     </span>
                   )}
@@ -3133,7 +3133,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           <div className="flex items-center gap-2">
             {studentHasOralData(student.id) && (
               <button onClick={() => onClearOral(student.id, student.english_name)}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-red-500 hover:bg-red-50 border border-red-200 transition-all">
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-bad hover:bg-bad-soft/60 border border-bad/30 transition-all">
                 <RotateCcw size={12} /> Clear
               </button>
             )}
@@ -3143,7 +3143,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               <ChevronLeft size={14} /> Prev
             </button>
             <button onClick={() => onSave([student.id])} disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 transition-all">
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-all">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
               Save
             </button>
@@ -3212,15 +3212,15 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
           {/* Previous attempts -- click to restore */}
           {Array.isArray((sc as any).passages_attempted) && (sc as any).passages_attempted.length > 0 && (
-            <div className="mb-4 bg-amber-50/50 border border-amber-100 rounded-lg px-4 py-2.5">
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-amber-700 font-semibold mb-1">Previous Attempts (click to restore)</p>
+            <div className="mb-4 bg-paper-2 border border-rule rounded-lg px-4 py-2.5">
+              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink font-semibold mb-1">Previous Attempts (click to restore)</p>
               <div className="flex gap-2 flex-wrap">
                 {(sc as any).passages_attempted.map((att: any, i: number) => (
                   <button key={i} onClick={async () => {
                     if (!await confirmDialog({ title: `Restore the Level ${att.level} attempt?`, message: 'Current passage data will be swapped into the archive.', confirmLabel: 'Restore' })) return
                     onRestoreAttempt(student.id, i)
                   }}
-                    className="inline-flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-amber-800 bg-amber-100/60 hover:bg-amber-200/80 border border-amber-200 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
+                    className="inline-flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-2 bg-surface hover:text-ink hover:bg-paper-3 border border-rule-2 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer">
                     <RotateCcw size={10} />
                     <span className="font-bold">Lv {att.level}</span>
                     {att.o_orf_raw != null && <span className="text-text-tertiary">Score: {att.o_orf_raw}</span>}
@@ -3232,7 +3232,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           )}
 
           {config && (
-            <div className="bg-blue-50/50 rounded-lg px-4 py-3 mb-4 border border-blue-100">
+            <div className="bg-paper-2 rounded-lg px-4 py-3 mb-4 border border-rule">
               <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">{config.label}</p>
               <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mt-0.5">{config.description}</p>
               <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">
@@ -3240,10 +3240,10 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                 and you can restore an earlier attempt at any time.
               </p>
               {config.bumpUpThreshold != null && (
-                <p className="text-[length:calc(11.5px*var(--ts))] text-blue-600 mt-0.5">A score of {config.bumpUpThreshold}+ suggests re-testing at the next level up.</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-0.5">A score of {config.bumpUpThreshold}+ suggests re-testing at the next level up.</p>
               )}
               {config.bumpDownThreshold != null && (
-                <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600">If the student cannot read any words, consider the level below.</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-warn">If the student cannot read any words, consider the level below.</p>
               )}
             </div>
           )}
@@ -3251,8 +3251,8 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           {/* Level A -- holistic: ONE rating for the whole interview */}
           {passageLevel === 'A' && content.levelA.mode === 'holistic' && (
             <div className="space-y-3">
-              <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
-                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Say: "I'm going to ask you some questions. Just try your best."</p>
+              <div className="bg-paper-2 rounded-lg px-4 py-3 border border-rule">
+                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">Say: "I'm going to ask you some questions. Just try your best."</p>
               </div>
 
               <div className="bg-surface-alt/50 rounded-xl p-4">
@@ -3297,7 +3297,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                   Level A Score: {sc.o_orf_raw ?? '--'} / {content.levelA.max}
                 </span>
                 {config?.bumpUpThreshold != null && (sc.o_orf_raw ?? 0) >= config.bumpUpThreshold && (
-                  <span className="text-[length:calc(11.5px*var(--ts))] text-blue-600 font-medium">You may want to re-test at Level B.</span>
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">You may want to re-test at Level B.</span>
                 )}
               </div>
             </div>
@@ -3306,8 +3306,8 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           {/* Level A -- per-question rubric scoring (original test) */}
           {passageLevel === 'A' && content.levelA.mode === 'per_question' && (
             <div className="space-y-3">
-              <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100">
-                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Say: "I'm going to ask you some questions. Just try your best."</p>
+              <div className="bg-paper-2 rounded-lg px-4 py-3 border border-rule">
+                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">Say: "I'm going to ask you some questions. Just try your best."</p>
               </div>
 
               <div className="space-y-3">
@@ -3327,11 +3327,11 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                             title={`${r.label}: ${r.desc}`}
                             className={`flex-1 px-2 py-2.5 rounded-xl text-center transition-all ${
                               qVal === r.score
-                                ? r.score === 0 ? 'bg-red-500 text-white' :
-                                  r.score === 1 ? 'bg-orange-500 text-white' :
-                                  r.score === 2 ? 'bg-amber-500 text-white' :
-                                  r.score === 3 ? 'bg-blue-500 text-white' :
-                                  'bg-green-500 text-white'
+                                ? r.score === 0 ? 'bg-bad text-white' :
+                                  r.score === 1 ? 'bg-warn text-white' :
+                                  r.score === 2 ? 'bg-warn text-white' :
+                                  r.score === 3 ? 'bg-info text-white' :
+                                  'bg-good text-white'
                                 : 'bg-surface text-text-secondary hover:bg-surface-alt border border-border'
                             }`}>
                             <div className="text-[length:calc(14px*var(--ts))] font-bold">{r.score}</div>
@@ -3346,13 +3346,13 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
 
               <div className="flex items-center justify-between bg-navy/5 rounded-xl px-4 py-3 border border-navy/10 mt-3">
                 <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy">Total: {aTotal} / {content.levelA.max}</span>
-                {config?.bumpUpThreshold != null && aTotal >= config.bumpUpThreshold && <span className="text-[length:calc(11.5px*var(--ts))] text-blue-600 font-medium">Score is {config.bumpUpThreshold}+. You may want to re-test at Level B.</span>}
-                {aTotal > 0 && aTotal < 5 && <span className="text-[length:calc(11.5px*var(--ts))] text-red-600 font-medium">Very limited English production.</span>}
+                {config?.bumpUpThreshold != null && aTotal >= config.bumpUpThreshold && <span className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">Score is {config.bumpUpThreshold}+. You may want to re-test at Level B.</span>}
+                {aTotal > 0 && aTotal < 5 && <span className="text-[length:calc(11.5px*var(--ts))] text-bad font-medium">Very limited English production.</span>}
               </div>
 
               {/* Rubric reference */}
               <details className="mt-2">
-                <summary className="text-[length:calc(11.5px*var(--ts))] text-purple-600 cursor-pointer hover:underline font-medium">View full rubric descriptions</summary>
+                <summary className="text-[length:calc(11.5px*var(--ts))] text-accent cursor-pointer hover:underline font-medium">View full rubric descriptions</summary>
                 <div className="mt-2 space-y-1">
                   {LEVEL_A_RUBRIC.map(r => (
                     <div key={r.score} className="flex items-start gap-2 text-[length:calc(11.5px*var(--ts))] px-2 py-1">
@@ -3421,10 +3421,10 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               </div>
 
               {sc.o_orf_words_read != null && (
-                <div className="bg-green-50 rounded-lg px-4 py-2.5 border border-green-100">
-                  <span className="text-[length:calc(11.5px*var(--ts))] text-green-700 font-medium">
+                <div className="bg-paper-2 rounded-lg px-4 py-2.5 border border-rule">
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-2 font-medium">
                     CWPM: {Math.round(((sc.o_orf_words_read - (sc.o_orf_errors ?? 0)) / (sc.o_orf_time_seconds || 60)) * 60)}
-                    <span className="text-green-600/70 ml-2">(The app calculates weighted CWPM automatically)</span>
+                    <span className="text-ink-2 ml-2">(The app calculates weighted CWPM automatically)</span>
                   </span>
                 </div>
               )}
@@ -3461,15 +3461,15 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                 these questions -- recording zeros would read as "answered wrong". */}
             <label className={`flex items-start gap-2.5 rounded-lg px-3 py-2.5 mb-3 cursor-pointer border transition-all ${
               compNotAdministered
-                ? 'bg-slate-100 border-slate-300'
+                ? 'bg-paper-2 border-rule-2'
                 : 'bg-surface-alt/60 border-border hover:border-navy/30'
             }`}>
               <input type="checkbox" checked={compNotAdministered}
                 onChange={() => handleToggleCompNotAdministered(student.id, sc)}
-                className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-slate-600 focus:ring-slate-500 shrink-0" />
+                className="w-4 h-4 mt-0.5 rounded border-2 border-navy/30 text-ink-2 focus:ring-ink-3 shrink-0" />
               <span>
                 <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-primary flex items-center gap-1.5">
-                  <Ban size={11} className="text-slate-500" />
+                  <Ban size={11} className="text-ink-3" />
                   Student struggled &mdash; comprehension not administered
                 </span>
                 <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
@@ -3480,12 +3480,12 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
             </label>
 
             {!compNotAdministered && (
-            <div className="bg-amber-50/50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
-              <p className="text-[length:calc(11.5px*var(--ts))] text-amber-800 font-semibold mb-1">Scoring Guide</p>
-              <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))] text-amber-700">
-                <span><span className="font-bold text-red-600">0</span> = No response, wrong, or Korean only</span>
-                <span><span className="font-bold text-amber-600">1</span> = Partial, vague, or incomplete in English</span>
-                <span><span className="font-bold text-green-600">2</span> = Correct and reasonably complete in English</span>
+            <div className="bg-paper-2 border border-rule rounded-lg px-3 py-2 mb-3">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink font-semibold mb-1">Scoring Guide</p>
+              <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-2">
+                <span><span className="font-bold text-bad">0</span> = No response, wrong, or Korean only</span>
+                <span><span className="font-bold text-ink">1</span> = Partial, vague, or incomplete in English</span>
+                <span><span className="font-bold text-good">2</span> = Correct and reasonably complete in English</span>
               </div>
             </div>
             )}
@@ -3515,7 +3515,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                               title={titles[v]}
                               className={`w-9 h-9 rounded-lg text-[length:calc(12px*var(--ts))] font-bold transition-all ${
                                 (sc as any)[key] === v
-                                  ? v === 0 ? 'bg-red-500 text-white' : v === 1 ? 'bg-amber-500 text-white' : 'bg-green-500 text-white'
+                                  ? v === 0 ? 'bg-bad text-white' : v === 1 ? 'bg-warn text-white' : 'bg-good text-white'
                                   : 'bg-surface-alt text-text-secondary hover:bg-surface-alt/80 border border-border'
                               }`}>
                               {v}
@@ -3526,11 +3526,11 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
                     </div>
                     {examples && (
                       <details className="ml-6 mt-1">
-                        <summary className="text-[length:calc(11.5px*var(--ts))] text-purple-600 cursor-pointer hover:underline font-medium">Scoring examples</summary>
+                        <summary className="text-[length:calc(11.5px*var(--ts))] text-accent cursor-pointer hover:underline font-medium">Scoring examples</summary>
                         <div className="grid grid-cols-3 gap-2 mt-1.5 text-[length:calc(11.5px*var(--ts))]">
-                          <div className="bg-red-50 rounded px-2 py-1.5"><span className="font-bold text-red-600">0:</span> <span className="text-red-800">{examples[0]}</span></div>
-                          <div className="bg-amber-50 rounded px-2 py-1.5"><span className="font-bold text-amber-600">1:</span> <span className="text-amber-800">{examples[1]}</span></div>
-                          <div className="bg-green-50 rounded px-2 py-1.5"><span className="font-bold text-green-600">2:</span> <span className="text-green-800">{examples[2]}</span></div>
+                          <div className="bg-bad-soft rounded px-2 py-1.5"><span className="font-bold text-bad">0:</span> <span className="text-bad">{examples[0]}</span></div>
+                          <div className="bg-warn-soft rounded px-2 py-1.5"><span className="font-bold text-warn">1:</span> <span className="text-warn">{examples[1]}</span></div>
+                          <div className="bg-good-soft rounded px-2 py-1.5"><span className="font-bold text-good">2:</span> <span className="text-good">{examples[2]}</span></div>
                         </div>
                       </details>
                     )}
@@ -3544,13 +3544,13 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
         {/* Section 5: Open Response -- compare the two pictures */}
         <div className="bg-surface border border-border rounded-xl p-5 mb-4">
           <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-1">Open Response (Two Pictures)</h4>
-          <div className="bg-blue-50 rounded-lg px-4 py-3 border border-blue-100 mb-2">
-            <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-blue-800">Say: "{content.openResponse.say}"</p>
+          <div className="bg-paper-2 rounded-lg px-4 py-3 border border-rule mb-2">
+            <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-ink">Say: "{content.openResponse.say}"</p>
             {/* Kept directly under the script: this is the section where a
                 student most often has nothing to give. */}
             <ul className="mt-1.5 space-y-0.5 pl-4 list-disc">
               {STOPPING_NOTES.map((n, i) => (
-                <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-blue-700/90 leading-snug">{n}</li>
+                <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-ink-2 leading-snug">{n}</li>
               ))}
             </ul>
           </div>
@@ -3596,7 +3596,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               teacher signal is the Teacher Ratings phase instead, so nothing
               appears here. */}
           {content.teacherSignal === 'retention_rating' && (
-            <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
+            <div className="rounded-lg p-3 mb-3 bg-paper-2 border border-rule">
               <div className="flex items-center gap-2 mb-2">
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">
                   Within {student.english_class}, how is this student performing?
@@ -3607,9 +3607,9 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               </div>
               <div className="flex gap-2">
                 {([
-                  { value: 'weak', label: 'Weak', desc: 'Struggling, may need extra support', color: 'bg-red-100 text-red-700 border-red-300', active: 'bg-red-500 text-white ring-2 ring-red-400' },
-                  { value: 'core', label: 'Core', desc: 'Right where they should be', color: 'bg-gray-100 text-gray-700 border-gray-300', active: 'bg-gray-600 text-white ring-2 ring-gray-400' },
-                  { value: 'strong', label: 'Strong', desc: 'Excelling, could move up', color: 'bg-green-100 text-green-700 border-green-300', active: 'bg-green-500 text-white ring-2 ring-green-400' },
+                  { value: 'weak', label: 'Weak', desc: 'Struggling, may need extra support', color: 'bg-bad-soft text-bad border-bad/40', active: 'bg-bad text-white ring-2 ring-bad/60' },
+                  { value: 'core', label: 'Core', desc: 'Right where they should be', color: 'bg-paper-2 text-ink border-rule-2', active: 'bg-ink-2 text-white ring-2 ring-ink-3' },
+                  { value: 'strong', label: 'Strong', desc: 'Excelling, could move up', color: 'bg-good-soft text-good border-good/40', active: 'bg-good text-white ring-2 ring-good/60' },
                 ] as const).map(opt => (
                   <button key={opt.value}
                     onClick={() => updateScore(student.id, 'wave2_retention_rating', sc.wave2_retention_rating === opt.value ? null : opt.value)}
@@ -3625,7 +3625,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           )}
 
           {content.usesClassImpression && (
-          <div className="rounded-lg p-3 mb-3 bg-blue-50/60 border border-blue-200/60">
+          <div className="rounded-lg p-3 mb-3 bg-paper-2 border border-rule">
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-2">
               Which class do you think this student belongs in based on this oral test? Pick "Unsure" if you need the algorithm to decide.
             </p>
@@ -3647,8 +3647,8 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               <button onClick={() => updateScore(student.id, 'wave1_class_impression', sc.wave1_class_impression === 'Unsure' ? null : 'Unsure')}
                 className={`px-4 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${
                   sc.wave1_class_impression === 'Unsure'
-                    ? 'bg-gray-600 text-white ring-2 ring-gray-400 ring-offset-1'
-                    : 'bg-gray-100 text-text-secondary border border-border hover:bg-gray-200'
+                    ? 'bg-ink-2 text-white ring-2 ring-ink-3 ring-offset-1'
+                    : 'bg-paper-2 text-text-secondary border border-border hover:bg-paper-3'
                 }`}>
                 Unsure
               </button>
@@ -3681,7 +3681,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
             disabled={saving}
             className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[length:calc(14px*var(--ts))] font-bold mb-3 border-2 transition-all disabled:opacity-50 ${
               sc.o_test_complete
-                ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+                ? 'bg-good-soft text-good border-good/40 hover:bg-good-soft'
                 : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
             {sc.o_test_complete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
             {sc.o_test_complete ? 'Test complete' : 'Mark test complete'}
@@ -3692,12 +3692,12 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
             </p>
           )}
           <button onClick={() => onSave([student.id])} disabled={saving}
-            className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-[length:calc(16px*var(--ts))] font-bold bg-navy text-white hover:bg-navy/90 disabled:opacity-50 shadow-md transition-all">
+            className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-4 rounded-2xl text-[length:calc(16px*var(--ts))] font-bold bg-accent text-white hover:bg-accent-hover disabled:opacity-50 transition-all">
             {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
             {saving ? 'Saving...' : `Save ${student.english_name}`}
           </button>
           <div className="flex items-center justify-center gap-3 mt-2">
-            <span className={`text-[length:calc(11.5px*var(--ts))] ${isStudentDirty(student.id) ? 'text-amber-600 font-semibold' : 'text-text-tertiary'}`}>
+            <span className={`text-[length:calc(11.5px*var(--ts))] ${isStudentDirty(student.id) ? 'text-warn font-semibold' : 'text-text-tertiary'}`}>
               {isStudentDirty(student.id) ? 'Unsaved changes' : 'All changes saved'}
             </span>
             {selectedIdx < students.length - 1 && (
@@ -3724,7 +3724,7 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
     <div className="bg-gradient-to-br from-navy/5 to-navy/10 border border-navy/20 rounded-xl p-5 mb-4">
       <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3 flex items-center gap-2">
         <Eye size={14} /> Live Score Preview
-        <span className={`text-[length:calc(11.5px*var(--ts))] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+        <span className={`text-[length:calc(11.5px*var(--ts))] font-medium px-2 py-0.5 rounded-full ${metrics.wave === 1 ? 'bg-info-soft text-info' : 'bg-good-soft text-good'}`}>
           {content.usesClassImpression
             ? (metrics.wave === 1 ? 'Wave 1: Oral + Teacher Impression' : 'Wave 2: 30% oral + 30% written + 40% teacher')
             : (metrics.wave === 1 ? 'Oral only -- written test not entered yet' : 'Complete: 55% oral + 45% written')}
@@ -3762,7 +3762,7 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
           <span className="text-text-secondary">Passage {metrics.passageLevel}</span>
           <span className="text-navy font-semibold">Raw CWPM: {metrics.cwpm}</span>
           {metrics.accuracy != null && (
-            <span className={metrics.accuracy >= 95 ? 'text-green-600' : metrics.accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}>
+            <span className={metrics.accuracy >= 95 ? 'text-good' : metrics.accuracy >= 90 ? 'text-warn' : 'text-bad'}>
               Accuracy: <strong>{metrics.accuracy}%</strong>
             </span>
           )}
@@ -3771,7 +3771,7 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
             ? <span className="text-text-tertiary italic" title="Student was stopped during the passage; the questions were never asked.">Comp: not administered</span>
             : metrics.compTotal != null && <span className="text-text-secondary">Comp: {metrics.compTotal}/{metrics.compMax}</span>}
           {metrics.effectiveLevel !== metrics.passageLevel && (
-            <span className="w-full text-[length:calc(11.5px*var(--ts))] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            <span className="w-full text-[length:calc(11.5px*var(--ts))] text-warn bg-warn-soft border border-warn/30 rounded px-2 py-1">
               Scored as level {metrics.effectiveLevel}. The student did not sustain level {metrics.passageLevel}
               {metrics.compNotAdministered ? ' — stopped before the end' : ''}
               {metrics.accuracy != null && metrics.accuracy < 90 ? ` — ${metrics.accuracy}% accuracy is below the 90% frustration threshold` : ''}.
@@ -3788,8 +3788,8 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
             <span key={std.code}
               className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[length:calc(11.5px*var(--ts))] font-medium ${
                 std.met
-                  ? 'bg-green-100 text-green-700 border border-green-200'
-                  : 'bg-red-50 text-red-600 border border-red-100'
+                  ? 'bg-good-soft text-good border border-good/30'
+                  : 'bg-bad-soft text-bad border border-bad/20'
               }`}>
               {std.met ? <CheckCircle2 size={10} /> : <Circle size={10} />}
               {std.code}
@@ -4034,21 +4034,21 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
     <div className="px-10 py-6">
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="flex gap-1">
-          <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
-          {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === cls ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
+          <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === 'all' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>All</button>
+          {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === cls ? '' : 'text-ink-2 hover:bg-paper-2'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
         </div>
         <div className="flex gap-1 border-l border-border pl-3">
           <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary self-center mr-1">Passage:</span>
-          <button onClick={() => setFilterPassage('all')} className={`px-2 py-1 rounded text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === 'all' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>All</button>
-          {PASSAGE_LEVELS.map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === lv ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-surface'}`}>{lv}</button>)}
+          <button onClick={() => setFilterPassage('all')} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === 'all' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>All</button>
+          {PASSAGE_LEVELS.map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === lv ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>{lv}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] bg-surface">
           <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
         </select>
-        <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${showBorderline ? 'bg-amber-100 text-amber-700' : 'bg-surface-alt text-text-secondary'}`}>
+        <button onClick={() => setShowBorderline(!showBorderline)} className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border ${showBorderline ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
           <AlertTriangle size={12} /> Borderline
         </button>
-        <button onClick={() => handlePrintSummary(rows)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+        <button onClick={() => handlePrintSummary(rows)} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
           <Printer size={12} /> Print Summary
         </button>
         <button onClick={() => {
@@ -4061,7 +4061,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               r.compTotal ?? '', r.writingShort ?? '', r.writingBonus > 0 ? r.writingBonus : '', r.writtenMC > 0 ? r.writtenMC : '',
               r.hasAnec ? (r.anecScore * 100).toFixed(0) : '', r.weighted != null ? (r.weighted * 100).toFixed(0) : '',
               r.percentile != null ? Math.round(r.percentile * 100) : '', r.suggestedClass ?? 'not tested']))
-        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">
+        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
           <Download size={12} /> CSV
         </button>
         {/* Item-level export. Grade 1 renders its own results screen, so the
@@ -4096,11 +4096,11 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           showToast(`Exported ${out.length} rows across ${new Set(out.map(o => o[0])).size} students.`)
         }}
           title="One row per student per scored element: every multiple-choice response with the letter actually chosen, every writing-rubric category, and the short response. Always the whole grade, never just the rows on screen."
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100">
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
           <BarChart3 size={12} /> Diagnostics CSV
         </button>
         <button onClick={saveCheckpoint} disabled={savingCheckpoint}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-50">
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2 disabled:opacity-50">
           {savingCheckpoint ? <Loader2 size={12} className="animate-spin" /> : <Shield size={12} />} Save Checkpoint
         </button>
         <button onClick={() => {
@@ -4111,7 +4111,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
               r.orfRaw ?? '', r.orfMax ?? '', Math.round(r.oralScore),
               r.compNotAdministered ? 'not administered' : (r.compTotal ?? ''), r.writtenMC, r.writingBonus,
               r.weighted != null ? (r.weighted * 100).toFixed(0) : '', Math.round(r.absoluteComposite)]))
-        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+        }} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
           <Download size={12} /> Full Backup
         </button>
         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto">{displayed.length} students</span>
@@ -4156,13 +4156,13 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
             const mcMarked = (!!row.scores?.written_answers && Object.keys(row.scores.written_answers).length > 0)
               || row.scores?.written_mc != null || !!row.writtenComplete
             return (
-              <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-amber-50/30' : ''} ${flags.length > 0 ? 'bg-red-50/20' : ''}`}>
-                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-amber-500 fill-amber-500 inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-red-500 inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[length:calc(11.5px*var(--ts))]">{row.student.korean_name}</span>
+              <tr key={row.student.id} className={`border-t border-border hover:bg-surface-alt/30 ${move ? 'bg-warn-soft/30' : ''} ${flags.length > 0 ? 'bg-bad-soft/20' : ''}`}>
+                <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap">{row.anec?.is_watchlist && <Star size={10} className="text-warn fill-warn inline mr-1" />}{flags.length > 0 && <AlertTriangle size={10} className="text-bad inline mr-1" />}{row.student.english_name} <span className="text-text-tertiary font-normal text-[length:calc(11.5px*var(--ts))]">{row.student.korean_name}</span>
                   {/* Sat some of the test but not all of it. The composite is
                       renormalized over what they did sit, so it is not
                       comparable with a complete record and says so. */}
                   {row.isTested && (row.missingSections?.length ?? 0) > 0 && (
-                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[length:calc(11.5px*var(--ts))] font-semibold align-middle"
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-middle"
                       title={`Has not sat the ${row.missingSections.join(' or ')} test. The composite is worked out from the sections they did sit, so it is not comparable with a complete record.`}>
                       no {row.missingSections.join(' / ')}
                     </span>
@@ -4170,17 +4170,17 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                   {/* Marked, and there was nothing on it. Scored 0 across the
                       written sections rather than left out. */}
                   {row.writtenAttemptedNothing && (
-                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[length:calc(11.5px*var(--ts))] font-semibold align-middle"
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-middle"
                       title="The written paper was marked and every section of it was blank -- nothing on the answer sheet, nothing written. Scored 0 rather than dropped: a paper that produced nothing is the lowest evidence there is, not missing evidence.">
                       written blank
                     </span>
                   )}
                 </td>
                 <td className="px-2 py-2 text-center"><span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(row.student.english_class as EnglishClass, 25), color: classToTextColor(row.student.english_class as EnglishClass) }}>{row.student.english_class}</span></td>
-                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-red-50' : ''}`}
+                <td className={`px-2 py-2 text-center ${flags.includes('oral') ? 'bg-bad-soft' : ''}`}
                   title={oralTitle}>
                   {oral != null
-                    ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{Math.round(oral)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[length:calc(11.5px*var(--ts))] ml-0.5">({row.oralPassageLevel})</span>}</span>
+                    ? <span>{flags.includes('oral') && <AlertTriangle size={9} className="text-bad inline mr-0.5" />}{Math.round(oral)}{row.oralPassageLevel && <span className="text-text-tertiary/50 text-[length:calc(11.5px*var(--ts))] ml-0.5">({row.oralPassageLevel})</span>}</span>
                     : row.orfMax != null && row.oralPassageLevel
                       ? <span>{row.orfRaw ?? 0}<span className="text-text-tertiary/50">/{row.orfMax}</span><span className="text-text-tertiary/50 text-[length:calc(11.5px*var(--ts))] ml-0.5">({row.oralPassageLevel})</span></span>
                       : row.hasOral
@@ -4193,7 +4193,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                 </td>
                 <td className="px-2 py-2 text-center">
                   {row.compNotAdministered
-                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[length:calc(11.5px*var(--ts))] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions.">comp n/a</span>
+                    ? <span className="inline-block px-1.5 py-0.5 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold" title="Not administered — the student was stopped during the passage and never heard the questions.">comp n/a</span>
                     : row.compTotal != null
                       ? <span>{row.compTotal}<span className="text-text-tertiary/50">/{row.compMax ?? '?'}</span></span>
                       : !row.compAsked && row.oralPassageLevel
@@ -4210,8 +4210,8 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                     section was MARKED, which is the rubric having categories,
                     an answer sheet having answers, or the paper having been
                     declared graded. */}
-                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-red-50' : ''}`}>{writingMarked ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
-                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-red-50' : ''}`}>{mcMarked ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-red-500 inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('writing') ? 'bg-bad-soft' : ''}`}>{writingMarked ? <span>{flags.includes('writing') && <AlertTriangle size={9} className="text-bad inline mr-0.5" />}{row.writingBonus}<span className="text-text-tertiary/50">/{G1_WRITING_MAX}</span></span> : '—'}</td>
+                <td className={`px-2 py-2 text-center ${flags.includes('mc') ? 'bg-bad-soft' : ''}`}>{mcMarked ? <span>{flags.includes('mc') && <AlertTriangle size={9} className="text-bad inline mr-0.5" />}{row.writtenMC}<span className="text-text-tertiary/50">/{G1_MC_MAX}</span></span> : '—'}</td>
                 <td className="px-2 py-2 text-center"
                   title="Teacher Rating, averaged out of 4. Reference for the placement conversation only — it is not part of the composite, so a student nobody has rated is neither helped nor hurt by that.">
                   {row.hasAnec ? <span className="text-text-secondary">{(row.anecScore * 4).toFixed(1)}</span> : <span className="text-text-tertiary">{'—'}</span>}
@@ -4228,14 +4228,14 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
                 <td className="px-2 py-2 text-center">
                   {row.suggestedClass == null
                     ? <span className="inline-block px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary border border-border text-[length:calc(11.5px*var(--ts))] font-semibold" title="Not tested yet. This student has no oral, MC or writing score, so there is nothing to rank them on.">not tested</span>
-                    : <><span className={`px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold ${move ? 'ring-2 ring-amber-400' : ''}`} style={{ backgroundColor: classTint(row.suggestedClass, 25), color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>
-                      {row.attemptedNothing && <span className="block text-[length:calc(11.5px*var(--ts))] text-amber-600 mt-0.5" title="The oral session was marked complete and no passage was read. Scored 0 and ranked at the bottom of the grade.">attempted none</span>}</>}
+                    : <><span className={`px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold ${move ? 'ring-2 ring-warn/60' : ''}`} style={{ backgroundColor: classTint(row.suggestedClass, 25), color: classToTextColor(row.suggestedClass) }}>{row.suggestedClass}</span>
+                      {row.attemptedNothing && <span className="block text-[length:calc(11.5px*var(--ts))] text-warn mt-0.5" title="The oral session was marked complete and no passage was read. Scored 0 and ranked at the bottom of the grade.">attempted none</span>}</>}
                 </td>
-                <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-blue-600' : row.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
+                <td className="px-2 py-2 text-center">{row.anec?.teacher_recommends ? <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${row.anec.teacher_recommends === 'keep' ? 'text-info' : row.anec.teacher_recommends === 'move_up' ? 'text-good' : 'text-bad'}`}>{row.anec.teacher_recommends === 'keep' ? 'Keep' : row.anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span> : '—'}</td>
               </tr>)})}</tbody>
         </table>
       </div>
-      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-amber-50 text-amber-800 border border-amber-200 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. A student who sat the letter and phoneme sections and never reached a passage has still sat the oral test: their column reads <span className="italic">(letters)</span>, and they are scored on that evidence at the bottom band rather than counted as having no oral result. <span className="italic">attempted none</span> is kept for a session marked complete with nothing on it at all. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-red-500 inline" /> = outlier (score &lt;10% of class median).</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-3">Composite = 45% oral test + 25% MC + 5% short writing + 25% writing, rescaled when a part is missing. Teacher Ratings are not in it {'—'} they are notes for the placement conversation, so a class whose teacher is new and has rated nobody is not ranked on a different mix of evidence. Rank = position within the grade (higher = stronger), among tested students only; a student who has sat nothing shows as <span className="italic">not tested</span> and takes no rank slot. An unmarked section carries no score at all, so nobody is charged a zero for work nobody has read {'\u2014'} until the marker presses <span className="italic">Mark test graded</span> on the written entry screen, after which every section still empty scores 0. That is what puts a student who wrote nothing on the writing passage back into the ranking instead of leaving them out of it; a paper marked with nothing at all on it is tagged <span className="inline-block px-1 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">written blank</span>. Oral is adjusted for passage difficulty and NAEP at levels D&ndash;F; the level in brackets is the passage it came from. A student who sat the letter and phoneme sections and never reached a passage has still sat the oral test: their column reads <span className="italic">(letters)</span>, and they are scored on that evidence at the bottom band rather than counted as having no oral result. <span className="italic">attempted none</span> is kept for a session marked complete with nothing on it at all. Levels A&ndash;C are an oral interview and two word lists &mdash; untimed, with no CWPM and no comprehension questions &mdash; so those rows show what the student read (rating out of 4, or words read correctly) and their Comp cell reads <span className="italic">not asked</span>. They are scored and ranked on that evidence like everyone else. <span className="inline-block px-1 rounded bg-warn-soft text-warn border border-warn/30 text-[length:calc(11.5px*var(--ts))] font-semibold align-baseline">comp n/a</span> = comprehension was never administered. Check these students by eye before placing {'—'} a student stopped for a reason other than reading (upset, out of time, sent back to class) is scored lower than they should be. Band = absolute score from the passage the student sustained, reference only; it does not decide placement. <AlertTriangle size={9} className="text-bad inline" /> = outlier (score &lt;10% of class median).</p>
     </div>
   )
 }

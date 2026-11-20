@@ -337,17 +337,17 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
   const tone = (m: number, t: number) => {
     if (t < 3) return 'bg-surface-alt text-text-tertiary border-border'
     const p = pct(m, t)
-    return p >= 80 ? 'bg-green-50 text-green-700 border-green-200'
-      : p >= 50 ? 'bg-amber-50 text-amber-700 border-amber-200'
-      : 'bg-red-50 text-red-700 border-red-200'
+    return p >= 80 ? 'bg-good-soft text-good border-good/30'
+      : p >= 50 ? 'bg-warn-soft text-warn border-warn/30'
+      : 'bg-bad-soft text-bad border-bad/30'
   }
   const delta = (now: number | null, before: number | null) => {
     if (now == null || before == null) return null
     const d = Math.round((now - before) * 10) / 10
     if (Math.abs(d) < 0.05) return <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]"><Minus size={9} className="inline" /></span>
     return d > 0
-      ? <span className="text-green-600 text-[length:calc(11.5px*var(--ts))] font-semibold"><TrendingUp size={9} className="inline" /> +{d}</span>
-      : <span className="text-red-600 text-[length:calc(11.5px*var(--ts))] font-semibold"><TrendingDown size={9} className="inline" /> {d}</span>
+      ? <span className="text-good text-[length:calc(11.5px*var(--ts))] font-semibold"><TrendingUp size={9} className="inline" /> +{d}</span>
+      : <span className="text-bad text-[length:calc(11.5px*var(--ts))] font-semibold"><TrendingDown size={9} className="inline" /> {d}</span>
   }
 
   return (
@@ -386,7 +386,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-[length:calc(11.5px*var(--ts))] text-red-700">
+        <div className="bg-bad-soft border border-bad/30 rounded-xl p-3 mb-4 text-[length:calc(11.5px*var(--ts))] text-bad">
           Could not load history: {error}
         </div>
       )}
@@ -434,7 +434,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                   {sittings.map(s => (
                     <td key={s.test.id} className="px-3 py-2 text-center">
                       {s.band ? <><span className="font-bold text-navy text-[length:calc(13px*var(--ts))]">{s.band.effectiveLevel}</span>
-                        {s.band.downgraded && <span className="block text-[length:calc(11.5px*var(--ts))] text-amber-600" title={`Attempted ${s.band.attemptedLevel}, did not sustain it.`}>tried {s.band.attemptedLevel}</span>}</>
+                        {s.band.downgraded && <span className="block text-[length:calc(11.5px*var(--ts))] text-warn" title={`Attempted ${s.band.attemptedLevel}, did not sustain it.`}>tried {s.band.attemptedLevel}</span>}</>
                         : <span className="text-text-tertiary">—</span>}
                     </td>
                   ))}
@@ -467,7 +467,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                   <td className="px-3 py-2 text-text-secondary font-medium">Comprehension</td>
                   {sittings.map(s => (
                     <td key={s.test.id} className="px-3 py-2 text-center">
-                      {s.calc.comp_not_administered ? <span className="text-amber-700 text-[length:calc(11.5px*var(--ts))]">not administered</span>
+                      {s.calc.comp_not_administered ? <span className="text-warn text-[length:calc(11.5px*var(--ts))]">not administered</span>
                         : s.calc.comp_total != null ? <>{s.calc.comp_total}<span className="text-text-tertiary/50">/{s.calc.comp_max ?? '?'}</span></>
                         : <span className="text-text-tertiary">—</span>}
                     </td>
@@ -493,20 +493,20 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
 
           {/* ── Unfinished business ── */}
           {unfinished.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <p className="text-[length:calc(12px*var(--ts))] font-semibold text-amber-800 mb-1 flex items-center gap-1.5">
+            <div className="bg-warn-soft border border-warn/30 rounded-xl p-4">
+              <p className="text-[length:calc(12px*var(--ts))] font-semibold text-warn mb-1 flex items-center gap-1.5">
                 <AlertTriangle size={13} /> Unfinished business
               </p>
-              <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 mb-2.5">
+              <p className="text-[length:calc(11.5px*var(--ts))] text-warn mb-2.5">
                 Standards from an earlier grade that this student is still missing on their most recent paper.
                 The tests probe these on purpose, so each one is a named gap rather than a general weakness.
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {unfinished.map(u => (
-                  <span key={u.code} className="inline-flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-white border border-amber-200 text-[length:calc(11.5px*var(--ts))] max-w-[320px]">
-                    <span className="font-bold text-amber-900 whitespace-nowrap">{u.code}</span>
+                  <span key={u.code} className="inline-flex items-start gap-1.5 px-2 py-1.5 rounded-lg bg-surface border border-warn/30 text-[length:calc(11.5px*var(--ts))] max-w-[320px]">
+                    <span className="font-bold text-warn whitespace-nowrap">{u.code}</span>
                     <span className="text-text-tertiary whitespace-nowrap">{u.met}/{u.total}</span>
-                    <span className="text-amber-800 leading-snug">{STANDARD_TEXT[u.code] || STRAND_LABELS[u.code.split('.')[0]] || ''}</span>
+                    <span className="text-ink-2 leading-snug">{STANDARD_TEXT[u.code] || STRAND_LABELS[u.code.split('.')[0]] || ''}</span>
                   </span>
                 ))}
               </div>
@@ -547,7 +547,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                     {sittings.map(s => (
                       <td key={s.test.id} className="px-3 py-2 text-center">
                         {s.anec?.teacher_recommends
-                          ? <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${s.anec.teacher_recommends === 'keep' ? 'text-blue-600' : s.anec.teacher_recommends === 'move_up' ? 'text-green-600' : 'text-red-600'}`}>
+                          ? <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${s.anec.teacher_recommends === 'keep' ? 'text-info' : s.anec.teacher_recommends === 'move_up' ? 'text-good' : 'text-bad'}`}>
                               {s.anec.teacher_recommends === 'keep' ? 'Keep' : s.anec.teacher_recommends === 'move_up' ? 'Move up' : 'Move down'}</span>
                           : <span className="text-text-tertiary">—</span>}
                       </td>
@@ -560,7 +560,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                         {s.placement
                           ? <><span className="px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classTint(s.placement, 25), color: classToTextColor(s.placement) }}>{s.placement}</span>
                             {s.overridden && s.autoPlacement && s.autoPlacement !== s.placement &&
-                              <span className="block text-[length:calc(11.5px*var(--ts))] text-amber-600 mt-0.5" title={`The test suggested ${s.autoPlacement}; a teacher moved them.`}>overridden from {s.autoPlacement}</span>}</>
+                              <span className="block text-[length:calc(11.5px*var(--ts))] text-warn mt-0.5" title={`The test suggested ${s.autoPlacement}; a teacher moved them.`}>overridden from {s.autoPlacement}</span>}</>
                           : <span className="text-text-tertiary">—</span>}
                       </td>
                     ))}
