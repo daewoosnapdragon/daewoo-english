@@ -201,7 +201,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   }, [students, flags, levels, criteria.length, assessment.max_score])
 
   return (
-    <Overlay><div className="fixed inset-0 z-[60] bg-paper flex flex-col">
+    <Overlay><div className="overlay-sheet fixed inset-0 z-[60] bg-paper flex flex-col">
       {printing && <RubricPrintDialog rubric={assessment.rubric} title={assessment.name} students={students.map(s => ({ id: s.id, name: s.english_name }))} scored={printScored} maxScore={assessment.max_score} onClose={() => setPrinting(false)} />}
       {/* Top bar */}
       <div className="h-12 px-5 border-b border-rule-2 bg-surface flex items-center gap-4 flex-shrink-0">
@@ -216,7 +216,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
       </div>
 
       {loading ? <Loading kind="quiet" rows={5} /> : (
-        <div className="flex-1 min-h-0 max-h-none overflow-hidden grid grid-cols-[210px_minmax(0,1fr)_230px]">
+        <div className="flex-1 min-h-0 overflow-hidden grid grid-cols-[210px_minmax(0,1fr)_230px]">
           {/* Students */}
           <div ref={studentListRef} className="border-r border-rule-2 bg-paper-2 overflow-y-auto overscroll-contain">
             {students.map((s, i) => {

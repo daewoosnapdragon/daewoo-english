@@ -115,7 +115,7 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
   const seg = (on: boolean, tone: string) => `w-9 h-8 text-[length:calc(12px*var(--ts))] font-bold border-l first:border-l-0 border-rule-2 ${on ? tone : 'text-ink-3 hover:bg-paper-2'}`
 
   return (
-    <Overlay><div className="fixed inset-0 z-[90]" role="dialog" aria-modal="true">
+    <Overlay><div className="overlay-sheet fixed inset-0 z-[90]" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <aside className="absolute right-0 top-0 bottom-0 w-full max-w-[440px] bg-surface border-l border-rule-2 shadow-2xl flex flex-col animate-slide-in">
         <div className="px-5 pt-4 pb-3 border-b border-rule-2 flex items-start justify-between gap-3">

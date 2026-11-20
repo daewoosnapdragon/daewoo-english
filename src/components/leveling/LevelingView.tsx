@@ -2156,7 +2156,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
       {/* Print Dossier Modal */}
       {showPrintDossier && (
-        <Overlay><div className="fixed inset-0 bg-white z-[200] overflow-y-auto print:static">
+        <Overlay><div className="overlay-sheet fixed inset-0 bg-white z-[200] overflow-y-auto print:static">
           <div className="print:hidden sticky top-0 bg-white border-b border-border px-6 py-3 flex items-center justify-between z-10">
             <span className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">Print Preview -- {students.length} student cards</span>
             <div className="flex gap-2">

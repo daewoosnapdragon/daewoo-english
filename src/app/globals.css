@@ -386,8 +386,10 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
    panel run off the bottom of the viewport with no way to scroll. Until each
    is rebuilt, the direct child of any full-screen overlay is capped to the
    viewport and scrolls. Panels that already manage their own height and
-   overflow are unaffected. */
-.fixed.inset-0 > div:not([class*="max-h-"]) { max-height: 92vh; overflow-y: auto; }
+   overflow are unaffected. Full-screen layouts (sheets, drawers, print
+   previews) are not cards: they add .overlay-sheet to opt out, or the cap
+   leaves a gap at the bottom and a second scrollbar inside their own. */
+.fixed.inset-0:not(.overlay-sheet) > div:not([class*="max-h-"]) { max-height: 92vh; overflow-y: auto; }
 
 /* ─── Chart colours ─────────────────────────────────────────────────
    Hex, so SVG attributes can use them directly. One series colour, the

@@ -176,7 +176,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
   if (!open) return null
 
   return (
-    <Overlay><div className="fixed inset-0 z-[90]" onClick={onClose}>
+    <Overlay><div className="overlay-sheet fixed inset-0 z-[90]" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20" />
 

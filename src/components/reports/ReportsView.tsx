@@ -1703,7 +1703,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
 
       {/* Preview modal */}
       {previewHtml != null && !generating && (
-        <Overlay><div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
+        <Overlay><div className="overlay-sheet fixed inset-0 bg-black/50 z-50 flex flex-col">
           <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div>
               <div className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Preview &middot; {isGrade ? `${progress.total} report cards · Grade ${grade}` : kind === 'report_card' ? `${students.length} report cards` : `${students.length} progress reports · ${summary.sheets} ${summary.sheets === 1 ? 'sheet' : 'sheets'} of A4`}</div>
