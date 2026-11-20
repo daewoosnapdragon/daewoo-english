@@ -128,7 +128,7 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
                   <td key={s.id} className="px-2 py-2 border-l border-rule text-[length:calc(11px*var(--ts))] leading-snug">
                     {howBy[s.id].length === 0 ? <span className="text-ink-3">—</span> : howBy[s.id].map(([o, n]) => {
                       const d = DECODING_OBSERVATIONS.find(x => x.id === o)
-                      const tone = o === 'guessing' || o === 'omitted' || o === 'vowel_confusion' ? 'text-bad' : 'text-ink-2'
+                      const tone = d?.group === 'error' ? 'text-bad' : 'text-ink-2'
                       return <span key={o} className={`block ${tone}`}>{d ? (lang === 'ko' ? d.label_ko : d.label) : o} <span className="text-ink-3">×{n}</span></span>
                     })}
                   </td>

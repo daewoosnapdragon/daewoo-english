@@ -76,13 +76,26 @@ puts them (kept as reference text; the screen itself shows no panel):
   seconds. No modelling or correcting during the check.
 - On an error, the pencil on the tile records what the student said (the
   packet's "write what they read next to the word").
-- Under each sheet, the packet's teacher-page checkboxes: how the student
-  decoded (struggled to blend, sound by sound, onset and rime, stretched,
-  syllable parts, some whole, guessing, omitted a sound, short/long
-  confusion) and the patterns that gave trouble. The packet's two positive
-  boxes (read most words whole; flexible with vowel sounds) are left out: a
-  strength shows in the score. On the alphabet sheets only the trouble
-  chips show.
+- Under each sheet, the teacher ticks what they heard, in four short lists:
+  - **This sheet**: the error patterns that sheet is there to find, written
+    as what you hear, with a word from the sheet (silent e: *e ignored,
+    vowel short (made → mad, cute → cut)*; dge, ge, ce, ve: *silent e rule
+    on ve (have → hayv, give → gyve)*). Kept in each sheet's `patterns`.
+  - **On any sheet**: guessed from the first letter, swapped in a real word
+    that looks alike, said the sounds but could not blend, changed the
+    letter order, dropped the final sound, left out a sound in the middle,
+    short/long confusion, used the newest rule everywhere, read the first
+    syllable and guessed the rest.
+  - **Korean transfer**: f → p, v → b, z → j, th → s/d/t, r and l, an extra
+    vowel after a consonant, short vowel pairs merged. Decoding is fine
+    and the sound is not: speech practice, not more phonics.
+  - **How they decoded**: sound by sound, onset and rime, stretched,
+    syllable parts, some words whole, accurate but slow.
+  The packet's two positive boxes (read most words whole; flexible with
+  vowel sounds) are left out: a strength shows in the score. On the
+  alphabet sheets only *This sheet* shows. Error patterns (Whole grade, All
+  grades) counts all of it class against class; the first three lists are
+  in `DECODING_OBSERVATIONS` with their group.
 - A sheet ticked for the sitting with no word marked is not saved, and in
   older checks is read as not given: no score, never a 0. *Not given* on a
   sheet's card takes it out of this student's check (the next student keeps

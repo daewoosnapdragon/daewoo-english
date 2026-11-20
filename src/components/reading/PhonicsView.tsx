@@ -9,7 +9,7 @@ import { exportToCSV } from '@/lib/export'
 import { logActivity } from '@/lib/activity'
 import type { Student } from '@/types'
 import {
-  PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
+  PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, OBSERVATION_GROUPS, PATTERN_PREFIX,
   phonicsSkill, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, nextMark, longestErrorRun, attemptsBySkill, latestDelta,
   scoreText, halfText, accuracyPct, isMiss, classSkills, groupsFor, isAlphabetSkill, withoutAlphabet,
   type PhonicsCheckRow, type PhonicsMark, type LatestBySkill, type PhonicsBand, type PhonicsSkill,
@@ -645,16 +645,24 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
         </span>
       </div>
       <details className="px-4 py-2 border-t border-rule" open={observations.length > 0}>
-        <summary className="text-[length:calc(11.5px*var(--ts))] text-ink-2 cursor-pointer hover:text-ink">{sk.sections ? (lang === 'ko' ? '어려운 글자' : 'What gave trouble') : (lang === 'ko' ? '해독 방식과 어려운 패턴' : 'How they decoded, and what gave trouble')}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
+        <summary className="text-[length:calc(11.5px*var(--ts))] text-ink-2 cursor-pointer hover:text-ink">{lang === 'ko' ? '오류 패턴과 해독 방식' : 'Error patterns, and how they decoded'}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
         <div className="mt-2 space-y-2">
-          {/* How a student decoded words means nothing for single letters. */}
-          {!sk.sections && <div className="flex flex-wrap gap-1.5">
-            {DECODING_OBSERVATIONS.map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
-          </div>}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[length:calc(11px*var(--ts))] text-ink-3 mr-1">{lang === 'ko' ? '어려운 패턴:' : 'Trouble with:'}</span>
-            {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}
+          {/* The sheet's own error patterns first: what the sheet is there to find. */}
+          <div className="grid grid-cols-[112px_1fr] gap-2 items-start">
+            <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? '이 시트' : 'This sheet'}</span>
+            <div className="flex flex-wrap gap-1.5">
+              {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}
+            </div>
           </div>
+          {/* How a student decoded words, and word-level errors, mean nothing for single letters. */}
+          {!sk.sections && OBSERVATION_GROUPS.filter(g => g.id !== 'how').concat(OBSERVATION_GROUPS.filter(g => g.id === 'how')).map(g => (
+            <div key={g.id} className="grid grid-cols-[112px_1fr] gap-2 items-start">
+              <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? g.label_ko : g.label}</span>
+              <div className="flex flex-wrap gap-1.5">
+                {DECODING_OBSERVATIONS.filter(o => o.group === g.id).map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
+              </div>
+            </div>
+          ))}
         </div>
       </details>
     </div>

@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'phonics-error-patterns', date: '2026-11-23', title: 'Phonics: the error patterns each sheet is there to find',
+    body: 'You can now tick, under each sheet, the specific errors a phonics teacher listens for on it, written as what you hear with a word from the sheet: on silent e, “e ignored, vowel short (made → mad)”; on vowel teams, “first vowel only (boat → bot)”; on two-syllable words, “did not flex the split (visit → vy-sit)”. Under them, errors that show on any sheet (guessed from the first letter, swapped in a real word, could not blend) and Korean transfer (f → p, v → b, z → j, th, r and l, an extra vowel after a consonant), where the decoding is fine and the sound is not. Error patterns on Whole grade counts them class against class.',
+    path: '/reading?tab=phonics', guide: 'reading',
+  },
+  {
     id: 'phonics-not-given', date: '2026-11-23', title: 'Phonics: a sheet you did not get to is no longer a 0',
     body: 'A sheet ticked for a check with no word marked (the student went home sick, the bell rang) now counts as not checked, not as 0%, including in checks already saved, so those cells are empty again. To take a sheet out on purpose, press Not given on its card; the next student keeps it ticked. While editing a saved check you can now untick its sheets too. The two positive teacher boxes, read most words whole and flexible with vowel sounds, are gone from the check screen and from Error patterns.',
     path: '/reading?tab=phonics', guide: 'reading',

@@ -3,7 +3,7 @@ import {
   PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_GROUPS, phonicsSkill, orderSkills,
   ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, LETTERS_BY_FREQUENCY, classSkills, groupsFor, sheetNo, withoutAlphabet,
   scoreSkill, scoreCheck, latestBySkill, phonicsBand, summarizeStudent, phonicsOneLiner, notYetSecure, nextMark, longestErrorRun,
-  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss, sheetGiven, givenSheets, DECODING_OBSERVATIONS,
+  attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss, sheetGiven, givenSheets, DECODING_OBSERVATIONS, OBSERVATION_GROUPS,
   type PhonicsCheckRow, type PhonicsMark,
 } from '@/lib/phonics'
 
@@ -91,6 +91,20 @@ describe('scoring a check', () => {
     expect(halfText(17, 3)).toBe('18½')
     expect(isMiss('partial')).toBe(true)
     expect(isMiss('correct')).toBe(false)
+  })
+  it('gives every sheet its own error patterns, none repeated', () => {
+    PHONICS_SKILLS.forEach(s => {
+      expect(s.patterns.length, s.id).toBeGreaterThanOrEqual(2)
+      expect(new Set(s.patterns).size, s.id).toBe(s.patterns.length)
+    })
+    expect(phonicsSkill('silent_e')!.patterns[0]).toMatch(/made → mad/)
+  })
+  it('sorts the teacher boxes into how they decoded, errors on any sheet and Korean transfer', () => {
+    const groups = OBSERVATION_GROUPS.map(g => g.id)
+    expect(groups).toEqual(['how', 'error', 'transfer'])
+    DECODING_OBSERVATIONS.forEach(o => expect(groups, o.id).toContain(o.group))
+    expect(new Set(DECODING_OBSERVATIONS.map(o => o.id)).size).toBe(DECODING_OBSERVATIONS.length)
+    groups.forEach(g => expect(DECODING_OBSERVATIONS.some(o => o.group === g), g).toBe(true))
   })
   it('has no positive teacher boxes, only ones that help find a problem', () => {
     const ids = DECODING_OBSERVATIONS.map(o => o.id)

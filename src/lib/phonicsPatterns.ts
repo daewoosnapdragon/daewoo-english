@@ -14,7 +14,7 @@
 // mastered yet and an alphabet sheet under 90% works on the alphabet.
 
 import {
-  PHONICS_SKILL_IDS, PHONICS_GROUPS, PATTERN_PREFIX, ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, phonicsSkill, isMiss, isSecure, phonicsBand,
+  PHONICS_SKILL_IDS, PHONICS_GROUPS, PATTERN_PREFIX, DECODING_OBSERVATIONS, ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, phonicsSkill, isMiss, isSecure, phonicsBand,
   type LatestBySkill, type PhonicsCheckRow,
 } from '@/lib/phonics'
 import { masteryPosition } from '@/lib/phonicsCompare'
@@ -22,8 +22,8 @@ import { masteryPosition } from '@/lib/phonicsCompare'
 type Latest = Record<string, LatestBySkill>
 type Checks = Record<string, PhonicsCheckRow>
 
-/** Checkboxes that point at a decoding problem. */
-export const CONCERN_OBSERVATIONS = ['guessing', 'omitted', 'vowel_confusion', 'blend_struggle', 'first_syllable']
+/** Checkboxes that point at a decoding problem: the errors that show on any sheet. */
+export const CONCERN_OBSERVATIONS = DECODING_OBSERVATIONS.filter(o => o.group === 'error').map(o => o.id)
 
 /** The latest result on each sheet with the check it came from, optionally only some sheets. */
 function eachLatest(sid: string, latest: Latest, checks: Checks, sheets?: string[], fn?: (sheet: string, check: PhonicsCheckRow | undefined) => void) {
