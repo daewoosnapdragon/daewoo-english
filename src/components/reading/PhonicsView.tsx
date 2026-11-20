@@ -9,12 +9,14 @@ import { exportToCSV } from '@/lib/export'
 import { logActivity } from '@/lib/activity'
 import type { Student } from '@/types'
 import {
-  PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
-  phonicsSkill, skillsInGroup, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, nextMark, longestErrorRun, attemptsBySkill, latestDelta,
-  scoreText, halfText, accuracyPct, isMiss,
-  type PhonicsCheckRow, type PhonicsMark, type LatestBySkill, type PhonicsBand,
+  PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
+  phonicsSkill, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, nextMark, longestErrorRun, attemptsBySkill, latestDelta,
+  scoreText, halfText, accuracyPct, isMiss, classSkills, groupsFor, isAlphabetSkill, withoutAlphabet,
+  type PhonicsCheckRow, type PhonicsMark, type LatestBySkill, type PhonicsBand, type PhonicsSkill,
 } from '@/lib/phonics'
 import { loadPhonicsChecks, savePhonicsCheck, deletePhonicsCheck } from '@/lib/phonicsData'
+import { useAlphabetSkips, setAlphabetSkip, phonicsClassKey } from '@/lib/phonicsClassSettings'
+import { phonicsSheetsHtml } from '@/lib/phonicsPrint'
 import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT, BAND_RANGE, MARK_TILE, MARK_SOLID, MARK_LABEL, fmtShort } from '@/components/reading/phonicsTones'
 import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
 import StudentProgressGrid from '@/components/reading/PhonicsProgress'
@@ -26,7 +28,8 @@ import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ClipboardCheck, D
 // latest check), one student's progress (sheets × attempts, every sitting
 // kept), and the check screen (one student, the sheets the teacher picked, a
 // tile per word to tap as the student reads from the printed sheet).
-// Nothing is graded.
+// Nothing is graded. A class that skips the alphabet sheets sees the twenty
+// decoding sheets only, everywhere on this screen.
 
 type Lang = 'en' | 'ko'
 type Mode = 'heatmap' | 'student' | 'assess'
@@ -42,7 +45,10 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   /** With initialStudentId: open on their progress rather than the check screen. */
   initialMode?: 'student' | 'assess'
 }) {
-  const { confirmDialog } = useApp()
+  const { confirmDialog, showToast } = useApp()
+  const { skips, loaded: skipsLoaded } = useAlphabetSkips()
+  const skipAlphabet = skips.has(phonicsClassKey(grade, englishClass))
+  const sheets = useMemo(() => classSkills(skipAlphabet), [skipAlphabet])
   const [mode, setMode] = useState<Mode>(initialStudentId ? (initialMode || 'assess') : 'heatmap')
   const [studentId, setStudentId] = useState<string | null>(initialStudentId || null)
   const [checks, setChecks] = useState<PhonicsCheckRow[]>([])
@@ -76,7 +82,10 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
     checks.forEach(c => { (by[c.student_id] ||= []).push(c) })
     return by
   }, [checks, students])
-  const latestByStudent = useMemo(() => Object.fromEntries(students.map(s => [s.id, latestBySkill(byStudent[s.id] || [])])) as Record<string, LatestBySkill>, [students, byStudent])
+  const latestByStudent = useMemo(() => Object.fromEntries(students.map(s => {
+    const l = latestBySkill(byStudent[s.id] || [])
+    return [s.id, skipAlphabet ? withoutAlphabet(l) : l]
+  })) as Record<string, LatestBySkill>, [students, byStudent, skipAlphabet])
   // Change since the previous attempt, per student and sheet, for the heat map's arrows.
   const trendByStudent = useMemo(() => Object.fromEntries(students.map(s => {
     const att = attemptsBySkill(byStudent[s.id] || [])
@@ -110,29 +119,39 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
     if (n) { setStudentId(n.id); setEditing(null) }
   }
 
-  // The packet's student sheets, one a page, in large type.
-  const printSheets = () => {
+  // The student sheets, one a page, in large type: the packet's word sheets,
+  // or the two alphabet sheets with their four rows (phonicsPrint.ts).
+  const printSheets = (which: 'letters' | 'words') => {
     const pw = window.open('', '_blank'); if (!pw) return
-    const sections = PHONICS_SKILLS.map(s => `<section><p class="eyebrow">${s.covers}</p><h2>${s.label}</h2><div class="words">${s.words.map(w => `<span>${w}</span>`).join('')}</div></section>`).join('')
-    pw.document.write(`<html><head><title>Phonics quick checks: word sheets</title><style>
-      body{font-family:Georgia,'Iowan Old Style',serif;color:#1b1812;margin:0;padding:24px}
-      section{page-break-after:always;padding-top:12px}section:last-child{page-break-after:auto}
-      .eyebrow{font-family:system-ui,sans-serif;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#857d6e;margin:0}
-      h2{font-weight:500;font-size:28px;margin:4px 0 28px}
-      .words{display:grid;grid-template-columns:repeat(4,1fr);gap:34px 24px;font-size:38px;line-height:1.1;text-align:center}
-      @media print{body{padding:12px}}
-    </style></head><body>${sections}</body></html>`)
+    const list = sheets.filter(s => isAlphabetSkill(s.id) === (which === 'letters'))
+    pw.document.write(phonicsSheetsHtml(list, which === 'letters' ? 'Phonics quick checks: letter sheets' : 'Phonics quick checks: word sheets'))
     pw.document.close(); pw.print()
-    logActivity('printed', 'Phonics quick check word sheets', { path: '/reading' })
+    logActivity('printed', which === 'letters' ? 'Phonics quick check letter sheets' : 'Phonics quick check word sheets', { path: '/reading' })
+  }
+
+  const toggleAlphabet = async () => {
+    const skip = !skipAlphabet
+    if (skip) {
+      const ok = await confirmDialog({
+        title: lang === 'ko' ? '알파벳 시트 건너뛰기' : `Skip the alphabet sheets for ${englishClass}?`,
+        message: lang === 'ko'
+          ? `${grade}학년 ${englishClass}반의 히트맵, 시트 선택, 인쇄, CSV, 학생 페이지에서 알파벳 이름·소리 시트가 빠집니다. 모든 교사에게 적용됩니다. 저장된 결과는 지워지지 않고, 다시 켜면 돌아옵니다.`
+          : `Letter names and letter sounds leave Grade ${grade} ${englishClass}'s heat map, sheet picker, printing, CSV and student pages, for every teacher. Results already saved are kept and come back if you switch them on again.`,
+        confirmLabel: lang === 'ko' ? '건너뛰기' : 'Skip them',
+      })
+      if (!ok) return
+    }
+    const err = await setAlphabetSkip(grade, englishClass, skip)
+    if (err) showToast(`Error: ${err}`)
   }
 
   const exportCsv = () => {
     exportToCSV(`phonics-${englishClass}-G${grade}`,
-      ['Student', 'Korean name', ...PHONICS_SKILLS.map(s => s.short), 'Working on', 'Last check'],
+      ['Student', 'Korean name', ...sheets.map(s => s.short), 'Working on', 'Last check'],
       students.map(s => {
         const latest = latestByStudent[s.id] || {}
         const sum = summarizeStudent(latest)
-        return [s.english_name, s.korean_name, ...PHONICS_SKILL_IDS.map(id => latest[id] ? scoreText(latest[id].score) : ''), sum.frontier ? phonicsSkill(sum.frontier)?.label || '' : '', sum.lastDate || '']
+        return [s.english_name, s.korean_name, ...sheets.map(sk => latest[sk.id] ? scoreText(latest[sk.id].score) : ''), sum.frontier ? phonicsSkill(sum.frontier)?.label || '' : '', sum.lastDate || '']
       }))
   }
 
@@ -149,15 +168,23 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
         </div>
         <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '해독만 평가합니다. 뜻은 묻지 않습니다. 성적에 들어가지 않습니다.' : 'Decoding only, meaning never asked, nothing graded.'}</span>
         <div className="ml-auto flex items-center gap-3">
+          <button onClick={toggleAlphabet} disabled={!skipsLoaded} className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink disabled:opacity-40" data-guide="reading.phonics.alphabet"
+            title={skipAlphabet
+              ? (lang === 'ko' ? '이 반은 알파벳 시트를 건너뜁니다. 클릭하면 다시 켭니다.' : `${englishClass} skips the letter names and letter sounds sheets. Click to use them again.`)
+              : (lang === 'ko' ? '알파벳 이름·소리 시트를 사용 중입니다. 클릭하면 이 반은 건너뜁니다.' : `${englishClass} uses the letter names and letter sounds sheets. Click to skip them for this class.`)}>
+            <span className={`w-3 h-3 rounded-sm border inline-flex items-center justify-center ${skipAlphabet ? 'border-rule-2 bg-surface' : 'bg-ink border-ink text-paper'}`}>{!skipAlphabet && <Check size={9} strokeWidth={3} />}</span>
+            {lang === 'ko' ? '알파벳 시트' : 'Alphabet sheets'}
+          </button>
           <button onClick={exportCsv} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink"><Download size={11} /> CSV</button>
-          <button onClick={printSheets} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink" title={lang === 'ko' ? '학생용 단어 시트 인쇄' : 'Print the twenty sheets in large type, one a page, for the student to read from'}><Printer size={11} /> {lang === 'ko' ? '단어 시트' : 'Word sheets'}</button>
+          {!skipAlphabet && <button onClick={() => printSheets('letters')} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink" title={lang === 'ko' ? '알파벳 이름·소리 시트 인쇄 (PDF로 저장 가능)' : 'Print letter names and letter sounds, one a page in four rows, for the student to read from. Save as PDF from the print dialog.'}><Printer size={11} /> {lang === 'ko' ? '알파벳 시트' : 'Letter sheets'}</button>}
+          <button onClick={() => printSheets('words')} className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink" title={lang === 'ko' ? '학생용 단어 시트 인쇄 (PDF로 저장 가능)' : 'Print the twenty word sheets in large type, one a page, for the student to read from. Save as PDF from the print dialog.'}><Printer size={11} /> {lang === 'ko' ? '단어 시트' : 'Word sheets'}</button>
         </div>
       </div>
 
-      {loading || loadingChecks ? <Loading rows={5} />
+      {loading || loadingChecks || !skipsLoaded ? <Loading rows={5} />
       : students.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-8">{lang === 'ko' ? '이 반에 학생이 없습니다.' : 'No students in this class.'}</p>
       : mode === 'heatmap' ? (
-        <HeatMap students={students} latestByStudent={latestByStudent} trendByStudent={trendByStudent} lang={lang}
+        <HeatMap skills={sheets} students={students} latestByStudent={latestByStudent} trendByStudent={trendByStudent} lang={lang}
           onCell={(sid, skill) => setOpen({ sid, skill })} onCheck={(sid) => startCheck(sid)} onStudent={showStudent} />
       ) : !student ? null : mode === 'student' ? (
         <div className="grid grid-cols-[210px_1fr] gap-6 items-start">
@@ -177,7 +204,7 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
           </section>
         </div>
       ) : (
-        <AssessPanel key={`${student.id}:${editing?.id || 'new'}`} student={student} students={students} lang={lang}
+        <AssessPanel key={`${student.id}:${editing?.id || 'new'}`} sheets={sheets} student={student} students={students} lang={lang}
           latest={latestByStudent[student.id] || {}} history={byStudent[student.id] || []} lastDates={lastDates}
           selected={selected} onSelect={pickSkills} editing={editing}
           onDirty={setDirty} onPick={(sid) => guardedSwitch(() => { setStudentId(sid); setEditing(null) })}
@@ -233,14 +260,16 @@ function RosterRail({ students, currentId, lang, lastDates, onPick }: {
 
 // ─── Heat map ────────────────────────────────────────────────────
 
-export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCell, onCheck, onStudent }: {
+export function HeatMap({ skills, students, latestByStudent, trendByStudent, lang, onCell, onCheck, onStudent }: {
+  /** The class's sheets: every one, or the twenty when it skips the alphabet. */
+  skills: PhonicsSkill[]
   students: Student[]; latestByStudent: Record<string, LatestBySkill>; trendByStudent: Record<string, Record<string, number | null>>; lang: Lang
   onCell: (sid: string, skill: string) => void; onCheck: (sid: string) => void; onStudent: (sid: string) => void
 }) {
-  const colAvg = useMemo(() => Object.fromEntries(PHONICS_SKILL_IDS.map(id => {
+  const colAvg = useMemo(() => Object.fromEntries(skills.map(sk => sk.id).map(id => {
     const ps = students.map(s => latestByStudent[s.id]?.[id]?.score.pct).filter((p): p is number => p != null)
     return [id, ps.length ? Math.round(ps.reduce((a, b) => a + b, 0) / ps.length) : null]
-  })), [students, latestByStudent])
+  })), [skills, students, latestByStudent])
   const anyData = students.some(s => Object.keys(latestByStudent[s.id] || {}).length > 0)
 
   return (
@@ -256,27 +285,27 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
         <span className="text-ink-3">{lang === 'ko' ? '· 셀은 가장 최근 점검의 정확도(%)이고 화살표는 이전 시도 대비 변화입니다. 클릭하면 단어별로 보입니다. 이름을 클릭하면 시도별 진전이 보입니다.' : '· a cell is the latest check’s accuracy, the arrow its change since the attempt before; click it for the words, click a name for progress'}</span>
       </div>
       {!anyData && <p className="text-[length:calc(13px*var(--ts))] text-ink-3 mb-3">{lang === 'ko' ? '아직 이 반에는 파닉스 점검이 없습니다. 학생 옆의 점검 버튼으로 시작하세요.' : 'No phonics checks for this class yet. Use the check button beside a student to start.'}</p>}
-      {/* Fills the page width with no scrolling: the twenty sheet columns
+      {/* Fills the page width with no scrolling: the sheet columns
           share what is left after the name and working-on columns, and the
           sheet names run vertically so a column can be narrow. */}
       <div className="border border-rule-2 rounded-md overflow-hidden">
         <table className="w-full table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: 168 }} />
-            {PHONICS_SKILLS.map(s => <col key={s.id} />)}
+            {skills.map(s => <col key={s.id} />)}
             <col style={{ width: 148 }} />
             <col style={{ width: 40 }} />
           </colgroup>
           <thead>
             <tr className="bg-paper-2">
               <th rowSpan={2} className="text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
-              {PHONICS_GROUPS.map(g => <th key={g.id} colSpan={skillsInGroup(g.id).length} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
+              {groupsFor(skills).map(({ group: g, skills: gs }) => <th key={g.id} colSpan={gs.length} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
               <th rowSpan={2} className="px-3 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-left align-bottom">{lang === 'ko' ? '현재 과제' : 'Working on'}</th>
               <th rowSpan={2} className="border-b border-rule-2" />
             </tr>
             <tr className="bg-paper-2">
-              {PHONICS_SKILLS.map((s, i) => (
-                <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[104px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${s.label}\n${s.covers}`}>
+              {skills.map((s, i) => (
+                <th key={s.id} className={`px-0 pb-1.5 border-b border-rule-2 align-bottom h-[104px] ${i > 0 && skills[i - 1].group !== s.group ? 'border-l border-rule' : ''}`} title={`${s.label}\n${s.covers}`}>
                   <div className="flex flex-col items-center justify-end gap-1 h-full">
                     <span className="text-[length:calc(10.5px*var(--ts))] font-semibold text-ink-2 whitespace-nowrap leading-none" style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>{s.short}</span>
                     <span className={`text-[length:calc(10px*var(--ts))] leading-none ${colAvg[s.id] != null && colAvg[s.id]! < 70 ? 'text-bad font-semibold' : 'text-ink-3'}`}>{colAvg[s.id] != null ? `${colAvg[s.id]}%` : ' '}</span>
@@ -297,12 +326,12 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
                       <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
                     </button>
                   </td>
-                  {PHONICS_SKILLS.map((sk, i) => {
+                  {skills.map((sk, i) => {
                     const l = latest[sk.id]
                     const band = l ? phonicsBand(l.score) : null
                     const d = trend[sk.id]
                     return (
-                      <td key={sk.id} className={`p-[3px] ${i > 0 && PHONICS_SKILLS[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
+                      <td key={sk.id} className={`p-[3px] ${i > 0 && skills[i - 1].group !== sk.group ? 'border-l border-rule' : ''}`}>
                         <button onClick={() => l && onCell(s.id, sk.id)} disabled={!l}
                           title={l ? `${sk.label}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[band!].en} · ${fmtShort(l.date, lang)}${d != null ? ` · ${d >= 0 ? '+' : ''}${d} since the attempt before` : ''}${l.score.unread ? ` · ${l.score.unread} ${lang === 'ko' ? '미읽음' : 'not read'}` : ''}` : `${sk.label}: ${lang === 'ko' ? '미점검' : 'not checked'}`}
                           className={`w-full h-7 rounded-sm text-[length:calc(10.5px*var(--ts))] font-semibold inline-flex items-center justify-center gap-px ${band ? BAND_TONE[band] : 'bg-paper-2/60 text-ink-3/40'}`}>
@@ -330,7 +359,9 @@ export function HeatMap({ students, latestByStudent, trendByStudent, lang, onCel
 
 // ─── Checking one student ────────────────────────────────────────
 
-function AssessPanel({ student, students, lang, latest, history, lastDates, selected, onSelect, editing, onDirty, onPick, onPrev, onNext, onCancelEdit, onSaved, onEdit, onDelete, onProgress }: {
+function AssessPanel({ sheets, student, students, lang, latest, history, lastDates, selected, onSelect, editing, onDirty, onPick, onPrev, onNext, onCancelEdit, onSaved, onEdit, onDelete, onProgress }: {
+  /** The class's sheets: the picker offers only these. */
+  sheets: PhonicsSkill[]
   student: Student; students: Student[]; lang: Lang; latest: LatestBySkill; history: PhonicsCheckRow[]; lastDates: Record<string, string | null>
   selected: string[]; onSelect: (ids: string[]) => void; editing: PhonicsCheckRow | null
   onDirty: (d: boolean) => void; onPick: (sid: string) => void; onPrev: () => void; onNext: () => void
@@ -343,7 +374,10 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
   const [observations, setObservations] = useState<Observations>(editing?.observations || {})
   const [notes, setNotes] = useState(editing?.notes || '')
   const [saving, setSaving] = useState(false)
-  const skills = editing ? orderSkills(editing.skills) : selected
+  const visible = sheets.map(s => s.id)
+  // Remembered picks can hold sheets this class does not use (the alphabet,
+  // ticked in another class): they are left out here. A saved check keeps its own.
+  const skills = editing ? orderSkills(editing.skills) : selected.filter(id => visible.includes(id))
   const idx = students.findIndex(s => s.id === student.id)
   const touch = (fn: () => void) => { fn(); onDirty(true) }
 
@@ -394,8 +428,8 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
     await onSaved(andNext)
   }
 
-  const recheckable = notYetSecure(latest)
-  const untested = PHONICS_SKILL_IDS.filter(id => !latest[id])
+  const recheckable = notYetSecure(latest).filter(id => visible.includes(id))
+  const untested = visible.filter(id => !latest[id])
   const quick = 'h-7 px-2.5 rounded-full border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3 disabled:opacity-40'
 
   return (
@@ -454,7 +488,7 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <p className="eyebrow">{lang === 'ko' ? '점검할 시트' : 'Sheets to check'}</p>
             {!editing && <>
-              <button onClick={() => setSkills(PHONICS_SKILL_IDS)} className={quick}>{lang === 'ko' ? '전체' : 'All'}</button>
+              <button onClick={() => setSkills(visible)} className={quick}>{lang === 'ko' ? '전체' : 'All'}</button>
               <button onClick={() => setSkills([])} className={quick}>{lang === 'ko' ? '없음' : 'None'}</button>
               <button onClick={() => setSkills(recheckable)} disabled={recheckable.length === 0} className={quick}>{lang === 'ko' ? '아직 미완성' : 'Not yet mastered'} ({recheckable.length})</button>
               <button onClick={() => setSkills(untested)} disabled={untested.length === 0} className={quick}>{lang === 'ko' ? '미점검' : 'Not checked yet'} ({untested.length})</button>
@@ -462,10 +496,10 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
             {editing && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko' ? '수정 중에는 시트 목록이 고정됩니다.' : 'The sheets of a saved check are fixed while editing.'}</span>}
           </div>
           <div className="space-y-1.5">
-            {PHONICS_GROUPS.map(g => (
+            {groupsFor(sheets).map(({ group: g, skills: gs }) => (
               <div key={g.id} className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[length:calc(11px*var(--ts))] text-ink-3 w-[96px] shrink-0">{lang === 'ko' ? g.label_ko : g.label}</span>
-                {skillsInGroup(g.id).map(s => {
+                {gs.map(s => {
                   const on = skills.includes(s.id)
                   const l = latest[s.id]
                   const b = l ? phonicsBand(l.score) : null
@@ -512,7 +546,8 @@ function AssessPanel({ student, students, lang, latest, history, lastDates, sele
   )
 }
 
-// One sheet's words as tiles, in the packet's four-column layout. Tap:
+// One sheet's words as tiles, in the packet's four-column layout; an
+// alphabet sheet as its four rows of letters, each with its own count. Tap:
 // nothing → correct → error → partly → nothing. The pencil on an error or
 // partly tile records what the student said; the checkboxes under the
 // words are the packet's teacher-page observations.
@@ -530,35 +565,51 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
   const band = correct + partial + errors > 0 ? phonicsBand({ pct }) : null
   const small = 'h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3'
   const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11px*var(--ts))] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+  // A letter tile is square-ish and larger: one character, seven to a row.
+  const tile = (w: string) => {
+    const m = marks[w]
+    return (
+      <div key={w} className="relative">
+        <button onClick={() => onTap(w)} style={{ touchAction: 'manipulation' }}
+          title={m ? MARK_LABEL[m][lang] : undefined}
+          className={`w-full ${sk.sections ? 'px-1 py-2 text-[length:calc(26px*var(--ts))]' : 'px-3 py-2.5 text-[length:calc(21px*var(--ts))]'} rounded border-2 font-serif leading-none select-none ${m ? MARK_TILE[m] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
+          {w}
+          {isMiss(m) && heard[w] && <span className="block font-sans text-[length:calc(11px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard[w]}”</span>}
+        </button>
+        {m && <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white pointer-events-none ${MARK_SOLID[m]}`}>{m === 'correct' ? <Check size={10} strokeWidth={3} /> : m === 'partial' ? <Minus size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</span>}
+        {isMiss(m) && (
+          <button onClick={() => onHeard(w)} title={lang === 'ko' ? '뭐라고 읽었는지 적기' : 'Write what they said'} aria-label={`What did they say for ${w}`}
+            className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-surface border flex items-center justify-center ${m === 'error' ? 'border-bad/50 text-bad hover:bg-bad-soft' : 'border-warn/50 text-warn hover:bg-warn-soft'}`}><Pencil size={10} /></button>
+        )}
+      </div>
+    )
+  }
   return (
     <div className="border border-rule-2 rounded-md bg-surface">
       <div className="px-4 py-2.5 border-b border-rule flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{lang === 'ko' ? sk.label_ko : sk.label} <span className="font-normal text-ink-3 text-[length:calc(12px*var(--ts))]">· {sk.covers}</span></h3>
-          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5"><span className="eyebrow mr-1.5">{lang === 'ko' ? '말하기' : 'Say'}</span>“{lang === 'ko' ? '이 단어들을 읽어 보세요. 모르겠으면 소리 내어 합쳐 보세요.' : 'Read these words for me. If you are not sure, sound it out.'}”</p>
+          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5"><span className="eyebrow mr-1.5">{lang === 'ko' ? '말하기' : 'Say'}</span>“{sk.say ? (lang === 'ko' ? sk.say_ko || sk.say : sk.say) : lang === 'ko' ? '이 단어들을 읽어 보세요. 모르겠으면 소리 내어 합쳐 보세요.' : 'Read these words for me. If you are not sure, sound it out.'}”</p>
         </div>
         <span className={`text-[length:calc(13px*var(--ts))] font-semibold tabular-nums ${band ? BAND_TEXT[band] : 'text-ink-3'}`}>{halfText(correct, partial)} / {sk.words.length}{band && <span className="font-normal text-[length:calc(11.5px*var(--ts))] ml-1.5">{PHONICS_BAND_LABELS[band][lang]}</span>}</span>
       </div>
-      <div className="px-4 py-3 grid grid-cols-4 gap-2">
-        {sk.words.map(w => {
-          const m = marks[w]
-          return (
-            <div key={w} className="relative">
-              <button onClick={() => onTap(w)} style={{ touchAction: 'manipulation' }}
-                title={m ? MARK_LABEL[m][lang] : undefined}
-                className={`w-full px-3 py-2.5 rounded border-2 font-serif text-[length:calc(21px*var(--ts))] leading-none select-none ${m ? MARK_TILE[m] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
-                {w}
-                {isMiss(m) && heard[w] && <span className="block font-sans text-[length:calc(11px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard[w]}”</span>}
-              </button>
-              {m && <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white pointer-events-none ${MARK_SOLID[m]}`}>{m === 'correct' ? <Check size={10} strokeWidth={3} /> : m === 'partial' ? <Minus size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</span>}
-              {isMiss(m) && (
-                <button onClick={() => onHeard(w)} title={lang === 'ko' ? '뭐라고 읽었는지 적기' : 'Write what they said'} aria-label={`What did they say for ${w}`}
-                  className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-surface border flex items-center justify-center ${m === 'error' ? 'border-bad/50 text-bad hover:bg-bad-soft' : 'border-warn/50 text-warn hover:bg-warn-soft'}`}><Pencil size={10} /></button>
-              )}
-            </div>
-          )
-        })}
-      </div>
+      {sk.sections ? (
+        <div className="px-4 py-3 space-y-2">
+          {sk.sections.map((row, i) => {
+            let rc = 0, rp = 0, rm = 0
+            row.forEach(w => { if (marks[w] === 'correct') rc++; else if (marks[w] === 'partial') rp++; if (marks[w]) rm++ })
+            return (
+              <div key={i} className="grid grid-cols-[20px_1fr_48px] items-center gap-2">
+                <span className="text-[length:calc(11px*var(--ts))] text-ink-3 tabular-nums" title={lang === 'ko' ? `${i + 1}줄` : `Row ${i + 1}`}>{i + 1}</span>
+                <div className="grid grid-cols-7 gap-2">{row.map(tile)}</div>
+                <span className="text-right text-[length:calc(11.5px*var(--ts))] tabular-nums text-ink-3">{rm > 0 ? <><b className="text-ink">{halfText(rc, rp)}</b>/{row.length}</> : ''}</span>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="px-4 py-3 grid grid-cols-4 gap-2">{sk.words.map(tile)}</div>
+      )}
       <div className="px-4 py-2 border-t border-rule flex items-center gap-3 flex-wrap text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">
         <span><b className="text-good">{correct}</b> {lang === 'ko' ? '정답' : 'correct'} · <b className="text-warn">{partial}</b> {lang === 'ko' ? '부분 정답' : 'partly'} · <b className="text-bad">{errors}</b> {lang === 'ko' ? '오답' : errors === 1 ? 'error' : 'errors'} · {unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>
         <span className="text-ink-3">{lang === 'ko' ? '한 번 탭 정답, 두 번 오답, 세 번 부분 정답, 네 번 지우기.' : 'Tap once correct, twice error, three times partly, again to clear.'}</span>
@@ -570,11 +621,12 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
         </span>
       </div>
       <details className="px-4 py-2 border-t border-rule" open={observations.length > 0}>
-        <summary className="text-[length:calc(11.5px*var(--ts))] text-ink-2 cursor-pointer hover:text-ink">{lang === 'ko' ? '해독 방식과 어려운 패턴' : 'How they decoded, and what gave trouble'}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
+        <summary className="text-[length:calc(11.5px*var(--ts))] text-ink-2 cursor-pointer hover:text-ink">{sk.sections ? (lang === 'ko' ? '어려운 글자' : 'What gave trouble') : (lang === 'ko' ? '해독 방식과 어려운 패턴' : 'How they decoded, and what gave trouble')}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
         <div className="mt-2 space-y-2">
-          <div className="flex flex-wrap gap-1.5">
+          {/* How a student decoded words means nothing for single letters. */}
+          {!sk.sections && <div className="flex flex-wrap gap-1.5">
             {DECODING_OBSERVATIONS.map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
-          </div>
+          </div>}
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[length:calc(11px*var(--ts))] text-ink-3 mr-1">{lang === 'ko' ? '어려운 패턴:' : 'Trouble with:'}</span>
             {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}

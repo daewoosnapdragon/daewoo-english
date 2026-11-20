@@ -9,11 +9,12 @@
 //
 // Teaching groups: the sheet to teach each student next, and students
 // gathered by it across classes. The next sheet is the lowest hole under
-// their position if they have one (a sheet under 90%), otherwise the sheet
-// after their position.
+// their position if they have one (a sheet under 90%, an alphabet sheet
+// first), otherwise the sheet after their position. A student with nothing
+// mastered yet and an alphabet sheet under 90% works on the alphabet.
 
 import {
-  PHONICS_SKILL_IDS, PHONICS_GROUPS, PATTERN_PREFIX, phonicsSkill, isMiss,
+  PHONICS_SKILL_IDS, PHONICS_GROUPS, PATTERN_PREFIX, ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, phonicsSkill, isMiss, isSecure, phonicsBand,
   type LatestBySkill, type PhonicsCheckRow,
 } from '@/lib/phonics'
 import { masteryPosition } from '@/lib/phonicsCompare'
@@ -131,8 +132,10 @@ export function nextToTeach(latest: LatestBySkill): NextSheet {
   const p = masteryPosition(latest)
   if (!p.tested) return { sheet: null, reason: 'unchecked', checked: false }
   if (p.gaps.length) return { sheet: p.gaps[0], reason: 'gap', checked: true }
-  if (p.position >= PHONICS_SKILL_IDS.length) return { sheet: null, reason: 'done', checked: true }
-  const sheet = PHONICS_SKILL_IDS[p.position]
+  const letters = ALPHABET_SKILL_IDS.find(id => latest[id] && !isSecure(phonicsBand(latest[id].score)))
+  if (letters) return { sheet: letters, reason: 'next', checked: true }
+  if (p.position >= DECODING_SKILL_IDS.length) return { sheet: null, reason: 'done', checked: true }
+  const sheet = DECODING_SKILL_IDS[p.position]
   return { sheet, reason: 'next', checked: !!latest[sheet] }
 }
 

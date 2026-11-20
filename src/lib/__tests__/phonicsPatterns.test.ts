@@ -81,6 +81,11 @@ describe('nextToTeach', () => {
     expect(nextToTeach(L(sc('cvc', 100), sc('digraphs', 80)))).toEqual({ sheet: 'digraphs', reason: 'next', checked: true })
     expect(nextToTeach(L(sc('cvc', 100)))).toEqual({ sheet: 'digraphs', reason: 'next', checked: false })
   })
+  it('teaches an alphabet sheet under 90% first, and goes on to CVC once the letters are mastered', () => {
+    expect(nextToTeach(L(sc('letter_names', 100), sc('letter_sounds', 60)))).toEqual({ sheet: 'letter_sounds', reason: 'next', checked: true })
+    expect(nextToTeach(L(sc('letter_sounds', 60), sc('cvc', 100)))).toEqual({ sheet: 'letter_sounds', reason: 'gap', checked: true })
+    expect(nextToTeach(L(sc('letter_names', 100), sc('letter_sounds', 95)))).toEqual({ sheet: 'cvc', reason: 'next', checked: false })
+  })
   it('starts at CVC when nothing meets the bar, and knows done and unchecked', () => {
     expect(nextToTeach(L(sc('cvc', 50))).sheet).toBe('cvc')
     expect(nextToTeach({}).reason).toBe('unchecked')

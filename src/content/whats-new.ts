@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'phonics-alphabet', date: '2026-11-23', title: 'Phonics: letter names and letter sounds sheets',
+    body: 'You can now check letter names and letter sounds in Phonics. Two new sheets come before CVC, all 26 letters each, in the order they are most used in English, in four rows (e t a o i n s · h r d l c u m · w f g y p b · v k j x q z); names are capitals, sounds lower case. Letter sheets beside Word sheets prints them in large type, one a page, or saves them as a PDF. They do not change a student’s position, which still counts the twenty word sheets. A class that is past the alphabet can untick Alphabet sheets above its heat map: the two sheets then disappear from that class everywhere, and on Whole grade its row says Skipped instead of a row of empty cells.',
+    path: '/reading?tab=phonics', guide: 'reading',
+  },
+  {
     id: 'font-choice', date: '2026-11-17', title: 'Settings: pick the font that is easiest for you to read',
     body: 'You can now change the app’s font in Settings → Display. Classic is the look you know; Clean uses Inter everywhere; Easy to read uses Atkinson Hyperlegible, made so that I, l and 1 or O and 0 never look alike; This device uses your computer’s own font. Each choice shows a sample before you pick it. Text size sits beside it too. Both are saved in your browser only, so nobody else’s screen changes. The weekly schedule on the Dashboard also no longer marks an afternoon class as Now in the morning.',
     path: '/settings#set-display',

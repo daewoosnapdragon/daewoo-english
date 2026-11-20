@@ -27,6 +27,35 @@ as printed (sixteen or twenty a sheet):
 | Other vowels | R-controlled vowels · Vowel teams for /ū/, /oo/, /ou/ · oi, oy, au, aw |
 | Two-syllable | Open and closed · Consonant -le · Y as a vowel · 1 and 2-syllable silent e · 2-syllable silent e · 2-syllable r-controlled · 2-syllable long vowel teams · 2-syllable more vowel teams |
 
+Ahead of them sit two alphabet sheets of our own, not in the packet:
+**Letter names** (the 26 capitals) and **Letter sounds** (the 26 lower-case
+letters; a vowel wants its short sound, c and g either sound, x /ks/, q /kw/).
+Both run in order of how often the letter is used in English, in four rows
+(`LETTERS_BY_FREQUENCY`):
+
+| Row | Letters |
+| --- | --- |
+| 1 | e t a o i n s |
+| 2 | h r d l c u m |
+| 3 | w f g y p b |
+| 4 | v k j x q z |
+
+The check screen shows the rows with a count each; the printed sheet is the
+four rows in large type. The alphabet sheets are scored like any sheet and
+show in every table, but they are outside the twenty: a **mastery position**
+counts the word sheets only (0–20, unchanged), an alphabet sheet under 90% is
+a gap under the position, and the sheet to teach next is an alphabet sheet
+under 90% before anything else.
+
+**Skipping them.** A class past the alphabet switches them off with *Alphabet
+sheets* above its heat map (one choice per grade and class, for every
+teacher; stored as the `phonics_skip_alphabet` row of `app_settings`, a JSON
+list of `grade|class` keys, `src/lib/phonicsClassSettings.ts`). They then
+leave that class's heat map, sheet picker, printing, CSV and student pages; on
+Whole grade and All grades its row reads *Skipped* across the two columns, and
+the columns go altogether when every class in view skips them. Saved results
+are kept and come back if the class switches them on again.
+
 The lists live in `src/lib/phonics.ts`. To change a word, edit the `words`
 array and bump `PHONICS_CONTENT_VERSION`; saved checks carry the version they
 were made with and are scored on the words they marked, so old results do
@@ -52,7 +81,7 @@ puts them (kept as reference text; the screen itself shows no panel):
 - Stop a sheet after five errors in a row. Untouched words are saved as *not
   read*, not as errors.
 
-The teacher picks any set of sheets: one, several, or all twenty. The set is
+The teacher picks any set of sheets: one, several, or all of them. The set is
 remembered in the browser so a class can be run on the same sheets without
 re-ticking. *Not yet proficient* selects what the student did not get last
 time; *Not checked yet* selects what has never been checked. *Rest correct*
@@ -89,7 +118,9 @@ The packet's rubric. Accuracy is words correct over words on the sheet.
 - **Leveling meeting**: the hover card on a student's name shows the strip
   and the working-on sheet beside the level test numbers.
 - **CSV** exports the heat map; **Word sheets** prints the twenty sheets in
-  large type, one a page.
+  large type, one a page, and **Letter sheets** the two alphabet sheets
+  (`src/lib/phonicsPrint.ts`). *Save as PDF* in the print dialog keeps a
+  copy.
 
 ## Data
 

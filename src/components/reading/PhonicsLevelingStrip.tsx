@@ -2,13 +2,14 @@
 
 import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
-import { PHONICS_SKILLS, phonicsSkill } from '@/lib/phonics'
+import { DECODING_SKILL_IDS, phonicsSkill } from '@/lib/phonics'
 import type { Lane, LevelFlag, MasteryPosition } from '@/lib/phonicsCompare'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 
 // ─── Leveling strip ──────────────────────────────────────────────
 // One grade: a lane per class, lowest class at the top, a dot per checked
-// student at their mastery position (0 = nothing yet, 1–20 the sheets). The
+// student at their mastery position (0 = nothing yet, 1–20 the word sheets;
+// the alphabet sheets do not move it). The
 // shaded band is the class's middle half, the bar its median. A dot ringed
 // green reads like the class above; ringed red, like the class below.
 
@@ -63,7 +64,7 @@ export default function PhonicsLevelingStrip({ title, lanes, students, pos, flag
         <span className="text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3">{lang === 'ko' ? '위치' : 'position'}</span>
         <div className="relative mx-[6px] h-4">
           {Array.from({ length: 21 }, (_, p) => (
-            <span key={p} className="absolute text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3 -translate-x-1/2 tabular-nums" style={{ left: x(p) }} title={p === 0 ? 'nothing yet' : PHONICS_SKILLS[p - 1].label}>{p}</span>
+            <span key={p} className="absolute text-[length:max(10px,calc(9.5px*var(--ts)))] text-ink-3 -translate-x-1/2 tabular-nums" style={{ left: x(p) }} title={p === 0 ? 'nothing yet' : phonicsSkill(DECODING_SKILL_IDS[p - 1])?.label}>{p}</span>
           ))}
         </div>
       </div>

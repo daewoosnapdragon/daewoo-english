@@ -5,7 +5,7 @@ import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import {
   PHONICS_GROUPS, PHONICS_SKILLS, PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, PATTERN_PREFIX,
-  phonicsSkill, phonicsBand, scoreText, type LatestBySkill, type PhonicsCheckRow,
+  phonicsSkill, phonicsBand, scoreText, sheetNo, type LatestBySkill, type PhonicsCheckRow, type PhonicsSkill,
 } from '@/lib/phonics'
 import type { LevelFlag, MasteryPosition } from '@/lib/phonicsCompare'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
@@ -23,14 +23,16 @@ const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg
 
 export const MAX_COMPARE = 6
 
-export default function PhonicsStudentCompare({ students, latestByStudent, checksById, pos, flags, lang, onClose, onRemove, onOpenStudent }: {
+export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, students, latestByStudent, checksById, pos, flags, lang, onClose, onRemove, onOpenStudent }: {
+  /** The sheets "every sheet" shows: without the alphabet when no class in view uses it. */
+  skills?: PhonicsSkill[]
   students: Student[]; latestByStudent: Record<string, LatestBySkill>; checksById: Record<string, PhonicsCheckRow>
   pos: Record<string, MasteryPosition>; flags: Record<string, LevelFlag>; lang: 'en' | 'ko'
   onClose: () => void; onRemove: (id: string) => void; onOpenStudent: (s: Student) => void
 }) {
   const [allSheets, setAllSheets] = useState(false)
   const checkedBySomeone = (id: string) => students.some(s => latestByStudent[s.id]?.[id])
-  const sheets = allSheets ? PHONICS_SKILLS : PHONICS_SKILLS.filter(s => checkedBySomeone(s.id))
+  const sheets = allSheets ? skills : skills.filter(s => checkedBySomeone(s.id))
 
   // How each student decoded: the teacher checkboxes on their latest result for each sheet, counted.
   const howBy = Object.fromEntries(students.map(s => {
@@ -97,7 +99,7 @@ export default function PhonicsStudentCompare({ students, latestByStudent, check
                     <tr className="bg-paper-2"><td colSpan={students.length + 1} className="px-4 py-1 eyebrow font-semibold">{lang === 'ko' ? g.label_ko : g.label}</td></tr>
                     {rows.map(sk => (
                       <tr key={sk.id} className="border-t border-rule">
-                        <td className="px-4 py-1 text-ink truncate" title={sk.covers}><span className="text-ink-3 text-[length:calc(10.5px*var(--ts))] mr-1.5">{PHONICS_SKILLS.indexOf(sk) + 1}</span>{lang === 'ko' ? sk.label_ko : sk.label}</td>
+                        <td className="px-4 py-1 text-ink truncate" title={sk.covers}><span className="text-ink-3 text-[length:calc(10.5px*var(--ts))] mr-1.5">{sheetNo(sk.id)}</span>{lang === 'ko' ? sk.label_ko : sk.label}</td>
                         {students.map(s => {
                           const l = latestByStudent[s.id]?.[sk.id]
                           if (!l) return <td key={s.id} className="px-2 py-1 border-l border-rule"><span className="block h-7 rounded-sm bg-paper-2/60 text-ink-3/50 text-center leading-7">·</span></td>

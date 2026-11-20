@@ -24,6 +24,12 @@ describe('masteryPosition', () => {
     expect(p.tested).toBe(4)
   })
 
+  it('counts the twenty word sheets only; an alphabet sheet under 90% is a gap', () => {
+    expect(masteryPosition(latest(sc('letter_names', 100), sc('letter_sounds', 100)))).toEqual({ through: null, position: 0, gaps: [], testedThrough: 0, tested: 2 })
+    expect(masteryPosition(latest(sc('letter_sounds', 80), sc('cvc', 100), sc('digraphs', 95)))).toMatchObject({ through: 'digraphs', position: 2, gaps: ['letter_sounds'], testedThrough: 2, tested: 3 })
+    expect(openCeiling(masteryPosition(latest(sc('letter_names', 100))))).toBe(true)
+  })
+
   it('any sheet at 90% or more is mastered; 89 is a gap below the position', () => {
     expect(masteryPosition(latest(sc('cvc', 90), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 3, gaps: [] })
     expect(masteryPosition(latest(sc('cvc', 89), sc('blends', 95)))).toMatchObject({ through: 'blends', position: 3, gaps: ['cvc'] })

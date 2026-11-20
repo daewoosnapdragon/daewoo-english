@@ -6,6 +6,12 @@
 // printed sheet (or the screen) and the teacher marks it. Meaning is never
 // asked.
 //
+// Ahead of the packet sit two alphabet sheets of our own, letter names and
+// letter sounds: all 26 letters, most used in English first, in four rows.
+// They are scored like any sheet but sit outside the twenty: a mastery
+// position counts the decoding sheets only, so a class may skip the
+// alphabet (phonicsClassSettings.ts) and its numbers mean the same.
+//
 // Changing a word: bump PHONICS_CONTENT_VERSION. Saved checks carry the
 // version they were made with and are scored on the words they marked, so
 // old checks do not move.
@@ -29,20 +35,55 @@ export interface PhonicsSkill {
   patterns: string[]
   words: string[]
   ccss: string[]
+  /** Alphabet sheets: the items in rows, a row a section; `words` is the rows run together. */
+  sections?: string[][]
+  /** What the teacher says, when it is not the packet's "Read these words for me." */
+  say?: string
+  say_ko?: string
 }
 
 export interface PhonicsGroup { id: string; label: string; label_ko: string }
 
 export const PHONICS_CONTENT_VERSION = 'quick-checks-2026-11'
 
+export const ALPHABET_GROUP = 'alphabet'
+
 export const PHONICS_GROUPS: PhonicsGroup[] = [
+  { id: ALPHABET_GROUP, label: 'Alphabet', label_ko: '알파벳' },
   { id: 'short', label: 'Short vowels', label_ko: '단모음' },
   { id: 'long', label: 'Long vowels', label_ko: '장모음' },
   { id: 'other', label: 'Other vowels', label_ko: '기타 모음' },
   { id: 'two', label: 'Two-syllable', label_ko: '2음절' },
 ]
 
+/**
+ * The 26 letters, most used in English first (E T A O I N S H R D L C U M
+ * W F G Y P B V K J X Q Z), in four sections: the first row is the letters
+ * a student meets most, the last the rarest.
+ */
+export const LETTERS_BY_FREQUENCY: string[][] = [
+  ['e', 't', 'a', 'o', 'i', 'n', 's'],
+  ['h', 'r', 'd', 'l', 'c', 'u', 'm'],
+  ['w', 'f', 'g', 'y', 'p', 'b'],
+  ['v', 'k', 'j', 'x', 'q', 'z'],
+]
+const CAPITALS = LETTERS_BY_FREQUENCY.map(row => row.map(l => l.toUpperCase()))
+
 export const PHONICS_SKILLS: PhonicsSkill[] = [
+  {
+    id: 'letter_names', group: ALPHABET_GROUP, label: 'Letter names', label_ko: '알파벳 이름', short: 'Names',
+    covers: 'All 26 capital letters, most common first, in four rows.', patterns: ['vowels', 'consonants', 'b d p q', 'look-alikes (M N, W M)'],
+    sections: CAPITALS, words: CAPITALS.flat(),
+    say: 'What is the name of this letter?', say_ko: '이 글자의 이름이 뭐예요?',
+    ccss: ['RF.K.1d'],
+  },
+  {
+    id: 'letter_sounds', group: ALPHABET_GROUP, label: 'Letter sounds', label_ko: '알파벳 소리', short: 'Sounds',
+    covers: 'All 26 letters, most common first. Vowels: the short sound. c and g: hard or soft. x is /ks/, q is /kw/.', patterns: ['short vowels', 'consonants', 'b d p q', 'said the name, not the sound'],
+    sections: LETTERS_BY_FREQUENCY, words: LETTERS_BY_FREQUENCY.flat(),
+    say: 'What sound does this letter make?', say_ko: '이 글자는 무슨 소리가 나요?',
+    ccss: ['RF.K.3a', 'RF.K.3b'],
+  },
   {
     id: 'cvc', group: 'short', label: 'CVC words', label_ko: 'CVC 단어', short: 'CVC',
     covers: 'Consonant-vowel-consonant, every short vowel.', patterns: ['short a', 'short e', 'short i', 'short o', 'short u', 'consonants'],
@@ -171,6 +212,31 @@ const BY_ID: Record<string, PhonicsSkill> = Object.fromEntries(PHONICS_SKILLS.ma
 export function phonicsSkill(id: string): PhonicsSkill | undefined { return BY_ID[id] }
 export function skillsInGroup(groupId: string): PhonicsSkill[] { return PHONICS_SKILLS.filter(s => s.group === groupId) }
 
+export const ALPHABET_SKILL_IDS: string[] = skillsInGroup(ALPHABET_GROUP).map(s => s.id)
+export function isAlphabetSkill(id: string): boolean { return ALPHABET_SKILL_IDS.includes(id) }
+/** The packet's twenty decoding sheets, in order: the sequence a mastery position counts along. */
+export const DECODING_SKILL_IDS: string[] = PHONICS_SKILL_IDS.filter(id => !isAlphabetSkill(id))
+
+/** The sheets a class works with: all of them, or the twenty when it skips the alphabet. */
+export function classSkills(skipAlphabet: boolean): PhonicsSkill[] {
+  return skipAlphabet ? PHONICS_SKILLS.filter(s => !isAlphabetSkill(s.id)) : PHONICS_SKILLS
+}
+/** The families with a sheet among `skills`, in order. */
+export function groupsFor(skills: PhonicsSkill[]): { group: PhonicsGroup; skills: PhonicsSkill[] }[] {
+  return PHONICS_GROUPS.map(g => ({ group: g, skills: skills.filter(s => s.group === g.id) })).filter(x => x.skills.length > 0)
+}
+/** A sheet's number in the packet, 1–20; the alphabet sheets have none. */
+export function sheetNo(id: string): string {
+  const i = DECODING_SKILL_IDS.indexOf(id)
+  return i < 0 ? '' : String(i + 1)
+}
+/** A student's latest results without the alphabet sheets, for a class that skips them. */
+export function withoutAlphabet<T>(latest: Record<string, T>): Record<string, T> {
+  const out: Record<string, T> = {}
+  Object.keys(latest).forEach(k => { if (!isAlphabetSkill(k)) out[k] = latest[k] })
+  return out
+}
+
 /** Puts skill ids into the packet's order and drops unknown ones. */
 export function orderSkills(ids: string[]): string[] {
   const want = new Set(ids)
@@ -206,11 +272,12 @@ export const PATTERN_PREFIX = 'pattern:'
 
 export const PHONICS_CHECK_NOTES: string[] = [
   'Decoding only. The student reads each word aloud, left to right; you never ask what it means. A word they have never heard of is still correct if they read it right.',
-  'Use a check after teaching a phonics pattern to see whether the student has it, or to find where a new student’s decoding stands. Pick one sheet, several, or all twenty.',
+  'Use a check after teaching a phonics pattern to see whether the student has it, or to find where a new student’s decoding stands. Pick one sheet, several, or all of them.',
   'The student reads from the printed sheet (or Word sheets prints one). Say: “Read these words for me. If you are not sure, sound it out.” Point to the first word and let them set the pace.',
   'Correct: read accurately, including sounded out and then blended (/sh/ /i/ /p/, ship), and self-corrections. Partly: nearly there, one sound off or right only after a long struggle; it counts as half a word. Error: read wrongly, skipped, or nothing after about three seconds. Do not model, teach or correct during the check; the same warm tone for every word.',
   'On an error or a partly, tap the pencil on the tile and write what the student said. The packet asks for this: it is what makes error analysis possible later.',
   'Under each sheet, tick how the student decoded (sounded out, onset and rime, read whole and automatic, guessing) and the patterns that gave trouble. These are notes for teaching; they do not change the score.',
+  'The two alphabet sheets come before the packet: all 26 letters, most common first, in four rows. Letter names uses capitals; letter sounds lower case, where a vowel wants its short sound, c and g either sound, x /ks/ and q /kw/. A class can skip them (Alphabet sheets, above the heat map).',
   'Stop a sheet after five errors in a row. Leave the remaining words untouched: they are saved as not read, not as errors.',
   'Accuracy is words correct over words on the sheet, a partly counting half. Beginning, under 70%, needs intervention; Developing, 70–89%, needs guided practice; Mastered, 90% and up, has the pattern.',
   'A phonics check is never graded. It sits on the student page and the leveling screens as information, so a reader who sounds fluent but has gaps in decoding is not missed.',

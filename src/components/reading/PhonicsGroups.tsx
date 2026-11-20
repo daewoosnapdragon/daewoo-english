@@ -5,7 +5,7 @@ import type { Student } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import { logActivity } from '@/lib/activity'
 import { ENGLISH_CLASS_ORDER } from '@/lib/rosterSort'
-import { PHONICS_GROUPS, PHONICS_SKILLS, phonicsSkill, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
+import { PHONICS_GROUPS, phonicsSkill, sheetNo, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
 import { nextToTeach, teachingGroups, troubleCounts, missedWords, splitPatternKey, type GroupBy, type TeachGroup } from '@/lib/phonicsPatterns'
 import { Printer } from 'lucide-react'
 
@@ -41,9 +41,9 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
   }, [students, off, latestByStudent, by])
 
   const title = (g: TeachGroup) => {
-    if (g.key === 'done') return lang === 'ko' ? '스무 시트 모두 완료' : 'All twenty sheets'
+    if (g.key === 'done') return lang === 'ko' ? '스무 시트 모두 완료' : 'All twenty word sheets'
     if (g.key === 'unchecked') return lang === 'ko' ? '아직 점검 안 함' : 'Not checked yet'
-    if (by === 'sheet') { const sk = phonicsSkill(g.key)!; return `${PHONICS_SKILLS.indexOf(sk) + 1} · ${lang === 'ko' ? sk.label_ko : sk.label}` }
+    if (by === 'sheet') { const sk = phonicsSkill(g.key)!; return `${sheetNo(sk.id) ? `${sheetNo(sk.id)} · ` : ''}${lang === 'ko' ? sk.label_ko : sk.label}` }
     const fam = PHONICS_GROUPS.find(f => f.id === g.key)!
     return lang === 'ko' ? fam.label_ko : fam.label
   }

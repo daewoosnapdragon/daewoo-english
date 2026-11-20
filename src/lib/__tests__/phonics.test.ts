@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   PHONICS_SKILLS, PHONICS_SKILL_IDS, PHONICS_GROUPS, phonicsSkill, orderSkills,
+  ALPHABET_SKILL_IDS, DECODING_SKILL_IDS, LETTERS_BY_FREQUENCY, classSkills, groupsFor, sheetNo, withoutAlphabet,
   scoreSkill, scoreCheck, latestBySkill, phonicsBand, summarizeStudent, phonicsOneLiner, notYetSecure, nextMark, longestErrorRun,
   attemptsBySkill, latestDelta, wordHistory, scoreText, halfText, isMiss,
   type PhonicsCheckRow, type PhonicsMark,
@@ -14,11 +15,35 @@ const firstN = (skill: string, n: number): Record<string, PhonicsMark> =>
   Object.fromEntries(phonicsSkill(skill)!.words.map((w, i) => [w, i < n ? 'correct' : 'error']))
 
 describe('the packet as data', () => {
-  it('has the twenty sheets, in the packet order, sixteen or twenty words each', () => {
-    expect(PHONICS_SKILLS.length).toBe(20)
-    expect(PHONICS_SKILL_IDS.slice(0, 3)).toEqual(['cvc', 'digraphs', 'blends'])
+  it('has the two alphabet sheets, then the twenty sheets in the packet order, sixteen or twenty words each', () => {
+    expect(PHONICS_SKILLS.length).toBe(22)
+    expect(ALPHABET_SKILL_IDS).toEqual(['letter_names', 'letter_sounds'])
+    expect(PHONICS_SKILL_IDS.slice(0, 2)).toEqual(ALPHABET_SKILL_IDS)
+    expect(DECODING_SKILL_IDS.length).toBe(20)
+    expect(DECODING_SKILL_IDS.slice(0, 3)).toEqual(['cvc', 'digraphs', 'blends'])
     expect(PHONICS_SKILL_IDS[PHONICS_SKILL_IDS.length - 1]).toBe('two_more_teams')
-    PHONICS_SKILLS.forEach(s => expect([16, 20], s.id).toContain(s.words.length))
+    PHONICS_SKILLS.filter(s => !s.sections).forEach(s => expect([16, 20], s.id).toContain(s.words.length))
+  })
+  it('has all 26 letters on each alphabet sheet, most common first, in four rows', () => {
+    expect(LETTERS_BY_FREQUENCY.map(r => r.length)).toEqual([7, 7, 6, 6])
+    expect(new Set(LETTERS_BY_FREQUENCY.flat()).size).toBe(26)
+    expect(LETTERS_BY_FREQUENCY[0]).toEqual(['e', 't', 'a', 'o', 'i', 'n', 's'])
+    expect(LETTERS_BY_FREQUENCY[3].slice(-3)).toEqual(['x', 'q', 'z'])
+    expect(phonicsSkill('letter_names')!.words.slice(0, 3)).toEqual(['E', 'T', 'A'])
+    expect(phonicsSkill('letter_sounds')!.words).toEqual(LETTERS_BY_FREQUENCY.flat())
+    ALPHABET_SKILL_IDS.forEach(id => expect(phonicsSkill(id)!.sections!.flat()).toEqual(phonicsSkill(id)!.words))
+  })
+  it('numbers the twenty word sheets 1–20 and leaves the alphabet unnumbered', () => {
+    expect(sheetNo('letter_names')).toBe('')
+    expect(sheetNo('cvc')).toBe('1')
+    expect(sheetNo('two_more_teams')).toBe('20')
+  })
+  it('drops the alphabet for a class that skips it, columns, families and results alike', () => {
+    expect(classSkills(false)).toBe(PHONICS_SKILLS)
+    expect(classSkills(true).map(s => s.id)).toEqual(DECODING_SKILL_IDS)
+    expect(groupsFor(classSkills(true)).map(g => g.group.id)).toEqual(['short', 'long', 'other', 'two'])
+    expect(groupsFor(PHONICS_SKILLS)[0].skills.map(s => s.id)).toEqual(ALPHABET_SKILL_IDS)
+    expect(Object.keys(withoutAlphabet({ letter_names: 1, cvc: 2, letter_sounds: 3 }))).toEqual(['cvc'])
   })
   it('has unique ids, no repeated word on a sheet, and every sheet in a group', () => {
     expect(new Set(PHONICS_SKILL_IDS).size).toBe(PHONICS_SKILLS.length)
@@ -35,6 +60,7 @@ describe('the packet as data', () => {
   })
   it('orders skills in packet order and drops unknown ids', () => {
     expect(orderSkills(['silent_e', 'nope', 'cvc', 'digraphs'])).toEqual(['cvc', 'digraphs', 'silent_e'])
+    expect(orderSkills(['cvc', 'letter_sounds', 'letter_names'])).toEqual(['letter_names', 'letter_sounds', 'cvc'])
   })
 })
 

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import type { Student } from '@/types'
-import { PHONICS_SKILLS, latestBySkill, phonicsBand, phonicsSkill, summarizeStudent, scoreText, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
+import { classSkills, latestBySkill, phonicsBand, phonicsSkill, summarizeStudent, scoreText, withoutAlphabet, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
+import { useAlphabetSkips, phonicsClassKey } from '@/lib/phonicsClassSettings'
 import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
 import { BAND_TONE, fmtLong } from '@/components/reading/phonicsTones'
 import StudentProgressGrid from '@/components/reading/PhonicsProgress'
@@ -12,7 +13,8 @@ import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
 
 // ─── A student's decoding at a glance ────────────────────────────
 // Shown in the Reading section of the student page: the latest result per
-// sheet as a strip in packet order, the sheet to work on next, and under it
+// sheet as a strip in packet order (without the alphabet sheets when the
+// student's class skips them), the sheet to work on next, and under it
 // the progress grid of every attempt. The link opens the Reading tab on
 // this student with the check screen ready.
 
@@ -22,7 +24,11 @@ export function phonicsCheckHref(studentId: string, grade: number | string, engl
 
 export default function PhonicsSummary({ student, lang }: { student: Student; lang: 'en' | 'ko' }) {
   const [checks, setChecks] = useState<PhonicsCheckRow[] | null>(null)
-  const [latest, setLatest] = useState<LatestBySkill>({})
+  const [allLatest, setLatest] = useState<LatestBySkill>({})
+  const { skips } = useAlphabetSkips()
+  const skip = skips.has(phonicsClassKey(student.grade, student.english_class))
+  const latest = skip ? withoutAlphabet(allLatest) : allLatest
+  const sheets = classSkills(skip)
   const [open, setOpen] = useState<{ skill: string; checkId: string } | null>(null)
 
   useEffect(() => {
@@ -58,7 +64,7 @@ export default function PhonicsSummary({ student, lang }: { student: Student; la
             <span className="text-ink-3"> · {sum.secure} {lang === 'ko' ? '완성' : 'mastered'} · {sum.developing} {lang === 'ko' ? '발달 중' : 'developing'} · {sum.beginning} {lang === 'ko' ? '시작 단계' : 'beginning'}{sum.lastDate ? ` · ${lang === 'ko' ? '최근' : 'last'} ${fmtLong(sum.lastDate, lang)}` : ''} · {checks.length} {lang === 'ko' ? '회' : checks.length === 1 ? 'check' : 'checks'}</span>
           </p>
           <div className="flex flex-wrap gap-1 mt-2">
-            {PHONICS_SKILLS.map(s => {
+            {sheets.map(s => {
               const l = latest[s.id]
               const b = l ? phonicsBand(l.score) : null
               return (

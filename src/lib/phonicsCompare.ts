@@ -3,10 +3,12 @@
 // where students and whole classes sit on the packet's twenty sheets, for
 // leveling: a student's mastery position, each class's share of students
 // who have mastered each sheet, and the first sheet a class has not got yet.
-// Mastered is 90% or more on the latest check of the sheet.
+// Mastered is 90% or more on the latest check of the sheet. A position counts
+// the twenty decoding sheets only; the two alphabet sheets in front of them
+// show as their own columns and, when not mastered, as gaps.
 
 import {
-  PHONICS_SKILL_IDS, isSecure, phonicsBand, orderSkills,
+  PHONICS_SKILL_IDS, DECODING_SKILL_IDS, isAlphabetSkill, isSecure, phonicsBand, orderSkills,
   type LatestBySkill, type PhonicsCheckRow,
 } from '@/lib/phonics'
 
@@ -20,10 +22,11 @@ export interface MasteryPosition {
   through: string | null
   /** 1–20 for `through`, 0 when nothing is mastered. */
   position: number
-  /** Sheets before `through` that were tested and are under 90%: real holes under the position. */
+  /** Sheets before `through` that were tested and are under 90%, alphabet sheets included: real holes under the position. */
   gaps: string[]
-  /** 1–20: the furthest sheet tested at all, 0 when never checked. */
+  /** 1–20: the furthest decoding sheet tested, 0 when none was. */
   testedThrough: number
+  /** Sheets with a result, alphabet sheets included. */
   tested: number
 }
 
@@ -31,12 +34,14 @@ export function masteryPosition(latest: LatestBySkill): MasteryPosition {
   const ids = orderSkills(Object.keys(latest))
   let throughIdx = -1, testedIdx = -1
   ids.forEach(id => {
-    const i = PHONICS_SKILL_IDS.indexOf(id)
+    const i = DECODING_SKILL_IDS.indexOf(id)
+    if (i < 0) return
     if (i > testedIdx) testedIdx = i
     if (isSecure(phonicsBand(latest[id].score)) && i > throughIdx) throughIdx = i
   })
-  const through = throughIdx >= 0 ? PHONICS_SKILL_IDS[throughIdx] : null
-  const gaps = throughIdx < 0 ? [] : ids.filter(id => PHONICS_SKILL_IDS.indexOf(id) < throughIdx && !isSecure(phonicsBand(latest[id].score)))
+  const through = throughIdx >= 0 ? DECODING_SKILL_IDS[throughIdx] : null
+  const below = (id: string) => isAlphabetSkill(id) || DECODING_SKILL_IDS.indexOf(id) < throughIdx
+  const gaps = throughIdx < 0 ? [] : ids.filter(id => below(id) && !isSecure(phonicsBand(latest[id].score)))
   return { through, position: throughIdx + 1, gaps, testedThrough: testedIdx + 1, tested: ids.length }
 }
 
