@@ -27,10 +27,14 @@ export default function ConfirmDialog({ request, onResolve }: {
   const [text, setText] = useState(request.defaultValue ?? '')
   const inputRef = useRef<HTMLInputElement>(null)
   const confirmRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    // Focus the field for a prompt, the action button for a confirm.
+    // Focus the field for a prompt. For a confirm, the action button, unless
+    // the action is destructive (delete, leave without saving): then Cancel,
+    // so a stray Enter keeps the work instead of throwing it away.
     if (request.kind === 'prompt') inputRef.current?.focus()
+    else if (request.danger) cancelRef.current?.focus()
     else confirmRef.current?.focus()
   }, [request])
 
@@ -43,7 +47,9 @@ export default function ConfirmDialog({ request, onResolve }: {
       onClick={cancel}
       onKeyDown={e => {
         if (e.key === 'Escape') { e.stopPropagation(); cancel() }
-        if (e.key === 'Enter' && request.kind === 'confirm') { e.stopPropagation(); accept() }
+        // Enter on a button presses that button (the browser does it); Enter
+        // elsewhere accepts, but never for a destructive confirm.
+        if (e.key === 'Enter' && request.kind === 'confirm' && !request.danger && !(e.target instanceof HTMLButtonElement)) { e.stopPropagation(); accept() }
       }}
       role="presentation"
     >
@@ -52,21 +58,21 @@ export default function ConfirmDialog({ request, onResolve }: {
         aria-modal="true"
         aria-labelledby="dlg-title"
         onClick={e => e.stopPropagation()}
-        className="w-full max-w-[420px] bg-surface border border-border rounded-2xl shadow-lg overflow-hidden"
+        className="w-full max-w-[420px] bg-surface rounded-xl shadow-lg overflow-hidden"
       >
         <div className="px-5 pt-5 pb-4 flex items-start gap-3">
           {request.danger && (
-            <span className="mt-0.5 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-              <AlertTriangle size={16} className="text-red-600" />
+            <span className="mt-0.5 w-8 h-8 rounded-full bg-bad-soft flex items-center justify-center shrink-0">
+              <AlertTriangle size={16} className="text-bad" />
             </span>
           )}
           <div className="flex-1 min-w-0">
-            <h3 id="dlg-title" className="text-[length:calc(15px*var(--ts))] font-semibold text-text-primary leading-snug">{request.title}</h3>
+            <h3 id="dlg-title" className="text-[length:calc(15px*var(--ts))] font-semibold text-ink leading-snug">{request.title}</h3>
             {request.message && (
-              <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1.5 leading-relaxed whitespace-pre-line">{request.message}</p>
+              <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mt-1.5 leading-relaxed whitespace-pre-line">{request.message}</p>
             )}
           </div>
-          <button onClick={cancel} aria-label="Close" className="p-1 -mt-1 -mr-1 rounded-lg text-text-tertiary hover:text-text-primary hover:bg-surface-alt transition-colors shrink-0">
+          <button onClick={cancel} aria-label="Close" className="p-1 -mt-1 -mr-1 rounded text-ink-3 hover:text-ink hover:bg-paper-2 transition-colors shrink-0">
             <X size={16} />
           </button>
         </div>
@@ -79,22 +85,23 @@ export default function ConfirmDialog({ request, onResolve }: {
               onChange={e => setText(e.target.value)}
               placeholder={request.placeholder}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); accept() } }}
-              className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface text-text-primary outline-none focus:border-navy"
+              className="w-full h-9 px-3 border border-rule-2 rounded text-[length:calc(13px*var(--ts))] bg-surface text-ink outline-none"
             />
           </div>
         )}
 
         <div className="px-5 py-4 flex items-center justify-end gap-2">
           <button
+            ref={cancelRef}
             onClick={cancel}
-            className="px-3.5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt transition-colors"
+            className="h-9 px-3.5 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] font-medium text-ink-2 hover:text-ink hover:border-ink-3 transition-colors"
           >{request.cancelLabel || 'Cancel'}</button>
           <button
             ref={confirmRef}
             onClick={accept}
             disabled={request.kind === 'prompt' && !text.trim()}
-            className={`px-3.5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-semibold text-white transition-colors disabled:opacity-40 ${
-              request.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-navy hover:bg-navy-dark'
+            className={`h-9 px-3.5 rounded text-[length:calc(13px*var(--ts))] font-semibold text-white transition-colors disabled:opacity-40 ${
+              request.danger ? 'bg-bad hover:bg-bad/90' : 'bg-accent hover:bg-accent-hover'
             }`}
           >{request.confirmLabel || (request.danger ? 'Delete' : 'Confirm')}</button>
         </div>

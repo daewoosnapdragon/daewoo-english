@@ -207,7 +207,7 @@ export default function StudentPage({ studentId }: { studentId: string }) {
             <dt className="text-ink-3">{lang === 'ko' ? '행동 (30일)' : 'Behavior · 30d'}</dt><dd className="text-ink font-medium">{facts ? `${facts.behavior30} ${lang === 'ko' ? '건' : facts.behavior30 === 1 ? 'log' : 'logs'}` : '…'}</dd>
           </dl>
           <nav className="border-t border-rule-2 pt-3 grid gap-0.5 text-[length:calc(12.5px*var(--ts))]" aria-label="Sections">
-            {sections.map(([id, l]) => <a key={id} href={`#sec-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} className={`px-2 py-1 rounded ${active === id ? 'bg-surface text-ink font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'text-ink-2 hover:text-ink'}`}>{l}</a>)}
+            {sections.map(([id, l]) => <a key={id} href={`#sec-${id}`} onClick={e => { e.preventDefault(); document.getElementById(`sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }} aria-current={active === id ? 'location' : undefined} className={`px-2 py-1 rounded transition-colors ${active === id ? 'bg-accent-soft text-accent font-semibold' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{l}</a>)}
           </nav>
           <div className="border-t border-rule-2 pt-3 grid gap-1.5">
             <button onClick={editing ? () => setEditing(false) : startEdit} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink hover:border-ink-3 inline-flex items-center gap-1.5"><Pencil size={12} />{editing ? (lang === 'ko' ? '편집 취소' : 'Cancel edit') : (lang === 'ko' ? '정보 수정' : 'Edit details')}</button>

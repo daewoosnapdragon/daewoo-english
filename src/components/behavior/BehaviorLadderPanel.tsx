@@ -22,13 +22,13 @@ interface LogRow { id: string; date: string; type: string; note: string; is_flag
 export interface TeacherRow { id: string; name: string; role: string; english_class: string }
 
 const TYPE_LABEL: Record<string, { en: string; ko: string; cls: string }> = {
-  positive: { en: 'Positive', ko: '긍정', cls: 'bg-green-100 text-green-700' },
-  concern: { en: 'Concern', ko: '우려', cls: 'bg-yellow-100 text-yellow-800' },
-  negative: { en: 'Negative', ko: '부정', cls: 'bg-red-100 text-red-700' },
-  abc: { en: 'Negative', ko: '부정', cls: 'bg-red-100 text-red-700' },
-  parent_contact: { en: 'Parent contact', ko: '학부모 연락', cls: 'bg-purple-100 text-purple-700' },
-  intervention: { en: 'Intervention', ko: '개입', cls: 'bg-orange-100 text-orange-700' },
-  note: { en: 'Note', ko: '메모', cls: 'bg-gray-100 text-gray-700' },
+  positive: { en: 'Positive', ko: '긍정', cls: 'bg-good-soft text-good' },
+  concern: { en: 'Concern', ko: '우려', cls: 'bg-warn-soft text-warn' },
+  negative: { en: 'Negative', ko: '부정', cls: 'bg-bad-soft text-bad' },
+  abc: { en: 'Negative', ko: '부정', cls: 'bg-bad-soft text-bad' },
+  parent_contact: { en: 'Parent contact', ko: '학부모 연락', cls: 'bg-info-soft text-info' },
+  intervention: { en: 'Intervention', ko: '개입', cls: 'bg-paper-3 text-ink' },
+  note: { en: 'Note', ko: '메모', cls: 'bg-paper-3 text-ink-2' },
 }
 // Dates come two ways: plain YYYY-MM-DD (a note's date, the action date) and
 // UTC timestamps (opened, read). Both are shown as the Seoul calendar day;
