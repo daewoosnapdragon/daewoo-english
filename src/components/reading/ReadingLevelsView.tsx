@@ -129,18 +129,18 @@ export default function ReadingLevelsView() {
   useViewLog(`Reading · ${selectedClass} · Grade ${selectedGrade} · ${SUB_EN[subView]}${viewingName ? ` · ${viewingName}` : ''}`)
 
   return (
-    <div className="px-8 py-6 animate-fade-in">
+    <div className="px-4 sm:px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
           <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
         </div>
         <button data-guide="reading.add" onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
-          className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
+          className="inline-flex items-center gap-1.5 h-9 max-sm:h-11 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
           <Plus size={15} /> {lang === 'ko' ? '읽기 기록 추가' : 'Add reading record'}
         </button>
       </div>
-      <div className="flex border-b border-rule-2 mb-4">
+      <div className="scroll-row flex border-b border-rule-2 mb-4">
         {([
           { id: 'class', label: lang === 'ko' ? '반 개요' : 'Class overview' },
           { id: 'student', label: lang === 'ko' ? '학생별' : 'Student detail' },
@@ -156,18 +156,18 @@ export default function ReadingLevelsView() {
       </div>
       <div className="flex items-center gap-3 flex-wrap mb-6">
         {subView === 'phonics' && <>
-          <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.scope">
+          <div className="chip-scroll inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.scope">
             {([['class', lang === 'ko' ? '이 반' : 'This class'], ['grade', lang === 'ko' ? '학년 전체' : 'Whole grade'], ['all', lang === 'ko' ? '전 학년' : 'All grades']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => id !== phonicsScope && leaveFirst(() => { setPhonicsScope(id); setPhonicsStudentId(null) })} className={`px-3 h-7 rounded text-[length:calc(12px*var(--ts))] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
+              <button key={id} onClick={() => id !== phonicsScope && leaveFirst(() => { setPhonicsScope(id); setPhonicsStudentId(null) })} className={`px-3 h-7 whitespace-nowrap rounded text-[length:calc(12px*var(--ts))] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
             ))}
           </div>
-          {phonicsScope !== 'all' && <span className="w-px h-6 bg-rule" />}
+          {phonicsScope !== 'all' && <span className="hidden sm:block w-px h-6 bg-rule" />}
         </>}
-        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => g !== selectedGrade && leaveFirst(() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) })} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
+        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="chip-scroll flex gap-1.5 max-sm:w-full">{GRADES.map((g: any) => <button key={g} onClick={() => g !== selectedGrade && leaveFirst(() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) })} className={`px-2.5 h-7 whitespace-nowrap rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
         {!(subView === 'phonics' && phonicsScope !== 'class') && <>
-        <span className="w-px h-6 bg-rule" />
+        <span className="hidden sm:block w-px h-6 bg-rule" />
         {availableClasses.length > 1
-          ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => cls !== selectedClass && leaveFirst(() => setSelectedClass(cls))} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          ? <div className="chip-scroll flex gap-1.5 max-sm:w-full">{availableClasses.map((cls: any) => <button key={cls} onClick={() => cls !== selectedClass && leaveFirst(() => setSelectedClass(cls))} className={`inline-flex items-center gap-1.5 px-2.5 h-7 whitespace-nowrap rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
           : <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
         </>}
       </div>
@@ -312,7 +312,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
         {dbBench && <p className="text-[length:calc(11px*var(--ts))] text-ink-3 mt-1">CWPM Mid ({dbBench.cwpm_mid}) = expected fluency by mid-semester. CWPM End ({dbBench.cwpm_end}) = target fluency by end of semester. Set in Settings &gt; Benchmarks.</p>}
       </div>
 
-      <div className="border-t border-rule-2">
+      <div className="table-scroll border-t border-rule-2">
         <table className="w-full text-[length:calc(13px*var(--ts))] tabular-nums">
           <thead><tr>
             <th className="text-left px-2 py-2 eyebrow font-semibold w-8 border-b border-rule">#</th>
@@ -331,7 +331,7 @@ function ClassOverview({ students, loading, lang, grade, englishClass, onAddReco
               return (
                 <tr key={s.id} className="hover:bg-paper-2/60 cursor-pointer" onClick={() => onSelectStudent(s.id)}>
                   <td className="px-2 py-2 text-ink-3">{i + 1}</td>
-                  <td className="px-2 py-2"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="text-text-tertiary ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
+                  <td className="px-2 py-2"><StudentPopover studentId={s.id} name={s.english_name} koreanName={s.korean_name} trigger={<><span className="font-medium">{s.english_name}</span><span className="ko-name text-text-tertiary ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span></>} /> <WIDABadge studentId={s.id} compact /></td>
                   <td className="px-2 py-2 text-right font-display text-[length:calc(18px*var(--ts))] text-ink">{rec?.cwpm != null ? Math.round(rec.cwpm) : <span className="text-ink-3 font-sans text-[length:calc(13px*var(--ts))]">—</span>}</td>
                   <td className="px-3 py-2">
                     {band ? <span className={`inline-block px-2 py-0.5 rounded-full text-[length:calc(10.5px*var(--ts))] font-semibold ${band.color}`}>{band.label}</span> : <span className="text-ink-3">—</span>}
@@ -488,15 +488,15 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1.5">
-        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedStudentId === s.id ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{s.english_name}</button>)}
+      <div className="chip-scroll flex flex-wrap gap-1.5">
+        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`px-2.5 h-7 whitespace-nowrap rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedStudentId === s.id ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{s.english_name}</button>)}
       </div>
 
       {selected && !loading && (
         <div>
           <div className="flex items-end justify-between gap-3 border-b border-rule-2 pb-2 mb-4">
             <div>
-              <h3 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{selected.english_name}<span className="font-sans text-ink-3 ml-2 text-[length:calc(13px*var(--ts))]">{selected.korean_name}</span></h3>
+              <h3 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{selected.english_name}<span className="ko-name font-sans text-ink-3 ml-2 text-[length:calc(13px*var(--ts))]">{selected.korean_name}</span></h3>
               <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1.5">{records.length} {lang === 'ko' ? '개 기록' : records.length === 1 ? 'reading record' : 'reading records'}{classBench && <span> · {selected.english_class} {lang === 'ko' ? '목표' : 'target'} {classBench.cwpm_end} cwpm</span>}</p>
             </div>
             <div className="flex items-center gap-2"><Link href={`/students/${selected.id}`} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center">{lang === 'ko' ? '학생 페이지' : 'Student page'}</Link><button onClick={() => onAddRecord(selected.id)} className="inline-flex items-center gap-1 h-8 px-3 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover"><Plus size={12} /> {lang === 'ko' ? '기록 추가' : 'Add record'}</button></div>
@@ -523,7 +523,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               {/* NAEP Oral Reading Fluency Scale Reference */}
               <details className="mb-6 group">
                 <summary className="eyebrow cursor-pointer list-none hover:text-ink">{lang === 'ko' ? 'NAEP 구술 읽기 유창성 척도 · 참고' : 'NAEP oral reading fluency scale · reference'} <span className="text-ink-3 group-open:hidden">▸</span><span className="text-ink-3 hidden group-open:inline">▾</span></summary>
-                <div className="grid grid-cols-4 gap-2 mt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   {[
                     { level: 1, label: 'Level 1', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', desc: 'Word-by-word reading. No phrasing or expression. Frequent pauses, false starts, and sound-outs. Text is not read as connected thought.' },
                     { level: 2, label: 'Level 2', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', desc: 'Reads in two-word phrases with some three- or four-word groupings. Some word-by-word reading persists. Little expression or intonation.' },
@@ -538,6 +538,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 </div>
               </details>
 
+              <div className="table-scroll">
               <table className="w-full text-[length:calc(12.5px*var(--ts))] tabular-nums border-t border-rule-2">
                 <thead><tr className="eyebrow">
                   <th className="text-left px-2 py-2 font-semibold border-b border-rule">Date</th>
@@ -587,6 +588,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                   ))}
                 </tbody>
               </table>
+              </div>
             </>
           ) : (
             <p className="py-8 text-ink-3 text-[length:calc(13px*var(--ts))]">{lang === 'ko' ? '아직 읽기 기록이 없습니다.' : 'No reading records yet.'}</p>

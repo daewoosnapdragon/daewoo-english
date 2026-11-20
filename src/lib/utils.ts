@@ -141,6 +141,15 @@ export function weightedAverage(
   return valid.reduce((a, b) => a + b.value! * b.weight, 0) / totalWeight
 }
 
+// A student's homeroom (Korean class, then number in it) as one token, "대-3".
+// Printed with a space the two read as one number: class 1, number 1 became "1 1",
+// which reads as eleven.
+export function formatHomeroom(s: { korean_class?: string | null; class_number?: number | null }): string {
+  const kc = s.korean_class || ''
+  const n = s.class_number ?? ''
+  return kc && n !== '' ? `${kc}-${n}` : `${kc}${n}`
+}
+
 // ─── Sorting ─────────────────────────────────────────────────────────
 
 export function sortByKoreanClassAndNumber<T extends { korean_class: string; class_number: number }>(

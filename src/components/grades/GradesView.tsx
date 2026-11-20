@@ -232,8 +232,8 @@ export default function GradesView() {
 
   return (
     <div className="animate-fade-in">
-      <div className="px-10 pt-8 pb-5 bg-surface border-b border-border">
-        <div className="flex items-center justify-between">
+      <div className="px-4 sm:px-10 pt-8 pb-5 bg-surface border-b border-border">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="font-display text-[length:calc(30px*var(--ts))] leading-none text-ink">{t.grades.title}</h2>
             <p className="text-text-secondary text-sm mt-1">
@@ -243,13 +243,13 @@ export default function GradesView() {
           </div>
           <div className="flex items-center gap-2">
             {subView === 'entry' && !showCreateFlow && !editingAssessment && (
-              <button data-guide="grades.new" onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
+              <button data-guide="grades.new" onClick={() => setShowCreateFlow(true)} className="inline-flex items-center gap-1.5 h-9 max-sm:h-11 px-4 whitespace-nowrap rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
                 <Plus size={15} /> {lang === 'ko' ? '새 평가' : 'New assessment'}
               </button>
             )}
           </div>
         </div>
-        <div className="flex gap-px bg-border/50 rounded-xl p-1 mt-4 overflow-x-auto">
+        <div className="scroll-row flex gap-px bg-border/50 rounded-xl p-1 mt-4 overflow-x-auto">
           {([
             { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
             { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch Grid' },
@@ -265,8 +265,8 @@ export default function GradesView() {
         </div>
       </div>
 
-      <div className="px-10 py-6">
-        <div className="flex items-center gap-3 mb-5">
+      <div className="px-4 sm:px-10 py-6">
+        <div className="flex items-center gap-3 mb-5 flex-wrap sm:flex-nowrap">
           {/* Semester — a picker for admin/Snapdragon, a fixed label for everyone else */}
           {semesters.length > 0 && (canSwitchSemester ? (
             <select value={selectedSemester || ''} onChange={e => { leaveList(); setSelectedSemester(e.target.value || null) }}
@@ -282,16 +282,16 @@ export default function GradesView() {
               {(() => { const sem = semesters.find(s => s.id === selectedSemester) || semesters[0]; return (lang === 'ko' ? sem.name_ko : sem.name) })()}
             </span>
           ))}
-          <div className="w-px h-6 bg-border" />
+          <div className="hidden sm:block w-px h-6 bg-border" />
           <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; leaveList(); setSelectedGrade(g); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
             className="px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none focus:border-navy">
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
           {availableClasses.length > 1 ? (
-            <div className="flex gap-1">
+            <div className="chip-scroll flex gap-1 max-sm:w-full">
               {availableClasses.map(cls => (
                 <button key={cls} onClick={() => { leaveList(); setSelectedClass(cls); localStorage.setItem('daewoo_grade_tab_class', cls) }}
-                  className={`px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
+                  className={`px-3 py-1.5 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
                   style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
                   {cls}
                 </button>
@@ -386,13 +386,13 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
       </div>
 
       {assessments.length > 0 && (
-        <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <div className="chip-scroll flex items-center gap-2 mb-4 flex-wrap">
           <span className="eyebrow mr-1">{ko ? '평가' : 'Assessment'}</span>
           {assessments.map(x => {
             const on = a?.id === x.id
             const partHere = x.mixed && x.domain_split && Number(x.domain_split[selectedDomain] || 0) > 0 && x.domain !== selectedDomain
             return (
-              <button key={x.id} onClick={() => setSelectedAssessment(x)} className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
+              <button key={x.id} onClick={() => setSelectedAssessment(x)} className={`inline-flex items-center gap-1.5 h-8 px-3 whitespace-nowrap rounded-full border text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
                 <span>{x.name}</span>
                 <span className={on ? 'opacity-70' : 'text-ink-3'} title={partHere ? (ko ? `이 탭에는 ${x.max_score}점 중 ${x.domain_split![selectedDomain]}점이 반영됩니다` : `${x.domain_split![selectedDomain]} of the ${x.max_score} points count in this tab`) : undefined}>{partHere ? `/${x.domain_split![selectedDomain]} of ${x.max_score}` : `/${x.max_score}`}</span>
                 {x.mixed && x.domain_split
@@ -590,7 +590,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
               return (
                 <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
                   <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">
-                    {s.english_name} <span className="text-text-tertiary font-normal text-[length:calc(10px*var(--ts))]">{s.korean_name}</span>
+                    {s.english_name} <span className="ko-name text-text-tertiary font-normal text-[length:calc(10px*var(--ts))]">{s.korean_name}</span>
                   </td>
                   {sections.map((sec, secIdx) => {
                     const val = sectionScores[s.id]?.[String(secIdx)]
@@ -860,7 +860,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   const avg = calcWeightedAvg(weightedItems, Number(selectedGrade), null, selectedClass, weightTable)
                   return (
                     <tr key={s.id} className="border-t border-border hover:bg-surface-alt/30">
-                      <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="text-text-tertiary font-normal text-[length:calc(10px*var(--ts))]">{s.korean_name}</span></td>
+                      <td className="px-3 py-2 sticky left-0 bg-surface font-medium text-navy whitespace-nowrap z-10">{s.english_name} <span className="ko-name text-text-tertiary font-normal text-[length:calc(10px*var(--ts))]">{s.korean_name}</span></td>
                       {columns.map((col, ci) => {
                         if (col.type === 'section') {
                           const secVal = sectionScores[s.id]?.[col.assessment.id]?.[String(col.sectionIdx)] ?? ''

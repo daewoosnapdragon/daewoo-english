@@ -327,7 +327,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
                   return (
                     <tr key={s.id}>
                       <td className="text-center"><PickBox on={picked.includes(s.id)} full={picked.length >= MAX_COMPARE} onToggle={() => togglePick(s.id)} lang={lang} /></td>
-                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span></td>
+                      <td className="px-2 py-1"><button onClick={() => onOpenStudent(s)} className="hover:underline text-ink">{getDisplayName(s)}</button> <span className="ko-name text-ink-3 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span></td>
                       <td className="px-2 py-1 text-ink-2 whitespace-nowrap"><span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />{lang === 'ko' ? `${s.grade}학년` : `G${s.grade}`} · {s.english_class}</td>
                       <td className="px-2 py-1 text-ink whitespace-nowrap"><span className="font-semibold">{p.position}</span> {p.through ? phonicsSkill(p.through)?.short : (lang === 'ko' ? '아직 없음' : 'none yet')} <span className="text-ink-3 text-[length:calc(11px*var(--ts))]">· {lang === 'ko' ? `${p.testedThrough}번까지 점검` : `tested to ${p.testedThrough}`}</span></td>
                       <td className="px-2 py-1"><FlagChip f={f} lang={lang} /> <span className="text-[length:calc(11px*var(--ts))] text-ink-3">{lang === 'ko' ? `중앙값 ${f.likeMedian}` : `median ${f.likeMedian}`}</span></td>
@@ -495,7 +495,7 @@ function StudentRow({ sheets, skipAlphabet, s, latest, pos, flag, lang, showClas
         <PickBox on={picked} full={full} onToggle={onPick} lang={lang} />
         <button onClick={onName} className="block min-w-0 flex-1 text-left truncate hover:underline" title={`${s.english_name} · ${s.english_class} · ${lang === 'ko' ? '시도별 진전 보기' : 'open progress'}`}>
           {showClass && <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${CLASS_DOT[s.english_class] || 'bg-ink-3'}`} />}
-          <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
+          <span className="text-ink">{getDisplayName(s)}</span><span className="ko-name text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
         </button>
         </div>
       </td>

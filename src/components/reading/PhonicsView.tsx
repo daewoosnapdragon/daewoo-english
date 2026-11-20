@@ -162,19 +162,19 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
       }))
   }
 
-  const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
+  const seg = (on: boolean) => `px-3 h-8 max-sm:h-10 whitespace-nowrap rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const lastDates = useMemo(() => Object.fromEntries(students.map(s => [s.id, summarizeStudent(latestByStudent[s.id] || {}).lastDate])) as Record<string, string | null>, [students, latestByStudent])
 
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-4">
-        <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.mode">
+        <div className="chip-scroll inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.mode">
           <button onClick={() => guardedSwitch(() => { setMode('heatmap'); setEditing(null) })} className={seg(mode === 'heatmap')}>{lang === 'ko' ? '반 히트맵' : 'Class heat map'}</button>
           <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); guardedSwitch(() => { setMode('student'); setEditing(null) }) }} className={seg(mode === 'student')}>{lang === 'ko' ? '학생 진전' : 'Student progress'}</button>
           <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); setMode('assess') }} className={seg(mode === 'assess')}>{lang === 'ko' ? '학생 점검' : 'Check a student'}</button>
         </div>
         <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '해독만 평가합니다. 뜻은 묻지 않습니다. 성적에 들어가지 않습니다.' : 'Decoding only, meaning never asked, nothing graded.'}</span>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="sm:ml-auto flex items-center gap-3 flex-wrap">
           <button onClick={toggleAlphabet} disabled={!skipsLoaded} className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink disabled:opacity-40" data-guide="reading.phonics.alphabet"
             title={skipAlphabet
               ? (lang === 'ko' ? '이 반은 알파벳 시트를 건너뜁니다. 클릭하면 다시 켭니다.' : `${englishClass} skips the letter names and letter sounds sheets. Click to use them again.`)
@@ -194,13 +194,13 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
         <HeatMap skills={sheets} students={students} latestByStudent={latestByStudent} trendByStudent={trendByStudent} lang={lang}
           onCell={(sid, skill) => setOpen({ sid, skill })} onCheck={(sid) => startCheck(sid)} onStudent={showStudent} />
       ) : !student ? null : mode === 'student' ? (
-        <div className="grid grid-cols-[210px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 sm:grid-cols-[210px_1fr] gap-6 items-start">
           <RosterRail students={students} currentId={student.id} lang={lang} lastDates={lastDates} onPick={showStudent} />
           <section className="min-w-0">
             <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
               <div>
                 <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '시도별 진전' : 'Progress across attempts'}</p>
-                <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
+                <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="ko-name text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
               </div>
               <div className="flex items-center gap-2">
                 <Link href={`/students/${student.id}`} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ExternalLink size={12} /> {lang === 'ko' ? '학생 페이지' : 'Student page'}</Link>
@@ -246,17 +246,18 @@ function RosterRail({ students, currentId, lang, lastDates, onPick }: {
   students: Student[]; currentId: string; lang: Lang; lastDates: Record<string, string | null>; onPick: (sid: string) => void
 }) {
   return (
-    <aside className="sticky top-[120px] border border-rule-2 rounded-md bg-surface max-h-[calc(100vh-160px)] overflow-y-auto">
+    <aside className="min-w-0 sm:sticky sm:top-[120px] border border-rule-2 rounded-md bg-surface sm:max-h-[calc(100vh-160px)] sm:overflow-y-auto">
       <p className="eyebrow px-3 pt-2.5 pb-1.5">{lang === 'ko' ? '학생' : 'Students'}</p>
-      <ul className="divide-y divide-rule">
+      {/* Phones: the rail sits above the check as one sideways-scrolling row. */}
+      <ul className="table-scroll max-sm:flex divide-y max-sm:divide-y-0 max-sm:divide-x divide-rule">
         {students.map(s => {
           const own = s.id === currentId
           const last = lastDates[s.id]
           return (
-            <li key={s.id}>
-              <button onClick={() => !own && onPick(s.id)} className={`w-full text-left px-3 py-1.5 ${own ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/60'}`}>
+            <li key={s.id} className="max-sm:shrink-0">
+              <button onClick={() => !own && onPick(s.id)} aria-current={own || undefined} className={`w-full text-left px-3 py-1.5 max-sm:min-h-11 max-sm:min-w-[96px] ${own ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/60'}`}>
                 <span className={`block text-[length:calc(12.5px*var(--ts))] truncate ${own ? 'text-ink font-semibold' : 'text-ink-2'}`}>{s.english_name}</span>
-                <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3 truncate">{s.korean_name}{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
+                <span className="block text-[length:calc(10.5px*var(--ts))] text-ink-3 truncate"><span className="ko-name">{s.korean_name}</span>{last ? ` · ${fmtShort(last, lang)}` : ''}</span>
               </button>
             </li>
           )
@@ -296,8 +297,10 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
       {/* Fills the page width with no scrolling: the sheet columns
           share what is left after the name and working-on columns, and the
           sheet names run vertically so a column can be narrow. */}
-      <div className="border border-rule-2 rounded-md overflow-hidden">
-        <table className="w-full table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
+      {/* Phones: the map keeps a readable width and scrolls sideways inside
+          its box, with the names pinned on the left. */}
+      <div className="table-scroll pin-first border border-rule-2 rounded-md overflow-hidden">
+        <table className="w-full max-sm:min-w-[880px] table-fixed text-[length:calc(12px*var(--ts))] tabular-nums border-collapse">
           <colgroup>
             <col style={{ width: 168 }} />
             {skills.map(s => <col key={s.id} />)}
@@ -306,7 +309,7 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
           </colgroup>
           <thead>
             <tr className="bg-paper-2">
-              <th rowSpan={2} className="text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
+              <th rowSpan={2} className="max-sm:sticky max-sm:left-0 max-sm:z-[1] bg-paper-2 text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
               {groupsFor(skills).map(({ group: g, skills: gs }) => <th key={g.id} colSpan={gs.length} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
               <th rowSpan={2} className="px-3 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-left align-bottom">{lang === 'ko' ? '현재 과제' : 'Working on'}</th>
               <th rowSpan={2} className="border-b border-rule-2" />
@@ -329,9 +332,9 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
               const sum = summarizeStudent(latest)
               return (
                 <tr key={s.id}>
-                  <td className="px-3 py-1 border-r border-rule-2 overflow-hidden">
+                  <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-paper px-3 py-1 border-r border-rule-2 overflow-hidden">
                     <button onClick={() => onStudent(s.id)} className="block w-full text-left truncate hover:underline" title={lang === 'ko' ? '시도별 진전 보기' : `Progress for ${s.english_name}`}>
-                      <span className="text-ink">{getDisplayName(s)}</span><span className="text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
+                      <span className="text-ink">{getDisplayName(s)}</span><span className="ko-name text-ink-3 ml-1.5 text-[length:calc(11px*var(--ts))]">{s.korean_name}</span>
                     </button>
                   </td>
                   {skills.map((sk, i) => {
@@ -506,7 +509,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
   const quick = 'h-7 px-2.5 rounded-full border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3 disabled:opacity-40'
 
   return (
-    <div className="grid grid-cols-[210px_1fr] gap-6 items-start">
+    <div className="grid grid-cols-1 sm:grid-cols-[210px_1fr] gap-6 items-start">
       <RosterRail students={students} currentId={student.id} lang={lang} lastDates={lastDates} onPick={onPick} />
 
       <section className="min-w-0">
@@ -514,7 +517,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
         <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
           <div>
             <p className="eyebrow eyebrow-accent mb-1">{editing ? (lang === 'ko' ? `${editing.date} 점검 수정 중` : `Editing the check from ${editing.date}`) : (lang === 'ko' ? '파닉스 점검' : 'Phonics quick check')}</p>
-            <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
+            <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="ko-name text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
           </div>
           <div className="flex items-center gap-2">
             <label className="grid gap-0.5"><span className="eyebrow">{lang === 'ko' ? '날짜' : 'Date'}</span><input type="date" value={date} onChange={e => touch(() => setDate(e.target.value))} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink" /></label>
@@ -616,12 +619,12 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
         </label>
 
         {/* Save bar */}
-        <div className="sticky bottom-0 mt-5 -mx-2 px-2 py-3 bg-paper/95 backdrop-blur border-t border-rule-2 flex items-center gap-3 flex-wrap">
+        <div className="sticky bottom-[var(--tabbar-h,0px)] mt-5 -mx-2 px-2 py-3 bg-paper/95 backdrop-blur border-t border-rule-2 flex items-center gap-3 flex-wrap">
           <span className="text-[length:calc(12.5px*var(--ts))] text-ink-2 tabular-nums">{skills.length} {lang === 'ko' ? '시트' : skills.length === 1 ? 'sheet' : 'sheets'} · <b className="text-ink">{halfText(totals.correct, totals.partial)}</b> / {totals.total} {lang === 'ko' ? '정답' : 'correct'}{totals.total - marked > 0 && <span className="text-ink-3"> · {totals.total - marked} {lang === 'ko' ? '미읽음' : 'not read'}</span>}</span>
           <div className="ml-auto flex items-center gap-2">
             {editing && <button onClick={onCancelEdit} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '수정 취소' : 'Cancel edit'}</button>}
-            <button onClick={() => save(false)} disabled={saving} aria-disabled={unready ? true : undefined} title={unready || undefined} className={`h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold disabled:opacity-60 inline-flex items-center gap-1.5 ${unready ? 'opacity-40 cursor-not-allowed' : 'hover:bg-accent-hover'}`} data-guide="reading.phonics.save">{saving && <Loader2 size={13} className="animate-spin" />}{editing ? (lang === 'ko' ? '수정 저장' : 'Save changes') : (lang === 'ko' ? '저장' : 'Save check')}</button>
-            {!editing && idx < students.length - 1 && <button onClick={() => save(true)} disabled={saving} aria-disabled={unready ? true : undefined} title={unready || undefined} className={`h-9 px-4 rounded border border-ink text-[length:calc(13px*var(--ts))] font-semibold text-ink disabled:opacity-60 ${unready ? 'opacity-40 cursor-not-allowed' : 'hover:bg-paper-2'}`}>{lang === 'ko' ? '저장 후 다음 학생' : 'Save and next student'}</button>}
+            <button onClick={() => save(false)} disabled={saving} aria-disabled={unready ? true : undefined} title={unready || undefined} className={`h-9 max-sm:h-11 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold disabled:opacity-60 inline-flex items-center gap-1.5 ${unready ? 'opacity-40 cursor-not-allowed' : 'hover:bg-accent-hover'}`} data-guide="reading.phonics.save">{saving && <Loader2 size={13} className="animate-spin" />}{editing ? (lang === 'ko' ? '수정 저장' : 'Save changes') : (lang === 'ko' ? '저장' : 'Save check')}</button>
+            {!editing && idx < students.length - 1 && <button onClick={() => save(true)} disabled={saving} aria-disabled={unready ? true : undefined} title={unready || undefined} className={`h-9 max-sm:h-11 px-4 rounded border border-ink text-[length:calc(13px*var(--ts))] font-semibold text-ink disabled:opacity-60 ${unready ? 'opacity-40 cursor-not-allowed' : 'hover:bg-paper-2'}`}>{lang === 'ko' ? '저장 후 다음 학생' : 'Save and next student'}</button>}
           </div>
         </div>
       </section>

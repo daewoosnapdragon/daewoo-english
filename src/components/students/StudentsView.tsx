@@ -8,7 +8,7 @@ import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents, useStudentActions } from '@/hooks/useData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, KOREAN_CLASSES, KoreanClass } from '@/types'
-import { classToColor, classToTextColor, domainLabel } from '@/lib/utils'
+import { classToColor, classToTextColor, domainLabel, formatHomeroom } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { withoutAwayDays } from '@/lib/calendarDays'
@@ -119,8 +119,8 @@ export default function StudentsView() {
 
   return (
     <div className="animate-fade-in">
-      <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
-        <div className="flex items-center justify-between">
+      <div className="px-4 sm:px-10 pt-8 pb-6 bg-surface border-b border-border">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="font-display text-[length:calc(26px*var(--ts))] font-medium tracking-tight">{t.students.title}</h2>
             <p className="text-text-secondary text-sm mt-1">
@@ -133,13 +133,13 @@ export default function StudentsView() {
           </div>
           {/* Manage button - opens panel for Upload Roster / Add Student */}
           <button onClick={() => setShowManage(!showManage)}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium transition-all ${showManage ? 'bg-navy text-white' : 'bg-surface border border-border text-text-primary hover:bg-surface-alt'}`}>
+            className={`inline-flex items-center gap-1.5 px-4 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(13px*var(--ts))] font-medium transition-all ${showManage ? 'bg-navy text-white' : 'bg-surface border border-border text-text-primary hover:bg-surface-alt'}`}>
             <Settings2 size={15} /> {language === 'ko' ? '학생 관리' : 'Manage Students'}
           </button>
         </div>
       </div>
 
-      <div className="px-10 py-6">
+      <div className="px-4 sm:px-10 py-6">
         {/* Manage Panel - slides open */}
         {showManage && (
           <div className="mb-5 p-5 bg-accent-light border border-border rounded-xl animate-fade-in">
@@ -147,7 +147,7 @@ export default function StudentsView() {
               <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{language === 'ko' ? '학생 관리' : 'Manage Students'}</h3>
               <button onClick={() => setShowManage(false)} className="p-1 rounded hover:bg-surface-alt"><X size={14} /></button>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <ManageUploadCard onComplete={refetch} />
               <ManageAddCard onComplete={refetch} />
             </div>
@@ -166,20 +166,21 @@ export default function StudentsView() {
           </div>
         )}
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="relative flex-1 max-w-sm">
+        {/* On phones the toolbar wraps: search takes its own line, the rest flow under it. */}
+        <div className="flex items-center gap-2 sm:gap-3 mb-4 flex-wrap sm:flex-nowrap">
+          <div className="relative basis-full sm:basis-auto flex-1 sm:max-w-sm">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary" />
             <input type="text" placeholder={`${t.common.search}...`} value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none focus:border-border-focus transition-colors" />
+              className="w-full pl-9 pr-3 py-2 max-sm:h-11 max-sm:text-[length:calc(16px*var(--ts))] border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none focus:border-border-focus transition-colors" />
           </div>
           <select value={filterGrade || ''} onChange={e => setFilterGrade(e.target.value ? Number(e.target.value) as Grade : null)}
-            className="px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none">
+            className="px-3 py-2 max-sm:h-11 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none">
             <option value="">{t.common.all} Grades</option>
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
           {!teacherClass && (
             <select value={filterClass || ''} onChange={e => setFilterClass((e.target.value || null) as EnglishClass | null)}
-              className="px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none">
+              className="px-3 py-2 max-sm:h-11 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none">
               <option value="">{t.common.all} Classes</option>
               {ALL_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -191,7 +192,7 @@ export default function StudentsView() {
             </button>
           )}
           <button onClick={() => { setSortKey('korean_class'); setSortDir('asc'); showToast('Sorted for printing — Korean class → student number') }}
-            className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-warm text-white hover:opacity-90 transition-all">
+            className="sm:ml-auto inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-warm text-white hover:opacity-90 transition-all">
             <Printer size={14} /> {t.students.sortForPrinting}
           </button>
           <button onClick={() => {
@@ -220,12 +221,12 @@ export default function StudentsView() {
               setBulkEdits({})
             }
           }}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${bulkEdit ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+            className={`inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${bulkEdit ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
             <Pencil size={14} /> {bulkEdit ? `Save (${Object.keys(bulkEdits).length})` : 'Bulk Edit'}
           </button>
           {bulkEdit && (
             <button onClick={() => { setBulkEdit(false); setBulkEdits({}) }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
+              className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
               Cancel
             </button>
           )}
@@ -233,7 +234,7 @@ export default function StudentsView() {
             exportToCSV('students-full', ['UUID', 'Name', 'Korean Name', 'Grade', 'English Class', 'Korean Class', 'Class Number', 'Active'],
               sorted.map(s => [s.id, s.english_name, s.korean_name, s.grade, s.english_class, s.korean_class, s.class_number, s.is_active ? 'Yes' : 'No']))
             showToast('Exported to CSV with UUIDs')
-          }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
+          }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
             <Download size={14} /> CSV
           </button>
           <button onClick={async () => {
@@ -275,7 +276,7 @@ export default function StudentsView() {
             const pw = window.open('', '_blank'); if (!pw) return
             pw.document.write(`<!DOCTYPE html><html><head><title>Data Cards</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media print{body{padding:6px}.grid{gap:6px}}@page{size:landscape;margin:10mm}</style></head><body><div style="text-align:center;margin-bottom:10px"><h2 style="font-size:14px;color:#647FBC;margin:0">Student Data Cards</h2><p style="font-size:10px;color:#999">${filterClass || teacherClass || 'All Classes'} | ${new Date().toLocaleDateString()} | ${sorted.length} students</p></div><div class="grid">${cards}</div><script>window.print()<\/script></body></html>`)
             pw.document.close()
-          }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy/10 text-navy hover:bg-navy/20 transition-all">
+          }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy/10 text-navy hover:bg-navy/20 transition-all">
             <FileSpreadsheet size={14} /> Data Cards
           </button>
         </div>
@@ -286,7 +287,7 @@ export default function StudentsView() {
             <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary uppercase tracking-wider mr-1">{t.students.koreanClass}:</span>
             {KOREAN_CLASSES.map(kc => (
               <button key={kc} onClick={() => setFilterKoreanClass(filterKoreanClass === kc ? null : kc)}
-                className={`px-2.5 py-1 rounded font-medium transition-all ${filterKoreanClass === kc ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                className={`px-2.5 py-1 max-sm:min-h-9 whitespace-nowrap rounded font-medium transition-all ${filterKoreanClass === kc ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
                 {kc} <span className={filterKoreanClass === kc ? 'opacity-70' : 'text-text-tertiary'}>{koreanClassCounts[kc] || 0}</span>
               </button>
             ))}
@@ -295,13 +296,13 @@ export default function StudentsView() {
             <span className="text-[length:calc(11px*var(--ts))] text-text-tertiary uppercase tracking-wider mr-1">{t.students.widaLevel}:</span>
             {widaChipLevels.map(l => (
               <button key={l} onClick={() => setFilterWida(filterWida === l ? null : l)}
-                className={`px-2.5 py-1 rounded font-medium transition-all ${filterWida === l ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                className={`px-2.5 py-1 max-sm:min-h-9 whitespace-nowrap rounded font-medium transition-all ${filterWida === l ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
                 L{l} <span className={filterWida === l ? 'opacity-70' : 'text-text-tertiary'}>{widaCounts[String(l)] || 0}</span>
               </button>
             ))}
             {(widaCounts.none > 0 || filterWida === 'none') && (
               <button onClick={() => setFilterWida(filterWida === 'none' ? null : 'none')}
-                className={`px-2.5 py-1 rounded font-medium transition-all ${filterWida === 'none' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
+                className={`px-2.5 py-1 max-sm:min-h-9 whitespace-nowrap rounded font-medium transition-all ${filterWida === 'none' ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
                 {t.students.noLevel} <span className={filterWida === 'none' ? 'opacity-70' : 'text-text-tertiary'}>{widaCounts.none || 0}</span>
               </button>
             )}
@@ -313,7 +314,7 @@ export default function StudentsView() {
               <X size={12} /> {t.students.clearFilters}
             </button>
           )}
-          <span className="ml-auto text-[length:calc(11px*var(--ts))] text-text-tertiary">{t.students.sortHint}</span>
+          <span className="hidden sm:inline ml-auto text-[length:calc(11px*var(--ts))] text-text-tertiary">{t.students.sortHint}</span>
         </div>
 
         <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
@@ -321,8 +322,54 @@ export default function StudentsView() {
             <Loading rows={5} />
           ) : sorted.length === 0 ? (
             <div className="p-12 text-center"><User size={32} className="text-text-tertiary mx-auto mb-2" /><p className="text-text-secondary text-sm">{search ? 'No students match.' : 'No students found.'}</p></div>
-          ) : (
-            <table className="w-full text-[length:calc(13px*var(--ts))]">
+          ) : (<>
+            {/* Phones: each student is a two-line card (English name, then Korean
+                name · grade · class · homeroom) instead of a table cut to two columns. */}
+            <ul className="sm:hidden divide-y divide-border">
+              {sorted.map((s, i) => (
+                <li key={s.id} className={`${!s.is_active ? 'opacity-40' : ''}`}>
+                  <div role={bulkEdit ? undefined : 'link'} tabIndex={bulkEdit ? undefined : 0}
+                    onClick={() => { if (!bulkEdit) router.push(`/students/${s.id}`) }}
+                    onKeyDown={e => { if (!bulkEdit && e.key === 'Enter') router.push(`/students/${s.id}`) }}
+                    className={`flex items-center gap-3 px-3 py-2.5 min-h-[60px] ${bulkEdit ? '' : 'cursor-pointer active:bg-surface-alt'}`}>
+                    {s.photo_url
+                      ? <img src={s.photo_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                      : <div className="w-9 h-9 rounded-full bg-surface-alt flex items-center justify-center shrink-0"><User size={15} className="text-text-tertiary" /></div>}
+                    <div className="min-w-0 flex-1">
+                      {bulkEdit ? (
+                        <div className="flex gap-2">
+                          <input value={bulkEdits[s.id]?.english_name ?? s.english_name} aria-label={t.students.englishName}
+                            onChange={e => setBulkEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], english_name: e.target.value } }))}
+                            className="min-w-0 flex-1 h-10 px-2 border border-border rounded text-[length:calc(16px*var(--ts))] outline-none focus:border-navy bg-white" />
+                          <select value={bulkEdits[s.id]?.english_class ?? s.english_class} aria-label={t.students.englishClass}
+                            onChange={e => setBulkEdits(prev => ({ ...prev, [s.id]: { ...prev[s.id], english_class: e.target.value as EnglishClass } }))}
+                            className="h-10 px-1 border border-border rounded text-[length:calc(13px*var(--ts))] outline-none bg-white">
+                            {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                      ) : (
+                        <p className="text-[length:calc(15px*var(--ts))] font-medium text-text-primary leading-tight truncate">
+                          {s.needs_review && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:max(10px,calc(9px*var(--ts)))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                          {s.english_name}
+                        </p>
+                      )}
+                      <p className="mt-1 flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] text-text-secondary tabular-nums whitespace-nowrap overflow-hidden">
+                        <span className="ko-name">{s.korean_name}</span>
+                        <span className="text-text-tertiary">·</span>
+                        <span>{language === 'ko' ? `${s.grade}학년` : `G${s.grade}`}</span>
+                        <span className="text-text-tertiary">·</span>
+                        <span className="inline-flex px-2 py-px rounded-full text-[length:calc(11px*var(--ts))] font-semibold" style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>{s.english_class}</span>
+                        <span className="text-text-tertiary">·</span>
+                        <span>{formatHomeroom(s)}</span>
+                      </p>
+                    </div>
+                    <WIDABadge studentId={s.id} compact />
+                    {!bulkEdit && <ChevronRight size={16} className="text-text-tertiary shrink-0" />}
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <table className="hidden sm:table w-full text-[length:calc(13px*var(--ts))]">
               <thead>
                 <tr className="bg-surface-alt">
                   <th className="text-left px-4 py-2.5 text-[length:calc(11px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
@@ -365,7 +412,7 @@ export default function StudentsView() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-center"><WIDABadge studentId={s.id} compact /></td>
-                    <td className="px-4 py-3 text-text-secondary">{s.korean_name}</td>
+                    <td className="px-4 py-3 text-text-secondary"><span className="ko-name">{s.korean_name}</span></td>
                     <td className="px-4 py-3 text-center">{s.grade}</td>
                     <td className="px-4 py-3 text-center font-medium">{s.korean_class}</td>
                     <td className="px-4 py-3 text-center">{s.class_number}</td>
@@ -391,7 +438,7 @@ export default function StudentsView() {
                 ))}
               </tbody>
             </table>
-          )}
+          </>)}
         </div>
       </div>
 

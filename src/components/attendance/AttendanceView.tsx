@@ -13,7 +13,7 @@ import { useUnsaved } from '@/lib/unsaved'
 import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { GRADES, EnglishClass, Grade } from '@/types'
-import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
+import { classToColor, classToTextColor, getKSTDateString, formatHomeroom } from '@/lib/utils'
 import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, UserCheck, UserX, Clock, Download, AlertTriangle, Printer, CalendarDays, List } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import EmptyState from '@/components/shared/EmptyState'
@@ -61,10 +61,19 @@ export default function AttendanceView() {
   const { isNoClassDay: ruleNoClass } = useScheduleRules()
   const [selectedDate, setSelectedDate] = useState(getKSTDateString())
   const [selectedGrade, setSelectedGrade] = useState<Grade>(4)
+  // A link can open a given grade (the masthead's attendance band sends
+  // ?grade=N, the grade still unmarked). Read once on mount: nothing is
+  // marked yet, so there is nothing to guard.
+  useEffect(() => {
+    const g = Number(new URLSearchParams(window.location.search).get('grade'))
+    if ((GRADES as readonly number[]).includes(g)) setSelectedGrade(g as Grade)
+  }, [])
   const [selectedClass, setSelectedClass] = useState<EnglishClass>(
     (currentTeacher?.role === 'teacher' ? currentTeacher.english_class : 'Snapdragon') as EnglishClass
   )
   const [records, setRecords] = useState<Record<string, { status: Status; note: string; id?: string }>>({})
+  // The marks as last loaded or saved, so the save bar can say how many students changed.
+  const savedRecords = useRef<Record<string, { status: Status; note: string }>>({})
   // Starts true so the roster is not shown before its marks, then hidden again while they load.
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -171,6 +180,7 @@ export default function AttendanceView() {
     const map: Record<string, { status: Status; note: string; id?: string }> = {}
     if (data) data.forEach((r: any) => { map[r.student_id] = { status: r.status, note: r.note || '', id: r.id } })
     setRecords(map)
+    savedRecords.current = map
     setLoading(false)
     setHasChanges(false)
   }, [selectedDate, students, selectedGrade])
@@ -250,6 +260,7 @@ export default function AttendanceView() {
 
     setSaving(false)
     setHasChanges(false)
+    savedRecords.current = records
     setSaveSuccess(true)
     setTimeout(() => setSaveSuccess(false), 1500)
     showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
@@ -283,6 +294,10 @@ export default function AttendanceView() {
   const absentCount = Object.values(records).filter((r: any) => r.status === 'absent').length
   const tardyCount = Object.values(records).filter((r: any) => r.status === 'tardy').length
   const unmarkedCount = students.length - Object.keys(records).length
+  const changedCount = students.filter((s: any) => {
+    const a = records[s.id], b = savedRecords.current[s.id]
+    return (a?.status || '') !== (b?.status || '') || (a?.note || '') !== (b?.note || '')
+  }).length
 
   // Weeks shown in the print-options dropdown (for printNavMonth)
   const monthWeeks = useMemo(() => {
@@ -533,7 +548,7 @@ export default function AttendanceView() {
   const marked = Object.keys(records).length
 
   return (
-    <div className="px-8 py-6 animate-fade-in">
+    <div className="px-4 sm:px-8 py-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
@@ -571,7 +586,7 @@ export default function AttendanceView() {
               </div>
             )}
           </div>
-          <button data-guide="attendance.save" onClick={handleSave} disabled={saving || !hasChanges} className="inline-flex items-center gap-2 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+          <button data-guide="attendance.save" onClick={handleSave} disabled={saving || !hasChanges} className="hidden sm:inline-flex items-center gap-2 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}{lang === 'ko' ? '출석 저장' : 'Save attendance'}
           </button>
         </div>
@@ -579,21 +594,21 @@ export default function AttendanceView() {
 
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap border-t border-b border-rule-2 py-3 mb-6">
-        <div className="flex gap-1.5">{GRADES.map(g => <button key={g} onClick={() => guardUnsaved(() => setSelectedGrade(g))} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
-        <span className="w-px h-6 bg-rule" />
+        <div className="chip-scroll flex gap-1.5 max-sm:w-full">{GRADES.map(g => <button key={g} onClick={() => guardUnsaved(() => setSelectedGrade(g))} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+        <span className="hidden sm:block w-px h-6 bg-rule" />
         {availableClasses.length > 1
-          ? <div className="flex gap-1.5">{availableClasses.map(cls => <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))} className={chip(selectedClass === cls)}><span className={`w-2 h-2 rounded-full ${CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          ? <div className="chip-scroll flex gap-1.5 max-sm:w-full">{availableClasses.map(cls => <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))} className={chip(selectedClass === cls)}><span className={`w-2 h-2 rounded-full ${CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
           : <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
-        <span className="w-px h-6 bg-rule" />
+        <span className="hidden sm:block w-px h-6 bg-rule" />
         <div className="inline-flex border border-rule-2 rounded overflow-hidden">
-          <button onClick={() => setViewMode('day')} className={`inline-flex items-center gap-1.5 h-7 px-3 text-[length:calc(12px*var(--ts))] font-medium ${viewMode === 'day' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><List size={13} /> {lang === 'ko' ? '일별' : 'Day'}</button>
-          <button onClick={() => setViewMode('month')} className={`inline-flex items-center gap-1.5 h-7 px-3 text-[length:calc(12px*var(--ts))] font-medium border-l border-rule-2 ${viewMode === 'month' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}</button>
+          <button onClick={() => setViewMode('day')} className={`inline-flex items-center gap-1.5 h-7 max-sm:h-10 px-3 whitespace-nowrap text-[length:calc(12px*var(--ts))] font-medium ${viewMode === 'day' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><List size={13} /> {lang === 'ko' ? '일별' : 'Day'}</button>
+          <button onClick={() => setViewMode('month')} className={`inline-flex items-center gap-1.5 h-7 max-sm:h-10 px-3 whitespace-nowrap text-[length:calc(12px*var(--ts))] font-medium border-l border-rule-2 ${viewMode === 'month' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}</button>
         </div>
         {viewMode === 'day' && (
           <div className="flex items-center gap-1 ml-auto">
-            <button onClick={prevDay} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Previous class day"><ChevronLeft size={16} /></button>
-            <input id="att-date" type="date" value={selectedDate} onChange={(e: any) => guardUnsaved(() => setSelectedDate(e.target.value))} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink" />
-            <button onClick={nextDay} className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Next class day"><ChevronRight size={16} /></button>
+            <button onClick={prevDay} className="w-7 h-7 max-sm:w-10 max-sm:h-10 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Previous class day"><ChevronLeft size={16} /></button>
+            <input id="att-date" type="date" value={selectedDate} onChange={(e: any) => guardUnsaved(() => setSelectedDate(e.target.value))} className="h-7 max-sm:h-10 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink" />
+            <button onClick={nextDay} className="w-7 h-7 max-sm:w-10 max-sm:h-10 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2" aria-label="Next class day"><ChevronRight size={16} /></button>
             {!isToday && <button onClick={() => guardUnsaved(() => setSelectedDate(getKSTDateString()))} className="h-7 px-2 rounded text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:bg-paper-2">{lang === 'ko' ? '오늘' : 'Today'}</button>}
           </div>
         )}
@@ -611,17 +626,17 @@ export default function AttendanceView() {
             {isNoClassDay
               ? <p className="text-[length:calc(12.5px*var(--ts))] text-warn mt-1.5">{isWeekend ? (lang === 'ko' ? '주말에는 수업이 없습니다' : 'No classes on weekends') : dayStatus.off ? (lang === 'ko' ? `휴일 (${dayStatus.off}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Day off (${dayStatus.off}): everyone was marked absent automatically. Change anyone who came to class.`) : <>{lang === 'ko' ? `${selectedGrade}학년은 ${weekdayName}에 영어 수업이 없습니다` : `Grade ${selectedGrade} has no English on ${weekdayName}s`} · {lang === 'ko' ? '화살표로 다음 수업일로 이동' : 'use the arrows to skip to the next class day'}</>}</p>
               : dayStatus.trip ? <p className="text-[length:calc(12.5px*var(--ts))] text-info mt-1.5">{lang === 'ko' ? `현장학습 (${dayStatus.trip}): 전원 결석으로 자동 기록됨. 참석한 학생은 바꾸세요.` : `Field trip (${dayStatus.trip}): everyone was marked absent automatically. Change anyone who came to class.`}</p>
-              : <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? '행을 클릭한 뒤' : 'Click a row, then press'} <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">P</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">A</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">T</kbd> · ↑ ↓</p>}
+              : <p className="hide-on-touch max-sm:hidden text-[length:calc(12px*var(--ts))] text-ink-3 mt-1.5">{lang === 'ko' ? '행을 클릭한 뒤' : 'Click a row, then press'} <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">P</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">A</kbd> <kbd className="px-1 border border-rule-2 rounded text-[length:calc(10.5px*var(--ts))]">T</kbd> · ↑ ↓</p>}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><UserCheck size={13} className="text-good" /> {lang === 'ko' ? '전원 출석' : 'All present'}</button>
-            <button onClick={() => markAllAbsent('')} title="Mark every student absent without a reason" className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><UserX size={13} className="text-bad" /> {lang === 'ko' ? '전원 결석' : 'All absent'}</button>
-            <label className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink cursor-pointer hover:border-ink-3">
+            <button onClick={markAllPresent} className="inline-flex items-center gap-1.5 h-8 max-sm:h-11 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><UserCheck size={13} className="text-good" /> {lang === 'ko' ? '전원 출석' : 'All present'}</button>
+            <button onClick={() => markAllAbsent('')} title="Mark every student absent without a reason" className="inline-flex items-center gap-1.5 h-8 max-sm:h-11 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><UserX size={13} className="text-bad" /> {lang === 'ko' ? '전원 결석' : 'All absent'}</button>
+            <label className="inline-flex items-center gap-1.5 h-8 max-sm:h-11 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] font-medium text-ink cursor-pointer hover:border-ink-3">
               <input type="checkbox" checked={absentCount === students.length && students.length > 0 && Object.values(records).some((r: any) => r.note === 'Field Trip')}
                 onChange={(e: any) => { if (e.target.checked) markAllAbsent('Field Trip'); else { setRecords({}); setHasChanges(true) } }} />
               {lang === 'ko' ? '현장학습' : 'Field trip'}
             </label>
-            {marked > 0 && <button onClick={() => { setRecords({}); setHasChanges(true) }} className="h-8 px-2.5 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>}
+            {marked > 0 && <button onClick={() => { setRecords({}); setHasChanges(true) }} className="h-8 max-sm:h-11 px-2.5 rounded text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '모두 지우기' : 'Clear all'}</button>}
           </div>
         </div>
 
@@ -647,12 +662,48 @@ export default function AttendanceView() {
           <EmptyState icon={UserCheck} title="No students in this class" description="Select a different grade or class to view students" />
         ) : (
           <div className={`border-t border-rule-2 ${saveSuccess ? 'animate-success-flash' : ''}`}>
-            <table className="w-full text-[length:calc(13px*var(--ts))]">
+            {/* Phones: one student per two-line row, the P / A / T buttons under the
+                thumb on the right, and the reason on its own line below when needed. */}
+            <ul className="sm:hidden divide-y divide-rule">
+              {students.map((s: any) => {
+                const rec = records[s.id]
+                const status = rec?.status
+                const away = status === 'absent' || status === 'tardy'
+                const tap = (on: boolean, tone: string) => `w-11 h-11 text-[length:calc(14px*var(--ts))] font-bold border-l first:border-l-0 border-rule-2 ${on ? tone : 'text-ink-3 active:bg-paper-2'}`
+                return (
+                  <li key={s.id} className="py-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[length:calc(15px*var(--ts))] font-medium text-ink leading-tight truncate">{s.english_name}
+                          {away && <span className={`ml-2 text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}
+                        </p>
+                        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-0.5 tabular-nums truncate"><span className="ko-name">{s.korean_name}</span> · {formatHomeroom(s)}</p>
+                      </div>
+                      <div role="group" aria-label={s.english_name} className="shrink-0 inline-flex border border-rule-2 rounded overflow-hidden bg-surface">
+                        {(['present', 'absent', 'tardy'] as Status[]).map(st => (
+                          <button key={st} type="button" aria-pressed={status === st} aria-label={lang === 'ko' ? STATUS_CONFIG[st].labelKo : STATUS_CONFIG[st].label}
+                            onClick={() => setStatus(s.id, st)}
+                            className={tap(status === st, st === 'present' ? 'bg-good text-white' : st === 'absent' ? 'bg-bad text-white' : 'bg-warn text-white')}>{STATUS_CONFIG[st].short}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {(away || rec?.note) && (
+                      <input type="text" value={rec?.note || ''} onChange={(e: any) => setNote(s.id, e.target.value)} placeholder={lang === 'ko' ? '사유' : 'Reason'}
+                        aria-label={lang === 'ko' ? `${s.english_name} 사유` : `Reason for ${s.english_name}`}
+                        className="mt-2 w-full h-10 px-2.5 rounded border border-rule-2 bg-surface text-[length:calc(16px*var(--ts))] text-ink placeholder:text-ink-3" />
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+            {/* Fixed layout: the columns keep their places when a reason or a status
+                label appears (auto layout re-shared the width and moved them ~90px). */}
+            <table className="hidden sm:table table-fixed w-full text-[length:calc(13px*var(--ts))]">
               <thead><tr>
                 <th className="text-left px-2 py-2 eyebrow font-semibold w-8 border-b border-rule">#</th>
-                <th className="text-left px-2 py-2 eyebrow font-semibold border-b border-rule">{lang === 'ko' ? '학생' : 'Student'}</th>
+                <th className="text-left px-2 py-2 eyebrow font-semibold w-[30%] border-b border-rule">{lang === 'ko' ? '학생' : 'Student'}</th>
                 <th className="text-left px-2 py-2 eyebrow font-semibold w-24 border-b border-rule">{lang === 'ko' ? '반 · 번호' : 'Homeroom'}</th>
-                <th className="text-center px-2 py-2 eyebrow font-semibold w-[124px] border-b border-rule">P · A · T</th>
+                <th className="text-center px-2 py-2 eyebrow font-semibold w-[128px] border-b border-rule">P · A · T</th>
                 <th className="text-left px-2 py-2 eyebrow font-semibold border-b border-rule">{lang === 'ko' ? '메모' : 'Note'}</th>
               </tr></thead>
               <tbody className="divide-y divide-rule">
@@ -663,8 +714,8 @@ export default function AttendanceView() {
                   return (
                     <tr key={s.id} onClick={() => setFocusedRow(i)} className={`${focused ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/50'}`}>
                       <td className="px-2 py-1.5 text-ink-3 tabular-nums">{i + 1}</td>
-                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
-                      <td className="px-2 py-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums">{s.korean_class} {s.class_number}</td>
+                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="ko-name text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[length:calc(10.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
+                      <td className="px-2 py-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums whitespace-nowrap">{formatHomeroom(s)}</td>
                       <td className="px-2 py-1.5 text-center">
                         <div className="inline-flex border border-rule-2 rounded overflow-hidden bg-surface">
                           <button onClick={e => { e.stopPropagation(); setFocusedRow(i); setStatus(s.id, 'present') }} className={seg(status === 'present', 'bg-good text-white')}>P</button>
@@ -688,10 +739,16 @@ export default function AttendanceView() {
           <button onClick={() => { exportToCSV(`attendance-${selectedClass}-${selectedDate}`, ['Student', 'Korean Name', 'Status', 'Note'], students.map((s: any) => [s.english_name, s.korean_name, records[s.id]?.status || '', records[s.id]?.note || ''])) }} className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 hover:text-ink"><Download size={12} /> CSV</button>
         </div>
 
-        {hasChanges && (
-          <div className="sticky-save-bar -mx-8 mt-4 flex items-center justify-between">
-            <p className="text-[length:calc(12.5px*var(--ts))] text-warn font-medium">{lang === 'ko' ? '저장되지 않은 변경사항이 있습니다' : 'Unsaved changes'}</p>
-            <button onClick={handleSave} disabled={saving} className="inline-flex items-center gap-2 h-9 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
+        {/* Desktop shows this bar only with unsaved marks (Save also sits up top).
+            Phones have no top Save, so the bar stays, within reach of the thumb. */}
+        {(hasChanges || (!loading && !loadingStudents && students.length > 0)) && (
+          <div className={`sticky-save-bar -mx-4 sm:-mx-8 mt-4 items-center justify-between gap-3 ${hasChanges ? 'flex' : 'flex sm:hidden'}`}>
+            <p className={`text-[length:calc(12.5px*var(--ts))] font-medium ${hasChanges ? 'text-warn' : 'text-ink-3'}`} role="status">
+              {hasChanges
+                ? (lang === 'ko' ? `저장되지 않은 변경사항${changedCount > 0 ? ` · ${changedCount}명` : '이 있습니다'}` : `Unsaved changes${changedCount > 0 ? ` · ${changedCount} ${changedCount === 1 ? 'student' : 'students'}` : ''}`)
+                : marked === 0 ? (lang === 'ko' ? '아직 표시하지 않음' : 'Not marked yet') : (lang === 'ko' ? '저장됨' : 'Saved')}
+            </p>
+            <button onClick={handleSave} disabled={saving || !hasChanges} className="inline-flex items-center gap-2 h-9 max-sm:h-11 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}{lang === 'ko' ? '출석 저장' : 'Save attendance'}
             </button>
           </div>

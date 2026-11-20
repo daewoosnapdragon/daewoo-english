@@ -7,18 +7,20 @@ import WhatsNewModal from '@/components/guide/WhatsNewModal'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
 import { useViewLog } from '@/lib/useViewLog'
-import { useClassCounts } from '@/hooks/useData'
+import { useClassCounts, useTeachers } from '@/hooks/useData'
+import { FLAG_ACTION_TYPES } from '@/components/layout/navSignals'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { getKSTDateString, domainLabel } from '@/lib/utils'
-import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Bell, Loader2 } from 'lucide-react'
+import { Plus, X, ChevronLeft, ChevronRight, Trash2, Pencil, PanelLeftClose, UserX, UserMinus, ArrowRight, Loader2 } from 'lucide-react'
 import WeeklySchedule from './WeeklySchedule'
 import OfficeJobs from './OfficeJobs'
 import SuppliesCard from './SuppliesCard'
 import OvertimeLine from './OvertimeLine'
 import AdminJobsCard from './AdminJobsCard'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
-import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
+import { withoutAwayDays } from '@/lib/calendarDays'
+import { loadAttendanceDay, unmarkedByGrade, type AttendanceDay } from '@/lib/attendanceToday'
 import Overlay from '@/components/ui/Overlay'
 
 // ─── Event types ─────────────────────────────────────────────────
@@ -42,7 +44,7 @@ const LEGEND: [string, string][] = [
 const typeOf = (t: string) => EVENT_TYPES.find(x => x.value === t) || EVENT_TYPES[EVENT_TYPES.length - 1]
 
 interface CalEvent { id: string; title: string; date: string; end_date?: string | null; type: string; description: string; created_by: string | null; created_at: string; show_on_parent_calendar?: boolean; target_grades?: number[] | null }
-interface FlaggedEntry { id: string; student_id: string; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
+interface FlaggedEntry { id: string; student_id: string; teacher_id?: string | null; date: string; type: string; note: string; time: string; behaviors: string[]; antecedents: string[]; consequences: string[]; intensity: number; frequency: number; activity: string; duration: string; is_flagged: boolean; teacher_name: string; student_name: string; student_class: string; created_at: string }
 
 // ─── Shared data ─────────────────────────────────────────────────
 // Fetched once and shared across every panel: about ten queries in parallel.
@@ -187,8 +189,13 @@ export default function DashboardView() {
   // Attendance drawer, opened from a class period on the schedule.
   const [attendanceGrade, setAttendanceGrade] = useState<number | null>(null)
   useViewLog(attendanceGrade != null ? `Dashboard · attendance drawer · Grade ${attendanceGrade}` : null)
-  const [todayOff, setTodayOff] = useState<string | null>(null)
-  useEffect(() => { loadDayStatus(getKSTDateString(), null).then(s => setTodayOff(s.off)) }, [])
+  // Today's attendance is counted as the masthead counts it (lib/attendanceToday):
+  // only grades that have class today, so the figure here and the dot and
+  // reminder up there never disagree.
+  const [attDay, setAttDay] = useState<AttendanceDay | null>(null)
+  const gradesKey = Array.from(new Set(shared.students.map(s => s.grade))).sort().join()
+  useEffect(() => { loadAttendanceDay(getKSTDateString(), gradesKey ? gradesKey.split(',').map(Number) : []).then(setAttDay) }, [gradesKey])
+  const todayOff = attDay ? (attDay.off || (attDay.weekend ? (lang === 'ko' ? '주말' : 'weekend') : null)) : null
   useEffect(() => {
     const onSaved = () => shared.reload()
     window.addEventListener(ATTENDANCE_SAVED_EVENT, onSaved)
@@ -216,7 +223,9 @@ export default function DashboardView() {
   const greeting = lang === 'ko' ? '안녕하세요' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const dayStr = kst.toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-  const unmarked = shared.students.length - shared.todayAttendanceIds.size
+  const unmarked = attDay
+    ? unmarkedByGrade(shared.students, shared.todayAttendanceIds, attDay).reduce((n, g) => n + g.unmarked, 0)
+    : shared.students.length - shared.todayAttendanceIds.size
   const ungradedStudents = queue.reduce((n, q) => n + q.ungraded.length, 0)
   const sem = shared.activeSemester
   const daysUntil = (d?: string | null) => d ? Math.ceil((new Date(d).getTime() - new Date(getKSTDateString()).getTime()) / 86400000) : null
@@ -226,7 +235,7 @@ export default function DashboardView() {
   const gradesDays = daysUntil(gradesDue)
 
   return (
-    <div className="px-8 py-6 space-y-8 animate-fade-in">
+    <div className="px-4 sm:px-8 py-6 space-y-8 animate-fade-in">
       {/* ─── Header ─── */}
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
@@ -234,10 +243,10 @@ export default function DashboardView() {
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{greeting}{currentTeacher?.name ? `, ${currentTeacher.name}` : ''}</h1>
         </div>
         <div className="flex gap-2">
-          <Link href="/attendance" className="h-9 px-3.5 inline-flex items-center rounded border border-rule-2 bg-surface text-[length:calc(13px*var(--ts))] font-medium text-ink hover:border-ink-3">
+          <Link href="/attendance" className="h-9 max-sm:h-11 px-3.5 inline-flex items-center rounded border border-rule-2 bg-surface text-[length:calc(13px*var(--ts))] font-medium text-ink hover:border-ink-3">
             {lang === 'ko' ? '출석 체크' : 'Mark attendance'}
           </Link>
-          <Link href="/grades" className="h-9 px-3.5 inline-flex items-center rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover">
+          <Link href="/grades" className="h-9 max-sm:h-11 px-3.5 inline-flex items-center rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover">
             {lang === 'ko' ? '성적 입력' : 'Enter grades'}
           </Link>
         </div>
@@ -601,14 +610,14 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
       <div className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-baseline gap-3">
           <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{monthName(y, m)}</h2>
-          <div className="flex items-center gap-0.5">
+          <div className="hidden sm:flex items-center gap-0.5">
             <button onClick={() => setCur(new Date(y, m-1, 1))} aria-label="Previous month" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2"><ChevronLeft size={16} /></button>
             <button onClick={() => setCur(new Date(y, m+1, 1))} aria-label="Next month" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-2"><ChevronRight size={16} /></button>
             <button onClick={() => setCur(new Date())} className="px-2 h-7 rounded text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:bg-paper-2">{lang === 'ko' ? '오늘' : 'Today'}</button>
           </div>
         </div>
         <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true) }}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 bg-surface text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><Plus size={13} /> {lang === 'ko' ? '일정 추가' : 'Add event'}</button>
+          className="inline-flex items-center gap-1.5 h-8 max-sm:h-11 px-3 rounded border border-rule-2 bg-surface text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><Plus size={13} /> {lang === 'ko' ? '일정 추가' : 'Add event'}</button>
       </div>
 
       {tableError && (
@@ -618,7 +627,9 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
       )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px] gap-8">
-        <div>
+        {/* Seven columns of 50px say nothing on a phone: there the month grid
+            gives way to the "Coming up" list beside it, which holds the same events. */}
+        <div className="hidden sm:block">
           <div className="grid" style={cols}>
             {dayN.map(d => <div key={d} className="text-[length:calc(10.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold py-1 px-1.5">{d}</div>)}
           </div>
@@ -749,8 +760,23 @@ function ClassOverviewTable() {
   )
 }
 
+// What each kind of flagged log is, in the app's three status colours plus
+// ink: a flag on good news reads as good news. Only the ones that want an
+// action (FLAG_ACTION_TYPES, shared with the nav badge) are counted as such.
+const FLAG_TONE: Record<string, { en: string; ko: string; dot: string; text: string }> = {
+  positive: { en: 'Positive', ko: '칭찬', dot: 'bg-good', text: 'text-good' },
+  concern: { en: 'Concern', ko: '우려', dot: 'bg-bad', text: 'text-bad' },
+  negative: { en: 'Negative', ko: '부정', dot: 'bg-bad', text: 'text-bad' },
+  abc: { en: 'Negative', ko: '부정', dot: 'bg-bad', text: 'text-bad' },
+  intervention: { en: 'Intervention', ko: '개입', dot: 'bg-warn', text: 'text-warn' },
+  parent_contact: { en: 'Parent contact', ko: '학부모 연락', dot: 'bg-warn', text: 'text-warn' },
+  note: { en: 'Note', ko: '메모', dot: 'bg-ink-3', text: 'text-ink-2' },
+}
+
 function AdminAlertPanel() {
-  const { showToast } = useApp()
+  const { showToast, language } = useApp()
+  const ko = language === 'ko'
+  const { teachers } = useTeachers()
   const [flagged, setFlagged] = useState<FlaggedEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [detail, setDetail] = useState<FlaggedEntry | null>(null)
@@ -760,7 +786,20 @@ function AdminAlertPanel() {
       const { data } = await supabase
         .from('behavior_logs').select('*, teachers(name), students(english_name, english_class)')
         .eq('is_flagged', true).order('created_at', { ascending: false }).limit(20)
-      if (data) setFlagged(data.map((r: any) => ({ ...r, teacher_name: r.teachers?.name || '', student_name: r.students?.english_name || '', student_class: r.students?.english_class || '' })) as FlaggedEntry[])
+      const rows = (data || []) as any[]
+      // The names come with the log through the foreign keys. Where a row
+      // arrives without them (an older row, a database without the
+      // relationship), the student is looked up by id rather than shown blank.
+      const missing = Array.from(new Set(rows.filter(r => !r.students).map(r => r.student_id).filter(Boolean)))
+      const byId: Record<string, { english_name: string; english_class: string }> = {}
+      if (missing.length) {
+        const { data: st } = await supabase.from('students').select('id, english_name, english_class').in('id', missing)
+        ;((st || []) as any[]).forEach(x => { byId[x.id] = x })
+      }
+      setFlagged(rows.map(r => {
+        const st = r.students || byId[r.student_id]
+        return { ...r, teacher_name: r.teachers?.name || '', student_name: st?.english_name || '', student_class: st?.english_class || '' }
+      }) as FlaggedEntry[])
       setLoading(false)
     })()
   }, [])
@@ -777,39 +816,49 @@ function AdminAlertPanel() {
     const f = flagged.find(x => x.id === id)
     logActivity('edited', `Behavior flag dismissed · ${f?.student_name || ''}${f?.date ? ` · ${f.date}` : ''}`)
     setFlagged(p => p.filter(f => f.id !== id))
-    showToast('Flag dismissed')
+    showToast(ko ? '표시를 해제했습니다' : 'Flag dismissed')
   }
 
-  if (loading || flagged.length === 0) return <section><SectionHead title="Flagged for review" meta="nothing flagged" /></section>
+  const title = ko ? '검토할 표시 기록' : 'Flagged for review'
+  if (loading || flagged.length === 0) return <section><SectionHead title={title} meta={ko ? '없음' : 'nothing flagged'} /></section>
+
+  const teacherOf = (e: FlaggedEntry) => e.teacher_name || teachers.find(t => t.id === e.teacher_id)?.name || ''
+  const needAction = flagged.filter(e => FLAG_ACTION_TYPES.includes(e.type)).length
+  const meta = needAction
+    ? (ko ? `${flagged.length}건 · 조치 필요 ${needAction}` : `${flagged.length} · ${needAction} need${needAction === 1 ? 's' : ''} action`)
+    : (ko ? `${flagged.length}건` : `${flagged.length} flagged`)
 
   return (
-    <div className="border border-rule-2 rounded-lg overflow-hidden">
-      <div className="px-5 py-3 bg-bad-soft border-b border-rule-2 flex items-center gap-2">
-        <Bell size={16} className="text-bad" />
-        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">Flagged for Your Review</h3>
-        <span className="text-[length:calc(11px*var(--ts))] bg-bad text-white px-2 py-0.5 rounded-full font-bold ml-1">{flagged.length}</span>
-      </div>
-      <div className="divide-y divide-rule max-h-[280px] overflow-y-auto">
-        {flagged.map(e => (
-          <div key={e.id} className="px-5 py-3 flex items-start gap-3 hover:bg-paper-2 transition-colors cursor-pointer" onClick={() => setDetail(e)}>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{e.student_name}</span>
-                {e.student_class && <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded-full font-medium bg-paper-2 text-ink-2">{e.student_class}</span>}
-                <span className="text-[length:calc(10px*var(--ts))] px-1.5 py-0.5 rounded bg-info-soft text-info font-medium">{e.type.toUpperCase()}</span>
-              </div>
-              <p className="text-[length:calc(12px*var(--ts))] text-ink-2 truncate">{e.note || (e.behaviors || []).join(', ')}</p>
-              <p className="text-[length:calc(10px*var(--ts))] text-ink-3 mt-0.5">{new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{e.time && ` at ${e.time}`} — {e.teacher_name || 'Unknown'}</p>
-            </div>
-            <button onClick={(ev: any) => { ev.stopPropagation(); dismiss(e.id) }} className="p-1.5 rounded text-ink-3 hover:text-bad hover:bg-bad-soft flex-shrink-0" title="Dismiss"><X size={14} /></button>
-          </div>
-        ))}
-      </div>
+    <section>
+      <SectionHead title={title} meta={meta} />
+      <ul className="divide-y divide-rule max-h-[320px] overflow-y-auto">
+        {flagged.map(e => {
+          const tone = FLAG_TONE[e.type] || FLAG_TONE.note
+          const who = teacherOf(e)
+          return (
+            <li key={e.id} className="flex items-start gap-2 py-1.5">
+              <button type="button" onClick={() => setDetail(e)} className="flex-1 min-w-0 text-left px-2 -mx-2 py-1.5 rounded hover:bg-paper-2 transition-colors">
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[length:calc(13.5px*var(--ts))] font-semibold text-ink">{e.student_name || (ko ? '학생 정보 없음' : 'Student not found')}</span>
+                  {e.student_class && <span className="text-[length:calc(11px*var(--ts))] text-ink-2">{e.student_class}</span>}
+                  <span className={`inline-flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] font-medium ${tone.text}`}><span className={`w-1.5 h-1.5 rounded-full ${tone.dot}`} />{ko ? tone.ko : tone.en}</span>
+                </span>
+                <span className="block text-[length:calc(12.5px*var(--ts))] text-ink-2 truncate mt-0.5">{e.note || (e.behaviors || []).join(', ')}</span>
+                <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5">
+                  {new Date(e.date + 'T12:00:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric' })}{e.time && ` · ${e.time}`}{who && (ko ? ` · ${who}` : ` · by ${who}`)}
+                </span>
+              </button>
+              <button type="button" onClick={() => dismiss(e.id)} aria-label={ko ? `${e.student_name} 표시 해제` : `Dismiss flag on ${e.student_name || 'this log'}`} title={ko ? '표시 해제' : 'Dismiss flag'}
+                className="mt-1.5 w-8 h-8 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-paper-2 flex-shrink-0"><X size={14} /></button>
+            </li>
+          )
+        })}
+      </ul>
       {detail && (
         <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md max-h-[85vh] flex flex-col" onClick={(ev: any) => ev.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
-              <h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">Flagged · {detail.student_name}</h3>
+              <h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{detail.student_name || (ko ? '학생 정보 없음' : 'Student not found')}</h3>
               <button onClick={() => setDetail(null)} aria-label="Close" className="p-1.5 rounded hover:bg-paper-2"><X size={16} /></button>
             </div>
             <div className="p-5 space-y-3 overflow-y-auto min-h-0">
@@ -817,7 +866,7 @@ function AdminAlertPanel() {
                 <div><span className="text-text-tertiary">Date</span><p className="font-medium">{new Date(detail.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p></div>
                 <div><span className="text-text-tertiary">Time</span><p className="font-medium">{detail.time || '—'}</p></div>
                 <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type === 'abc' || detail.type === 'negative' ? 'Negative' : detail.type}</p></div>
-                <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{detail.teacher_name || '—'}</p></div>
+                <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{teacherOf(detail) || '—'}</p></div>
               </div>
               {detail.activity && <div><p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Activity / Task</p><p className="text-[length:calc(12px*var(--ts))]">{detail.activity}</p></div>}
               {detail.duration && <div><p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Duration</p><p className="text-[length:calc(12px*var(--ts))]">{detail.duration}</p></div>}
@@ -843,13 +892,13 @@ function AdminAlertPanel() {
               {detail.note && <div><p className="text-[length:calc(10px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Notes</p><p className="text-[length:calc(13px*var(--ts))] whitespace-pre-wrap">{detail.note}</p></div>}
             </div>
             <div className="px-5 py-3 border-t border-border flex justify-between">
-              <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded text-[length:calc(12px*var(--ts))] font-medium text-bad hover:bg-bad-soft">Dismiss Flag</button>
-              <button onClick={() => setDetail(null)} className="px-4 py-1.5 rounded text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">Close</button>
+              <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded border border-rule-2 text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:text-ink">{ko ? '표시 해제' : 'Dismiss flag'}</button>
+              <button onClick={() => setDetail(null)} className="px-4 py-1.5 rounded text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">{ko ? '닫기' : 'Close'}</button>
             </div>
           </div>
         </div></Overlay>
       )}
-    </div>
+    </section>
   )
 }
 
