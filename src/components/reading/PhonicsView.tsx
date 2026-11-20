@@ -11,16 +11,16 @@ import type { Student } from '@/types'
 import {
   PHONICS_BAND_LABELS, DECODING_OBSERVATIONS, OBSERVATION_GROUPS, PATTERN_PREFIX,
   phonicsSkill, orderSkills, latestBySkill, phonicsBand, summarizeStudent, notYetSecure, scoreCheck, nextMark, longestErrorRun, attemptsBySkill, latestDelta,
-  scoreText, halfText, accuracyPct, isMiss, classSkills, groupsFor, isAlphabetSkill, withoutAlphabet,
-  type PhonicsCheckRow, type PhonicsMark, type LatestBySkill, type PhonicsBand, type PhonicsSkill,
+  scoreText, halfText, accuracyPct, isMiss, missedBefore, missCounts, scoreSkill, classSkills, groupsFor, isAlphabetSkill, withoutAlphabet,
+  type PhonicsCheckRow, type CarriedSheet, type MissedSheet, type PhonicsMark, type LatestBySkill, type PhonicsBand, type PhonicsSkill,
 } from '@/lib/phonics'
 import { loadPhonicsChecks, savePhonicsCheck, deletePhonicsCheck } from '@/lib/phonicsData'
 import { useAlphabetSkips, setAlphabetSkip, phonicsClassKey } from '@/lib/phonicsClassSettings'
-import { phonicsSheetsHtml } from '@/lib/phonicsPrint'
+import { phonicsSheetsHtml, printWordSheet } from '@/lib/phonicsPrint'
 import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT, BAND_RANGE, MARK_TILE, MARK_SOLID, MARK_LABEL, fmtShort } from '@/components/reading/phonicsTones'
 import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
 import StudentProgressGrid from '@/components/reading/PhonicsProgress'
-import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, ExternalLink, Loader2, Minus, Pencil, Printer, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, ExternalLink, Loader2, Minus, Pencil, Printer, RotateCcw, Trash2, X } from 'lucide-react'
 
 // ─── Phonics quick checks ────────────────────────────────────────
 // Reading → Phonics. Three faces: the heat map (every student in the class
@@ -61,6 +61,9 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   const [selected, setSelected] = useState<string[]>(() => {
     try { const s = JSON.parse(localStorage.getItem(SKILLS_STORAGE_KEY) || '[]'); return Array.isArray(s) ? orderSkills(s) : [] } catch { return [] }
   })
+  // Missed before: the next check reads only the words each student missed
+  // last time. Kept across students so a class can be run through it.
+  const [recheck, setRecheck] = useState(false)
   const pickSkills = useCallback((ids: string[]) => {
     const next = orderSkills(ids)
     setSelected(next)
@@ -206,7 +209,8 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
       ) : (
         <AssessPanel key={`${student.id}:${editing?.id || 'new'}`} sheets={sheets} student={student} students={students} lang={lang}
           latest={latestByStudent[student.id] || {}} history={byStudent[student.id] || []} lastDates={lastDates}
-          selected={selected} onSelect={pickSkills} editing={editing}
+          selected={selected} onSelect={(ids) => { setRecheck(false); pickSkills(ids) }} editing={editing}
+          recheck={recheck && !editing} onRecheck={setRecheck}
           onDirty={setDirty} onPick={(sid) => guardedSwitch(() => { setStudentId(sid); setEditing(null) })}
           onPrev={() => guardedSwitch(() => nextStudent(-1))} onNext={() => guardedSwitch(() => nextStudent(1))}
           onCancelEdit={() => { setEditing(null); setDirty(false) }}
@@ -359,19 +363,26 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
 
 // ─── Checking one student ────────────────────────────────────────
 
-function AssessPanel({ sheets, student, students, lang, latest, history, lastDates, selected, onSelect, editing, onDirty, onPick, onPrev, onNext, onCancelEdit, onSaved, onEdit, onDelete, onProgress }: {
+function AssessPanel({ sheets, student, students, lang, latest, history, lastDates, selected, onSelect, editing, recheck, onRecheck, onDirty, onPick, onPrev, onNext, onCancelEdit, onSaved, onEdit, onDelete, onProgress }: {
   /** The class's sheets: the picker offers only these. */
   sheets: PhonicsSkill[]
   student: Student; students: Student[]; lang: Lang; latest: LatestBySkill; history: PhonicsCheckRow[]; lastDates: Record<string, string | null>
   selected: string[]; onSelect: (ids: string[]) => void; editing: PhonicsCheckRow | null
+  /** Missed before: only the words missed on the latest result of each sheet. */
+  recheck: boolean; onRecheck: (on: boolean) => void
   onDirty: (d: boolean) => void; onPick: (sid: string) => void; onPrev: () => void; onNext: () => void
   onCancelEdit: () => void; onSaved: (andNext: boolean) => Promise<void>; onEdit: (c: PhonicsCheckRow) => void; onDelete: (c: PhonicsCheckRow) => void; onProgress: () => void
 }) {
   const { currentTeacher, showToast, promptDialog } = useApp()
+  const missed = useMemo(() => missedBefore(latest, history, sheets), [latest, history, sheets])
+  const missedTotal = missed.reduce((n, m) => n + m.words.length, 0)
+  const checkById = useMemo(() => Object.fromEntries(history.map(c => [c.id, c])) as Record<string, PhonicsCheckRow>, [history])
+  // A recheck starts with last time's boxes ticked, to untick what is fixed.
+  const carriedTicks = (): Observations => Object.fromEntries(missed.map(m => [m.sheet, checkById[m.fromCheckId]?.observations?.[m.sheet] || []]))
   const [date, setDate] = useState(editing?.date || getKSTDateString())
   const [marks, setMarks] = useState<Marks>(editing?.results || {})
   const [heard, setHeard] = useState<Heard>(editing?.heard || {})
-  const [observations, setObservations] = useState<Observations>(editing?.observations || {})
+  const [observations, setObservations] = useState<Observations>(() => editing?.observations || (recheck ? carriedTicks() : {}))
   const [notes, setNotes] = useState(editing?.notes || '')
   const [saving, setSaving] = useState(false)
   const visible = sheets.map(s => s.id)
@@ -383,13 +394,23 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
   // rang): they stay ticked for the next student.
   const [dropped, setDropped] = useState<string[]>([])
   const base = editing ? editSkills : selected.filter(id => visible.includes(id))
-  const skills = base.filter(id => !dropped.includes(id))
+  const skills = recheck ? missed.map(m => m.sheet) : base.filter(id => !dropped.includes(id))
   const idx = students.findIndex(s => s.id === student.id)
   const touch = (fn: () => void) => { fn(); onDirty(true) }
 
   const setSkills = (ids: string[]) => touch(() => editing ? setEditSkills(orderSkills(ids)) : onSelect(ids))
   /** The quick picks (All, None…): a fresh set, nothing held back. */
-  const pickSkills = (ids: string[]) => { setDropped([]); setSkills(ids) }
+  const pickSkills = (ids: string[]) => {
+    if (recheck) { setMarks({}); setHeard({}); setObservations({}) }
+    setDropped([]); setSkills(ids)
+  }
+  const toggleRecheck = () => {
+    const on = !recheck
+    setMarks({}); setHeard({}); setObservations(on ? carriedTicks() : {})
+    onRecheck(on)
+  }
+  const recheckWords = (id: string) => missed.find(m => m.sheet === id)?.words || []
+  const sheetWords = (id: string) => recheck ? recheckWords(id) : phonicsSkill(id)?.words || []
   const toggleSkill = (id: string) => {
     if (skills.includes(id)) { setSkills(base.filter(s => s !== id)); return }
     setDropped(d => d.filter(x => x !== id))
@@ -403,7 +424,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
     return { ...m, [skill]: cur }
   }))
   const fill = (skill: string, how: 'all' | 'rest' | 'clear') => touch(() => setMarks(m => {
-    const words = phonicsSkill(skill)?.words || []
+    const words = sheetWords(skill)
     if (how === 'clear') return { ...m, [skill]: {} }
     const cur = { ...(m[skill] || {}) }
     words.forEach(w => { if (how === 'all' || !cur[w]) cur[w] = 'correct' })
@@ -421,7 +442,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
   }))
 
   const totals = skills.reduce((acc, id) => {
-    const words = phonicsSkill(id)?.words || []
+    const words = sheetWords(id)
     const ms = marks[id] || {}
     words.forEach(w => { if (ms[w] === 'correct') acc.correct++; else if (ms[w] === 'partial') acc.partial++; else if (ms[w] === 'error') acc.errors++; acc.total++ })
     return acc
@@ -433,15 +454,43 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
     if (skills.length === 0) { showToast(lang === 'ko' ? '점검할 시트를 하나 이상 고르세요.' : 'Pick at least one sheet to check.'); return }
     if (nothingMarked) { showToast(lang === 'ko' ? '단어를 하나도 표시하지 않았습니다.' : 'No words are marked yet.'); return }
     setSaving(true)
-    const { error } = await savePhonicsCheck({ student_id: student.id, date, assessed_by: currentTeacher?.id || null, skills, results: marks, heard, observations, notes }, editing?.id, student.english_name)
+    const input = recheck ? foldRecheck() : { skills, results: marks, heard, observations }
+    const { error } = await savePhonicsCheck({ student_id: student.id, date, assessed_by: currentTeacher?.id || null, ...input, notes }, editing?.id, student.english_name)
     setSaving(false)
     if (error) { showToast(`Error: ${error}`); return }
     // A sheet with nothing marked is not saved: not started is not a 0.
-    const empty = skills.filter(id => Object.keys(marks[id] || {}).length === 0).length
+    const empty = recheck ? 0 : skills.filter(id => Object.keys(marks[id] || {}).length === 0).length
     const left = empty ? (lang === 'ko' ? ` · 표시 없는 시트 ${empty}개 제외` : ` · ${empty} ${empty === 1 ? 'sheet' : 'sheets'} with nothing marked left out`) : ''
     showToast((editing ? (lang === 'ko' ? '점검 수정됨' : `Check updated for ${student.english_name}`) : (lang === 'ko' ? '파닉스 점검 저장됨' : `Phonics check saved for ${student.english_name}`)) + left)
     setMarks({}); setHeard({}); setObservations({}); setNotes('')
     await onSaved(andNext)
+  }
+
+  // A recheck saved as whole sheets: last time's marks with the words read
+  // again replaced. Only sheets with a word marked are saved; the boxes are
+  // kept only where something is still missed.
+  function foldRecheck() {
+    const out = { skills: [] as string[], results: {} as Marks, heard: {} as Heard, observations: {} as Observations, carried: {} as Record<string, CarriedSheet> }
+    missed.forEach(m => {
+      const now = marks[m.sheet] || {}
+      const read = Object.keys(now)
+      if (read.length === 0) return
+      const before = checkById[m.fromCheckId]
+      const merged = { ...(before?.results?.[m.sheet] || {}), ...now }
+      const keptHeard = Object.fromEntries(Object.entries(before?.heard?.[m.sheet] || {}).filter(([w]) => !read.includes(w)))
+      out.skills.push(m.sheet)
+      out.results[m.sheet] = merged
+      out.heard[m.sheet] = { ...keptHeard, ...(heard[m.sheet] || {}) }
+      out.observations[m.sheet] = Object.values(merged).some(isMiss) ? observations[m.sheet] || [] : []
+      out.carried[m.sheet] = { from: m.fromCheckId, date: m.fromDate, rechecked: read }
+    })
+    return out
+  }
+  const printMissed = () => {
+    const ok = printWordSheet(`${student.english_name} · ${lang === 'ko' ? '다시 읽기' : 'words to read again'}`,
+      missed.map(m => { const sk = phonicsSkill(m.sheet); return { label: sk?.label || m.sheet, words: m.words, columns: sk?.sections ? 8 : 4 } }),
+      `Phonics missed words: ${student.english_name}`)
+    if (!ok) showToast(lang === 'ko' ? '팝업이 차단되었습니다.' : 'The print window was blocked.')
   }
 
   const recheckable = notYetSecure(latest).filter(id => visible.includes(id))
@@ -508,10 +557,16 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
               <button onClick={() => pickSkills([])} className={quick}>{lang === 'ko' ? '없음' : 'None'}</button>
               <button onClick={() => pickSkills(recheckable)} disabled={recheckable.length === 0} className={quick}>{lang === 'ko' ? '아직 미완성' : 'Not yet mastered'} ({recheckable.length})</button>
               <button onClick={() => pickSkills(untested)} disabled={untested.length === 0} className={quick}>{lang === 'ko' ? '미점검' : 'Not checked yet'} ({untested.length})</button>
+              <button onClick={toggleRecheck} disabled={!recheck && missedTotal === 0} aria-pressed={recheck} title={lang === 'ko' ? '최근 점검에서 틀린 단어만 다시 읽기' : 'Read again only the words missed on the latest check of each sheet'}
+                className={`${quick} inline-flex items-center gap-1 ${recheck ? '!bg-ink !text-paper !border-ink' : ''}`}><RotateCcw size={11} />{lang === 'ko' ? '틀린 단어 다시' : 'Missed before'} ({missedTotal})</button>
             </>}
             {editing && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko' ? '시트를 해제하면 이 점검에서 빠지고 점수에 들어가지 않습니다.' : 'Untick a sheet to take it out of this check; it is then not scored at all.'}</span>}
           </div>
-          <div className="space-y-1.5">
+          {recheck ? (
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{lang === 'ko'
+              ? '각 시트의 최근 점검에서 틀리거나 부분 정답인 단어만 나옵니다. 다시 읽은 단어가 예전 표시를 대신하고, 나머지는 그대로 이어져 시트 점수가 새로 계산됩니다.'
+              : 'Only the words missed or partly right on the latest check of each sheet. The words read again replace their old marks, the rest carry over, and each sheet is scored again.'}</p>
+          ) : <div className="space-y-1.5">
             {groupsFor(sheets).map(({ group: g, skills: gs }) => (
               <div key={g.id} className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[length:calc(11px*var(--ts))] text-ink-3 w-[96px] shrink-0">{lang === 'ko' ? g.label_ko : g.label}</span>
@@ -529,11 +584,15 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
                 })}
               </div>
             ))}
-          </div>
+          </div>}
         </div>
 
         {/* Word grids */}
-        {skills.length === 0 ? (
+        {recheck ? (
+          missed.length === 0 ? <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6 border-t border-rule-2">{lang === 'ko' ? '최근 점검에서 틀린 단어가 없습니다.' : 'Nothing missed on the latest checks.'}</p>
+            : <RecheckCard missed={missed} history={history} checkById={checkById} marks={marks} heard={heard} observations={observations} lang={lang}
+                onTap={tap} onHeard={askHeard} onObs={toggleObs} onFill={how => missed.forEach(m => fill(m.sheet, how))} onPrint={printMissed} />
+        ) : skills.length === 0 ? (
           <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6 border-t border-rule-2">{lang === 'ko' ? '위에서 시트를 고르면 단어가 여기에 나타납니다.' : 'Pick the sheets above and their words appear here.'}</p>
         ) : (
           <div className="space-y-5" data-guide="reading.phonics.words">
@@ -581,27 +640,7 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
   const run = longestErrorRun(sk.words, marks)
   const pct = accuracyPct(correct, partial, sk.words.length)
   const band = correct + partial + errors > 0 ? phonicsBand({ pct }) : null
-  const small = 'h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3'
-  const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11px*var(--ts))] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
-  // A letter tile is square-ish and larger: one character, seven to a row.
-  const tile = (w: string) => {
-    const m = marks[w]
-    return (
-      <div key={w} className="relative">
-        <button onClick={() => onTap(w)} style={{ touchAction: 'manipulation' }}
-          title={m ? MARK_LABEL[m][lang] : undefined}
-          className={`w-full ${sk.sections ? 'px-1 py-2 text-[length:calc(26px*var(--ts))]' : 'px-3 py-2.5 text-[length:calc(21px*var(--ts))]'} rounded border-2 font-serif leading-none select-none ${m ? MARK_TILE[m] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
-          {w}
-          {isMiss(m) && heard[w] && <span className="block font-sans text-[length:calc(11px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard[w]}”</span>}
-        </button>
-        {m && <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white pointer-events-none ${MARK_SOLID[m]}`}>{m === 'correct' ? <Check size={10} strokeWidth={3} /> : m === 'partial' ? <Minus size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</span>}
-        {isMiss(m) && (
-          <button onClick={() => onHeard(w)} title={lang === 'ko' ? '뭐라고 읽었는지 적기' : 'Write what they said'} aria-label={`What did they say for ${w}`}
-            className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-surface border flex items-center justify-center ${m === 'error' ? 'border-bad/50 text-bad hover:bg-bad-soft' : 'border-warn/50 text-warn hover:bg-warn-soft'}`}><Pencil size={10} /></button>
-        )}
-      </div>
-    )
-  }
+  const tile = (w: string) => <WordTile key={w} word={w} letter={!!sk.sections} mark={marks[w]} heard={heard[w]} lang={lang} onTap={() => onTap(w)} onHeard={() => onHeard(w)} />
   return (
     <div className="border border-rule-2 rounded-md bg-surface">
       <div className="px-4 py-2.5 border-b border-rule flex items-start justify-between gap-3 flex-wrap">
@@ -639,32 +678,129 @@ function SkillCard({ skill, marks, heard, observations, lang, onTap, onHeard, on
         <span className="text-ink-3">{lang === 'ko' ? '한 번 탭 정답, 두 번 오답, 세 번 부분 정답, 네 번 지우기.' : 'Tap once correct, twice error, three times partly, again to clear.'}</span>
         {run >= 5 && <span className="text-warn font-medium">{lang === 'ko' ? '연속 5개 오답: 이 시트는 여기서 멈추세요.' : 'Five errors in a row: stop this sheet here.'}</span>}
         <span className="ml-auto flex items-center gap-1.5">
-          <button onClick={() => onFill('rest')} className={small} title={lang === 'ko' ? '표시하지 않은 단어를 모두 정답으로' : 'Mark every untouched word correct'}>{lang === 'ko' ? '나머지 정답' : 'Rest correct'}</button>
-          <button onClick={() => onFill('all')} className={small}>{lang === 'ko' ? '모두 정답' : 'All correct'}</button>
-          <button onClick={() => onFill('clear')} className={small}>{lang === 'ko' ? '지우기' : 'Clear'}</button>
+          <button onClick={() => onFill('rest')} className={smallBtn} title={lang === 'ko' ? '표시하지 않은 단어를 모두 정답으로' : 'Mark every untouched word correct'}>{lang === 'ko' ? '나머지 정답' : 'Rest correct'}</button>
+          <button onClick={() => onFill('all')} className={smallBtn}>{lang === 'ko' ? '모두 정답' : 'All correct'}</button>
+          <button onClick={() => onFill('clear')} className={smallBtn}>{lang === 'ko' ? '지우기' : 'Clear'}</button>
         </span>
       </div>
       <details className="px-4 py-2 border-t border-rule" open={observations.length > 0}>
         <summary className="text-[length:calc(11.5px*var(--ts))] text-ink-2 cursor-pointer hover:text-ink">{lang === 'ko' ? '오류 패턴과 해독 방식' : 'Error patterns, and how they decoded'}{observations.length > 0 && <span className="text-ink-3"> · {observations.length}</span>}</summary>
-        <div className="mt-2 space-y-2">
-          {/* The sheet's own error patterns first: what the sheet is there to find. */}
-          <div className="grid grid-cols-[112px_1fr] gap-2 items-start">
-            <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? '이 시트' : 'This sheet'}</span>
-            <div className="flex flex-wrap gap-1.5">
-              {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}
-            </div>
-          </div>
-          {/* How a student decoded words, and word-level errors, mean nothing for single letters. */}
-          {!sk.sections && OBSERVATION_GROUPS.filter(g => g.id !== 'how').concat(OBSERVATION_GROUPS.filter(g => g.id === 'how')).map(g => (
-            <div key={g.id} className="grid grid-cols-[112px_1fr] gap-2 items-start">
-              <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? g.label_ko : g.label}</span>
-              <div className="flex flex-wrap gap-1.5">
-                {DECODING_OBSERVATIONS.filter(o => o.group === g.id).map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
-              </div>
-            </div>
-          ))}
-        </div>
+        <ObservationTicks sk={sk} observations={observations} lang={lang} onObs={onObs} className="mt-2" />
       </details>
+    </div>
+  )
+}
+
+const smallBtn = 'h-6 px-2 rounded border border-rule-2 text-[length:calc(11px*var(--ts))] text-ink-2 hover:text-ink hover:border-ink-3'
+const obsChip = (on: boolean) => `px-2 h-6 rounded-full border text-[length:calc(11px*var(--ts))] ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
+
+// One word (or letter) to tap. The pencil on an error or partly records what
+// was said; `missedTimes` (two or more) marks a word this student keeps
+// missing. A letter tile is square-ish and larger: one character.
+function WordTile({ word, letter = false, mark, heard, lang, missedTimes = 0, onTap, onHeard }: {
+  word: string; letter?: boolean; mark: PhonicsMark | undefined; heard?: string; lang: Lang; missedTimes?: number; onTap: () => void; onHeard: () => void
+}) {
+  return (
+    <div className="relative">
+      <button onClick={onTap} style={{ touchAction: 'manipulation' }}
+        title={mark ? MARK_LABEL[mark][lang] : undefined}
+        className={`w-full ${letter ? 'px-1 py-2 text-[length:calc(26px*var(--ts))]' : 'px-3 py-2.5 text-[length:calc(21px*var(--ts))]'} rounded border-2 font-serif leading-none select-none ${mark ? MARK_TILE[mark] : 'bg-surface border-rule-2 text-ink hover:border-ink-3'}`}>
+        {word}
+        {isMiss(mark) && heard && <span className="block font-sans text-[length:calc(11px*var(--ts))] italic mt-1 opacity-80 truncate">“{heard}”</span>}
+      </button>
+      {missedTimes >= 2 && <span className="absolute -top-1.5 -left-1.5 px-1 h-4 rounded-full bg-bad text-white font-sans text-[length:max(10px,calc(9.5px*var(--ts)))] font-semibold leading-4 pointer-events-none" title={lang === 'ko' ? `${missedTimes}번 틀림` : `Missed ${missedTimes} times`}>×{missedTimes}</span>}
+      {mark && <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-white pointer-events-none ${MARK_SOLID[mark]}`}>{mark === 'correct' ? <Check size={10} strokeWidth={3} /> : mark === 'partial' ? <Minus size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}</span>}
+      {isMiss(mark) && (
+        <button onClick={onHeard} title={lang === 'ko' ? '뭐라고 읽었는지 적기' : 'Write what they said'} aria-label={`What did they say for ${word}`}
+          className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full bg-surface border flex items-center justify-center ${mark === 'error' ? 'border-bad/50 text-bad hover:bg-bad-soft' : 'border-warn/50 text-warn hover:bg-warn-soft'}`}><Pencil size={10} /></button>
+      )}
+    </div>
+  )
+}
+
+// A sheet's error-pattern boxes: its own patterns first, then the shared
+// error, Korean-transfer and how-they-decoded boxes (word sheets only).
+function ObservationTicks({ sk, observations, lang, onObs, className = '' }: {
+  sk: PhonicsSkill; observations: string[]; lang: Lang; onObs: (id: string) => void; className?: string
+}) {
+  return (
+    <div className={`space-y-2 ${className}`}>
+      {/* The sheet's own error patterns first: what the sheet is there to find. */}
+      <div className="grid grid-cols-[112px_1fr] gap-2 items-start">
+        <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? '이 시트' : 'This sheet'}</span>
+        <div className="flex flex-wrap gap-1.5">
+          {sk.patterns.map(p => { const id = `${PATTERN_PREFIX}${p}`; return <button key={p} onClick={() => onObs(id)} className={obsChip(observations.includes(id))}>{p}</button> })}
+        </div>
+      </div>
+      {/* How a student decoded words, and word-level errors, mean nothing for single letters. */}
+      {!sk.sections && OBSERVATION_GROUPS.filter(g => g.id !== 'how').concat(OBSERVATION_GROUPS.filter(g => g.id === 'how')).map(g => (
+        <div key={g.id} className="grid grid-cols-[112px_1fr] gap-2 items-start">
+          <span className="text-[length:calc(11px*var(--ts))] text-ink-3 pt-1">{lang === 'ko' ? g.label_ko : g.label}</span>
+          <div className="flex flex-wrap gap-1.5">
+            {DECODING_OBSERVATIONS.filter(o => o.group === g.id).map(o => <button key={o.id} onClick={() => onObs(o.id)} className={obsChip(observations.includes(o.id))}>{lang === 'ko' ? o.label_ko : o.label}</button>)}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Missed before: every word missed on the latest check of each sheet, on
+// one card, sheet by sheet. Each sheet shows its old score and what it will
+// be with the words read again; its boxes open once a word there is missed
+// again.
+function RecheckCard({ missed, history, checkById, marks, heard, observations, lang, onTap, onHeard, onObs, onFill, onPrint }: {
+  missed: MissedSheet[]; history: PhonicsCheckRow[]; checkById: Record<string, PhonicsCheckRow>
+  marks: Marks; heard: Heard; observations: Observations; lang: Lang
+  onTap: (sheet: string, word: string) => void; onHeard: (sheet: string, word: string) => void; onObs: (sheet: string, id: string) => void
+  onFill: (how: 'all' | 'rest' | 'clear') => void; onPrint: () => void
+}) {
+  const total = missed.reduce((n, m) => n + m.words.length, 0)
+  return (
+    <div className="border border-rule-2 rounded-md bg-surface" data-guide="reading.phonics.words">
+      <div className="px-4 py-2.5 border-b border-rule flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">{lang === 'ko' ? '틀린 단어 다시 읽기' : 'Missed before'} <span className="font-normal text-ink-3 text-[length:calc(12px*var(--ts))]">· {total} {lang === 'ko' ? '단어' : total === 1 ? 'word' : 'words'}, {missed.length} {lang === 'ko' ? '시트' : missed.length === 1 ? 'sheet' : 'sheets'}</span></h3>
+          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5"><span className="eyebrow mr-1.5">{lang === 'ko' ? '말하기' : 'Say'}</span>“{lang === 'ko' ? '이 단어들을 다시 읽어 보세요.' : 'Let’s read these again. If you are not sure, sound it out.'}”</p>
+        </div>
+        <button onClick={onPrint} className={`${smallBtn} inline-flex items-center gap-1`}><Printer size={11} /> {lang === 'ko' ? '학생용 인쇄' : 'Print for the student'}</button>
+      </div>
+      <div className="divide-y divide-rule">
+        {missed.map(m => {
+          const sk = phonicsSkill(m.sheet)!
+          const before = checkById[m.fromCheckId]
+          const was = before ? scoreSkill(before, m.sheet) : null
+          const now = marks[m.sheet] || {}
+          const touched = Object.keys(now).length > 0
+          const merged = { ...(before?.results?.[m.sheet] || {}), ...now }
+          let c = 0, p = 0
+          sk.words.forEach(w => { if (merged[w] === 'correct') c++; else if (merged[w] === 'partial') p++ })
+          const band = phonicsBand({ pct: accuracyPct(c, p, sk.words.length) })
+          const times = missCounts(history, m.sheet)
+          const missedAgain = m.words.some(w => isMiss(now[w]))
+          return (
+            <div key={m.sheet} className="px-4 py-3">
+              <div className="flex items-baseline gap-2 flex-wrap mb-2 text-[length:calc(12px*var(--ts))] tabular-nums">
+                <span className="font-semibold text-ink">{lang === 'ko' ? sk.label_ko : sk.label}</span>
+                {was && <span className="text-ink-3">{scoreText(was)} · {fmtShort(m.fromDate, lang)}</span>}
+                {touched && <span className={BAND_TEXT[band]}>→ {halfText(c, p)} / {sk.words.length} {PHONICS_BAND_LABELS[band][lang]}</span>}
+              </div>
+              <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${sk.sections ? 10 : 6}, minmax(0, 1fr))` }}>
+                {m.words.map(w => <WordTile key={w} word={w} letter={!!sk.sections} mark={now[w]} heard={heard[m.sheet]?.[w]} lang={lang} missedTimes={times[w] || 0}
+                  onTap={() => onTap(m.sheet, w)} onHeard={() => onHeard(m.sheet, w)} />)}
+              </div>
+              {missedAgain && <ObservationTicks sk={sk} observations={observations[m.sheet] || []} lang={lang} onObs={id => onObs(m.sheet, id)} className="mt-3" />}
+            </div>
+          )
+        })}
+      </div>
+      <div className="px-4 py-2 border-t border-rule flex items-center gap-3 flex-wrap text-[length:calc(11.5px*var(--ts))] text-ink-3">
+        <span>{lang === 'ko' ? '빨간 ×2: 두 번 이상 틀린 단어. 표시하지 않은 단어는 예전 표시가 유지됩니다.' : 'Red ×2: missed on two or more checks. A word left untouched keeps its old mark.'}</span>
+        <span className="ml-auto flex items-center gap-1.5">
+          <button onClick={() => onFill('rest')} className={smallBtn}>{lang === 'ko' ? '나머지 정답' : 'Rest correct'}</button>
+          <button onClick={() => onFill('clear')} className={smallBtn}>{lang === 'ko' ? '지우기' : 'Clear'}</button>
+        </span>
+      </div>
     </div>
   )
 }

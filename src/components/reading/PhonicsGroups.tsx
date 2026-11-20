@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activity'
 import { ENGLISH_CLASS_ORDER } from '@/lib/rosterSort'
 import { PHONICS_GROUPS, phonicsSkill, sheetNo, type LatestBySkill, type PhonicsCheckRow } from '@/lib/phonics'
 import { nextToTeach, teachingGroups, troubleCounts, missedWords, splitPatternKey, type GroupBy, type TeachGroup } from '@/lib/phonicsPatterns'
+import { printWordSheet } from '@/lib/phonicsPrint'
 import { Printer } from 'lucide-react'
 
 // ─── Teaching groups across classes ──────────────────────────────
@@ -48,6 +49,14 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
     return lang === 'ko' ? fam.label_ko : fam.label
   }
   // What tripped this group on its sheets: patterns ticked, words missed.
+  // A word sheet for the group to read from: every word any of them missed on
+  // the group's sheets, most missed first, under each sheet's name.
+  const printGroupWords = (g: TeachGroup) => {
+    const missed = missedWords(g.studentIds, latestByStudent, checksById, { sheets: g.sheets, min: 1 })
+    const sections = g.sheets.map(id => { const sk = phonicsSkill(id); return { label: sk?.label || id, words: missed.filter(w => w.sheet === id).map(w => w.word), columns: sk?.sections ? 8 : 4 } })
+    printWordSheet(`${title(g)} · ${lang === 'ko' ? '틀린 단어' : 'words to practise'}`, sections, `Phonics group words: ${title(g)}`)
+  }
+
   const focus = (g: TeachGroup) => {
     if (g.sheets.length === 0) return { patterns: [] as [string, number][], words: [] as string[] }
     const t = troubleCounts(g.studentIds, latestByStudent, checksById, g.sheets)
@@ -130,6 +139,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
                   </div>
                   {f.patterns.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '어려움: ' : 'Trouble: '}</span>{f.patterns.map(([p, n]) => `${p}${n > 1 ? ` ×${n}` : ''}`).join(', ')}</p>}
                   {f.words.length > 0 && <p className="text-[length:calc(11px*var(--ts))] text-ink-2"><span className="text-ink-3">{lang === 'ko' ? '틀린 단어: ' : 'Missed: '}</span>{f.words.join(', ')}</p>}
+                  {f.words.length > 0 && <button onClick={() => printGroupWords(g)} className="mt-1.5 inline-flex items-center gap-1 text-[length:calc(11px*var(--ts))] text-ink-3 hover:text-ink"><Printer size={10} /> {lang === 'ko' ? '단어 시트 인쇄' : 'Print their missed words'}</button>}
                 </div>
               )
             })}

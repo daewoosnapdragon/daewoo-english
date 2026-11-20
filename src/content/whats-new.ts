@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'phonics-missed-before', date: '2026-11-23', title: 'Phonics: read again only the words missed last time',
+    body: 'You can now press Missed before on the check screen to put every word a student missed on the latest check of each sheet on one card. The words they read again replace their old marks and the rest carry over, so each sheet is scored again without rereading the whole sheet. A red ×2 marks a word missed on two or more checks. Print for the student prints those words in large type, and on Groups, Print their missed words does the same for a teaching group.',
+    path: '/reading?tab=phonics', guide: 'reading',
+  },
+  {
     id: 'phonics-error-patterns', date: '2026-11-23', title: 'Phonics: the error patterns each sheet is there to find',
     body: 'You can now tick, under each sheet, the specific errors a phonics teacher listens for on it, written as what you hear with a word from the sheet: on silent e, “e ignored, vowel short (made → mad)”; on vowel teams, “first vowel only (boat → bot)”; on two-syllable words, “did not flex the split (visit → vy-sit)”. Under them, errors that show on any sheet (guessed from the first letter, swapped in a real word, could not blend) and Korean transfer (f → p, v → b, z → j, th, r and l, an extra vowel after a consonant), where the decoding is fine and the sound is not. Error patterns on Whole grade counts them class against class.',
     path: '/reading?tab=phonics', guide: 'reading',
