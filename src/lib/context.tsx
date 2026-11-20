@@ -8,6 +8,7 @@ import { Teacher, Semester, Language } from '@/types'
 import { translations } from '@/i18n/translations'
 import { canManageSemesters } from '@/lib/utils'
 import ConfirmDialog, { DialogRequest } from '@/components/ui/ConfirmDialog'
+import { confirmLeave, installLeaveGuard, setLeaveAsker } from '@/lib/unsaved'
 
 export interface ToastOptions {
   /** 'error' shows the message in oxblood and keeps it up longer. Guessed from the wording when left out. */
@@ -153,8 +154,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // still published through pendingNavigation for views that read them.
   const router = useRouter()
   const navigateTo = useCallback((target: NavigationTarget) => {
-    setPendingNavigation(target)
-    router.push(pathForView(target.view, { studentId: target.preSelectedStudent }))
+    confirmLeave().then(ok => {
+      if (!ok) return
+      setPendingNavigation(target)
+      router.push(pathForView(target.view, { studentId: target.preSelectedStudent }))
+    })
   }, [router])
 
   const clearNavigation = useCallback(() => {
@@ -185,6 +189,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       document.documentElement.classList.toggle('dark', t === 'dark')
     } catch {}
   }, [])
+
+  // Leaving a page that holds unsaved edits asks first (lib/unsaved.ts), in
+  // the same words as Attendance's own unsaved-changes dialog.
+  useEffect(() => {
+    const ko = language === 'ko'
+    setLeaveAsker(() => confirmDialog({
+      title: ko ? '저장되지 않은 변경사항' : 'Unsaved changes',
+      message: ko ? '저장하지 않고 이 페이지를 나가면 변경사항이 사라집니다.' : 'Leave this page without saving? Your changes will be lost.',
+      confirmLabel: ko ? '저장하지 않고 나가기' : 'Leave without saving',
+      cancelLabel: ko ? '머무르기' : 'Stay',
+      danger: true,
+    }))
+    return () => setLeaveAsker(null)
+  }, [confirmDialog, language])
+  useEffect(() => installLeaveGuard(href => router.push(href)), [router])
 
   const t = language === 'ko' ? translations.ko : translations.en
 

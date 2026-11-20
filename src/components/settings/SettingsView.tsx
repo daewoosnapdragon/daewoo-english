@@ -6,6 +6,7 @@ import { useScheduleRules, saveScheduleRules, WEEKDAY_LABELS } from '@/lib/sched
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import { invalidateAssessmentWeights } from '@/lib/assessmentWeights'
 import { DEFAULT_LADDER, loadLadderSettings, saveLadderSettings, type LadderSettings } from '@/lib/behaviorLadder'
@@ -1239,6 +1240,8 @@ function ScheduleRulesSection() {
   const { rules, setRules, loading } = useScheduleRules()
   const [saving, setSaving] = useState(false)
   const [dirty, setDirty] = useState(false)
+  // Leaving the page before saving these settings asks first (lib/unsaved.ts).
+  useUnsaved(dirty)
   const on = (g: number, w: number) => rules.noClass.some(r => r.grade === g && r.weekday === w)
   const toggle = (g: number, w: number) => {
     if (!canEdit) return

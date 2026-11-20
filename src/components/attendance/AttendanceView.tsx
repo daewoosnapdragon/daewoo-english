@@ -9,6 +9,7 @@ import { loadDayStatus, fillAwayDays, type DayStatus } from '@/lib/calendarDays'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
+import { useUnsaved } from '@/lib/unsaved'
 import { useStudents, useAvailableClasses } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { GRADES, EnglishClass, Grade } from '@/types'
@@ -99,17 +100,31 @@ export default function AttendanceView() {
     : `Attendance · ${selectedClass} · Grade ${selectedGrade} · month view · ${calMonth.year}-${String(calMonth.month + 1).padStart(2, '0')}`)
   useEffect(() => { loadDayStatus(selectedDate, selectedGrade).then(setDayStatus) }, [selectedDate, selectedGrade])
 
+  // The unsaved-changes dialog answers two kinds of question: an action on
+  // this page (another day, grade or class), held in pendingAction, and
+  // leaving the page altogether (lib/unsaved.ts), which also waits on Stay.
+  const pendingStay = useRef<(() => void) | null>(null)
   const guardUnsaved = (action: () => void) => {
-    if (hasChanges) { setPendingAction(() => action); setShowUnsavedModal(true) }
+    if (hasChanges) { pendingStay.current = null; setPendingAction(() => action); setShowUnsavedModal(true) }
     else action()
   }
-
-  // Warn on page leave with unsaved changes
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => { if (hasChanges) { e.preventDefault(); e.returnValue = '' } }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [hasChanges])
+  const askLeave = () => new Promise<boolean>(resolve => {
+    pendingStay.current = () => resolve(false)
+    setPendingAction(() => () => resolve(true))
+    setShowUnsavedModal(true)
+  })
+  const stayOnPage = () => {
+    setShowUnsavedModal(false); setPendingAction(null)
+    pendingStay.current?.(); pendingStay.current = null
+  }
+  const proceed = () => {
+    setShowUnsavedModal(false); pendingStay.current = null
+    if (pendingAction) pendingAction()
+    setPendingAction(null)
+  }
+  // Every way out of the page (masthead, ⌘K, Back, reload) asks with the
+  // dialog below, so Save first works there too.
+  useUnsaved(hasChanges, { ask: askLeave })
 
   // When the print dropdown opens, reset its month to the currently selected date's month
   useEffect(() => {
@@ -222,14 +237,15 @@ export default function AttendanceView() {
     }))
     if (entries.length > 0) {
       const { error } = await supabase.from('attendance').upsert(entries, { onConflict: 'student_id,date' })
-      if (error) { showToast(`Error: ${error.message}`); setSaving(false); return }
+      if (error) { showToast(`Error: ${error.message}`); setSaving(false); return false }
     }
 
     // Delete records that were cleared (exist in DB but not in current records)
     const currentStudentIds = new Set(Object.keys(records))
     const toDelete = (existing || []).filter(e => !currentStudentIds.has(e.student_id))
     if (toDelete.length > 0) {
-      await supabase.from('attendance').delete().in('id', toDelete.map(d => d.id))
+      const { error } = await supabase.from('attendance').delete().in('id', toDelete.map(d => d.id))
+      if (error) { showToast(`Error: ${error.message}`); setSaving(false); return false }
     }
 
     setSaving(false)
@@ -238,6 +254,7 @@ export default function AttendanceView() {
     setTimeout(() => setSaveSuccess(false), 1500)
     showToast(lang === 'ko' ? '출석이 저장되었습니다' : entries.length > 0 ? `Saved attendance for ${entries.length} students` : 'Attendance cleared')
     logActivity('saved', `Attendance · ${selectedClass} · Grade ${selectedGrade} · ${selectedDate} · ${entries.length} students`, { key: `attendance|${selectedClass}|${selectedGrade}|${selectedDate}` })
+    return true
   }
 
   // Skip weekends (and Monday for Grade 5) in date navigation
@@ -751,13 +768,15 @@ export default function AttendanceView() {
       )}
 
       {showUnsavedModal && (
-        <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setShowUnsavedModal(false)}>
-          <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink mb-2">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved changes'}</h3>
+        <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={stayOnPage} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); stayOnPage() } }}>
+          <div role="dialog" aria-modal="true" aria-labelledby="att-unsaved-title" className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
+            <h3 id="att-unsaved-title" className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink mb-2">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved changes'}</h3>
             <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-5">{lang === 'ko' ? '저장하지 않으면 변경사항이 사라집니다.' : 'Save this attendance before leaving?'}</p>
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => { setShowUnsavedModal(false); setHasChanges(false); if (pendingAction) pendingAction(); setPendingAction(null) }} className="h-9 px-3.5 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '저장 안 함' : 'Discard'}</button>
-              <button onClick={async () => { await handleSave(); setShowUnsavedModal(false); if (pendingAction) pendingAction(); setPendingAction(null) }} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover">{lang === 'ko' ? '저장' : 'Save first'}</button>
+            <div className="flex flex-wrap gap-2 justify-end">
+              <button autoFocus onClick={stayOnPage} className="h-9 px-3 mr-auto rounded text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink hover:bg-paper-2">{lang === 'ko' ? '머무르기' : 'Stay'}</button>
+              <button onClick={() => { setHasChanges(false); proceed() }} className="h-9 px-3.5 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '저장 안 함' : 'Discard'}</button>
+              {/* A failed save keeps the dialog open: the error toast says why, and nothing is dropped. */}
+              <button disabled={saving} onClick={async () => { if (await handleSave()) proceed() }} className="inline-flex items-center gap-1.5 h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60">{saving && <Loader2 size={13} className="animate-spin" />}{lang === 'ko' ? '저장' : 'Save first'}</button>
             </div>
           </div>
         </div></Overlay>

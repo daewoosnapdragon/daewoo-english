@@ -17,6 +17,7 @@ import { FlowerAvatar, flowerForClass } from '@/components/brand/ClassFlower'
 import DrawnCheck from '@/components/brand/DrawnCheck'
 import { termProgress, termMonths, daysUntil } from '@/lib/term'
 import { TEXT_SIZES, type TextSize, currentTextSize, setTextSize, onDisplayChange } from '@/lib/display'
+import { confirmLeave } from '@/lib/unsaved'
 
 // ─── Masthead ────────────────────────────────────────────────────────
 // Brand on its own line, links centered beneath it, a thin context bar under
@@ -125,19 +126,28 @@ function StudentFinder() {
 function UserMenu() {
   const { currentTeacher, setCurrentTeacher, language, setLanguage, theme, setTheme } = useApp()
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const router = useRouter()
   const { unseen } = useWhatsNew()
+  // Esc closes the menu and puts focus back on the name, like the More menu.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); triggerRef.current?.focus() } }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
   // Text size: Standard, Larger, Largest. Every font size follows it (globals.css --ts).
   const [textSize, setSize] = useState<TextSize>('standard')
   useEffect(() => { setSize(currentTextSize()); return onDisplayChange(() => setSize(currentTextSize())) }, [])
   const nextTextSize = () => setTextSize(TEXT_SIZES[(TEXT_SIZES.indexOf(textSize) + 1) % TEXT_SIZES.length])
   const sizeLabel = language === 'ko' ? { standard: '보통', larger: '크게', largest: '아주 크게' }[textSize] : { standard: 'Standard', larger: 'Larger', largest: 'Largest' }[textSize]
   if (!currentTeacher) return null
-  const signOut = () => { logActivity('logout'); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
+  // Signing out leaves the page too, so unsaved edits are asked about first (lib/unsaved.ts).
+  const signOut = async () => { setOpen(false); if (!(await confirmLeave())) return; logActivity('logout'); setCurrentTeacher(null); sessionStorage.removeItem('daewoo_teacher_id'); router.push('/dashboard') }
   const item = 'w-full flex items-center gap-2.5 px-3 py-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:bg-paper-2 hover:text-ink text-left'
   return (
     <div className="relative">
-      <button onClick={() => setOpen(o => !o)} aria-expanded={open}
+      <button ref={triggerRef} onClick={() => setOpen(o => !o)} aria-expanded={open}
         className="flex items-center gap-2 h-9 pl-0.5 pr-2 rounded border border-transparent hover:border-rule-2 text-[length:calc(13px*var(--ts))]">
         <FlowerAvatar name={flowerForClass(currentTeacher.english_class)} size={30} />
         <span className="font-medium text-ink">{currentTeacher.name}</span>

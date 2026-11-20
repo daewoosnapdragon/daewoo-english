@@ -4,6 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import type { QuestionMapItem, ItemResponse } from '@/types'
 import { isChoiceItem, markChoice } from '@/lib/answerKey'
@@ -281,6 +282,10 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     if (active && dirtyRef.current.has(active.id)) await saveStudents([active.id])
     setActiveIdx(idx); setFocusedQ(map[0]?.num || 1); setCritIdx(0)
   }
+
+  // Leaving the page by any route saves what is still unsaved, as the
+  // autosave would; only a failed save asks (lib/unsaved.ts).
+  useUnsaved(dirty.size > 0, { save: () => saveStudents(Array.from(dirtyRef.current)) })
 
   // Autosave every 30 seconds, and warn before leaving with unsaved marks.
   useEffect(() => {

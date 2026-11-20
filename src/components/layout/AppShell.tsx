@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { viewForPath, PAGE_TITLES } from '@/lib/routes'
+import { hasUnsaved } from '@/lib/unsaved'
 import LoginPage from '@/components/layout/LoginPage'
 import Masthead from '@/components/layout/Masthead'
 import NoticeBoard from '@/components/layout/NoticeBoard'
@@ -43,7 +44,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // A page opened again draws from remembered answers (lib/readCache). If the
   // database turns out to have something newer, the page is drawn again with
-  // it, quietly, unless the teacher has already started typing in it.
+  // it, quietly, unless the teacher has already started typing in it or
+  // holds unsaved edits.
   const [redraw, setRedraw] = useState(0)
   const quietUntil = useRef(0)
   useEffect(() => {
@@ -51,6 +53,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       if (path !== window.location.pathname) return
       const a = document.activeElement
       if (a && a.closest('main') && a.matches('input, textarea, select, [contenteditable="true"]')) return
+      // Redrawing remounts the page, which would drop unsaved marks made with
+      // buttons (attendance, phonics) as surely as typing (lib/unsaved.ts).
+      if (hasUnsaved()) return
       quietUntil.current = performance.now() + 800
       setRedraw(n => n + 1)
     })

@@ -9,6 +9,7 @@ import { syncSemesterGrades } from '@/lib/semesterGrades'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -2254,6 +2255,8 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
   const setText = (id: string, text: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], text, dirty: true } }))
   const toggleSkip = (id: string) => setRows(prev => ({ ...prev, [id]: { ...prev[id], skipped: !prev[id].skipped, dirty: true } }))
   const dirtyIds = Object.keys(rows).filter(id => rows[id]?.dirty)
+  // Leaving the page with comments typed but not saved asks first (lib/unsaved.ts).
+  useUnsaved(dirtyIds.length > 0)
 
   const switchDoc = async (next: ReportDocument) => {
     if (next === docType) return

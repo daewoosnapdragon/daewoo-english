@@ -4,6 +4,7 @@ import Stamp from '@/components/brand/Stamp'
 import Loading from '@/components/brand/Loading'
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { logActivity } from '@/lib/activity'
 import { useViewLog } from '@/lib/useViewLog'
 import { supabase } from '@/lib/supabase'
@@ -777,6 +778,8 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
   const [manualGradeValues, setManualGradeValues] = useState<Record<string, string>>({})
   const GRADE_DOMAINS = ['reading', 'phonics', 'writing', 'speaking', 'language'] as const
   const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set())
+  // Leaving the page with edits not yet written asks first (lib/unsaved.ts).
+  useUnsaved(dirtyIds.size > 0)
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -1692,6 +1695,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
   const [meetingExcludedQ, setMeetingExcludedQ] = useState<number[]>([])
   const dirtyStudents = useRef<Set<string>>(new Set())
   const [dirtyCount, setDirtyCount] = useState(0)
+  // Leaving the page with edits not yet written asks first (lib/unsaved.ts).
+  useUnsaved(dirtyCount > 0)
   const [refreshing, setRefreshing] = useState(false)
 
   // Helper to mark a student dirty and update count

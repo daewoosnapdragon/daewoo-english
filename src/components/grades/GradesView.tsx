@@ -5,6 +5,7 @@ import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
@@ -469,6 +470,8 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  // Any way out of the page asks first while scores are unsaved (lib/unsaved.ts).
+  useUnsaved(hasChanges)
 
   // Warn on page leave with unsaved changes
   useEffect(() => {
@@ -693,6 +696,8 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  // Any way out of the page asks first while scores are unsaved (lib/unsaved.ts).
+  useUnsaved(hasChanges)
   const [expandedAssessment, setExpandedAssessment] = useState<string | null>(null)
 
   const domainAssessments = allAssessments.filter(a => a.domain === selectedDomain)

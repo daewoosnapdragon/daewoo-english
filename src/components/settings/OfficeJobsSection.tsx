@@ -3,6 +3,7 @@
 import { logActivity } from '@/lib/activity'
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import { useTeachers } from '@/hooks/useData'
 import { useOfficeJobs } from '@/components/dashboard/useOfficeJobs'
@@ -26,6 +27,8 @@ export default function OfficeJobsSection() {
   const { saved, loading, days, today } = useOfficeJobs(draft)
   useEffect(() => { if (!loading && draft === null) setDraft(saved || DEFAULT_OFFICE_JOBS_CONFIG) }, [loading, saved, draft])
   const [dirty, setDirty] = useState(false)
+  // Leaving the page before saving these settings asks first (lib/unsaved.ts).
+  useUnsaved(dirty)
   const [saving, setSaving] = useState(false)
   const [addId, setAddId] = useState('')
   const [skipDate, setSkipDate] = useState('')

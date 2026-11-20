@@ -5,6 +5,7 @@ import Link from 'next/link'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '@/lib/context'
+import { confirmLeave } from '@/lib/unsaved'
 import { logActivity } from '@/lib/activity'
 import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
@@ -68,6 +69,9 @@ export default function ReadingLevelsView() {
   const { t, language, currentTeacher, showToast } = useApp()
   const lang = language as LangKey
   const [subView, setSubView] = useState<'class' | 'student' | 'groups' | 'flexgroups' | 'passages' | 'bypassage' | 'phonics'>('class')
+  // Another tab, grade or class unmounts the phonics check under way, so
+  // unsaved marks there are asked about first, as on leaving the page (lib/unsaved.ts).
+  const leaveFirst = async (fn: () => void) => { if (await confirmLeave()) fn() }
   // The student page links here with ?tab=phonics&student=…&grade=…&class=…
   // to open the check screen on that student. Read after mount so the first
   // render matches the server's.
@@ -144,7 +148,7 @@ export default function ReadingLevelsView() {
           { id: 'bypassage', label: lang === 'ko' ? '지문별' : 'By passage' },
           { id: 'passages', label: lang === 'ko' ? '지문 라이브러리' : 'Passage library' },
         ] as const).map((tab) => (
-          <button key={tab.id} onClick={() => setSubView(tab.id)} data-guide={`reading.tab.${tab.id}`}
+          <button key={tab.id} onClick={() => tab.id !== subView && leaveFirst(() => setSubView(tab.id))} data-guide={`reading.tab.${tab.id}`}
             className={`relative px-4 h-10 text-[length:calc(13.5px*var(--ts))] font-medium ${subView === tab.id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
             {tab.label}{subView === tab.id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
           </button>
@@ -154,16 +158,16 @@ export default function ReadingLevelsView() {
         {subView === 'phonics' && <>
           <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.scope">
             {([['class', lang === 'ko' ? '이 반' : 'This class'], ['grade', lang === 'ko' ? '학년 전체' : 'Whole grade'], ['all', lang === 'ko' ? '전 학년' : 'All grades']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => { setPhonicsScope(id); setPhonicsStudentId(null) }} className={`px-3 h-7 rounded text-[length:calc(12px*var(--ts))] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
+              <button key={id} onClick={() => id !== phonicsScope && leaveFirst(() => { setPhonicsScope(id); setPhonicsStudentId(null) })} className={`px-3 h-7 rounded text-[length:calc(12px*var(--ts))] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
             ))}
           </div>
           {phonicsScope !== 'all' && <span className="w-px h-6 bg-rule" />}
         </>}
-        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) }} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
+        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => g !== selectedGrade && leaveFirst(() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) })} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
         {!(subView === 'phonics' && phonicsScope !== 'class') && <>
         <span className="w-px h-6 bg-rule" />
         {availableClasses.length > 1
-          ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          ? <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => cls !== selectedClass && leaveFirst(() => setSelectedClass(cls))} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
           : <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
         </>}
       </div>

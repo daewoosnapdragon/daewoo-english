@@ -4,6 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { getDisplayName, getKSTDateString } from '@/lib/utils'
 import { exportToCSV } from '@/lib/export'
 import { logActivity } from '@/lib/activity'
@@ -55,6 +56,9 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
   const [loadingChecks, setLoadingChecks] = useState(true)
   const [editing, setEditing] = useState<PhonicsCheckRow | null>(null)
   const [dirty, setDirty] = useState(false)
+  // guardedSwitch below covers moving between students; this covers leaving
+  // the page itself (masthead, ⌘K, Back, reload; lib/unsaved.ts).
+  useUnsaved(dirty)
   const [open, setOpen] = useState<{ sid: string; skill: string; checkId?: string } | null>(null)
   // The sheets ticked for the next check. Remembered: a teacher checking a
   // class on digraphs does not re-tick them fifteen times.
@@ -450,9 +454,13 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
   const marked = totals.correct + totals.partial + totals.errors
   const nothingMarked = marked === 0
 
+  // Why there is nothing to save yet, or '' when there is. The save buttons
+  // look disabled meanwhile but stay focusable and clickable, so a press
+  // still says why instead of doing nothing.
+  const unready = skills.length === 0 ? (lang === 'ko' ? '점검할 시트를 하나 이상 고르세요.' : 'Pick at least one sheet to check.')
+    : nothingMarked ? (lang === 'ko' ? '단어를 하나도 표시하지 않았습니다.' : 'No words are marked yet.') : ''
   const save = async (andNext: boolean) => {
-    if (skills.length === 0) { showToast(lang === 'ko' ? '점검할 시트를 하나 이상 고르세요.' : 'Pick at least one sheet to check.'); return }
-    if (nothingMarked) { showToast(lang === 'ko' ? '단어를 하나도 표시하지 않았습니다.' : 'No words are marked yet.'); return }
+    if (unready) { showToast(unready); return }
     setSaving(true)
     const input = recheck ? foldRecheck() : { skills, results: marks, heard, observations }
     const { error } = await savePhonicsCheck({ student_id: student.id, date, assessed_by: currentTeacher?.id || null, ...input, notes }, editing?.id, student.english_name)
@@ -612,8 +620,8 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
           <span className="text-[length:calc(12.5px*var(--ts))] text-ink-2 tabular-nums">{skills.length} {lang === 'ko' ? '시트' : skills.length === 1 ? 'sheet' : 'sheets'} · <b className="text-ink">{halfText(totals.correct, totals.partial)}</b> / {totals.total} {lang === 'ko' ? '정답' : 'correct'}{totals.total - marked > 0 && <span className="text-ink-3"> · {totals.total - marked} {lang === 'ko' ? '미읽음' : 'not read'}</span>}</span>
           <div className="ml-auto flex items-center gap-2">
             {editing && <button onClick={onCancelEdit} className="h-9 px-3 rounded border border-rule-2 text-[length:calc(13px*var(--ts))] text-ink-2 hover:text-ink">{lang === 'ko' ? '수정 취소' : 'Cancel edit'}</button>}
-            <button onClick={() => save(false)} disabled={saving} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5" data-guide="reading.phonics.save">{saving && <Loader2 size={13} className="animate-spin" />}{editing ? (lang === 'ko' ? '수정 저장' : 'Save changes') : (lang === 'ko' ? '저장' : 'Save check')}</button>
-            {!editing && idx < students.length - 1 && <button onClick={() => save(true)} disabled={saving} className="h-9 px-4 rounded border border-ink text-[length:calc(13px*var(--ts))] font-semibold text-ink hover:bg-paper-2 disabled:opacity-60">{lang === 'ko' ? '저장 후 다음 학생' : 'Save and next student'}</button>}
+            <button onClick={() => save(false)} disabled={saving} aria-disabled={unready ? true : undefined} title={unready || undefined} className={`h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold disabled:opacity-60 inline-flex items-center gap-1.5 ${unready ? 'opacity-40 cursor-not-allowed' : 'hover:bg-accent-hover'}`} data-guide="reading.phonics.save">{saving && <Loader2 size={13} className="animate-spin" />}{editing ? (lang === 'ko' ? '수정 저장' : 'Save changes') : (lang === 'ko' ? '저장' : 'Save check')}</button>
+            {!editing && idx < students.length - 1 && <button onClick={() => save(true)} disabled={saving} aria-disabled={unready ? true : undefined} title={unready || undefined} className={`h-9 px-4 rounded border border-ink text-[length:calc(13px*var(--ts))] font-semibold text-ink disabled:opacity-60 ${unready ? 'opacity-40 cursor-not-allowed' : 'hover:bg-paper-2'}`}>{lang === 'ko' ? '저장 후 다음 학생' : 'Save and next student'}</button>}
           </div>
         </div>
       </section>

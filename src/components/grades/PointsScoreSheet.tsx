@@ -4,6 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import { parseScoreInput } from '@/lib/scoreInput'
 import { domainColor, domainShort } from '@/lib/domainTone'
@@ -157,6 +158,10 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
     showToast(ko ? '모든 점수를 지웠습니다' : `Cleared ${n} scores`)
     onSaved?.()
   }
+
+  // Leaving the page by any route saves what is still unsaved, as the
+  // autosave would; only a failed save asks (lib/unsaved.ts).
+  useUnsaved(dirty.size > 0, { save: () => saveStudents(Array.from(dirtyRef.current)) })
 
   // Anything still unsaved goes every half minute, and on the way out.
   useEffect(() => {

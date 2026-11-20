@@ -9,6 +9,7 @@ import { getDisplayName } from '@/lib/utils'
 import { Search, User, ArrowRight, Moon, Sun, Globe, Megaphone, Plus, ClipboardCheck, CalendarDays, FileText, BookOpen, Sparkles } from 'lucide-react'
 import { GUIDE_SECTIONS, ADMIN_SECTIONS } from '@/content/guide'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
+import { confirmLeave } from '@/lib/unsaved'
 
 // ─── Command palette ─────────────────────────────────────────────
 // ⌘K from anywhere. Type a student's name to jump to them (⌘↩ opens their
@@ -58,7 +59,14 @@ export default function CommandPalette() {
     }
   }, [open, currentTeacher, students.length])
 
-  const go = (path: string) => { setOpen(false); router.push(path) }
+  // A page with unsaved edits is asked about first (lib/unsaved.ts); going to
+  // the page already open is not leaving it.
+  const leaveTo = async (path: string) => {
+    if (path.split('#')[0] !== pathname && !(await confirmLeave())) return false
+    router.push(path)
+    return true
+  }
+  const go = (path: string) => { setOpen(false); leaveTo(path) }
 
   const items = useMemo<Item[]>(() => {
     const s = q.trim().toLowerCase()
@@ -71,7 +79,7 @@ export default function CommandPalette() {
       { key: 'a-att', kind: 'action', label: lang === 'ko' ? '출석 체크' : 'Mark attendance', hint: lang === 'ko' ? '출석부 열기' : 'open Attendance', icon: ClipboardCheck, run: () => go('/attendance') },
       { key: 'a-new', kind: 'action', label: lang === 'ko' ? '새 평가' : 'New assessment', hint: lang === 'ko' ? '이름, 정답 키 또는 루브릭' : 'name it, then a key or a rubric', icon: Plus, run: () => go('/grades?new=1') },
       { key: 'a-grades', kind: 'action', label: lang === 'ko' ? '성적 입력' : 'Enter grades', hint: lang === 'ko' ? '성적 화면' : 'open Grades', icon: FileText, run: () => go('/grades') },
-      { key: 'a-notice', kind: 'action', label: lang === 'ko' ? '공지 작성' : 'Post a notice', hint: lang === 'ko' ? '다른 교사에게' : 'for other teachers', icon: Megaphone, run: () => { setOpen(false); if (pathname !== '/dashboard') router.push('/dashboard'); setTimeout(() => window.dispatchEvent(new Event(COMPOSE_NOTICE_EVENT)), pathname === '/dashboard' ? 0 : 600) } },
+      { key: 'a-notice', kind: 'action', label: lang === 'ko' ? '공지 작성' : 'Post a notice', hint: lang === 'ko' ? '다른 교사에게' : 'for other teachers', icon: Megaphone, run: async () => { setOpen(false); if (pathname !== '/dashboard' && !(await leaveTo('/dashboard'))) return; setTimeout(() => window.dispatchEvent(new Event(COMPOSE_NOTICE_EVENT)), pathname === '/dashboard' ? 0 : 600) } },
       { key: 'a-lessons', kind: 'action', label: lang === 'ko' ? '이번 주 수업 계획' : 'This week’s lesson plans', icon: CalendarDays, run: () => go('/lesson-plans') },
       { key: 'a-theme', kind: 'action', label: theme === 'dark' ? (lang === 'ko' ? '라이트 모드' : 'Light mode') : (lang === 'ko' ? '다크 모드' : 'Dark mode'), icon: theme === 'dark' ? Sun : Moon, run: () => { setTheme(theme === 'dark' ? 'light' : 'dark'); setOpen(false) } },
       { key: 'a-lang', kind: 'action', label: lang === 'ko' ? 'English' : '한국어', hint: lang === 'ko' ? '언어 전환' : 'switch language', icon: Globe, run: () => { setLanguage(lang === 'ko' ? 'en' : 'ko'); setOpen(false) } },
@@ -115,7 +123,10 @@ export default function CommandPalette() {
             onKeyDown={e => {
               if (e.key === 'ArrowDown') { e.preventDefault(); setHi(h => Math.min(h + 1, items.length - 1)) }
               if (e.key === 'ArrowUp') { e.preventDefault(); setHi(h => Math.max(h - 1, 0)) }
-              if (e.key === 'Enter' && items[hi]) items[hi].run(e.metaKey || e.ctrlKey)
+              // preventDefault stops the keypress that follows: if this Enter
+              // opens an unsaved-changes dialog, it must not also press the
+              // button that dialog focuses.
+              if (e.key === 'Enter' && items[hi]) { e.preventDefault(); items[hi].run(e.metaKey || e.ctrlKey) }
             }}
             className="flex-1 h-full bg-transparent text-[length:calc(15px*var(--ts))] text-ink placeholder:text-ink-3 outline-none" />
           <span className="text-[length:calc(11px*var(--ts))] text-ink-3">esc</span>

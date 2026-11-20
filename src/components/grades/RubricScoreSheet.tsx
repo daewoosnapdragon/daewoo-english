@@ -4,6 +4,7 @@ import Loading from '@/components/brand/Loading'
 import { logActivity } from '@/lib/activity'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
+import { useUnsaved } from '@/lib/unsaved'
 import { supabase } from '@/lib/supabase'
 import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
 import RubricPrintDialog from './RubricPrintDialog'
@@ -141,6 +142,10 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
     setActiveIdx(idx); setRow(0)
   }
   const exit = async () => { if (dirtyRef.current.size) await saveStudents(Array.from(dirtyRef.current)); onExit?.() }
+
+  // Leaving the page by any route saves what is still unsaved, as the
+  // autosave would; only a failed save asks (lib/unsaved.ts).
+  useUnsaved(dirty.size > 0, { save: () => saveStudents(Array.from(dirtyRef.current)) })
 
   useEffect(() => {
     const id = setInterval(() => { if (dirtyRef.current.size) saveStudents(Array.from(dirtyRef.current)) }, 30_000)
