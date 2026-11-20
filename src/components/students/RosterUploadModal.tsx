@@ -12,6 +12,7 @@ import {
   ArrowRight, UserPlus, CheckCircle2
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -324,7 +325,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
   // ─── Render ──────────────────────────────────────────────────────
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <Overlay><div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-navy/5 to-transparent">
@@ -504,7 +505,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
           )}
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 

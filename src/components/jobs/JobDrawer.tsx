@@ -10,6 +10,7 @@ import SizeMark from './SizeMark'
 import { field } from './AddJob'
 import type { Semester, Teacher } from '@/types'
 import { Calendar, Check, Link as LinkIcon, Play, Trash2, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── A job, opened ───────────────────────────────────────────────
 // Slides in from the right. Who owns it (one tap), the steps as a
@@ -68,7 +69,7 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
   const stepsDone = job.steps.filter(s => s.done).length
 
   return (
-    <>
+    <Overlay>
       <div className="fixed inset-0 z-40 bg-black/25" onClick={onClose} />
       <aside className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-[560px] bg-paper border-l border-rule-2 overflow-y-auto px-6 py-5 grid gap-5 content-start" role="dialog" aria-label={job.title}>
         <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded text-ink-3 hover:text-ink hover:bg-paper-2 flex items-center justify-center" aria-label={ko ? '닫기' : 'Close'}><X size={16} /></button>
@@ -223,6 +224,6 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
           </div>
         )}
       </aside>
-    </>
+    </Overlay>
   )
 }

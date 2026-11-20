@@ -8,9 +8,10 @@ import { supabase } from '@/lib/supabase'
 import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rubricScore, type RubricCriterion } from '@/components/curriculum/rubric-library'
 import RubricPrintDialog from './RubricPrintDialog'
 import { Check, ChevronLeft, ChevronRight, Loader2, X, Eraser, Printer } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Rubric scoring ──────────────────────────────────────────────
-// A full-screen page, no scrolling: students on the left, the rubric in the
+// A full-screen sheet (portaled above the Masthead by Overlay): students on the left, the rubric in the
 // middle with one row per criterion and five buttons across it, each holding
 // the number, its label and the descriptor, so the whole rubric is readable
 // while you mark. A 0 is a real zero. The rail shows the class average per
@@ -169,6 +170,20 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
     return { key: c.key, label: c.label, n: vals.length, avg: vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null }
   }), [criteria, students, levels])
 
+  // Keep what the keyboard just moved to in view: the current student in the
+  // list, and the current criterion in the rubric.
+  const studentListRef = useRef<HTMLDivElement>(null)
+  const rubricListRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    studentListRef.current?.querySelector(`[data-idx="${activeIdx}"]`)?.scrollIntoView({ block: 'nearest' })
+  }, [activeIdx, loading])
+  useEffect(() => {
+    const el = rubricListRef.current
+    if (!el) return
+    if (row === 0) el.scrollTop = 0
+    else el.querySelector(`[data-row="${row}"]`)?.scrollIntoView({ block: 'nearest' })
+  }, [row, activeIdx, loading])
+
   const doneCount = students.filter(s => complete(s.id)).length
   const tone = (v: number) => v === 0 ? 'bg-ink-3 border-ink-3 text-paper' : v === 1 ? 'bg-bad border-bad text-white' : v === 2 ? 'bg-warn border-warn text-white' : v === 3 ? 'bg-good-soft border-good text-good' : 'bg-good border-good text-white'
   const isOff = active ? !!(flags[active.id]?.absent || flags[active.id]?.exempt) : false
@@ -186,7 +201,7 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
   }, [students, flags, levels, criteria.length, assessment.max_score])
 
   return (
-    <div className="fixed inset-0 z-[60] bg-paper flex flex-col">
+    <Overlay><div className="fixed inset-0 z-[60] bg-paper flex flex-col">
       {printing && <RubricPrintDialog rubric={assessment.rubric} title={assessment.name} students={students.map(s => ({ id: s.id, name: s.english_name }))} scored={printScored} maxScore={assessment.max_score} onClose={() => setPrinting(false)} />}
       {/* Top bar */}
       <div className="h-12 px-5 border-b border-rule-2 bg-surface flex items-center gap-4 flex-shrink-0">
@@ -201,13 +216,13 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
       </div>
 
       {loading ? <Loading kind="quiet" rows={5} /> : (
-        <div className="flex-1 min-h-0 grid grid-cols-[210px_minmax(0,1fr)_230px]">
+        <div className="flex-1 min-h-0 max-h-none overflow-hidden grid grid-cols-[210px_minmax(0,1fr)_230px]">
           {/* Students */}
-          <div className="border-r border-rule-2 bg-paper-2 overflow-y-auto">
+          <div ref={studentListRef} className="border-r border-rule-2 bg-paper-2 overflow-y-auto overscroll-contain">
             {students.map((s, i) => {
               const fl = flags[s.id]; const done = complete(s.id); const part = !done && marked(s.id) > 0; const sc = scoreOf(s.id)
               return (
-                <button key={s.id} onClick={() => goTo(i)} className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[length:calc(12.5px*var(--ts))] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
+                <button key={s.id} data-idx={i} onClick={() => goTo(i)} className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-[length:calc(12.5px*var(--ts))] border-b border-rule ${i === activeIdx ? 'bg-surface font-semibold shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-surface/60'}`}>
                   <span className="truncate text-ink">{s.english_name}</span>
                   <span className={`tabular-nums text-[length:calc(11.5px*var(--ts))] ${fl?.absent ? 'text-warn' : fl?.exempt ? 'text-info' : done ? 'text-good' : part ? 'text-warn' : 'text-ink-3'}`}>{fl?.absent ? 'ABS' : fl?.exempt ? 'EXM' : done && sc != null ? `${sc} ✓` : part ? `${sc ?? ''} ~` : ''}</span>
                 </button>
@@ -231,12 +246,12 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                 {isOff ? (
                   <p className="text-[length:calc(13px*var(--ts))] text-ink-3 py-6">{lang === 'ko' ? '결석/면제 처리됨. 점수를 표시하면 다시 채점됩니다.' : 'Marked absent or exempt. Choosing a level clears it.'}</p>
                 ) : (
-                  <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 pr-1">
+                  <div ref={rubricListRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain flex flex-col gap-3 -mx-3 pr-1">
                     {criteria.map((c, i) => {
                       const v = mine[c.key]
                       const current = row === i
                       return (
-                        <div key={c.key} onClick={() => setRow(i)} className={`rounded-md px-3 py-2.5 -mx-3 border ${current ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
+                        <div key={c.key} data-row={i} onClick={() => setRow(i)} className={`rounded-md px-3 py-2.5 border ${current ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
                           <div className="flex items-baseline gap-2 mb-2">
                             <span className="text-[length:calc(15px*var(--ts))] font-semibold text-ink">{c.label}</span>
                             {c.standard && <span className="text-[length:calc(11px*var(--ts))] text-info">{c.standard}</span>}
@@ -261,16 +276,16 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-3 mt-3 border-t border-rule flex-shrink-0">
-                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
-                  <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓ · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'} · Esc {lang === 'ko' ? '나가기' : 'exit'}</span>
-                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="h-8 px-3.5 rounded bg-ink text-paper text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
+                  <button onClick={() => goTo(activeIdx - 1)} disabled={activeIdx === 0} className="flex-shrink-0 h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1"><ChevronLeft size={13} />{lang === 'ko' ? '이전' : 'Previous'}</button>
+                  <span className="hidden xl:block min-w-0 truncate px-3 text-[length:calc(11.5px*var(--ts))] text-ink-3">0–4 {lang === 'ko' ? '표시 후 다음 기준' : 'mark and move down'} · ↑ ↓ · ⇥ / ↩ {lang === 'ko' ? '다음 학생' : 'next student'} · X {lang === 'ko' ? '결석' : 'absent'} · ⇧X {lang === 'ko' ? '면제' : 'exempt'} · Esc {lang === 'ko' ? '나가기' : 'exit'}</span>
+                  <button onClick={() => goTo(activeIdx + 1)} disabled={activeIdx >= students.length - 1} className="flex-shrink-0 h-8 px-3.5 rounded bg-ink text-paper text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-40 inline-flex items-center gap-1">{lang === 'ko' ? '다음 학생' : 'Next student'}<ChevronRight size={13} /></button>
                 </div>
               </>
             )}
           </div>
 
           {/* Rail */}
-          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[length:calc(12px*var(--ts))] overflow-y-auto">
+          <div className="border-l border-rule-2 bg-paper-2 px-4 py-4 space-y-4 text-[length:calc(12px*var(--ts))] overflow-y-auto overscroll-contain">
             <div>
               <p className="eyebrow mb-1.5">{lang === 'ko' ? '반 평균 (기준별)' : 'Class average so far'}</p>
               {classAvg.map(c => (
@@ -287,6 +302,6 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
           </div>
         </div>
       )}
-    </div>
+    </div></Overlay>
   )
 }

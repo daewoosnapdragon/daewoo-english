@@ -6,6 +6,7 @@ import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { CRITERIA, criterionFor, type Band, type RubricCriterion } from '@/components/curriculum/rubric-library'
 import { X, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Rubric builder ──────────────────────────────────────────────
 // Add criteria from the library (descriptors prefilled for the grade band),
@@ -54,7 +55,7 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
   const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] grid grid-rows-[auto_minmax(0,1fr)_auto]" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center gap-4">
           <input id="rb-name" value={name} onChange={e => setName(e.target.value)} placeholder={lang === 'ko' ? '루브릭 이름' : 'Rubric name'} className="flex-1 h-9 px-3 bg-paper-2 border border-rule-2 rounded font-display text-[length:calc(18px*var(--ts))] text-ink placeholder:text-ink-3 placeholder:font-sans placeholder:text-[length:calc(14px*var(--ts))]" />
@@ -106,6 +107,6 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
           </div>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

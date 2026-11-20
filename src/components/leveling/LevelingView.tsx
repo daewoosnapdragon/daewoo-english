@@ -35,6 +35,7 @@ import {
   getWrittenMcTotal, versionKeyForTest, weightedMean, compositeFrom,
 } from '@/components/leveling/placement'
 import StudentLevelingCard, { PrintDossier } from '@/components/leveling/StudentLevelingCard'
+import Overlay from '@/components/ui/Overlay'
 
 type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'history' | 'meeting'
 
@@ -741,14 +742,14 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
         />
       )}
       {runningRecordStudent && !selectedPassage && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRunningRecordStudent(null)}>
+        <Overlay><div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setRunningRecordStudent(null)}>
           <div className="bg-surface rounded-xl shadow-lg p-6 max-w-sm text-center" onClick={e => e.stopPropagation()}>
             <BookOpen size={24} className="text-blue-500 mx-auto mb-3" />
             <p className="text-[length:calc(13px*var(--ts))] font-medium text-navy mb-2">No passage selected</p>
             <p className="text-[length:calc(11px*var(--ts))] text-text-tertiary mb-4">Choose or paste a passage in the blue panel above to use the digital running record.</p>
             <button onClick={() => setRunningRecordStudent(null)} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white">OK</button>
           </div>
-        </div>
+        </div></Overlay>
       )}
 
       {/* Passage uploader modal */}
@@ -1026,7 +1027,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
 
       {/* Rating Modal */}
       {modalStudent && modalIdx !== null && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <Overlay><div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-surface rounded-2xl shadow-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
@@ -1155,7 +1156,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
               <button onClick={() => { saveOne(modalStudent.id); setModalIdx(Math.min(classStudents.length - 1, modalIdx + 1)) }} disabled={modalIdx === classStudents.length - 1} className="inline-flex items-center gap-1 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt disabled:opacity-30">Save & Next <ChevronRight size={14} /></button>
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )
@@ -2134,7 +2135,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
 
       {/* Student Profile Modal -- full leveling dossier card */}
       {profileStudent && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setProfileStudent(null)}>
+        <Overlay><div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setProfileStudent(null)}>
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e: any) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
               <div />
@@ -2150,12 +2151,12 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
               grade={levelTest.grade}
             />
           </div>
-        </div>
+        </div></Overlay>
       )}
 
       {/* Print Dossier Modal */}
       {showPrintDossier && (
-        <div className="fixed inset-0 bg-white z-[200] overflow-y-auto print:static">
+        <Overlay><div className="fixed inset-0 bg-white z-[200] overflow-y-auto print:static">
           <div className="print:hidden sticky top-0 bg-white border-b border-border px-6 py-3 flex items-center justify-between z-10">
             <span className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">Print Preview -- {students.length} student cards</span>
             <div className="flex gap-2">
@@ -2175,7 +2176,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
             grade={levelTest.grade}
             levelTestName={levelTest.name}
           />
-        </div>
+        </div></Overlay>
       )}
     </div>
   )

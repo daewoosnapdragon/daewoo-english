@@ -11,6 +11,7 @@ import type { LevelFlag, MasteryPosition } from '@/lib/phonicsCompare'
 import { BAND_TONE, fmtShort } from '@/components/reading/phonicsTones'
 import { FlagChip } from '@/components/reading/PhonicsLevelingStrip'
 import { AlertTriangle, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Students side by side ───────────────────────────────────────
 // Two to six students from any class or grade, for the leveling meeting:
@@ -46,7 +47,7 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
   })) as Record<string, [string, number][]>
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between gap-3">
           <div>
@@ -138,6 +139,6 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
           </table>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

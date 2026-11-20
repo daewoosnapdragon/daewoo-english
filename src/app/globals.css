@@ -419,8 +419,12 @@ html.dark .bg-accent.text-navy, html.dark .bg-accent.text-navy-dark { color: rgb
    page fades in over 150 ms. Content replacing a loader fades in too
    (AppShell). Nothing is held and nothing cross-fades. */
 @keyframes page-fade { from { opacity: .4; } to { opacity: 1; } }
-.page-fade { animation: page-fade 150ms ease-out both; }
-.stats-in { animation: page-fade 200ms ease-out both; }
+/* No fill-mode: a filled opacity animation keeps the page its own stacking
+   context for good, which traps every fixed z-[n] overlay inside it under the
+   sticky Masthead (z-40). Unfilled, that only lasts the 150 ms of the fade.
+   Overlays also portal out of the page (components/ui/Overlay.tsx). */
+.page-fade { animation: page-fade 150ms ease-out; }
+.stats-in { animation: page-fade 200ms ease-out; }
 
 /* ─── Masthead: the underline that stretches to the next page ─── */
 .nav-slider { position: absolute; left: 0; bottom: 0; height: 2px; width: 0; background: rgb(var(--accent)); border-radius: 1px; pointer-events: none; opacity: 0; }

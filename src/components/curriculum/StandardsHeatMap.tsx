@@ -11,6 +11,7 @@ import { ENGLISH_CLASSES, GRADES, type EnglishClass, type Grade } from '@/types'
 import { getDisplayName } from '@/lib/utils'
 import { plainName, skillOf } from '@/components/curriculum/standards-plain'
 import { Loader2, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Students × standards ────────────────────────────────────────
 // Every standard the class has assessed this semester across the top, every
@@ -169,7 +170,7 @@ export default function StandardsHeatMap() {
         </div>
       )}
       {open && openCell && openStudent && (
-        <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={() => setOpen(null)}>
+        <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={() => setOpen(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
               <div><p className="eyebrow">{open.code} · {getDisplayName(openStudent)}</p><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-tight text-ink mt-1">{plainName(open.code)}</h3><p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">{Math.round(pct(openCell)!)}% · {openCell.earned} / {openCell.possible} {lang === 'ko' ? '점' : 'points'}</p></div>
@@ -184,7 +185,7 @@ export default function StandardsHeatMap() {
               ))}
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )

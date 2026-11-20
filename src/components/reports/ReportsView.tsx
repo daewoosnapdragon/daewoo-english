@@ -32,6 +32,7 @@ import PriorComments, { type PriorComment } from '@/components/reports/PriorComm
 import CommentBuilder from '@/components/reports/CommentBuilder'
 import { goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 type LangKey = 'en' | 'ko'
 
@@ -1689,7 +1690,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
 
       {/* Generation progress overlay */}
       {generating && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <Overlay><div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-xl p-6 w-[360px]">
             <div className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-1">Generating {isGrade || kind === 'report_card' ? 'report cards' : 'progress reports'}…</div>
             <div className="text-[length:calc(12px*var(--ts))] text-text-secondary mb-3">Loading student {progress.current} of {progress.total}</div>
@@ -1697,12 +1698,12 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
               <div className="h-full bg-navy transition-all" style={{ width: `${progress.total > 0 ? (progress.current / progress.total) * 100 : 0}%` }} />
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
 
       {/* Preview modal */}
       {previewHtml != null && !generating && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
+        <Overlay><div className="fixed inset-0 bg-black/50 z-50 flex flex-col">
           <div className="bg-white border-b border-border px-6 py-3 flex items-center justify-between flex-shrink-0">
             <div>
               <div className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Preview &middot; {isGrade ? `${progress.total} report cards · Grade ${grade}` : kind === 'report_card' ? `${students.length} report cards` : `${students.length} progress reports · ${summary.sheets} ${summary.sheets === 1 ? 'sheet' : 'sheets'} of A4`}</div>
@@ -1730,7 +1731,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
           <div className="flex-1 overflow-hidden bg-[#f5f0eb]">
             <iframe ref={iframeRef} srcDoc={previewHtml} className="w-full h-full border-0" title="Progress reports preview" />
           </div>
-        </div>
+        </div></Overlay>
       )}
     </>
   )

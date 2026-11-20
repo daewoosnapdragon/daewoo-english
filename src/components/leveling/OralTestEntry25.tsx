@@ -18,6 +18,7 @@ import { g5ContentForTest, G5Content } from './grade5Content'
 import { FRUSTRATION_ACCURACY, INDEPENDENT_ACCURACY } from './grade2Band'
 import TestNotesPanel from './TestNotesPanel'
 import { ORAL_TEST_NOTES, STOPPING_NOTES } from './testNotes'
+import Overlay from '@/components/ui/Overlay'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -993,7 +994,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={handleClose}>
+    <Overlay><div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={handleClose}>
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: any) => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
@@ -1157,7 +1158,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
           </div>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 

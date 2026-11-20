@@ -16,6 +16,7 @@ import { FONTS, TEXT_SIZES, type FontChoice, type TextSize, currentFont, current
 import { Teacher, ENGLISH_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor, canManageSemesters, DEFAULT_WEIGHTS, AssessmentType } from '@/lib/utils'
 import { Save, Loader2, UserCog, School, CalendarDays, Plus, Trash2, Target, AlertTriangle, Scale, ChevronDown, Archive, ArchiveRestore, X, Type, Check } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 export default function SettingsView() {
   const { language, showToast, currentTeacher } = useApp()
@@ -305,7 +306,7 @@ function TeacherSection() {
 
       {/* Delete confirmation modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setDeleteConfirm(null); setDeleteStats(null) }}>
+        <Overlay><div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setDeleteConfirm(null); setDeleteStats(null) }}>
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle size={20} className="text-amber-500" />
@@ -341,7 +342,7 @@ function TeacherSection() {
               {language === 'ko' ? '취소' : 'Cancel'}
             </button>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )

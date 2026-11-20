@@ -20,6 +20,7 @@ import AssessmentAnalysis from './AssessmentAnalysis'
 import RubricPrintDialog from './RubricPrintDialog'
 import { scoredForItem } from './rubricPrint'
 import { BarChart3, Check, ChevronLeft, ChevronRight, Eraser, Loader2, LayoutGrid, ListChecks, Printer } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
 // The same bubble sheet the written level test uses: one student at a time,
@@ -747,7 +748,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
         const critVals = crit ? scored.map(s => responses[s.id]?.[it.num]?.levels?.[crit.key]).filter((v): v is number => v != null) : []
         const critAvg = critVals.length ? critVals.reduce((x, y) => x + y, 0) / critVals.length : null
         return (
-          <div className="fixed z-50 w-[340px] bg-surface border border-rule-2 rounded-md shadow-lg p-3.5 text-[length:calc(12px*var(--ts))] text-ink-2 pointer-events-none" style={{ left: hover.x, top: hover.y + 6, transform: 'translateX(-50%)' }}>
+          <Overlay lockScroll={false}><div className="fixed z-50 w-[340px] bg-surface border border-rule-2 rounded-md shadow-lg p-3.5 text-[length:calc(12px*var(--ts))] text-ink-2 pointer-events-none" style={{ left: hover.x, top: hover.y + 6, transform: 'translateX(-50%)' }}>
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-[length:calc(14px*var(--ts))] font-semibold text-ink">Q{it.num}{crit ? ` · ${crit.label}` : ''}</span>
               <span className="text-ink-3">{crit ? `${it.rubric?.name || typeName} · 0–4` : `${typeName}${it.answer_key ? ` · ${lang === 'ko' ? '정답' : 'key'} ${it.answer_key}` : ''} · ${it.max_points} ${lang === 'ko' ? '점' : 'pt'}`}</span>
@@ -775,7 +776,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                 </span>
               )}
             </div>
-          </div>
+          </div></Overlay>
         )
       })()}
     </div>

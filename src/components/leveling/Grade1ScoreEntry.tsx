@@ -17,6 +17,7 @@ import {
 import type { G1Content, G1QuestionDef, G1WritingCategory, PassageLevel } from './grade1Content'
 import TestNotesPanel from './TestNotesPanel'
 import { G1_ORAL_NOTES, STOPPING_NOTES } from './testNotes'
+import Overlay from '@/components/ui/Overlay'
 
 // ============================================================================
 // GRADE 1 TEST CONFIGURATION
@@ -2812,7 +2813,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
       </button>
 
       {showPassage && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowPassage(false)}>
+        <Overlay><div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={() => setShowPassage(false)}>
           <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[850px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: any) => e.stopPropagation()}>
             <div className="px-6 py-3 border-b border-border flex items-center justify-between bg-green-50 shrink-0">
               <div>
@@ -3000,7 +3001,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
               </div>
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </>
   )

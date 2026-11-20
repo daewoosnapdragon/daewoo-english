@@ -19,6 +19,7 @@ import OvertimeLine from './OvertimeLine'
 import AdminJobsCard from './AdminJobsCard'
 import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendance/AttendanceDrawer'
 import { loadDayStatus, withoutAwayDays } from '@/lib/calendarDays'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Event types ─────────────────────────────────────────────────
 // Nine stored types, five colors: fewer hues means each one is recognizable
@@ -669,7 +670,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
 
       {/* Day detail */}
       {selDay && !showAdd && !editEvent && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setSelDay(null)}>
+        <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setSelDay(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] flex flex-col animate-fade-in" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-rule">
               <h4 className="font-display text-[length:calc(20px*var(--ts))] text-ink leading-none">
@@ -702,7 +703,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
               })}
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
       {showAdd && <AddEventModal date={selDay || today} onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); load() }} />}
       {editEvent && <AddEventModal date={editEvent.date} existingEvent={editEvent} onClose={() => setEditEvent(null)} onSaved={() => { setEditEvent(null); load() }} />}
@@ -805,7 +806,7 @@ function AdminAlertPanel() {
         ))}
       </div>
       {detail && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
+        <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetail(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md max-h-[85vh] flex flex-col" onClick={(ev: any) => ev.stopPropagation()}>
             <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
               <h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">Flagged · {detail.student_name}</h3>
@@ -846,7 +847,7 @@ function AdminAlertPanel() {
               <button onClick={() => setDetail(null)} className="px-4 py-1.5 rounded text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">Close</button>
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )
@@ -912,7 +913,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-sm max-h-[85vh] flex flex-col" onClick={(e: any) => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between flex-shrink-0">
           <h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{isEdit ? 'Edit event' : 'Add event'}</h3>
@@ -981,7 +982,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
           </button>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 

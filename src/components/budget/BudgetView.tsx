@@ -9,6 +9,7 @@ import { useTeachers } from '@/hooks/useData'
 import { budgetSummary, isSuppliesMissing, won, type SupplyBudget, type SupplyPurchase } from '@/lib/suppliesCore'
 import { fetchBudget, saveBudget, updatePurchase } from '@/lib/suppliesData'
 import { Check, Loader2, RefreshCw, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Budget ──────────────────────────────────────────────────────
 // What the office has spent this semester, from the receipts on the
@@ -182,7 +183,7 @@ function PurchaseModal({ p, ko, teachers, onClose, onSave }: { p: SupplyPurchase
   const [saving, setSaving] = useState(false)
   const row = 'grid grid-cols-[100px_1fr] items-center gap-3', lbl = 'text-[length:calc(12px*var(--ts))] text-ink-3'
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded shadow-xl w-full max-w-[460px] p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4"><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{p.name}</h3><button onClick={onClose} className="text-ink-3 hover:text-ink"><X size={16} /></button></div>
         <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mb-3">{fmtDay(p.date, ko)} · × {p.as_bought || num(p.qty)}{p.kind === 'stock' ? (ko ? ' · 재고 줄: 종류를 바꿔도 재고 수량은 그대로입니다' : ' · a stock line; changing it here does not move the stock number') : ''}</p>
@@ -194,6 +195,6 @@ function PurchaseModal({ p, ko, teachers, onClose, onSave }: { p: SupplyPurchase
         </div>
         <div className="flex justify-end gap-2 mt-5"><button onClick={onClose} className={btn}>{ko ? '취소' : 'Cancel'}</button><button disabled={saving} onClick={async () => { setSaving(true); const ok = await onSave({ ...d, for_teacher_id: d.kind === 'oneoff' ? d.for_teacher_id : null }); if (!ok) setSaving(false) }} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '저장' : 'Save'}</button></div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

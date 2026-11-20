@@ -16,6 +16,7 @@ import {
   Plus, X, Check, Loader2, User, ArrowLeftRight, Lightbulb, GraduationCap,
   Bookmark, BookMarked, ListChecks, Printer, FileText
 } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ═══════════════════════════════════════════════════════════════════
 // SCAFFOLD DATABASE - Organized by domain and WIDA level
@@ -1734,7 +1735,7 @@ export function AssignScaffolds() {
 
       {/* Scaffold picker modal */}
       {showPicker && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowPicker(false)}>
+        <Overlay><div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={() => setShowPicker(false)}>
           <div className="bg-surface rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-3 border-b border-border flex items-center justify-between">
               <h3 className="text-[length:calc(14px*var(--ts))] font-bold text-navy">Choose Scaffolds for {student?.english_name}</h3>
@@ -1767,7 +1768,7 @@ export function AssignScaffolds() {
               })}
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )

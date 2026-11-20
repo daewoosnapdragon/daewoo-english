@@ -21,6 +21,7 @@ import RunningRecord, { PassageUploader } from '@/components/shared/RunningRecor
 import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 import PhonicsView, { SKILLS_STORAGE_KEY } from '@/components/reading/PhonicsView'
 import PhonicsCompare, { type PhonicsScope } from '@/components/reading/PhonicsCompare'
+import Overlay from '@/components/ui/Overlay'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -595,7 +596,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
       {/* ORF Detail Modal */}
       {detailRecord && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetailRecord(null)}>
+        <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setDetailRecord(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-lg max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-4 border-b border-rule flex items-center justify-between">
               <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
@@ -651,7 +652,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               )}
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )
@@ -680,7 +681,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
   const previewAcc = wc > 0 ? ((wc - err) / wc) * 100 : null
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
+    <Overlay><div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-[length:calc(15px*var(--ts))] font-semibold text-navy">Edit Reading Record</h3>
@@ -729,7 +730,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
           <button onClick={() => onSave({ id: record.id, ...form })} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">Save Changes</button>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 
@@ -1180,7 +1181,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
   const batchSavedCount = savedBatchIds.size
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
+    <Overlay><div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
       <div className={`bg-surface rounded-xl shadow-lg w-full ${mode === 'batch' ? 'max-w-4xl max-h-[85vh] overflow-hidden flex flex-col' : 'max-w-3xl max-h-[85vh] overflow-y-auto'}`} onClick={(e: any) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>
@@ -1401,7 +1402,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
       {showPassageUploader && (
         <PassageUploader onSave={handleSavePassage} onClose={() => setShowPassageUploader(false)} />
       )}
-    </div>
+    </div></Overlay>
   )
 }
 

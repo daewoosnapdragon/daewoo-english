@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { X, Search, BookOpen, Users, AlertTriangle, ChevronDown, ChevronRight, FileText } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 interface Passage {
   id: string
@@ -175,7 +176,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[90]" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[90]" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/20" />
 
@@ -325,6 +326,6 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
           )}
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

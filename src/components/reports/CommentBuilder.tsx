@@ -15,6 +15,7 @@ import { fillKnownBlanks, type KnownFacts } from '@/lib/phraseFacts'
 import { PRONOUNS } from '@/lib/phrases'
 import { fillPhrase } from '@/lib/phrases'
 import { X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Build a comment ─────────────────────────────────────────────
 // One screen, tick what applies, get a first draft. Each area opens on
@@ -183,7 +184,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(27,24,18,0.45)' }} onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(27,24,18,0.45)' }} onClick={onClose}>
       <div role="dialog" aria-modal="true" aria-label={`Build a comment for ${student.name}`} onClick={e => e.stopPropagation()}
         className="w-full max-w-[1100px] max-h-[92vh] flex flex-col rounded-xl shadow-xl overflow-hidden" style={{ background: '#f8f9fb', color: INK }}>
         <div className="flex items-center justify-between gap-4 px-5 py-3 bg-white" style={{ borderBottom: `1px solid ${RULE}` }}>
@@ -340,6 +341,6 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
           </div>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

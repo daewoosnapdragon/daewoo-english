@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CcssStandard, type CCSSDomain } from '@/components/curriculum/ccss-standards'
 import { SKILLS, SKILL_GROUPS, familyOf, plainName } from '@/components/curriculum/standards-plain'
 import { useApp } from '@/lib/context'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Standard picker ─────────────────────────────────────────────
 // Ask what the students did, not what the code is. Every standard has a
@@ -122,7 +123,7 @@ export default function StandardPicker({ grade, domain, englishClass, onPick, on
   )
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-4xl h-[85vh] grid grid-rows-[auto_minmax(0,1fr)]" onClick={e => e.stopPropagation()}>
         <div className="px-5 pt-4 pb-3 border-b border-rule">
           <input autoFocus id="std-search" value={q} onChange={e => { setQ(e.target.value); setHi(0) }}
@@ -175,6 +176,6 @@ export default function StandardPicker({ grade, domain, englishClass, onPick, on
           </div>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

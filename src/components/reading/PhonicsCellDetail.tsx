@@ -10,6 +10,7 @@ import {
 } from '@/lib/phonics'
 import { BAND_TONE, BAND_CHIP, MARK_TILE, MARK_SOFT, MARK_LABEL, fmtShort, fmtLong } from '@/components/reading/phonicsTones'
 import { Check, Minus, Pencil, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 const markIcon = (m: PhonicsMark | undefined, size: number) => m === 'correct' ? <Check size={size} /> : m === 'partial' ? <Minus size={size} /> : m === 'error' ? <X size={size} /> : null
 
@@ -40,7 +41,7 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
   const attemptsAsc = [...history].reverse()
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
           <div>
@@ -122,6 +123,6 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
           <button onClick={() => onEdit(showing)} className="h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><Pencil size={12} /> {lang === 'ko' ? '이 시도 수정' : 'Edit this attempt'}</button>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

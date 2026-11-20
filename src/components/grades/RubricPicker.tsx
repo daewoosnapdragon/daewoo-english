@@ -9,6 +9,7 @@ import { TEMPLATES, buildFromTemplate, bandForGrade, type RubricCriterion, type 
 import RubricBuilder, { type RubricDraft } from './RubricBuilder'
 import RubricPrintDialog from './RubricPrintDialog'
 import { X, Pencil, Plus, Trash2, Printer } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Rubric picker ───────────────────────────────────────────────
 // Templates by task on the left, the school's and your class's saved rubrics
@@ -81,7 +82,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       {printing && preview && <RubricPrintDialog rubric={{ name: preview.name, criteria: preview.criteria }} subtitle={lang === 'ko' ? `${grade}학년 · ${englishClass}` : `Grade ${grade} · ${englishClass}`} onClose={() => setPrinting(false)} />}
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-4xl max-h-[85vh] grid grid-rows-[auto_minmax(0,1fr)_auto]" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
@@ -159,6 +160,6 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
           <button disabled={!preview || preview.criteria.length === 0} onClick={() => preview && onUse({ rubric_id: preview.rubric_id, name: preview.name, band: preview.band, criteria: preview.criteria })} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50">{lang === 'ko' ? '이 루브릭으로 채점' : 'Use this rubric'}</button>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

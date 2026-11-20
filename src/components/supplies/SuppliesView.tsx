@@ -13,6 +13,7 @@ import { applyCount, applyReceipt, createRequest, fetchMovements, flagLow, saveI
 import { printCountSheet } from './countSheet'
 import { useSupplies } from './useSupplies'
 import { AlertTriangle, Check, ClipboardCheck, Copy, ExternalLink, History, Loader2, Package, Plus, Printer, Receipt, RefreshCw, ShoppingCart, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Supplies ────────────────────────────────────────────────────
 // Four things on one page. Stock: the staples with an on-hand number (kept
@@ -223,7 +224,7 @@ function ItemModal({ item, ko, canRemove, onClose, onSave, onRemove }: { item: S
   const lbl = 'text-[length:calc(12px*var(--ts))] text-ink-3'
   const packed = { unit: d.unit || 'each', pack_size: d.packs ? d.pack_size : null, pack_name: d.pack_name }
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded shadow-xl w-full max-w-[560px] p-5 max-h-[92vh] overflow-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4"><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{item ? item.name : (ko ? '새 품목' : 'New item')}</h3><button onClick={onClose} className="text-ink-3 hover:text-ink"><X size={16} /></button></div>
         <div className="space-y-2.5">
@@ -250,7 +251,7 @@ function ItemModal({ item, ko, canRemove, onClose, onSave, onRemove }: { item: S
           <div className="flex gap-2"><button onClick={onClose} className={btn}>{ko ? '취소' : 'Cancel'}</button><button disabled={saving || !d.name.trim()} onClick={async () => { setSaving(true); const ok = await onSave({ ...d, pack_size: d.packs ? d.pack_size : null, pack_name: d.packs ? d.pack_name : '' }); if (!ok) setSaving(false) }} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '저장' : 'Save'}</button></div>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 
@@ -259,7 +260,7 @@ function HistoryModal({ item, ko, nameOf, onClose }: { item: SupplyItem; ko: boo
   useEffect(() => { fetchMovements(item.id).then(setRows) }, [item.id])
   const KIND: Record<string, { en: string; ko: string }> = { receipt: { en: 'Receipt', ko: '영수증' }, count: { en: 'Count', ko: '조사' }, adjust: { en: 'Adjusted', ko: '조정' } }
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded shadow-xl w-full max-w-[520px] p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-3"><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{item.name} <span className="text-ink-3 text-[length:calc(14px*var(--ts))] font-sans">· {ko ? '변동 기록' : 'history'}</span></h3><button onClick={onClose} className="text-ink-3 hover:text-ink"><X size={16} /></button></div>
         {!rows ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '불러오는 중' : 'Loading'}</p> : rows.length === 0 ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '기록 없음' : 'No changes recorded yet.'}</p> : (
@@ -268,7 +269,7 @@ function HistoryModal({ item, ko, nameOf, onClose }: { item: SupplyItem; ko: boo
           </ul>
         )}
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 
@@ -360,7 +361,7 @@ function RequestModal({ r, ko, items, onClose, onSave }: { r: SupplyRequest; ko:
   const [saving, setSaving] = useState(false)
   const row = 'grid grid-cols-[100px_1fr] items-center gap-3', lbl = 'text-[length:calc(12px*var(--ts))] text-ink-3'
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded shadow-xl w-full max-w-[480px] p-5" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4"><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-none text-ink">{ko ? '요청 수정' : 'Edit request'}</h3><button onClick={onClose} className="text-ink-3 hover:text-ink"><X size={16} /></button></div>
         <div className="space-y-2.5">
@@ -371,7 +372,7 @@ function RequestModal({ r, ko, items, onClose, onSave }: { r: SupplyRequest; ko:
         </div>
         <div className="flex justify-end gap-2 mt-5"><button onClick={onClose} className={btn}>{ko ? '취소' : 'Cancel'}</button><button disabled={saving || !d.name.trim()} onClick={async () => { setSaving(true); const ok = await onSave({ ...d, name: d.name.trim() }); if (!ok) setSaving(false) }} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{ko ? '저장' : 'Save'}</button></div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 

@@ -17,6 +17,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Loader2, Check, UserCheck, User
 import { exportToCSV } from '@/lib/export'
 import EmptyState from '@/components/shared/EmptyState'
 import AnimatedNumber from '@/components/shared/AnimatedNumber'
+import Overlay from '@/components/ui/Overlay'
 
 type Status = 'present' | 'absent' | 'tardy'
 
@@ -750,7 +751,7 @@ export default function AttendanceView() {
       )}
 
       {showUnsavedModal && (
-        <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setShowUnsavedModal(false)}>
+        <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={() => setShowUnsavedModal(false)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-sm p-5" onClick={e => e.stopPropagation()}>
             <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink mb-2">{lang === 'ko' ? '저장되지 않은 변경사항' : 'Unsaved changes'}</h3>
             <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-5">{lang === 'ko' ? '저장하지 않으면 변경사항이 사라집니다.' : 'Save this attendance before leaving?'}</p>
@@ -759,7 +760,7 @@ export default function AttendanceView() {
               <button onClick={async () => { await handleSave(); setShowUnsavedModal(false); if (pendingAction) pendingAction(); setPendingAction(null) }} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover">{lang === 'ko' ? '저장' : 'Save first'}</button>
             </div>
           </div>
-        </div>
+        </div></Overlay>
       )}
     </div>
   )

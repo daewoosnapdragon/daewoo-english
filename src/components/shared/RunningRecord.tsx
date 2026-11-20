@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Loader2, Play, Square, RotateCcw, X, Upload, BookOpen } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // Word mark types
 export type WordMark = 'error' | 'self_correct' | null
@@ -133,7 +134,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <Overlay><div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[900px] max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface shrink-0">
@@ -263,7 +264,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
           </div>
         )}
       </div>
-    </div>
+    </div></Overlay>
   )
 }
 
@@ -278,7 +279,7 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
   const wordCount = text.trim() ? text.trim().split(/\s+/).length : 0
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+    <Overlay><div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="font-display text-lg font-semibold text-navy flex items-center gap-2"><Upload size={18} /> Add Reading Passage</h2>
@@ -326,6 +327,6 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
           </button>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

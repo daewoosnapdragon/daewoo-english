@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { getKSTDateString, toKSTDateString } from '@/lib/utils'
 import { type BehaviorCase, type LadderSettings, DEFAULT_LADDER, loadLadderSettings, fetchCases, acknowledgeCase, closeCase, updateAsk, noticeSeenBy, isOverdue, schoolDaysSince, isLadderMissing, sweepLadder } from '@/lib/behaviorLadder'
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, Printer, X } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Behavior ladder panel ───────────────────────────────────────
 // Admin mode: the cases that need an action, at the top of the dashboard,
@@ -245,7 +246,7 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 bg-black/40 z-[100] flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-2xl max-h-[88vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-rule-2 flex items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -325,6 +326,6 @@ export function CaseModal({ c, teachers, seenLabel, onClose, onChanged }: { c: B
           </div>
         )}
       </div>
-    </div>
+    </div></Overlay>
   )
 }

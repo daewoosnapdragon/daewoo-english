@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { buildRubricPrintHtml, sheetCount, SLIPS_PER_SHEET, type PrintLayout, type PrintRubric, type PrintSlip, type ScoredByStudent } from './rubricPrint'
 import { X, Printer } from 'lucide-react'
+import Overlay from '@/components/ui/Overlay'
 
 // ─── Print rubric dialog ─────────────────────────────────────────
 // Pick a size (full, half or quarter page A4), how many copies or one per
@@ -68,7 +69,7 @@ export default function RubricPrintDialog({ rubric, title, subtitle, students, s
   )
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
+    <Overlay><div className="fixed inset-0 z-[120] bg-black/30 flex items-center justify-center p-6" onClick={onClose}>
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between">
           <div><h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '루브릭 인쇄' : 'Print rubric'}</h3><p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1 truncate">{rubric.name} · {rubric.criteria.length} {ko ? '기준' : 'criteria'}</p></div>
@@ -116,6 +117,6 @@ export default function RubricPrintDialog({ rubric, title, subtitle, students, s
           <button onClick={print} disabled={slipCount === 0} className="h-9 px-4 rounded bg-accent text-white text-[length:calc(13px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-50 inline-flex items-center gap-1.5"><Printer size={14} />{ko ? '인쇄' : 'Print'}</button>
         </div>
       </div>
-    </div>
+    </div></Overlay>
   )
 }

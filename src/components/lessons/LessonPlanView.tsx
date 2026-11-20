@@ -18,6 +18,7 @@ import { addObjective, booksForLabel, copiedRow, escapeHtml, linkedRow, withCont
 import { useClassBooks } from './useClassBooks'
 import { UnitInput } from './UnitInput'
 import { UnitLine } from './UnitDetail'
+import Overlay from '@/components/ui/Overlay'
 
 interface SlotTemplate { id: string; day_of_week: number; slot_label: string; sort_order: number; grade?: number }
 interface LessonEntry { id?: string; slot_label: string; title: string; objective: string; notes: string }
@@ -1249,7 +1250,7 @@ ${pages.join('\n')}
         const total = sp.grades.reduce((a, g) => a + g.moves.length, 0)
         const verb = sp.dir === 1 ? 'Move a day later' : 'Move a day earlier'
         return (
-          <div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`${verb} preview`}>
+          <Overlay><div className="fixed inset-0 z-[60] bg-black/30 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`${verb} preview`}>
             <div className="bg-surface rounded-xl shadow-xl w-full max-w-[620px] max-h-[85vh] flex flex-col">
               <div className="px-5 pt-4 pb-3 border-b border-border">
                 <h3 className="text-[length:calc(16px*var(--ts))] font-semibold text-navy">{sp.dir === 1 ? 'Move the plans a class day later' : 'Move the plans a class day earlier'}</h3>
@@ -1284,7 +1285,7 @@ ${pages.join('\n')}
                 <button onClick={applyShift} disabled={!!shifting || total === 0} className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting ? 'Moving…' : verb}</button>
               </div>
             </div>
-          </div>
+          </div></Overlay>
         )
       })()}
     </div>
