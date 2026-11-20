@@ -36,7 +36,7 @@ export default function Toast() {
   const error = shown.tone === 'error'
   const ms = shown.action ? ACTION_DURATION : error ? ERROR_DURATION : DURATION
   return (
-    <div className="fixed bottom-5 right-5 z-[1000] no-print" style={{ marginRight: 'env(safe-area-inset-right, 0px)', marginBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+    <div className="fixed bottom-5 right-5 z-[1000] no-print" style={{ marginRight: 'env(safe-area-inset-right, 0px)', marginBottom: 'max(env(safe-area-inset-bottom, 0px), var(--tabbar-h, 0px))' }}>
       <div key={shown.id} onClick={hide} role={error ? 'alert' : 'status'} aria-live={error ? 'assertive' : 'polite'}
         className={`toast-card cursor-pointer ${leaving ? 'toast-out' : 'toast-in'}`}>
         <div className="toast-row">

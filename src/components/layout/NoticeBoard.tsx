@@ -6,12 +6,15 @@ import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { getKSTDateString } from '@/lib/utils'
-import { X, Pencil, Trash2, Megaphone } from 'lucide-react'
+import { X, Pencil, Trash2 } from 'lucide-react'
 
 // ─── Notice board ────────────────────────────────────────────────
-// A band under the masthead on every page. Teachers post notices for other
-// teachers; each reader dismisses each notice for themselves. Urgent notices
-// get a red bar and sit on top. See supabase/migration-notices.sql.
+// Under the masthead on every page, and only when there is something to
+// read: one line per notice, clicked open to read in full. Teachers post
+// notices for other teachers (the Post a notice button in the masthead's
+// context row, the phone's More sheet, or ⌘K); each reader dismisses each
+// notice for themselves. Urgent notices are tinted red, say Urgent, and sit
+// on top. See supabase/migration-notices.sql.
 
 interface Notice {
   id: string; body: string; style: 'notice' | 'urgent'; author_id: string | null
@@ -51,6 +54,8 @@ export default function NoticeBoard() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [composing, setComposing] = useState(false)
   const [editing, setEditing] = useState<Notice | null>(null)
+  const [open, setOpen] = useState<Set<string>>(new Set())
+  const toggleOpen = (id: string) => setOpen(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   const seenRef = useRef<Set<string>>(new Set())
   const me = currentTeacher?.id || ''
   const isAdmin = currentTeacher?.role === 'admin'
@@ -136,6 +141,10 @@ export default function NoticeBoard() {
     return lang === 'ko' ? `${recipients.length}명 중 ${seen}명 확인` : `seen by ${seen} of ${recipients.length}`
   }
 
+  if (visible.length === 0 && !composing && !editing) return null
+  const ko = lang === 'ko'
+  const iconBtn = 'w-7 h-7 rounded flex items-center justify-center text-ink-3 hover:text-ink hover:bg-paper-2'
+
   return (
     <div className="bg-surface border-b border-rule-2 no-print">
       <div className="mx-auto max-w-[1440px]">
@@ -143,25 +152,30 @@ export default function NoticeBoard() {
           const canEdit = n.author_id === me || isAdmin
           const author = authorOf(n)
           const initial = author ? author.name.charAt(0) : '!'
+          const urgent = n.style === 'urgent'
+          const isOpen = open.has(n.id)
+          const meta = `${author?.name || (n.author_id ? (ko ? '알 수 없음' : 'Unknown') : (ko ? '자동 알림' : 'Automatic'))} · ${whenLabel(n.created_at, lang)} · ${audienceLabel(n)}${n.author_id === me ? ` · ${seenLabel(n)}` : ''}`
           return (
-            <div key={n.id} className={`grid grid-cols-[34px_1fr_auto] gap-3 items-center px-6 py-2 border-b border-rule text-[length:calc(13.5px*var(--ts))] ${n.style === 'urgent' ? 'bg-bad-soft shadow-[inset_4px_0_0_rgb(var(--bad))]' : ''}`}>
-              <span className={`w-6 h-6 rounded-full text-white text-[length:calc(11px*var(--ts))] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
-              <span className="text-ink min-w-0 whitespace-pre-wrap break-words">{n.body}</span>
-              <span className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-ink-3 whitespace-nowrap">
-                <span>{author?.name || (n.author_id ? (lang === 'ko' ? '알 수 없음' : 'Unknown') : (lang === 'ko' ? '자동 알림' : 'Automatic'))} · {whenLabel(n.created_at, lang)} · {audienceLabel(n)}{n.author_id === me ? ` · ${seenLabel(n)}` : ''}</span>
-                {canEdit && <button onClick={() => setEditing(n)} title={lang === 'ko' ? '수정' : 'Edit'} className="text-ink-3 hover:text-ink"><Pencil size={13} /></button>}
-                {canEdit && <button onClick={() => remove(n)} title={lang === 'ko' ? '모두에게서 삭제' : 'Remove for everyone'} className="text-ink-3 hover:text-bad"><Trash2 size={13} /></button>}
-                {n.author_id !== me && <button onClick={() => dismiss(n)} title={lang === 'ko' ? '닫기' : 'Dismiss'} className="text-ink-3 hover:text-ink text-[length:calc(18px*var(--ts))] leading-none">×</button>}
+            <div key={n.id} className={`grid grid-cols-[20px_minmax(0,1fr)_auto] gap-x-3 items-start px-4 sm:px-6 py-1 border-b border-rule last:border-b-0 text-[length:calc(13px*var(--ts))] ${urgent ? 'bg-bad-soft' : ''}`}>
+              <span aria-hidden="true" className={`mt-[7px] w-5 h-5 rounded-full text-white text-[length:calc(10px*var(--ts))] font-bold flex items-center justify-center ${CLASS_BG[author?.english_class || ''] || 'bg-ink'}`}>{initial}</span>
+              <button type="button" onClick={() => toggleOpen(n.id)} aria-expanded={isOpen} title={isOpen ? undefined : n.body}
+                className="min-w-0 min-h-[34px] py-1.5 text-left text-ink rounded hover:text-ink-2">
+                <span className={isOpen ? 'block whitespace-pre-wrap break-words' : 'block truncate'}>
+                  {urgent && <span className="font-semibold text-bad mr-1.5">{ko ? '긴급' : 'Urgent'}</span>}{n.body}
+                </span>
+                {isOpen && <span className="block mt-1 text-[length:calc(11.5px*var(--ts))] text-ink-2">{meta}</span>}
+              </button>
+              <span className="flex items-center gap-1 pt-[3px] text-[length:calc(11.5px*var(--ts))] text-ink-3 whitespace-nowrap">
+                {!isOpen && <span className="max-md:hidden mr-2">{author?.name || (n.author_id ? (ko ? '알 수 없음' : 'Unknown') : (ko ? '자동 알림' : 'Automatic'))} · {whenLabel(n.created_at, lang)}</span>}
+                {canEdit && <button type="button" onClick={() => setEditing(n)} aria-label={ko ? '공지 수정' : 'Edit notice'} title={ko ? '수정' : 'Edit'} className={iconBtn}><Pencil size={13} /></button>}
+                {canEdit && <button type="button" onClick={() => remove(n)} aria-label={ko ? '모두에게서 삭제' : 'Remove for everyone'} title={ko ? '모두에게서 삭제' : 'Remove for everyone'} className={`${iconBtn} hover:text-bad`}><Trash2 size={13} /></button>}
+                {n.author_id !== me && <button type="button" onClick={() => dismiss(n)} aria-label={ko ? '이 공지 닫기' : 'Dismiss this notice'} title={ko ? '닫기' : 'Dismiss'} className={iconBtn}><X size={15} /></button>}
               </span>
             </div>
           )
         })}
-        {(composing || editing) ? (
+        {(composing || editing) && (
           <Composer teachers={activeTeachers} existing={editing} onClose={() => { setComposing(false); setEditing(null) }} onSaved={() => { setComposing(false); setEditing(null); load() }} />
-        ) : (
-          <button onClick={() => setComposing(true)} className="w-full flex items-center gap-3 px-6 py-1.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 hover:text-ink hover:bg-paper-2 text-left">
-            <Megaphone size={14} className="ml-1.5" />{lang === 'ko' ? '다른 교사에게 공지 남기기…' : 'Post a notice for other teachers…'}
-          </button>
         )}
       </div>
     </div>
@@ -208,7 +222,7 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
   const label = 'eyebrow pt-1.5 whitespace-nowrap'
 
   return (
-    <div className="px-6 py-4 bg-paper-2 border-b border-rule grid gap-3">
+    <div className="px-4 sm:px-6 py-4 bg-paper-2 border-b border-rule grid gap-3">
       <textarea ref={ref} id="notice-body" value={body} onChange={e => setBody(e.target.value)} rows={2}
         onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') save(); if (e.key === 'Escape') onClose() }}
         placeholder={lang === 'ko' ? '예: 오늘 1학년은 3:00에 하교합니다.' : 'e.g. Release Grade 1 at 3:00 today, not 3:30.'}
@@ -230,7 +244,7 @@ function Composer({ teachers, existing, onClose, onSaved }: { teachers: { id: st
         <span className={label}>{lang === 'ko' ? '유형' : 'Style'}</span>
         <div className="flex flex-wrap gap-1.5">
           <button onClick={() => setStyle('notice')} className={chip(style === 'notice')}>{lang === 'ko' ? '일반' : 'Notice'}</button>
-          <button onClick={() => setStyle('urgent')} className={chip(style === 'urgent')}>{lang === 'ko' ? '긴급 · 빨간 표시, 맨 위 고정' : 'Urgent · red bar, stays on top'}</button>
+          <button onClick={() => setStyle('urgent')} className={chip(style === 'urgent')}>{lang === 'ko' ? '긴급 · 빨간 표시, 맨 위 고정' : 'Urgent · tinted red, stays on top'}</button>
         </div>
       </div>
       <div className="flex items-center gap-2">

@@ -6,9 +6,11 @@ import ClassFlower, { flowerForClass } from './ClassFlower'
 // ─── Welcome ─────────────────────────────────────────────────────
 // Right after a teacher logs in: their class flower draws itself above a
 // greeting, then the page underneath (already loading) shows through.
-// About a second and a half; a click or any key skips it.
+// About a second, and nothing follows it (What's new no longer opens a
+// popup at login): it covers the dashboard's first load rather than adding
+// a wait. A click or any key skips it; with reduced motion it does not play.
 
-const DRAW = 1000, HOLD = 250, FADE = 250
+const DRAW = 700, HOLD = 150, FADE = 200
 
 function greeting(name: string, ko: boolean) {
   const h = Number(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul', hour: 'numeric', hour12: false })) % 24
@@ -19,6 +21,7 @@ function greeting(name: string, ko: boolean) {
 export default function Welcome({ name, englishClass, ko, onDone }: { name: string; englishClass?: string | null; ko: boolean; onDone: () => void }) {
   const [leaving, setLeaving] = useState(false)
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { onDone(); return }
     const t1 = setTimeout(() => setLeaving(true), DRAW + HOLD)
     const t2 = setTimeout(onDone, DRAW + HOLD + FADE)
     const skip = () => { setLeaving(true); setTimeout(onDone, FADE) }
