@@ -9,6 +9,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
+  // Draw under the iPhone home bar and notch, so env(safe-area-inset-*) is
+  // real: the phone tab bar pads itself above the home bar, and the body
+  // keeps content clear of the notch in landscape (globals.css).
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#FBF8F2' },
     { media: '(prefers-color-scheme: dark)', color: '#1F1C15' },
