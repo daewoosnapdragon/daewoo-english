@@ -10,6 +10,7 @@ import { parseScoreInput } from '@/lib/scoreInput'
 import { domainColor, domainShort } from '@/lib/domainTone'
 import { domainLabel } from '@/lib/utils'
 import { Check, Eraser, Loader2, X } from 'lucide-react'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 
 // ─── Points scoring ──────────────────────────────────────────────
 // The third sheet: one total per student, typed straight down the list,
@@ -89,12 +90,16 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
     // An emptied box removes the grade row, so the averages forget it too.
     if (!error && gone.length) ({ error } = await supabase.from('grades').delete().eq('assessment_id', assessment.id).in('student_id', gone))
     setSaving(false)
-    if (error) { showToast(`Error: ${error.message}`); return false }
+    if (error) {
+      const names = students.filter(s => ids.includes(s.id)).map(s => s.english_name)
+      showToast(notSavedMessage(names, ko), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { saveStudents(ids) } } })
+      return false
+    }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
     logActivity('scored', assessment.name, { key: assessment.id })
     onSaved?.()
     return true
-  }, [assessment.id, currentTeacher?.id, showToast, onSaved])
+  }, [assessment.id, currentTeacher?.id, showToast, onSaved, students, ko])
   const saveAll = () => saveStudents(Array.from(dirtyRef.current))
 
   const markDirty = (sid: string) => { const d = new Set(dirtyRef.current); d.add(sid); dirtyRef.current = d; setDirty(d) }
@@ -217,7 +222,7 @@ export default function PointsScoreSheet({ assessment, students, currentDomain, 
       <div className="grid grid-cols-[minmax(0,1fr)_240px] border border-rule-2 rounded-lg overflow-hidden min-h-[420px]">
         {/* The list */}
         <div ref={listRef} className="overflow-y-auto max-h-[70vh]">
-          <div className="grid items-center px-4 h-8 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold bg-paper-2 border-b border-rule-2" style={{ gridTemplateColumns: `28px minmax(0,1fr) 104px 60px ${partDomains.map(() => '76px').join(' ')} 132px` }}>
+          <div className="grid items-center px-4 h-8 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold bg-paper-2 border-b border-rule-2" style={{ gridTemplateColumns: `28px minmax(0,1fr) 104px 60px ${partDomains.map(() => '76px').join(' ')} 132px` }}>
             <span>#</span><span>{ko ? '학생' : 'Student'}</span><span className="text-center">/{fmt(max)}</span><span className="text-right">%</span>
             {partDomains.map(d => <span key={d} className="text-center" style={{ color: domainColor(d) }} title={`${domainLabel(d)}: ${ko ? '이 영역 성적부에 반영되는 점수' : 'the points that count in this domain'}`}>{domainShort(d)} /{assessment.domain_split![d]}</span>)}
             <span />

@@ -148,8 +148,8 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
       )}
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{teacher.name}{teacher.role !== 'admin' ? ` · ${teacher.english_class}` : ''}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{teacher.name}{teacher.role !== 'admin' ? ` · ${teacher.english_class}` : ''}</p>
         </div>
         <div className="flex items-center gap-5 flex-wrap">
           <div className="flex items-center gap-1">
@@ -166,7 +166,7 @@ export default function TeacherMonth({ teacher, settings, asAdmin, initialMonth,
 
       <div className="overflow-x-auto">
         <div id="add" className="min-w-[900px] bg-surface border border-rule rounded-md overflow-hidden">
-          <div className={`${OT_COLS} px-4 h-[38px] bg-paper-2 border-b border-rule-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-ink-2`}>
+          <div className={`${OT_COLS} px-4 h-[38px] bg-paper-2 border-b border-rule-2 text-[length:calc(12px*var(--ts))] font-semibold text-ink-2`}>
             <span /><span>{ko ? '날짜' : 'Date'}</span><span>{ko ? '시작 – 끝' : 'From – To'}</span><span>{ko ? '시간' : 'Time'}</span><span>{ko ? '금액' : 'Won'}</span><span>{ko ? '무슨 일' : 'What was the work'}</span><span />
           </div>
 

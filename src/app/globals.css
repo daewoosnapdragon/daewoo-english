@@ -346,8 +346,11 @@ html.dark .neu-btn-primary { color: rgb(var(--paper)); }
 /* ═══════════════════════════════════════════════════
    EDITORIAL PRIMITIVES — used by the rebuilt screens
    ═══════════════════════════════════════════════════ */
-.eyebrow { font-size: calc(11.5px * var(--ts)); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgb(var(--ink-3)); }
-.eyebrow-accent { color: rgb(var(--accent)); }
+/* A field, column or group label: sentence case, written as the words are
+   spelled. It used to be small capitals in wide tracking; the program asked
+   for plain labels, and capitals made Korean and English labels look like two
+   different systems. Size stays at the 12px text floor. */
+.eyebrow { font-size: calc(12px * var(--ts)); font-weight: 600; letter-spacing: 0.01em; color: rgb(var(--ink-2)); }
 .rule { border-top: 1px solid rgb(var(--rule)); }
 .rule-2 { border-top: 1px solid rgb(var(--rule-2)); }
 
@@ -490,7 +493,7 @@ main:focus { outline: none; }
   box-shadow: 0 8px 18px rgb(var(--ink) / .08); padding: 4px 0 7px; opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity 160ms ease, transform 160ms var(--ease); }
 .term-wrap.is-open .term-band { opacity: 1; transform: none; }
 .term-months { position: relative; height: 16px; }
-.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(11.5px * var(--ts)); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: rgb(var(--ink-3)); line-height: 16px; }
+.term-months span { position: absolute; top: 0; padding-left: 5px; border-left: 1px solid rgb(var(--rule-2)); font-size: calc(11.5px * var(--ts)); font-weight: 600; color: rgb(var(--ink-3)); line-height: 16px; }
 .term-facts { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 3px 16px 0; font-size: calc(12px * var(--ts)); color: rgb(var(--ink-2)); }
 .term-facts b { font-weight: 600; color: rgb(var(--ink)); }
 .term-due { display: inline-flex; align-items: center; gap: 6px; }

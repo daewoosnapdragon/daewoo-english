@@ -170,7 +170,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               {/* Domain Grades */}
               {data.domainGrades.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Current Grades</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Current grades</p>
                   <div className="flex gap-1.5">
                     {data.domainGrades.slice(0, 5).map((g, i) => (
                       <div key={i} className={`flex-1 text-center rounded-lg py-1.5 px-1 border ${g.score >= 80 ? 'bg-green-50 border-green-200' : g.score >= 65 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
@@ -186,7 +186,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               {data.reading.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Reading Fluency</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Reading fluency</p>
                     {readingTrend === 'up' && <TrendingUp size={11} className="text-green-500" />}
                     {readingTrend === 'down' && <TrendingDown size={11} className="text-red-500" />}
                     {readingTrend === 'flat' && <Minus size={11} className="text-text-tertiary" />}
@@ -206,7 +206,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               {/* Assigned Scaffolds */}
               {data.scaffolds.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Active Scaffolds</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Active scaffolds</p>
                   <div className="space-y-1">
                     {data.scaffolds.map((s, i) => (
                       <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-blue-50 border border-blue-100">

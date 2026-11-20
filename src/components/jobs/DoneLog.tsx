@@ -15,7 +15,7 @@ export function DoneLogList({ jobs, ko, nameOf }: { jobs: AdminJob[]; ko: boolea
     <div className="grid gap-4">
       {days.map(d => (
         <div key={d.day}>
-          <p className="eyebrow mb-1">{fmtDay(d.day, ko)} <span className="text-ink-3 normal-case tracking-normal">· {d.jobs.length}</span></p>
+          <p className="eyebrow mb-1">{fmtDay(d.day, ko)} <span className="text-ink-3">· {d.jobs.length}</span></p>
           <ul className="divide-y divide-rule border-t border-b border-rule">
             {d.jobs.map(j => (
               <li key={j.id} className="grid grid-cols-[minmax(0,1fr)_110px_50px_120px] gap-3 py-1.5 text-[length:calc(12.5px*var(--ts))]">

@@ -66,7 +66,6 @@ export default function WhatsNewModal() {
               <img src={e.highlight!.image} alt={e.title} className="absolute inset-0 w-full h-full object-cover object-top" onError={ev => { (ev.currentTarget as HTMLImageElement).style.display = 'none' }} />
             </div>
             <div className="px-6 py-5">
-              <p className="eyebrow eyebrow-accent mb-1.5">What’s new</p>
               <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink">{e.title}</h2>
               <p className="text-[length:calc(14px*var(--ts))] text-ink-2 leading-relaxed mt-2">{e.body}</p>
               <p className="text-[length:calc(13.5px*var(--ts))] text-ink leading-relaxed mt-2"><span className="font-semibold">To use it:</span> {e.highlight!.how}</p>
@@ -74,8 +73,7 @@ export default function WhatsNewModal() {
           </>
         ) : (
           <div className="px-6 py-5">
-            <p className="eyebrow eyebrow-accent mb-1.5">What’s new</p>
-            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink">And also</h2>
+            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink">Also new</h2>
             <ul className="mt-3 grid gap-2">
               {rest.map(r => (
                 <li key={r.id} className="grid grid-cols-[6px_minmax(0,1fr)] gap-3 text-[length:calc(13.5px*var(--ts))]">

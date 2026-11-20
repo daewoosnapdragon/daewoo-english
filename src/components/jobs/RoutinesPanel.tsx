@@ -30,7 +30,7 @@ export default function RoutinesPanel({ ko, routines, template, events, teachers
 
   return (
     <div className="grid gap-4">
-      <p className="eyebrow">{ko ? '루틴 (매년 반복)' : 'Routines'} <span className="text-ink-3 normal-case tracking-normal">· {ko ? '날짜를 한 번 정하면 그 일의 모든 단계가 한꺼번에 만들어집니다' : 'set the date once for a term and every job appears, dated from it'}</span></p>
+      <p className="eyebrow">{ko ? '루틴 (매년 반복)' : 'Routines'} <span className="text-ink-3">· {ko ? '날짜를 한 번 정하면 그 일의 모든 단계가 한꺼번에 만들어집니다' : 'set the date once for a term and every job appears, dated from it'}</span></p>
       <div className="flex gap-2">
         <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') add() }} placeholder={ko ? '새 루틴 이름 (예: 성적표)' : 'New routine, e.g. Report cards'} className={`${field} flex-1 max-w-[360px]`} />
         <button onClick={add} disabled={!newName.trim()} className="h-8 px-3 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold disabled:opacity-40 inline-flex items-center gap-1"><Plus size={13} />{ko ? '추가' : 'Add'}</button>

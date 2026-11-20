@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { CRITERIA, criterionFor, type Band, type RubricCriterion } from '@/components/curriculum/rubric-library'
 import { X, ChevronUp, ChevronDown, Trash2, Plus } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 // ─── Rubric builder ──────────────────────────────────────────────
 // Add criteria from the library (descriptors prefilled for the grade band),
@@ -46,7 +47,7 @@ export default function RubricBuilder({ draft, grade, englishClass, onClose, onS
       ? await supabase.from('rubrics').update(row).eq('id', draft.id).select('id').single()
       : await supabase.from('rubrics').insert({ ...row, created_by: currentTeacher?.id || null }).select('id').single()
     setSaving(false)
-    if (res.error) { showToast(`Error: ${res.error.message}${res.error.message.includes('rubrics') ? ' · run supabase/migration-rubrics.sql' : ''}`); return }
+    if (res.error) { showToast(res.error.message.includes('rubrics') ? /* supabase/migration-rubrics.sql */ partNeedsUpdate({ en: 'Saving rubrics', ko: '루브릭 저장' }, { en: 'rubrics', ko: '루브릭' }, lang === 'ko') : `Error: ${res.error.message}`, { tone: 'error' }); return }
     showToast(lang === 'ko' ? '루브릭 저장됨' : `Saved "${name.trim()}"`)
     logActivity(draft.id ? 'edited' : 'created', `Rubric: ${name.trim()} · ${band} · ${criteria.length} criteria${shareSchool ? ' · shared with the school' : ` · ${englishClass}`}`)
     onSaved(res.data as { id: string })

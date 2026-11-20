@@ -9,6 +9,7 @@ import { BehaviorLog } from '@/types'
 import { Plus, X, Loader2, ChevronDown, ChevronRight, Bell } from 'lucide-react'
 import { getKSTDateString } from '@/lib/utils'
 import { ladderStatus, updateAsk, type LadderStatus } from '@/lib/behaviorLadder'
+import { chip, tabRow, tab as tabClass } from '@/components/ui/Controls'
 
 // ─── ABC Options organized by category ──────────────────────────────
 
@@ -241,7 +242,7 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
             <div className="mt-3 grid grid-cols-3 gap-3">
               {topAntecedents.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-1">Top Antecedents</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Top antecedents</p>
                   {topAntecedents.map(([label, count]) => (
                     <div key={label} className="flex items-center gap-1.5 py-0.5">
                       <div className="flex-1 h-1 bg-paper-3 rounded-full overflow-hidden"><div className="h-full bg-ink-2 rounded-full" style={{ width: `${(count / abcLogs.length) * 100}%` }} /></div>
@@ -252,7 +253,7 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
               )}
               {topBehaviors.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-1">Top Behaviors</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Top behaviors</p>
                   {topBehaviors.map(([label, count]) => (
                     <div key={label} className="flex items-center gap-1.5 py-0.5">
                       <div className="flex-1 h-1 bg-paper-3 rounded-full overflow-hidden"><div className="h-full bg-ink-2 rounded-full" style={{ width: `${(count / abcLogs.length) * 100}%` }} /></div>
@@ -263,7 +264,7 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
               )}
               {topConsequences.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-1">Top Consequences</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Top consequences</p>
                   {topConsequences.map(([label, count]) => (
                     <div key={label} className="flex items-center gap-1.5 py-0.5">
                       <div className="flex-1 h-1 bg-paper-3 rounded-full overflow-hidden"><div className="h-full bg-ink-2 rounded-full" style={{ width: `${(count / abcLogs.length) * 100}%` }} /></div>
@@ -278,11 +279,11 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
       })()}
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-rule-2 overflow-x-auto">
+      <div role="tablist" className={tabRow}>
         {[{ id: 'all', label: lang === 'ko' ? '전체' : 'All', count: logs.length }, ...LOG_TYPES.map(t => ({ id: t.value, label: lang === 'ko' ? t.labelKo : t.label, count: logs.filter((l: any) => l.type === t.value || (t.value === 'negative' && l.type === 'abc')).length })), { id: 'flagged', label: lang === 'ko' ? '알림' : 'Flagged', count: flaggedCount }].map((tab: any) => (
-          <button key={tab.id} onClick={() => setFilterType(tab.id)}
-            className={`px-3 py-2 text-[length:calc(11.5px*var(--ts))] whitespace-nowrap transition-colors border-b-2 -mb-px ${filterType === tab.id ? 'border-ink text-ink font-semibold' : 'border-transparent text-ink-3 font-medium hover:text-ink'}`}>
-            {tab.label} {tab.count > 0 && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] bg-paper-2 text-ink-2 px-1.5 py-0.5 rounded-full tabular-nums">{tab.count}</span>}
+          <button key={tab.id} role="tab" aria-selected={filterType === tab.id} onClick={() => setFilterType(tab.id)}
+            className={tabClass(filterType === tab.id)}>
+            {tab.label}{tab.count > 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">{tab.count}</span>}
           </button>
         ))}
       </div>
@@ -310,7 +311,7 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
                       <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       {log.time && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">· {log.time}</span>}
                       {log.teacher_name && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">— {log.teacher_name}</span>}
-                      {log.is_flagged && <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-bad font-semibold uppercase tracking-wide"><Bell size={10} /> {lang === 'ko' ? '관리자' : 'Admin'}</span>}
+                      {log.is_flagged && <span className="inline-flex items-center gap-1 text-[length:calc(12px*var(--ts))] text-bad font-semibold"><Bell size={10} /> {lang === 'ko' ? '관리자' : 'Admin'}</span>}
                     </div>
                     <p className="text-[length:calc(12.5px*var(--ts))] text-ink truncate">{log.note || (log.behaviors || []).join(', ') || '—'}</p>
                     {hasAbc && log.intensity > 1 && (
@@ -332,24 +333,24 @@ export default function BehaviorTracker({ studentId, studentName, onCount, addSi
                   <div className="px-4 pb-3 border-t border-rule pt-3 bg-paper-2/50">
                     {hasAbc && (
                       <div className="space-y-2 mb-3">
-                        {log.activity && <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Activity:</span><p className="text-[length:calc(12px*var(--ts))]">{log.activity}</p></div>}
-                        {log.duration && <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Duration:</span><span className="text-[length:calc(12px*var(--ts))] ml-1">{log.duration}</span></div>}
+                        {log.activity && <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Activity:</span><p className="text-[length:calc(12px*var(--ts))]">{log.activity}</p></div>}
+                        {log.duration && <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Duration:</span><span className="text-[length:calc(12px*var(--ts))] ml-1">{log.duration}</span></div>}
                         {(log.antecedents || []).length > 0 && (
-                          <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Antecedent:</span>
+                          <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Antecedent:</span>
                             <div className="flex flex-wrap gap-1 mt-1">{log.antecedents.map((a: string, i: number) => <span key={i} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full border border-rule-2 bg-surface text-ink-2">{a}</span>)}</div></div>
                         )}
                         {(log.behaviors || []).length > 0 && (
-                          <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Behavior:</span>
+                          <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Behavior:</span>
                             <div className="flex flex-wrap gap-1 mt-1">{log.behaviors.map((b: string, i: number) => <span key={i} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full border border-rule-2 bg-surface text-ink-2">{b}</span>)}</div></div>
                         )}
                         {(log.consequences || []).length > 0 && (
-                          <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Consequence:</span>
+                          <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Consequence:</span>
                             <div className="flex flex-wrap gap-1 mt-1">{log.consequences.map((c: string, i: number) => <span key={i} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full border border-rule-2 bg-surface text-ink-2">{c}</span>)}</div></div>
                         )}
-                        {log.frequency > 1 && <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Frequency:</span><span className="text-[length:calc(12px*var(--ts))] ml-1">{log.frequency}x</span></div>}
+                        {log.frequency > 1 && <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Frequency:</span><span className="text-[length:calc(12px*var(--ts))] ml-1">{log.frequency}x</span></div>}
                       </div>
                     )}
-                    {log.note && <div className="mb-3"><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold">Notes:</span><p className="text-[length:calc(12px*var(--ts))] mt-0.5">{log.note}</p></div>}
+                    {log.note && <div className="mb-3"><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Notes:</span><p className="text-[length:calc(12px*var(--ts))] mt-0.5">{log.note}</p></div>}
                     <div className="flex justify-end"><button onClick={() => handleDelete(log.id)} className="text-[length:calc(11.5px*var(--ts))] text-bad hover:underline underline-offset-2">{lang === 'ko' ? '삭제' : 'Delete'}</button></div>
                   </div>
                 )}
@@ -422,7 +423,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
           {LOG_TYPES.map(t => (
             <button key={t.value} onClick={() => setType(t.value)}
               aria-pressed={type === t.value && !hasAbcData}
-              className={`inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium border transition-colors ${type === t.value && !hasAbcData ? 'border-ink bg-ink text-paper' : 'border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3'}`}>
+              className={chip(type === t.value && !hasAbcData)}>
               <span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />{lang === 'ko' ? t.labelKo : t.label}
             </button>
           ))}
@@ -437,7 +438,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
         </div>
 
         {/* Notes — always visible, always first */}
-        <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'}</label>
+        <div><label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">{lang === 'ko' ? '메모' : 'Notes'}</label>
           <textarea value={note} onChange={(e: any) => setNote(e.target.value)} rows={3} placeholder={lang === 'ko' ? '무슨 일이 있었는지 적어주세요...' : "What happened? You can submit with just a note, or expand ABC data below for more detail..."}
             className="w-full px-2.5 py-2 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12px*var(--ts))] outline-none resize-none" /></div>
 
@@ -461,9 +462,9 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
           {showAbc && (
             <div className="p-4 space-y-4 border-t border-rule">
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold block mb-1">Duration <span className="text-ink-3 normal-case">(opt)</span></label>
+                <div><label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Duration <span className="text-ink-3">(opt)</span></label>
                   <input type="text" value={duration} onChange={(e: any) => setDuration(e.target.value)} placeholder="e.g. 5 min" className="w-full px-2.5 py-1.5 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12px*var(--ts))] outline-none" /></div>
-                <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold block mb-1">Task / Activity</label>
+                <div><label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Task / activity</label>
                   <input type="text" value={activity} onChange={(e: any) => setActivity(e.target.value)} placeholder="e.g. Reading time"
                     className="w-full px-2.5 py-1.5 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12px*var(--ts))] outline-none" /></div>
               </div>
@@ -474,7 +475,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold block mb-1">Frequency</label>
+                  <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Frequency</label>
                   <div className="flex items-center gap-2">
                     <input type="number" min={1} max={50} value={frequency} onChange={(e: any) => setFrequency(parseInt(e.target.value) || 1)}
                       className="w-16 px-2.5 py-1.5 border border-rule-2 rounded bg-surface text-ink text-[length:calc(12px*var(--ts))] text-center outline-none" />
@@ -482,7 +483,7 @@ function AddBehaviorForm({ studentId, studentName, lang, onClose, onSaved }: { s
                   </div>
                 </div>
                 <div>
-                  <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold block mb-2">Intensity: {intensity}/5</label>
+                  <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-2">Intensity: {intensity}/5</label>
                   <div className="flex gap-1.5">
                     {[1,2,3,4,5].map(i => (
                       <button key={i} onClick={() => setIntensity(i)}
@@ -539,7 +540,7 @@ function CategorizedCheckboxGroup({ label, categories, selected, onToggle }: {
 
   return (
     <div>
-      <button onClick={() => setExpanded(!expanded)} aria-expanded={expanded} className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-2 font-semibold mb-1.5">
+      <button onClick={() => setExpanded(!expanded)} aria-expanded={expanded} className="flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">
         <ChevronDown size={12} className={`transition-transform ${expanded ? '' : '-rotate-90'}`} /> {label}
         {selected.length > 0 && <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full font-semibold ${c.selected}`}>{selected.length}</span>}
       </button>

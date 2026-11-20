@@ -135,14 +135,14 @@ export default function StudentLevelingCard({
             <span className="text-[length:calc(16px*var(--ts))] font-display font-bold text-navy">{student.english_name}</span>
             <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{student.korean_name}</span>
             {isWatchlist && (
-              <span className="text-[length:calc(11.5px*var(--ts))] bg-warn-soft text-warn px-2 py-0.5 rounded font-bold uppercase tracking-wide">Watchlist</span>
+              <span className="text-[length:calc(12px*var(--ts))] bg-warn-soft text-warn px-2 py-0.5 rounded font-bold">Watchlist</span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {/* Teacher / algo badges */}
             {isG1 && teacherImpression && (
               <div className="text-center">
-                <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider mb-0.5">Teacher</div>
+                <div className="text-[length:calc(12px*var(--ts))] text-ink-2 mb-0.5">Teacher</div>
                 <span className="inline-block px-2.5 py-0.5 rounded-md text-[length:calc(11.5px*var(--ts))] font-bold"
                   style={clsChip(teacherImpression)}>
                   {teacherImpression}
@@ -151,7 +151,7 @@ export default function StudentLevelingCard({
             )}
             {!isG1 && (
               <div className="text-center">
-                <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider mb-0.5">Current</div>
+                <div className="text-[length:calc(12px*var(--ts))] text-ink-2 mb-0.5">Current</div>
                 <span className="inline-block px-2.5 py-0.5 rounded-md text-[length:calc(11.5px*var(--ts))] font-bold"
                   style={{ backgroundColor: classToColor(currentCls as EnglishClass), color: classToTextColor(currentCls as EnglishClass) }}>
                   {currentCls}
@@ -160,7 +160,7 @@ export default function StudentLevelingCard({
             )}
             {algoLabel && (
               <div className="text-center">
-                <div className={`text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider mb-0.5 ${disagree ? 'text-bad' : 'text-good'}`}>
+                <div className={`text-[length:calc(12px*var(--ts))] mb-0.5 ${disagree ? 'text-bad' : 'text-good'}`}>
                   {disagree ? 'Algo' : 'Agrees'}
                 </div>
                 {disagree ? (
@@ -176,7 +176,7 @@ export default function StudentLevelingCard({
             {/* Composite */}
             {composite != null && (
               <div className="bg-navy text-white rounded-lg px-3 py-1.5 text-center ml-1">
-                <div className="text-[length:calc(11.5px*var(--ts))] text-gold uppercase tracking-wider">Composite</div>
+                <div className="text-[length:calc(12px*var(--ts))] text-gold">Composite</div>
                 <div className="text-[length:calc(20px*var(--ts))] font-bold leading-none">{composite}</div>
               </div>
             )}
@@ -189,7 +189,7 @@ export default function StudentLevelingCard({
 
         {/* Column 1: Oral Test */}
         <div className="p-3.5">
-          <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-2">Oral Test</div>
+          <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-2">Oral test</div>
 
           {/* Passage info box */}
           {passageLevel && (
@@ -320,8 +320,8 @@ export default function StudentLevelingCard({
           {/* Written test */}
           {isG1 ? (
             <>
-              <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-2">
-                Written Test <span className="text-text-tertiary font-normal">
+              <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-2">
+                Written test <span className="text-text-tertiary font-normal">
                   {g1Sections.reduce((a, s) => a + ((raw as any)[s.key] ?? 0), 0)}/{g1Sections.reduce((a, s) => a + s.max, 0)}
                 </span>
               </div>
@@ -333,7 +333,7 @@ export default function StudentLevelingCard({
             </>
           ) : (
             <>
-              <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-2">Written Test</div>
+              <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-2">Written test</div>
               <div className="space-y-0.5 mb-3">
                 {/* Only when the rubric has actually been marked -- see writingTotalFrom. */}
                 {writingTotalFrom(raw, calc) != null && <ScoreLine label="Writing Rubric" value={writingTotalFrom(raw, calc)!} max={20} />}
@@ -345,7 +345,7 @@ export default function StudentLevelingCard({
           {/* Teacher Ratings (G2-5 anecdotal) */}
           {anecdotal && ANECDOTAL_DIMS.some(d => anecdotal[d.key] != null) && (
             <div className="mb-3">
-              <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-1.5">Teacher Rating</div>
+              <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-1.5">Teacher rating</div>
               <div className="flex gap-1.5">
                 {ANECDOTAL_DIMS.map(d => {
                   const v = anecdotal[d.key]
@@ -364,7 +364,7 @@ export default function StudentLevelingCard({
                 <div className={`mt-1.5 text-[length:calc(11.5px*var(--ts))] font-bold ${
                   anecdotal.teacher_recommends === 'move_up' ? 'text-good' : anecdotal.teacher_recommends === 'move_down' ? 'text-bad' : 'text-info'
                 }`}>
-                  Rec: {anecdotal.teacher_recommends === 'keep' ? 'KEEP' : anecdotal.teacher_recommends === 'move_up' ? 'MOVE UP' : 'MOVE DOWN'}
+                  Rec: {anecdotal.teacher_recommends === 'keep' ? 'Keep' : anecdotal.teacher_recommends === 'move_up' ? 'Move up' : 'Move down'}
                 </div>
               )}
             </div>
@@ -373,7 +373,7 @@ export default function StudentLevelingCard({
           {/* Standards */}
           {isG1 && calc.standards_baseline && (
             <div>
-              <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-1.5">
+              <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-1.5">
                 Standards <span className="text-text-tertiary font-normal">{calc.standards_baseline.filter((s: any) => s.met).length}/{calc.standards_baseline.length} met</span>
               </div>
               <div className="flex flex-wrap gap-1">
@@ -391,7 +391,7 @@ export default function StudentLevelingCard({
           {/* G2-5 Standards */}
           {!isG1 && calc.standards_baseline && Array.isArray(calc.standards_baseline) && (
             <div>
-              <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-1.5">
+              <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-1.5">
                 Standards <span className="text-text-tertiary font-normal">{calc.standards_baseline.filter((s: any) => s.met).length}/{calc.standards_baseline.length} met</span>
               </div>
               <div className="flex flex-wrap gap-1">
@@ -409,7 +409,7 @@ export default function StudentLevelingCard({
           {/* Semester grades (if available) */}
           {semGrades && semGrades.length > 0 && (
             <div className="mt-2.5">
-              <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-1.5">Semester Grades</div>
+              <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-1.5">Semester grades</div>
               <div className="grid grid-cols-3 gap-1">
                 {semGrades.slice(0, 6).map((g: any, i: number) => (
                   <div key={i} className="bg-surface-alt rounded px-2 py-1 text-center">
@@ -426,7 +426,7 @@ export default function StudentLevelingCard({
 
         {/* Column 3: Notes + Decision */}
         <div className="p-3.5 flex flex-col">
-          <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-gold uppercase tracking-widest mb-2">Notes & Decision</div>
+          <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-2">Notes & decision</div>
 
           {/* Test notes */}
           {testNotes && (
@@ -465,7 +465,7 @@ export default function StudentLevelingCard({
 
           {/* Final placement write-in (for print) */}
           <div className="border-t border-border pt-2.5">
-            <div className="text-[length:calc(11.5px*var(--ts))] font-bold text-text-tertiary uppercase tracking-wider mb-1.5">Final Placement</div>
+            <div className="text-[length:calc(12px*var(--ts))] font-bold text-ink-2 mb-1.5">Final placement</div>
             <div className="border-2 border-dashed border-border rounded-lg px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic min-h-[32px] flex items-center">
               write in...
             </div>
@@ -503,10 +503,9 @@ export function PrintDossier({ students, scores, anecdotals, semGrades, autoPlac
     <div className="bg-surface min-h-screen">
       {/* Header */}
       <div className="bg-navy text-white px-8 py-5 print:px-6 print:py-4" style={{ borderBottom: '3px solid rgb(var(--accent))' }}>
-        <div className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-[3px] opacity-40 mb-1">Daewoo Elementary English Program</div>
         <h1 className="font-display text-[length:calc(22px*var(--ts))] font-bold">Student Leveling Dossier</h1>
         <div className="text-[length:calc(12px*var(--ts))] opacity-50 italic mt-0.5">
-          {levelTestName || `Grade ${grade}`} -- {sorted.length} students -- sorted by composite
+          Daewoo Elementary English Program -- {levelTestName || `Grade ${grade}`} -- {sorted.length} students -- sorted by composite
         </div>
       </div>
 

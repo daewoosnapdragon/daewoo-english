@@ -7,6 +7,7 @@ import { useTeachers } from '@/hooks/useData'
 import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, levelShort, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
 import { addResource, appendDraft, deleteBook, deleteLesson, deleteObjective, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveObjective, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Bookshelf ───────────────────────────────────────────────────
 // The catalogue: every book the program uses, divided into units and
@@ -88,7 +89,7 @@ export default function BookshelfView() {
         </div>
       </div>
 
-      {c.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-curriculum-catalogue.sql을 먼저 실행하세요.' : 'The catalogue tables are missing. Admin runs supabase/migration-curriculum-catalogue.sql once.'}</p>}
+      {c.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql */}{needsUpdate({ en: 'curriculum catalogue', ko: '교재 목록' }, ko)}</p>}
 
       {!c.loading && !c.missing && (
         <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-5 leading-relaxed">
@@ -284,7 +285,7 @@ function SkillList({ c, ko, canManage, fail }: { c: C; ko: boolean; canManage: b
         if (!ks.length) return null
         return (
           <div key={strand} className="mb-2">
-            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 mb-1">{ko ? STRAND_LABEL[strand].ko : STRAND_LABEL[strand].en}</p>
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-2 mb-1">{ko ? STRAND_LABEL[strand].ko : STRAND_LABEL[strand].en}</p>
             <div className="flex flex-wrap gap-1">
               {ks.map(k => editing === k.code ? (
                 <span key={k.code} className="inline-flex items-center gap-1">
@@ -594,7 +595,7 @@ function ObjectiveBank({ unitId, label, c, ko, canManage, fail }: { unitId: stri
   )
   return (
     <div className="mb-3 pb-2 border-b border-rule">
-      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+      <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
       {rows.length === 0 && editId !== 'new' && <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '아직 없습니다.' : 'None yet. Lesson Plans offers the lessons\' objectives until there are some.'}</p>}
       <ul>
         {rows.map(o => editId === o.id ? <li key={o.id}>{editor}</li> : (
@@ -690,7 +691,7 @@ function Resources({ target, items, label, c, ko, me, fail, unitFolder }: { targ
           {unitFolder && <a href={unitFolder} target="_blank" rel="noreferrer" className="text-[length:calc(12px*var(--ts))] text-accent inline-flex items-center gap-1 w-fit"><ExternalLink size={11} />{ko ? '단원 Drive 폴더' : 'Unit folder in Drive'}</a>}
           {items.map(r => (
             <div key={r.id} className="flex items-center gap-2 text-[length:calc(12px*var(--ts))]">
-              <span className={`${chip} bg-paper-3 text-ink-2 uppercase w-14 justify-center`}>{r.kind}</span>
+              <span className={`${chip} bg-paper-3 text-ink-2 w-14 justify-center`}>{r.kind}</span>
               {r.url ? <a href={r.url} target="_blank" rel="noreferrer" className="text-ink hover:text-accent truncate">{r.name}</a> : <span className="text-ink truncate">{r.name}</span>}
               {r.copies_hint ? <span className="text-ink-3">× {r.copies_hint}</span> : null}
               <button onClick={() => remove(r)} className="text-ink-3 hover:text-bad ml-auto" aria-label="Remove"><X size={12} /></button>

@@ -59,7 +59,7 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
   return (
     <div className="space-y-8">
       <section>
-        <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '모든 시트 공통 오류와 해독 방식' : 'Errors on any sheet, and how they decoded'}</h3>
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-tight text-ink mb-1">{lang === 'ko' ? '모든 시트 공통 오류와 해독 방식' : 'Errors on any sheet, and how they decoded'}</h3>
         <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
           ? `점검한 학생 중, 최근 시트 하나 이상에서 이 항목이 체크된 비율. 빨강은 해독 오류. 한국어 영향은 해독이 아닌 발음 문제. ${MIN_TESTED}명 미만은 색 없음.`
           : `Of the students checked, the share with this box ticked on at least one of their latest sheets. Red marks a decoding error; Korean transfer is a speech point, not a decoding one; no colour from fewer than ${MIN_TESTED} students.`}</p>
@@ -92,7 +92,7 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
       </section>
 
       <section>
-        <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '어려워한 패턴' : 'Patterns that gave trouble'}</h3>
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-tight text-ink mb-1">{lang === 'ko' ? '어려워한 패턴' : 'Patterns that gave trouble'}</h3>
         <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
           ? `가장 많이 체크된 ${TOP_PATTERNS}개. 칸 = 그 시트를 점검한 학생 중 이 패턴이 체크된 학생 수.`
           : `The ${TOP_PATTERNS} ticked most often. Each cell: students with it ticked, of those checked on that sheet.`}</p>
@@ -124,7 +124,7 @@ export default function PhonicsPatterns({ columns, latestByStudent, checksById, 
       </section>
 
       <section>
-        <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '가장 많이 틀린 단어' : 'Words missed most'}</h3>
+        <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-tight text-ink mb-1">{lang === 'ko' ? '가장 많이 틀린 단어' : 'Words missed most'}</h3>
         <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
           ? '두 명 이상이 틀린 단어. 학생이 대신 읽은 것은 교사가 연필로 적은 것입니다.'
           : 'Missed by two or more students. “Said instead” is what teachers wrote with the pencil.'}</p>

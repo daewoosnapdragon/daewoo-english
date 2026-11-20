@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToTextColor, IMPLAUSIBLE_CWPM, isCorrectAnswer, acceptedLetters, hasMultipleKeys, writingTotalFrom, classTint, classDot } from '@/lib/utils'
-import { Loader2, ChevronDown } from 'lucide-react'
+import { Loader2, ChevronDown, ArrowDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
 import { calculateG1Composite, g1WeightedComposite, g1ClassFromRank } from './Grade1ScoreEntry'
@@ -314,9 +314,9 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         <table className="text-[length:calc(11.5px*var(--ts))] w-full">
           <thead>
             <tr>
-              <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">In</th>
+              <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">In</th>
               {PLACED_ENGLISH_CLASSES.map(c => (
-                <th key={c} className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
+                <th key={c} className="px-2 py-2 text-center text-[length:calc(12px*var(--ts))] font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
               ))}
             </tr>
           </thead>
@@ -347,7 +347,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           })}</tbody>
           <tfoot>
             <tr className="border-t-2 border-border bg-surface-alt/50">
-              <td className="px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Would be</td>
+              <td className="px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Would be</td>
               {PLACED_ENGLISH_CLASSES.map(to => {
                 const n = classes.reduce((sum, from) => sum + (matrix[from]?.[to]?.length ?? 0), 0)
                 const over = n > CLASS_CAP
@@ -391,7 +391,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           Left: the range of ability in the room. The bar is the middle half of the class and the line is the middle student.
           Right: which passage they sustained &mdash; two classes on the same passage are reading the same text, whatever the rooms are called.
         </p>
-        <div className="flex text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
+        <div className="flex text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">
           <span className="w-20 shrink-0" />
           <span className="flex-[3]">Range of ability</span>
           <span className="w-14 shrink-0" />
@@ -464,7 +464,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
             {['Student', 'In', 'Composite', 'Band', 'Passage', 'Test suggests', 'Last placed'].map((h, i) => (
-              <th key={h} className={`px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
+              <th key={h} className={`px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
             ))}
           </tr></thead>
           <tbody>{listed.map(r => {
@@ -490,7 +490,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                     <span className="inline-flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PASSAGE_COLORS[r.band.effectiveLevel] }} />
                       {r.band.effectiveLevel}
-                      {r.band.downgraded && <span className="text-[length:calc(11.5px*var(--ts))] text-warn" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}>&darr;</span>}
+                      {r.band.downgraded && <span className="text-[length:calc(11.5px*var(--ts))] text-warn" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}><ArrowDown size={11} className="inline" aria-label="dropped" /></span>}
                     </span>
                   ) : <span className="text-text-tertiary">—</span>}
                 </td>
@@ -634,8 +634,8 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
           </div>
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead><tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
-              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+              <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
             </tr></thead>
             <tbody>
               {Object.keys(oral.dok).sort().map(k => (
@@ -707,8 +707,8 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
           </div>
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead><tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Category</th>
-              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+              <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[200px]">Category</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
             </tr></thead>
             <tbody>{writing.map(w => {
               const open = openCat === w.cat.key
@@ -779,8 +779,8 @@ function Rollup({ title, blurb, acc, classes, prefix = '' }: { title: string; bl
       </div>
       <table className="w-full text-[length:calc(11.5px*var(--ts))]">
         <thead><tr className="bg-surface-alt">
-          <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">&nbsp;</th>
-          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+          <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[150px]">&nbsp;</th>
+          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
         </tr></thead>
         <tbody>{keys.map(k => (
           <tr key={k} className="border-t border-border">
@@ -1093,9 +1093,9 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
         </div>
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr>
-            <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
-            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
-            <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
+            <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+            <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold min-w-[60px]">Grade</th>
           </tr></thead>
           <tbody>
             {rowsOut.map(({ def, line: l }) => (
@@ -1403,11 +1403,11 @@ function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClas
       </div>
       <table className="w-full text-[length:calc(11.5px*var(--ts))]">
         <thead><tr className="bg-surface-alt">
-          <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">Standard</th>
+          <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[150px]">Standard</th>
           {classes.map(c => (
-            <th key={c} className={`text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
+            <th key={c} className={`text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
           ))}
-          <th className={`text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
+          <th className={`text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
         </tr></thead>
         <tbody>{shown.map(st => (
           <tr key={st.code} className="border-t border-border">

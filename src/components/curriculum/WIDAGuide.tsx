@@ -442,9 +442,9 @@ export function CCSSOverview() {
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead>
               <tr className="bg-surface-alt">
-                <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-[80px]">Code</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Strand</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">What It Covers</th>
+                <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-[80px]">Code</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Strand</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">What it covers</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -513,9 +513,9 @@ export function CCSSOverview() {
                       <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                         <thead>
                           <tr className="bg-surface-alt">
-                            <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-[50px]">Std</th>
+                            <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-[50px]">Std</th>
                             {[1, 2, 3, 4, 5].map(g => (
-                              <th key={g} className="text-left px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Grade {g}</th>
+                              <th key={g} className="text-left px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Grade {g}</th>
                             ))}
                           </tr>
                         </thead>
@@ -546,9 +546,9 @@ export function CCSSOverview() {
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead>
               <tr className="bg-surface-alt">
-                <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Classroom Activity</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-[120px]">Standard(s)</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Why This Standard</th>
+                <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Classroom activity</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-[120px]">Standard(s)</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Why this standard</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -632,7 +632,7 @@ export function WIDAOverview() {
             <div key={d.domain} className="bg-surface-alt/50 border border-border rounded-lg p-4">
               <h4 className="text-[length:calc(13px*var(--ts))] font-bold text-navy mb-1">{d.domain}</h4>
               <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-relaxed mb-2">{d.desc}</p>
-              <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary uppercase tracking-wider mb-1">Ask yourself:</p>
+              <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">Ask yourself:</p>
               {d.questions.map((q, i) => (
                 <p key={i} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-relaxed pl-3 relative before:content-['\2022'] before:absolute before:left-0 before:text-navy/40">{q}</p>
               ))}
@@ -648,11 +648,11 @@ export function WIDAOverview() {
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead>
               <tr className="bg-surface-alt">
-                <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-[60px]">Grade</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Listening</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Speaking</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Reading</th>
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
+                <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-[60px]">Grade</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Listening</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Speaking</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Reading</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Writing</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -706,9 +706,9 @@ export function WIDAOverview() {
           <table className="w-full text-[length:calc(12px*var(--ts))]">
             <thead>
               <tr className="bg-surface-alt">
-                <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-                <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Typical Range</th>
-                <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">What This Means</th>
+                <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Class</th>
+                <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Typical range</th>
+                <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">What this means</th>
               </tr>
             </thead>
             <tbody>
@@ -808,13 +808,13 @@ export function WIDAOverview() {
                 <div className="px-5 pb-4 border-t border-border pt-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">What you will see in your classroom</p>
+                      <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-2">What you will see in your classroom</p>
                       {(classroomIndicators[wl.level] || []).map((ind, i) => (
                         <p key={i} className="text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-relaxed pl-3 mb-1 relative before:content-['\2022'] before:absolute before:left-0 before:text-navy/30">{ind}</p>
                       ))}
                     </div>
                     <div>
-                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Scaffolding strategies</p>
+                      <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-2">Scaffolding strategies</p>
                       <p className="text-[length:calc(11.5px*var(--ts))] text-blue-700 bg-blue-50 rounded-lg p-3 leading-relaxed">{wl.scaffolds}</p>
                       <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-2 italic">See the Scaffold Index tab for a complete list organized by domain.</p>
                     </div>
@@ -845,9 +845,9 @@ export function WIDAvsCCSS() {
         <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead>
             <tr className="bg-surface-alt">
-              <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-40"></th>
-              <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold" style={{ color: '#1565C0' }}>CCSS</th>
-              <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold" style={{ color: '#2E7D32' }}>WIDA</th>
+              <th className="text-left px-5 py-3 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-40"></th>
+              <th className="text-left px-5 py-3 text-[length:calc(12px*var(--ts))] font-semibold" style={{ color: '#1565C0' }}>CCSS</th>
+              <th className="text-left px-5 py-3 text-[length:calc(12px*var(--ts))] font-semibold" style={{ color: '#2E7D32' }}>WIDA</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -941,22 +941,22 @@ export function WIDAvsCCSS() {
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead>
               <tr>
-                <th className="px-3 py-2.5 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold bg-surface-alt text-text-tertiary w-[100px]">WIDA Level</th>
-                <th className="px-3 py-2.5 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#0277BD' }}>
+                <th className="px-3 py-2.5 text-left text-[length:calc(12px*var(--ts))] font-semibold bg-surface-alt text-ink-2 w-[100px]">WIDA level</th>
+                <th className="px-3 py-2.5 text-left text-[length:calc(12px*var(--ts))] font-semibold text-white" style={{ backgroundColor: '#0277BD' }}>
                   Direct Instruction
-                  <span className="block font-normal normal-case tracking-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher directly teaches strategies to build knowledge and comprehension</span>
+                  <span className="block font-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher directly teaches strategies to build knowledge and comprehension</span>
                 </th>
-                <th className="px-3 py-2.5 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#0288D1' }}>
+                <th className="px-3 py-2.5 text-left text-[length:calc(12px*var(--ts))] font-semibold text-white" style={{ backgroundColor: '#0288D1' }}>
                   Joint Construction
-                  <span className="block font-normal normal-case tracking-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher prompts students to construct meaning using learned strategies</span>
+                  <span className="block font-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher prompts students to construct meaning using learned strategies</span>
                 </th>
-                <th className="px-3 py-2.5 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#039BE5' }}>
+                <th className="px-3 py-2.5 text-left text-[length:calc(12px*var(--ts))] font-semibold text-white" style={{ backgroundColor: '#039BE5' }}>
                   Coached Construction
-                  <span className="block font-normal normal-case tracking-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher provides feedback as students use strategies independently</span>
+                  <span className="block font-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher provides feedback as students use strategies independently</span>
                 </th>
-                <th className="px-3 py-2.5 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-white" style={{ backgroundColor: '#03A9F4' }}>
+                <th className="px-3 py-2.5 text-left text-[length:calc(12px*var(--ts))] font-semibold text-white" style={{ backgroundColor: '#03A9F4' }}>
                   Monitor
-                  <span className="block font-normal normal-case tracking-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher monitors students' independent use of strategies</span>
+                  <span className="block font-normal text-[length:calc(11.5px*var(--ts))] opacity-80 mt-0.5">Teacher monitors students' independent use of strategies</span>
                 </th>
               </tr>
             </thead>
@@ -1199,7 +1199,7 @@ export function ScaffoldIndex() {
               {Array.from(categories.entries()).map(([category, scaffolds]) => (
                 <div key={category} className="bg-surface border border-border rounded-xl overflow-hidden">
                   <div className="px-4 py-2 bg-surface-alt/50 border-b border-border">
-                    <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{category}</span>
+                    <span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{category}</span>
                   </div>
                   <div className="divide-y divide-border/50">
                     {scaffolds.map(s => {
@@ -1494,7 +1494,7 @@ export function AssignScaffolds() {
               return domainEntries.length > 0 ? (
                 <div className="bg-surface border border-border rounded-xl p-4 mb-4">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy uppercase tracking-wider">Scaffold Frequency by Domain</p>
+                    <p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">Scaffold frequency by domain</p>
                     <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{totalStudents} students in class</p>
                   </div>
                   <div className="space-y-2">
@@ -1503,13 +1503,13 @@ export function AssignScaffolds() {
                       const isWholeClass = pct >= 60
                       return (
                         <div key={domain} className="flex items-center gap-3">
-                          <span className="text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider w-16 text-right text-text-secondary">{domain}</span>
+                          <span className="text-[length:calc(12px*var(--ts))] font-semibold w-16 text-right text-text-secondary">{domain}</span>
                           <div className="flex-1 h-6 bg-surface-alt rounded-lg overflow-hidden relative">
                             <div className={`h-full rounded-lg ${domainColors[domain] || 'bg-gray-400'} transition-all`} style={{ width: `${Math.max(4, (sids.size / maxCount) * 100)}%` }} />
                           </div>
                           <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-primary w-10 text-right">{sids.size}/{totalStudents}</span>
                           {isWholeClass && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-navy/10 text-navy text-[length:calc(11.5px*var(--ts))] font-bold uppercase tracking-wider flex-shrink-0">Whole-class</span>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-navy/10 text-navy text-[length:calc(12px*var(--ts))] font-bold flex-shrink-0">Whole-class</span>
                           )}
                         </div>
                       )
@@ -1532,7 +1532,7 @@ export function AssignScaffolds() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase">{group.domain}</span>
+                        <span className="text-[length:calc(12px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">{group.domain}</span>
                         <p className="text-[length:calc(12px*var(--ts))] text-text-primary leading-relaxed">{group.text}</p>
                       </div>
                       <div className="flex flex-wrap gap-1 mt-1.5">
@@ -1581,7 +1581,7 @@ export function AssignScaffolds() {
         {/* Student list */}
         <div className="col-span-3 bg-surface border border-border rounded-xl overflow-hidden">
           <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
-            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{cls} -- Grade {gr} ({students.length})</p>
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{cls} -- Grade {gr} ({students.length})</p>
           </div>
           <div className="divide-y divide-border/50 max-h-[600px] overflow-auto">
             {students.map(s => (
@@ -1657,14 +1657,14 @@ export function AssignScaffolds() {
                     {assignedScaffolds.map(s => (
                       <div key={s.id} className="px-3 py-2 rounded-lg bg-surface-alt/50 border border-border/50 group">
                         <div className="flex items-start gap-2">
-                          <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy uppercase flex-shrink-0 mt-0.5">{s.domain}</span>
+                          <span className="text-[length:calc(12px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy flex-shrink-0 mt-0.5">{s.domain}</span>
                           <p className="text-[length:calc(12px*var(--ts))] text-text-primary leading-relaxed flex-1">{s.scaffold_text}</p>
                           <button onClick={() => removeScaffold(s.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500 opacity-0 group-hover:opacity-100 flex-shrink-0">
                             <X size={13} />
                           </button>
                         </div>
                         <div className="flex items-center gap-1.5 mt-1.5 ml-8">
-                          <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider">Effectiveness:</span>
+                          <span className="text-[length:calc(12px*var(--ts))] text-ink-2">Effectiveness:</span>
                           {['working', 'not_working', 'unclear'].map(eff => (
                             <button key={eff} onClick={() => updateEffectiveness(s.id, s.effectiveness === eff ? null : eff)}
                               className={`px-2 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${
@@ -1695,7 +1695,7 @@ export function AssignScaffolds() {
                       return (
                         <button key={s.id} onClick={() => assignScaffold(s)} disabled={saving}
                           className="w-full flex items-start gap-2 px-3 py-2 rounded-lg bg-white border border-blue-200 text-left hover:bg-blue-50 transition-colors">
-                          <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-0.5">{s.domain}</span>
+                          <span className="text-[length:calc(12px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 flex-shrink-0 mt-0.5">{s.domain}</span>
                           <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary font-medium flex-shrink-0 mt-0.5">{levelLabel}</span>
                           <p className="text-[length:calc(12px*var(--ts))] text-text-primary leading-relaxed flex-1">{s.text}</p>
                           <Plus size={14} className="text-blue-400 flex-shrink-0 mt-0.5" />
@@ -1759,7 +1759,7 @@ export function AssignScaffolds() {
                     className={`w-full flex items-start gap-2 px-3 py-2 rounded-lg border text-left transition-colors ${
                       isAssigned ? 'bg-green-50 border-green-200 opacity-60' : 'bg-surface border-border hover:bg-surface-alt'
                     }`}>
-                    <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy uppercase flex-shrink-0 mt-0.5">{s.domain}</span>
+                    <span className="text-[length:calc(12px*var(--ts))] font-bold px-1.5 py-0.5 rounded bg-navy/10 text-navy flex-shrink-0 mt-0.5">{s.domain}</span>
                     <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded bg-surface-alt text-text-tertiary font-medium flex-shrink-0 mt-0.5">{levelLabel}</span>
                     <p className="text-[length:calc(12px*var(--ts))] text-text-primary leading-relaxed flex-1">{s.text}</p>
                     {isAssigned ? <Check size={14} className="text-green-500 flex-shrink-0 mt-0.5" /> : <Plus size={14} className="text-text-tertiary flex-shrink-0 mt-0.5" />}

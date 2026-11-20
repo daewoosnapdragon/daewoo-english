@@ -10,7 +10,7 @@ import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ALL_ENGLISH_CLASSES, GRADES, DOMAINS, DOMAIN_LABELS, EnglishClass, Grade, Domain, Semester, QuestionMapItem } from '@/types'
-import { classToColor, classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel, classDot } from '@/lib/utils'
+import { classToTextColor, calculateWeightedAverage as calcWeightedAvg, domainLabel, classDot } from '@/lib/utils'
 import { Plus, Loader2, Pencil, Trash2, ChevronDown, BarChart3, User, FileText, Calendar, Download, ClipboardEdit, Save, CalendarDays, Printer } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -27,6 +27,9 @@ import RubricPicker from './RubricPicker'
 import RubricScoreSheet from './RubricScoreSheet'
 import RubricGrid from './RubricGrid'
 import RubricPrintDialog from './RubricPrintDialog'
+import { chip, chipRow, segGroup, seg, tabRow, tab as tabClass } from '@/components/ui/Controls'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 const ASSESSMENT_CATEGORIES = [
   // === WEIGHTED CATEGORIES (these determine final grades) ===
@@ -232,7 +235,7 @@ export default function GradesView() {
 
   return (
     <div className="animate-fade-in">
-      <div className="px-4 sm:px-10 pt-8 pb-5 bg-surface border-b border-border">
+      <div className="px-4 sm:px-10 pt-8 bg-surface border-b border-border">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h2 className="font-display text-[length:calc(30px*var(--ts))] leading-none text-ink">{t.grades.title}</h2>
@@ -249,16 +252,16 @@ export default function GradesView() {
             )}
           </div>
         </div>
-        <div className="scroll-row flex gap-px bg-border/50 rounded-xl p-1 mt-4 overflow-x-auto">
+        <div role="tablist" className={`${tabRow} border-b-0 mt-4`}>
           {([
-            { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score Entry' },
-            { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch Grid' },
-            { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain Overview' },
-            { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student View' },
+            { id: 'entry' as SubView, icon: FileText, label: lang === 'ko' ? '점수 입력' : 'Score entry' },
+            { id: 'batch' as SubView, icon: ClipboardEdit, label: lang === 'ko' ? '일괄 입력' : 'Batch grid' },
+            { id: 'overview' as SubView, icon: BarChart3, label: lang === 'ko' ? '도메인 개요' : 'Domain overview' },
+            { id: 'student' as SubView, icon: User, label: lang === 'ko' ? '학생별 보기' : 'Student view' },
             { id: 'calendar' as SubView, icon: CalendarDays, label: lang === 'ko' ? '평가 일정' : 'Calendar' },
           ]).map(tab => (
-            <button key={tab.id} onClick={() => setSubView(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all whitespace-nowrap ${subView === tab.id ? 'bg-navy text-white shadow-sm' : 'text-text-secondary hover:bg-surface-alt hover:text-navy'}`}>
+            <button key={tab.id} role="tab" aria-selected={subView === tab.id} onClick={() => setSubView(tab.id)}
+              className={tabClass(subView === tab.id)}>
               <tab.icon size={13} /> {tab.label}
             </button>
           ))}
@@ -283,22 +286,19 @@ export default function GradesView() {
             </span>
           ))}
           <div className="hidden sm:block w-px h-6 bg-border" />
-          <select value={selectedGrade} onChange={e => { const g = Number(e.target.value) as Grade; leaveList(); setSelectedGrade(g); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }}
-            className="px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none focus:border-navy">
-            {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
-          </select>
+          <div className={chipRow}>{GRADES.map(g => <button key={g} onClick={() => { if (g === selectedGrade) return; leaveList(); setSelectedGrade(g); localStorage.setItem('daewoo_grade_tab_grade', String(g)) }} aria-pressed={selectedGrade === g} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+          <div className="hidden sm:block w-px h-6 bg-rule" />
           {availableClasses.length > 1 ? (
-            <div className="chip-scroll flex gap-1 max-sm:w-full">
+            <div className={chipRow}>
               {availableClasses.map(cls => (
                 <button key={cls} onClick={() => { leaveList(); setSelectedClass(cls); localStorage.setItem('daewoo_grade_tab_class', cls) }}
-                  className={`px-3 py-1.5 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${selectedClass === cls ? 'text-white shadow-sm' : 'hover:opacity-80'}`}
-                  style={{ backgroundColor: selectedClass === cls ? classToTextColor(cls) : classToColor(cls), color: selectedClass === cls ? 'white' : classToTextColor(cls) }}>
-                  {cls}
+                  aria-pressed={selectedClass === cls} className={chip(selectedClass === cls)}>
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: classDot(cls) }} />{cls}
                 </button>
               ))}
             </div>
           ) : (
-            <div className="px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold text-white" style={{ backgroundColor: classToTextColor(selectedClass) }}>{selectedClass}</div>
+            <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: classDot(selectedClass) }} />{selectedClass}</span>
           )}
         </div>
 
@@ -369,18 +369,18 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
             const snapshot = { name: r.name, band: r.band, criteria: r.criteria }
             const maxScore = r.criteria.length * 4
             const { error } = await supabase.from('assessments').update({ rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore }).eq('id', a.id)
-            if (error) { showToast(`Error: ${error.message}${error.message.includes('rubric') ? ' · run supabase/migration-rubrics.sql first' : ''}`); return }
+            if (error) { showToast(error.message.includes('rubric') ? /* supabase/migration-rubrics.sql */ partNeedsUpdate({ en: 'Rubrics', ko: '루브릭' }, { en: 'rubrics', ko: '루브릭' }, ko) : `Error: ${error.message}`, { tone: 'error' }); return }
             setRubricOpen(false)
             logActivity('edited', `${a.name}: rubric "${r.name}" attached · ${selectedClass} · Grade ${selectedGrade}`)
             onPatched({ ...a, rubric: snapshot, rubric_id: r.rubric_id, max_score: maxScore })
             setTotalsOnly(null)
           }} />
       )}
-      <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
+      <div role="tablist" className={`${tabRow} mb-5`}>
         {DOMAINS.map(d => (
-          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[length:calc(12px*var(--ts))] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+          <button key={d} role="tab" aria-selected={selectedDomain === d} onClick={() => setSelectedDomain(d)} className={tabClass(selectedDomain === d)}>
             {SHORT[d] || DOMAIN_LABELS[d][lang]}
-            {(() => { const n = allAssessments.filter(a => a.domain === d || touchesDomain(a, d)).length; return n > 0 ? <span className="ml-1.5 text-[length:calc(11.5px*var(--ts))] bg-accent-light text-navy px-1.5 py-0.5 rounded-full font-bold">{n}</span> : null })()}
+            {(() => { const n = allAssessments.filter(a => a.domain === d || touchesDomain(a, d)).length; return n > 0 ? <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 tabular-nums">{n}</span> : null })()}
           </button>
         ))}
       </div>
@@ -392,7 +392,7 @@ function ScoreEntryView({ selectedDomain, setSelectedDomain, assessments, allAss
             const on = a?.id === x.id
             const partHere = x.mixed && x.domain_split && Number(x.domain_split[selectedDomain] || 0) > 0 && x.domain !== selectedDomain
             return (
-              <button key={x.id} onClick={() => setSelectedAssessment(x)} className={`inline-flex items-center gap-1.5 h-8 px-3 whitespace-nowrap rounded-full border text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
+              <button key={x.id} onClick={() => setSelectedAssessment(x)} aria-pressed={on} className={chip(on)}>
                 <span>{x.name}</span>
                 <span className={on ? 'opacity-70' : 'text-ink-3'} title={partHere ? (ko ? `이 탭에는 ${x.max_score}점 중 ${x.domain_split![selectedDomain]}점이 반영됩니다` : `${x.domain_split![selectedDomain]} of the ${x.max_score} points count in this tab`) : undefined}>{partHere ? `/${x.domain_split![selectedDomain]} of ${x.max_score}` : `/${x.max_score}`}</span>
                 {x.mixed && x.domain_split
@@ -532,7 +532,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
 
   const handleSaveAll = async () => {
     setSaving(true)
-    let errors = 0
+    const failed: string[] = []
     for (const s of students) {
       if (!hasAnyScore(s.id)) continue
       const ss = sectionScores[s.id] || {}
@@ -544,12 +544,18 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
         section_scores: ss,
         is_exempt: false,
       }, { onConflict: 'student_id,assessment_id' })
-      if (error) errors++
+      if (error) failed.push(s.english_name)
     }
     setSaving(false)
-    setHasChanges(false)
     const entered = students.filter(s => hasAnyScore(s.id)).length
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved section scores for ${entered} students`)
+    // A failed row keeps its numbers on the sheet and the sheet stays
+    // unsaved, so Retry (or Save) sends them again.
+    if (failed.length) {
+      showToast(notSavedMessage(failed, lang === 'ko'), { tone: 'error', action: { label: retryLabel(lang === 'ko'), onClick: () => { handleSaveAll() } } })
+      return
+    }
+    setHasChanges(false)
+    showToast(lang === 'ko' ? `${entered}명의 섹션 점수를 저장했습니다` : `Saved section scores for ${entered} students`)
     logActivity('scored', `${assessment.name} · sections · ${selectedClass} · Grade ${selectedGrade} · ${entered} students`, { key: assessment.id })
   }
 
@@ -572,16 +578,16 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
       <div className="overflow-x-auto">
         <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
+            <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
             {sections.map((sec, si) => (
-              <th key={si} className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[70px]">
+              <th key={si} className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[70px]">
                 <div className="font-bold">{sec.label}</div>
                 <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-normal">/{sec.max_points}</div>
                 {sec.standard && <div className="text-[length:calc(11.5px*var(--ts))] text-purple-600 font-medium mt-0.5">{sec.standard}</div>}
               </th>
             ))}
-            <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Total /{assessment.max_score}</th>
-            <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">%</th>
+            <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-16">Total /{assessment.max_score}</th>
+            <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-14">%</th>
           </tr></thead>
           <tbody>
             {students.map((s, si) => {
@@ -776,8 +782,16 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
       if (error) errors++
     }
     setSaving(false)
+    // The grid saves in one request, so a failure is every student with a
+    // score in it. Their numbers stay in the grid for Retry.
+    if (errors > 0) {
+      const ids = new Set(rows.map(r => r.student_id))
+      const failed = students.filter(s => ids.has(s.id)).map(s => s.english_name)
+      showToast(notSavedMessage(failed, lang === 'ko'), { tone: 'error', action: { label: retryLabel(lang === 'ko'), onClick: () => { handleSaveAll() } } })
+      return
+    }
     setHasChanges(false)
-    showToast(errors > 0 ? 'Saved with errors' : 'Saved ' + rows.length + ' scores')
+    showToast(lang === 'ko' ? `점수 ${rows.length}개를 저장했습니다` : `Saved ${rows.length} scores`)
     logActivity('scored', `Batch grid · ${selectedDomain} · ${selectedClass} · Grade ${selectedGrade} · ${rows.length} scores`, { key: `batch|${selectedClass}|${selectedGrade}|${selectedDomain}` })
   }
 
@@ -800,11 +814,11 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
 
   return (
     <>
-      <div className="flex gap-1 mb-5 border-b border-border overflow-x-auto">
+      <div role="tablist" className={`${tabRow} mb-5`}>
         {DOMAINS.map(d => {
           const SHORT: Record<string, string> = { reading: 'Reading', phonics: 'Phonics & Foundational Skills', writing: 'Writing', speaking: 'Speaking & Listening', language: 'Language Standards' }
           return (
-          <button key={d} onClick={() => setSelectedDomain(d)} className={`px-4 py-2.5 text-[length:calc(12px*var(--ts))] font-medium transition-all border-b-2 -mb-px whitespace-nowrap ${selectedDomain === d ? 'border-navy text-navy' : 'border-transparent text-text-secondary hover:text-text-primary'}`}>
+          <button key={d} role="tab" aria-selected={selectedDomain === d} onClick={() => setSelectedDomain(d)} className={tabClass(selectedDomain === d)}>
             {SHORT[d] || DOMAIN_LABELS[d][lang]}
           </button>
         )})}
@@ -823,11 +837,11 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
           <div className="overflow-x-auto">
             <table className="w-full text-[length:calc(12px*var(--ts))]">
               <thead><tr className="bg-surface-alt">
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px] z-10">Student</th>
                 {columns.map((col, ci) => {
                   if (col.type === 'section') {
                     return (
-                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
+                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[length:calc(12px*var(--ts))] text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
                         <div className="whitespace-nowrap">{col.sectionLabel}</div>
                         <div className="text-[length:calc(11.5px*var(--ts))] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_points || col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
                       </th>
@@ -837,7 +851,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                   const hasSections = Array.isArray(a.sections) && a.sections.length > 0
                   const isExpanded = expandedAssessment === a.id
                   return (
-                    <th key={a.id} className={`text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
+                    <th key={a.id} className={`text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[130px] ${hasSections ? 'cursor-pointer hover:bg-navy/5' : ''}`}
                       onClick={() => hasSections && setExpandedAssessment(isExpanded ? null : a.id)} title={hasSections ? `Click to ${isExpanded ? 'collapse' : 'expand'} sections` : a.name}>
                       <div className="flex items-center justify-center gap-0.5 leading-tight">
                         {a.name}
@@ -847,7 +861,7 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                     </th>
                   )
                 })}
-                <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Avg%</th>
+                <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-16">Avg%</th>
               </tr></thead>
               <tbody>
                 {students.map(s => {
@@ -992,7 +1006,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
                 <Download size={12} /> CSV
               </button>
               <div className="text-right">
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall Average'}</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{lang === 'ko' ? '전체 평균' : 'Overall average'}</p>
               <p className="text-3xl font-display font-bold text-navy">{overallAvg.toFixed(1)}%</p>
             </div>
             </div>
@@ -1010,7 +1024,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
           return (
             <div key={domain} className="bg-surface border border-border rounded-xl overflow-hidden">
               <div className="px-5 py-3 border-b border-border flex items-center justify-between" style={{ backgroundColor: `${color}08` }}>
-                <span className="text-[length:calc(12px*var(--ts))] font-semibold uppercase tracking-wider" style={{ color }}>{DOMAIN_LABELS[domain][lang]}</span>
+                <span className="text-[length:calc(12px*var(--ts))] font-semibold" style={{ color }}>{DOMAIN_LABELS[domain][lang]}</span>
                 {s.avg != null && <span className="text-[length:calc(14px*var(--ts))] font-bold" style={{ color }}>{s.avg.toFixed(1)}%</span>}
               </div>
               <div className="p-4 space-y-2">
@@ -1080,7 +1094,7 @@ function CrossClassCompare({ assessmentName, domain, maxScore, currentClass, gra
       </button>
       {show && (
         <div className="absolute right-0 top-8 bg-surface border border-border rounded-xl shadow-lg z-50 w-56 p-3">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider mb-2">Same assessment in other classes</p>
+          <p className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary mb-2">Same assessment in other classes</p>
           {data.length === 0 ? <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">Not shared with other classes</p> :
           <div className="space-y-1.5">{data.map(d => (
             <div key={d.cls} className="flex items-center justify-between">
@@ -1165,7 +1179,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
       </div>
       <div className="grid grid-cols-7">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={`${md.key}-h-${i}`} className={`py-1 text-center ${compact ? 'text-[length:calc(11.5px*var(--ts))]' : 'text-[length:calc(11.5px*var(--ts))]'} font-semibold text-text-tertiary uppercase border-b border-border bg-surface-alt/50`}>{d}</div>
+          <div key={`${md.key}-h-${i}`} className={`py-1 text-center ${compact ? 'text-[length:calc(12px*var(--ts))]' : 'text-[length:calc(12px*var(--ts))]'} font-semibold text-ink-2 border-b border-border bg-surface-alt/50`}>{d}</div>
         ))}
         {md.days.map((day, i) => {
           if (day === null) return <div key={`${md.key}-e-${i}`} className={`${compact ? 'min-h-[40px]' : 'min-h-[72px]'} border-b border-r border-border/30 bg-surface-alt/20`} />
@@ -1238,9 +1252,9 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
       {/* View toggle + nav */}
       <div className="flex items-center justify-between">
         <button onClick={prevMonth} className="px-3 py-1.5 rounded-lg hover:bg-surface-alt text-text-secondary text-[length:calc(13px*var(--ts))] border border-border">&larr; {viewMode === '3' ? 'Prev 3' : 'Prev'}</button>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setViewMode('1')} className={`px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${viewMode === '1' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>1 Month</button>
-          <button onClick={() => setViewMode('3')} className={`px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${viewMode === '3' ? 'bg-navy text-white' : 'text-text-tertiary hover:bg-surface-alt border border-border'}`}>3 Months</button>
+        <div className={segGroup}>
+          <button onClick={() => setViewMode('1')} aria-pressed={viewMode === '1'} className={seg(viewMode === '1')}>1 month</button>
+          <button onClick={() => setViewMode('3')} aria-pressed={viewMode === '3'} className={seg(viewMode === '3')}>3 months</button>
         </div>
         <button onClick={nextMonth} className="px-3 py-1.5 rounded-lg hover:bg-surface-alt text-text-secondary text-[length:calc(13px*var(--ts))] border border-border">{viewMode === '3' ? 'Next 3' : 'Next'} &rarr;</button>
       </div>
@@ -1281,7 +1295,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
         visibleAssessments.forEach(a => { byDom[a.domain] = (byDom[a.domain] || 0) + 1 })
         return (
           <div className="bg-surface border border-border rounded-xl p-4">
-            <h4 className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider mb-2">{viewMode === '3' ? 'These 3 Months' : 'This Month'}: {visibleAssessments.length} assessments</h4>
+            <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary mb-2">{viewMode === '3' ? 'These 3 months' : 'This month'}: {visibleAssessments.length} assessments</h4>
             <div className="flex gap-3 flex-wrap">
               {DOMAINS.filter(d => byDom[d]).map(d => (
                 <span key={d} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium" style={{ backgroundColor: `${DOMAIN_COLORS[d]}15`, color: DOMAIN_COLORS[d] }}>

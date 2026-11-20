@@ -11,6 +11,7 @@ import AdminMonth from './AdminMonth'
 import TeacherMonth from './TeacherMonth'
 import { useOvertimeMonth, useOvertimeSettings } from './useOvertime'
 import { Loader2 } from 'lucide-react'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Overtime ────────────────────────────────────────────────────
 // A teacher logs their own non-instructional overtime and prints the
@@ -38,7 +39,8 @@ export default function OvertimeView() {
         <div>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink mb-4">{ko ? '초과근무' : 'Overtime'}</h1>
           <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{isAdmin
-            ? (ko ? 'supabase/migration-overtime.sql을 Supabase SQL Editor에서 한 번 실행하세요.' : 'Run supabase/migration-overtime.sql once in the Supabase SQL Editor.')
+            // supabase/migration-overtime.sql
+            ? needsUpdate({ en: 'overtime', ko: '초과근무' }, ko)
             : (ko ? '아직 준비되지 않았습니다.' : 'Not set up yet.')}</p>
         </div>
       ) : !loaded || probe.loading || (isAdmin && teachersLoading) ? (

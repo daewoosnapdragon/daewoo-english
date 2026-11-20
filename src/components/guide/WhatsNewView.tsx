@@ -67,7 +67,7 @@ export default function WhatsNewView() {
   // One release date's entries.
   const renderBatch = (d: string) => (
     <section key={d} className="mb-8">
-      <h2 className="eyebrow border-b border-rule-2 pb-1.5 mb-3 flex items-center gap-2">{fmt(d)}{d > today && <span className="px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))]">scheduled</span>}</h2>
+      <h2 className="eyebrow border-b border-rule-2 pb-1.5 mb-3 flex items-center gap-2">{fmt(d)}{d > today && <span className="px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))]">Scheduled</span>}</h2>
       <div className="divide-y divide-rule">
         {shown.filter(e => e.date === d).map(e => (
           <article key={e.id} className={`py-3 grid grid-cols-[14px_minmax(0,1fr)] gap-3 ${e.off ? 'opacity-60' : ''}`}>
@@ -105,7 +105,6 @@ export default function WhatsNewView() {
     <div className="px-8 py-6 animate-fade-in max-w-[860px]">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">Daewoo English</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">What’s new</h1>
         </div>
         <div className="flex items-center gap-3 text-[length:calc(13px*var(--ts))]">

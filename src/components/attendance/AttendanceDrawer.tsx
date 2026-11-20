@@ -120,8 +120,8 @@ export default function AttendanceDrawer({ grade, onClose }: { grade: number; on
       <aside className="absolute right-0 top-0 bottom-0 w-full max-w-[440px] bg-surface border-l border-rule-2 shadow-2xl flex flex-col animate-slide-in">
         <div className="px-5 pt-4 pb-3 border-b border-rule-2 flex items-start justify-between gap-3">
           <div>
-            <p className="eyebrow eyebrow-accent">{lang === 'ko' ? '출석' : 'Attendance'} · {dateLabel}</p>
-            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink mt-1">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`} <span className="text-ink-3">· {cls}</span></h2>
+            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink">{lang === 'ko' ? `${grade}학년` : `Grade ${grade}`} <span className="text-ink-3">· {cls}</span></h2>
+            <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-1.5">{lang === 'ko' ? '출석' : 'Attendance'} · {dateLabel}</p>
             {justSaved && <p className="mt-2 inline-flex items-center gap-1.5 text-[length:calc(12.5px*var(--ts))] font-medium text-good" role="status"><DrawnCheck size={14} />{lang === 'ko' ? '모두 출석 체크됨' : 'All marked'}</p>}
             {isAdmin && (
               <select id="drawer-class" value={cls} onChange={e => setCls(e.target.value as EnglishClass)} className="mt-2 h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12px*var(--ts))] text-ink">

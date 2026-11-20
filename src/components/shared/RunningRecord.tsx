@@ -175,19 +175,19 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
           <div className="flex items-center gap-6 text-[length:calc(12px*var(--ts))]">
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{errors}</div>
-              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">Errors</div>
+              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">Errors</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{selfCorrections}</div>
-              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">Self-Corr</div>
+              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">Self-Corr</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold text-gold">{finished ? cwpm : '—'}</div>
-              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">CWPM</div>
+              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">CWPM</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{finished ? `${accuracyRate}%` : '—'}</div>
-              <div className="text-white/60 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">Accuracy</div>
+              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">Accuracy</div>
             </div>
           </div>
         </div>
@@ -287,22 +287,22 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
         </div>
         <div className="p-6 space-y-4">
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Passage title</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Text</label>
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Passage text</label>
             <textarea value={text} onChange={e => setText(e.target.value)} rows={8} placeholder="Paste or type the full passage text here..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-y font-serif leading-relaxed" />
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">{wordCount} words</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Level</label>
+              <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Level</label>
               <input value={level} onChange={e => setLevel(e.target.value)} placeholder="e.g. F, 1.2" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
             </div>
             <div>
-              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+              <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Grade range</label>
               <select value={gradeRange} onChange={e => setGradeRange(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-surface">
                 <option value="">Any</option>
                 <option value="1">Grade 1</option>
@@ -313,7 +313,7 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
               </select>
             </div>
             <div>
-              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+              <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Source</label>
               <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g. NAEP, custom" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
             </div>
           </div>

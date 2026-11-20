@@ -1126,7 +1126,7 @@ function StandardBadge({ code, description }: { code: string; description: strin
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-2">{description}</p>
           {progression && (
             <div className="border-t border-border pt-2 space-y-1">
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Skill Progression</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Skill progression</p>
               {[2, 3, 4, 5].map(g => {
                 if (!progression[g]) return null
                 const gCode = code.replace(/\.\d+\./, `.${g}.`)
@@ -1564,7 +1564,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
       <div className="mb-6">
         {config.writingPrompt && (
           <div className="mb-2 bg-surface-alt/60 border border-border rounded-lg px-3 py-2">
-            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-0.5">Extended writing prompt</p>
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-0.5">Extended writing prompt</p>
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary">{config.writingPrompt}</p>
           </div>
         )}
@@ -1578,7 +1578,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
           </div>
           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
             {writingTotal == null
-              ? <span className="px-1.5 py-0.5 rounded bg-surface-alt border border-border text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider">Not graded</span>
+              ? <span className="px-1.5 py-0.5 rounded bg-surface-alt border border-border text-[length:calc(12px*var(--ts))] font-semibold">Not graded</span>
               : <>{writingTotal}/{config.writingMax}{writingMarkedCount < config.writingCategories.length &&
                   <span className="ml-1.5 text-warn" title="Not every category has been scored yet. The total counts what is marked so far.">{writingMarkedCount}/{config.writingCategories.length} categories</span>}</>}
           </span>
@@ -1724,7 +1724,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             )}
             {config.listeningScript && (
               <div>
-                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Listening script</p>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Listening script</p>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary leading-relaxed">{config.listeningScript.script}</p>
                 {config.listeningScript.closingLine && <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic mt-1">{config.listeningScript.closingLine}</p>}
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1.5">{config.listeningScript.instructions}</p>
@@ -1732,8 +1732,8 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             )}
             {config.readingPassages?.map(p => (
               <div key={p.key}>
-                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
-                  {p.title || 'Reading passage'} <span className="normal-case tracking-normal">(items {p.range[0]}&ndash;{p.range[1]})</span>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">
+                  {p.title || 'Reading passage'} <span className="">(items {p.range[0]}&ndash;{p.range[1]})</span>
                 </p>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary leading-relaxed">{p.text}</p>
               </div>
@@ -1997,7 +1997,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                     {Math.round((topWrong[1] / item.total) * 100)}% chose {topWrong[0].toUpperCase()}
                   </span>
                 )}
-                {isExcluded && <span className="text-[length:calc(11.5px*var(--ts))] text-bad font-bold">EXCL</span>}
+                {isExcluded && <span className="text-[length:calc(11.5px*var(--ts))] text-bad font-bold">Excl.</span>}
               </div>
             )
           })}
@@ -2629,7 +2629,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         {/* Which question set this test is scored against. Shown so a test
             falling back to the original content is never a silent surprise. */}
         <div className="px-3 py-2 border-b border-border bg-surface-alt/40" title="The question set this test is scored against. Historical tests keep their original questions.">
-          <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Questions</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Questions</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary font-medium">{versionLabel(versionKey)}</p>
         </div>
         {/* View toggle */}

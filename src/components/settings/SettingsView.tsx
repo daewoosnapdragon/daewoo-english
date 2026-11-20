@@ -35,8 +35,8 @@ export default function SettingsView() {
   return (
     <div className="px-8 py-6 animate-fade-in">
       <div className="mb-6">
-        <p className="eyebrow eyebrow-accent mb-1.5">{language === 'ko' ? '교사, 학기, 기준, 가중치' : 'Teachers · semesters · benchmarks · weights'}</p>
         <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{language === 'ko' ? '설정' : 'Settings'}</h1>
+        <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{language === 'ko' ? '교사, 학기, 기준, 가중치' : 'Teachers · semesters · benchmarks · weights'}</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)] gap-10">
         <nav className="lg:sticky lg:top-[140px] self-start grid gap-0.5 text-[length:calc(12.5px*var(--ts))] border-t border-rule-2 pt-3" aria-label="Settings sections">
@@ -241,13 +241,13 @@ function TeacherSection() {
           <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>
               <tr className="bg-paper-2">
-                <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
-                  {language === 'ko' ? '영어반' : 'English Class'}
+                <th className="text-left px-5 py-3 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">
+                  {language === 'ko' ? '영어반' : 'English class'}
                 </th>
-                <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
-                  {language === 'ko' ? '교사 이름' : 'Teacher Name'}
+                <th className="text-left px-5 py-3 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">
+                  {language === 'ko' ? '교사 이름' : 'Teacher name'}
                 </th>
-                <th className="text-left px-5 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
+                <th className="text-left px-5 py-3 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">
                   {language === 'ko' ? '역할' : 'Role'}
                 </th>
                 <th className="px-5 py-3 w-32"></th>
@@ -536,13 +536,13 @@ function SemesterSection() {
       {adding && canManage && (
         <div className="bg-accent-light border border-border rounded-xl p-4 mb-4 space-y-3">
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name *</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Name *</label>
               <input value={newSem.name} onChange={(e: any) => setNewSem({ ...newSem, name: e.target.value })} placeholder="e.g. Spring 2026" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Name (Korean)</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Name (Korean)</label>
               <input value={newSem.name_ko} onChange={(e: any) => setNewSem({ ...newSem, name_ko: e.target.value })} placeholder="2026 봄학기" className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Academic Year</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Academic year</label>
               <input value={newSem.academic_year} onChange={(e: any) => setNewSem({ ...newSem, academic_year: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Type</label>
               <select value={newSem.type} onChange={(e: any) => setNewSem({ ...newSem, type: e.target.value })}
                 className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy">
                 <option value="spring">Spring</option>
@@ -554,13 +554,13 @@ function SemesterSection() {
               </select></div>
           </div>
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start Date</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Start date</label>
               <input type="date" value={newSem.start_date} onChange={(e: any) => setNewSem({ ...newSem, start_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End Date</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">End date</label>
               <input type="date" value={newSem.end_date} onChange={(e: any) => setNewSem({ ...newSem, end_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Midterm Cutoff</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Midterm cutoff</label>
               <input type="date" value={newSem.midterm_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, midterm_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Report Card Cutoff</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Report card cutoff</label>
               <input type="date" value={newSem.report_card_cutoff_date} onChange={(e: any) => setNewSem({ ...newSem, report_card_cutoff_date: e.target.value })} className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           <div className="flex gap-2">
@@ -587,8 +587,8 @@ function SemesterSection() {
                   <div className="flex items-center gap-2">
                     <span className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{sem.name}</span>
                     {sem.name_ko && <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{sem.name_ko}</span>}
-                    {sem.is_active && <span className="text-[length:calc(11.5px*var(--ts))] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">ACTIVE</span>}
-                    {sem.is_archived && <span className="text-[length:calc(11.5px*var(--ts))] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">ARCHIVED</span>}
+                    {sem.is_active && <span className="text-[length:calc(11.5px*var(--ts))] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">Active</span>}
+                    {sem.is_archived && <span className="text-[length:calc(11.5px*var(--ts))] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">Archived</span>}
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-2">
@@ -613,24 +613,24 @@ function SemesterSection() {
                   )}
                 </div>
                 <div className="grid grid-cols-4 gap-3">
-                  <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Start Date</label>
+                  <div><label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Start date</label>
                     <input type="date" value={sem.start_date || ''} onChange={(e: any) => updateField(sem.id, 'start_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
-                  <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">End Date</label>
+                  <div><label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">End date</label>
                     <input type="date" value={sem.end_date || ''} onChange={(e: any) => updateField(sem.id, 'end_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
-                    <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Midterm Cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
+                    <label className="text-[length:calc(12px*var(--ts))] font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
+                      Midterm cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Locked</span>}
                     </label>
                     <input type="date" value={sem.midterm_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'midterm_cutoff_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
-                    <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Report Card Cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">LOCKED</span>}
+                    <label className="text-[length:calc(12px*var(--ts))] font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
+                      Report card cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Locked</span>}
                     </label>
                     <input type="date" value={sem.report_card_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'report_card_cutoff_date', e.target.value)}
                       disabled={!canManage}
@@ -796,11 +796,11 @@ function ProgramBenchmarksSection() {
         <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead>
             <tr className="bg-paper-2">
-              <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM Mid <span className="normal-case text-text-tertiary block text-[length:calc(11.5px*var(--ts))]">mid-semester target</span></th>
-              <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM End <span className="normal-case text-text-tertiary block text-[length:calc(11.5px*var(--ts))]">end-semester target</span></th>
-              <th className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Lexile Range</th>
-              <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Focus / WIDA Notes</th>
+              <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Class</th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Expected reading fluency by mid-semester">CWPM mid <span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))]">mid-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Target reading fluency by end of semester">CWPM end <span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))]">end-semester target</span></th>
+              <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Lexile range</th>
+              <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[200px]">Focus / WIDA notes</th>
             </tr>
           </thead>
           <tbody>
@@ -916,9 +916,9 @@ function ClassManagementSection() {
         <table className="w-full text-[length:calc(13px*var(--ts))]">
           <thead>
             <tr className="bg-paper-2">
-              <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Class</th>
-              <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Students</th>
-              <th className="text-right px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Actions</th>
+              <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Class</th>
+              <th className="text-center px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Students</th>
+              <th className="text-right px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1032,7 +1032,7 @@ function AssessmentWeightsSection() {
         </div>
 
         {/* Grade-level defaults */}
-        <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Default Weights by Grade</p>
+        <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-2">Default weights by grade</p>
         <div className="space-y-2">
           {[1, 2, 3, 4, 5].map(grade => {
             const key = String(grade)
@@ -1188,36 +1188,36 @@ function SchoolInfoSection() {
       <div className="border-t border-rule-2 pt-5">
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님' : 'Principal'}
             </label>
             <input value={settings.principal_name || ''} onChange={(e: any) => setSettings({ ...settings, principal_name: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">
               {language === 'ko' ? '교장 선생님 (한글)' : 'Principal (Korean)'}
             </label>
             <input value={settings.principal_name_ko || ''} onChange={(e: any) => setSettings({ ...settings, principal_name_ko: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
-              {language === 'ko' ? '팀 매니저' : 'Team Manager'}
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">
+              {language === 'ko' ? '팀 매니저' : 'Team manager'}
             </label>
             <input value={settings.team_manager || ''} onChange={(e: any) => setSettings({ ...settings, team_manager: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
-              {language === 'ko' ? '학년도' : 'Academic Year'}
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">
+              {language === 'ko' ? '학년도' : 'Academic year'}
             </label>
             <input value={settings.academic_year || ''} onChange={(e: any) => setSettings({ ...settings, academic_year: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
           </div>
           <div className="col-span-2">
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
-              {language === 'ko' ? '프로그램 부제' : 'Program Subtitle'}
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">
+              {language === 'ko' ? '프로그램 부제' : 'Program subtitle'}
             </label>
             <input value={settings.program_subtitle || ''} onChange={(e: any) => setSettings({ ...settings, program_subtitle: e.target.value })}
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
@@ -1320,7 +1320,7 @@ function BehaviorLadderSection() {
       </div>
       <div className="border border-rule-2 rounded-lg overflow-hidden">
         <table className="w-full text-[length:calc(12.5px*var(--ts))]">
-          <thead><tr className="bg-paper-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3">
+          <thead><tr className="bg-paper-2 text-[length:calc(12px*var(--ts))] text-ink-2">
             <th className="text-left px-4 py-2 w-16">{ko ? '단계' : 'Step'}</th><th className="text-left px-3 py-2 w-28">{ko ? '기록 수' : 'Notes to open'}</th><th className="text-left px-3 py-2">{ko ? '관리자가 하는 일' : 'What admin does'}</th><th className="text-left px-3 py-2 w-56">{ko ? '종료 조치 (버튼 이름)' : 'Action that closes it (button)'}</th><th className="w-10" />
           </tr></thead>
           <tbody className="divide-y divide-rule">
@@ -1340,7 +1340,7 @@ function BehaviorLadderSection() {
           <label className="inline-flex items-center gap-2 ml-auto">{ko ? '다음 수업일까지 확인하지 않으면 빨간 띠:' : 'Red bar on every admin page after'}<input type="number" min={0} value={s.overdue_days} disabled={!isAdmin} onChange={e => setS(prev => ({ ...prev, overdue_days: Number(e.target.value) }))} className={`${field} w-16 text-center tabular-nums`} />{ko ? '수업일' : 'school days unread'}</label>
         </div>
       </div>
-      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{ko ? '다음 단계는 이전 사례가 종료된 뒤 그 시점부터 센 기록 수로 열립니다. 마지막 단계는 반복됩니다.' : 'The next step starts counting from the moment the previous case was closed. The last step repeats. Needs supabase/migration-behavior-ladder.sql.'}</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-2">{ko ? '다음 단계는 이전 사례가 종료된 뒤 그 시점부터 센 기록 수로 열립니다. 마지막 단계는 반복됩니다.' : 'The next step starts counting from the moment the previous case was closed. The last step repeats.'}</p>
     </section>
   )
 }

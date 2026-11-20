@@ -140,8 +140,8 @@ export default function WidaView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{cls} · {ko ? `${gr}학년` : `Grade ${gr}`}{loadingStudents ? '' : ` · ${students.length} ${ko ? '명' : 'students'}`}{!loadingStudents && students.length ? ` · ${setCount} ${ko ? '명 완료' : 'fully leveled'}` : ''}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">WIDA</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{cls} · {ko ? `${gr}학년` : `Grade ${gr}`}{loadingStudents ? '' : ` · ${students.length} ${ko ? '명' : 'students'}`}{!loadingStudents && students.length ? ` · ${setCount} ${ko ? '명 완료' : 'fully leveled'}` : ''}</p>
         </div>
         {tab === 'levels' && !assessing && (
           <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export default function WidaView() {
                               <td key={d} className="px-1.5 py-1 text-center">
                                 <button onClick={e => { e.stopPropagation(); setSelected(s.id); setDomain(d) }} title={ko ? `${DOMAIN_LABEL[d][1]} 질문에 답하기` : `Answer the ${DOMAIN_LABEL[d][0].toLowerCase()} can-do questions`}
                                   className={`w-full h-9 rounded border ${on && domain === d ? 'border-accent' : 'border-transparent'} ${lv ? LEVEL_TONE[Math.floor(lv)] : 'text-ink-3 hover:bg-paper-2'} hover:border-ink-3`}>
-                                  <span className="font-display text-[length:calc(17px*var(--ts))] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
+                                  <span className="font-display text-[length:calc(17px*var(--ts))] leading-none">{lv || '—'}</span>{lv ? <span className="block text-[length:calc(12px*var(--ts))] leading-none mt-0.5 opacity-80">{widaLevelName(lv)}</span> : null}
                                   {diff != null && diff !== 0 && <span className={`block text-[length:calc(11.5px*var(--ts))] font-bold leading-none ${diff > 0 ? 'text-good' : 'text-bad'}`}>{diff > 0 ? `+${diff}` : diff}</span>}
                                 </button>
                               </td>

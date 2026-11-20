@@ -420,11 +420,11 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
           <div className="bg-surface border border-border rounded-xl overflow-x-auto">
             <table className="w-full text-[length:calc(11.5px*var(--ts))]">
               <thead><tr className="bg-surface-alt">
-                <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[130px]">&nbsp;</th>
+                <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[130px]">&nbsp;</th>
                 {sittings.map(s => (
-                  <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">
+                  <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[110px]">
                     {s.test.academic_year} {s.test.semester}<br/>
-                    <span className="normal-case text-text-tertiary">Grade {s.test.grade}</span>
+                    <span className="text-text-tertiary">Grade {s.test.grade}</span>
                   </th>
                 ))}
               </tr></thead>
@@ -523,8 +523,8 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               </p>
               <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>
                   {([['receptive_language', 'Receptive language'], ['productive_language', 'Productive language'], ['engagement_pace', 'Engagement and pace']] as const).map(([k, label], ri) => (
@@ -571,7 +571,7 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
                 <div className="border-t border-border px-3 py-2.5 space-y-2">
                   {sittings.filter(s => s.raw?.notes || s.anec?.notes).map(s => (
                     <div key={s.test.id}>
-                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{s.test.academic_year} {s.test.semester}</p>
+                      <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{s.test.academic_year} {s.test.semester}</p>
                       {s.raw?.notes && <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-snug">&ldquo;{s.raw.notes}&rdquo; <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">&mdash; oral test</span></p>}
                       {s.anec?.notes && <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-snug">&ldquo;{s.anec.notes}&rdquo; <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">&mdash; teacher rating</span></p>}
                     </div>
@@ -592,8 +592,8 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               </p>
               <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[170px]">Anchor</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[170px]">Anchor</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>{standardsRows.map(r => (
                   <tr key={r.anchor} className="border-t border-border">
@@ -636,8 +636,8 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               </p>
               <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">Category</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[190px]">Category</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>
                   {writingRows.map(r => (
@@ -701,8 +701,8 @@ export default function LevelingHistory({ levelTest }: { levelTest: LevelTest })
               <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary px-3 pb-2">The coarse view, for when a single anchor has too few questions to trust on its own.</p>
               <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                 <thead><tr className="bg-surface-alt">
-                  <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[170px]">Domain</th>
-                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
+                  <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[170px]">Domain</th>
+                  {sittings.map(s => <th key={s.test.id} className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[110px]">{s.test.academic_year} {s.test.semester}</th>)}
                 </tr></thead>
                 <tbody>{domainRows.map(([dom, perTest]) => (
                   <tr key={dom} className="border-t border-border">

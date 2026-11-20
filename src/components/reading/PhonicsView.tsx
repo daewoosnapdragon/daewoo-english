@@ -22,6 +22,7 @@ import { BAND_TONE, BAND_CHIP, BAND_TEXT, BAND_DOT, BAND_RANGE, MARK_TILE, MARK_
 import PhonicsCellDetail from '@/components/reading/PhonicsCellDetail'
 import StudentProgressGrid from '@/components/reading/PhonicsProgress'
 import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, ClipboardCheck, Download, ExternalLink, Loader2, Minus, Pencil, Printer, RotateCcw, Trash2, X } from 'lucide-react'
+import { chip, segGroup, seg } from '@/components/ui/Controls'
 
 // ─── Phonics quick checks ────────────────────────────────────────
 // Reading → Phonics. Three faces: the heat map (every student in the class
@@ -162,16 +163,15 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
       }))
   }
 
-  const seg = (on: boolean) => `px-3 h-8 max-sm:h-10 whitespace-nowrap rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const lastDates = useMemo(() => Object.fromEntries(students.map(s => [s.id, summarizeStudent(latestByStudent[s.id] || {}).lastDate])) as Record<string, string | null>, [students, latestByStudent])
 
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-4">
-        <div className="chip-scroll inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.mode">
-          <button onClick={() => guardedSwitch(() => { setMode('heatmap'); setEditing(null) })} className={seg(mode === 'heatmap')}>{lang === 'ko' ? '반 히트맵' : 'Class heat map'}</button>
-          <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); guardedSwitch(() => { setMode('student'); setEditing(null) }) }} className={seg(mode === 'student')}>{lang === 'ko' ? '학생 진전' : 'Student progress'}</button>
-          <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); setMode('assess') }} className={seg(mode === 'assess')}>{lang === 'ko' ? '학생 점검' : 'Check a student'}</button>
+        <div className={`chip-scroll ${segGroup}`} data-guide="reading.phonics.mode">
+          <button onClick={() => guardedSwitch(() => { setMode('heatmap'); setEditing(null) })} aria-pressed={mode === 'heatmap'} className={seg(mode === 'heatmap')}>{lang === 'ko' ? '반 히트맵' : 'Class heat map'}</button>
+          <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); guardedSwitch(() => { setMode('student'); setEditing(null) }) }} aria-pressed={mode === 'student'} className={seg(mode === 'student')}>{lang === 'ko' ? '학생 진전' : 'Student progress'}</button>
+          <button onClick={() => { if (!studentId && students[0]) setStudentId(students[0].id); setMode('assess') }} aria-pressed={mode === 'assess'} className={seg(mode === 'assess')}>{lang === 'ko' ? '학생 점검' : 'Check a student'}</button>
         </div>
         <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '해독만 평가합니다. 뜻은 묻지 않습니다. 성적에 들어가지 않습니다.' : 'Decoding only, meaning never asked, nothing graded.'}</span>
         <div className="sm:ml-auto flex items-center gap-3 flex-wrap">
@@ -199,7 +199,6 @@ export default function PhonicsView({ students, loading, lang, grade, englishCla
           <section className="min-w-0">
             <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
               <div>
-                <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '시도별 진전' : 'Progress across attempts'}</p>
                 <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="ko-name text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
               </div>
               <div className="flex items-center gap-2">
@@ -310,7 +309,7 @@ export function HeatMap({ skills, students, latestByStudent, trendByStudent, lan
           <thead>
             <tr className="bg-paper-2">
               <th rowSpan={2} className="max-sm:sticky max-sm:left-0 max-sm:z-[1] bg-paper-2 text-left px-3 py-2 eyebrow font-semibold border-b border-r border-rule-2 align-bottom">{lang === 'ko' ? '학생' : 'Student'}</th>
-              {groupsFor(skills).map(({ group: g, skills: gs }) => <th key={g.id} colSpan={gs.length} title={lang === 'ko' ? g.label_ko : g.label} className="px-1 pt-2 pb-1 eyebrow !tracking-[0.08em] font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
+              {groupsFor(skills).map(({ group: g, skills: gs }) => <th key={g.id} colSpan={gs.length} title={lang === 'ko' ? g.label_ko : g.label} className="px-1 pt-2 pb-1 eyebrow font-semibold border-b border-l border-rule text-center whitespace-nowrap overflow-hidden text-ellipsis">{lang === 'ko' ? g.label_ko : g.label}</th>)}
               <th rowSpan={2} className="px-3 py-2 border-b border-l border-rule-2 eyebrow font-semibold text-left align-bottom">{lang === 'ko' ? '현재 과제' : 'Working on'}</th>
               <th rowSpan={2} className="border-b border-rule-2" />
             </tr>
@@ -518,8 +517,8 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
         {/* Student header */}
         <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
           <div>
-            <p className="eyebrow eyebrow-accent mb-1">{editing ? (lang === 'ko' ? `${editing.date} 점검 수정 중` : `Editing the check from ${editing.date}`) : (lang === 'ko' ? '파닉스 점검' : 'Phonics quick check')}</p>
             <h2 className="font-display text-[length:calc(28px*var(--ts))] leading-none text-ink">{student.english_name} <span className="ko-name text-ink-3 text-[length:calc(18px*var(--ts))]">{student.korean_name}</span></h2>
+            {editing && <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mt-1.5">{lang === 'ko' ? `${editing.date} 점검 수정 중` : `Editing the check from ${editing.date}`}</p>}
           </div>
           <div className="flex items-center gap-2">
             <label className="grid gap-0.5"><span className="eyebrow">{lang === 'ko' ? '날짜' : 'Date'}</span><input type="date" value={date} onChange={e => touch(() => setDate(e.target.value))} className="h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(13px*var(--ts))] text-ink" /></label>
@@ -589,7 +588,7 @@ function AssessPanel({ sheets, student, students, lang, latest, history, lastDat
                   const b = l ? phonicsBand(l.score) : null
                   return (
                     <button key={s.id} onClick={() => toggleSkill(s.id)} title={`${s.label}\n${s.covers}${l ? `\n${lang === 'ko' ? '최근' : 'Last'}: ${scoreText(l.score)} · ${PHONICS_BAND_LABELS[b!].en} · ${fmtShort(l.date, lang)}` : ''}`}
-                      className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium disabled:cursor-default ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>
+                      aria-pressed={on} className={`${chip(on)} disabled:cursor-default`}>
                       {s.short}
                       {b && <span className={`w-2 h-2 rounded-full ${BAND_DOT[b]}`} />}
                     </button>

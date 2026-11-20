@@ -65,7 +65,7 @@ export default function YearView({ ko, today, routines, events, jobs, semesters,
     <div className="grid gap-8">
       {/* ── The line ── */}
       <section>
-        <p className="eyebrow mb-1">{ko ? `${yearLabel} 학년도` : `School year ${yearLabel}`} <span className="text-ink-3 normal-case tracking-normal">· {marks.filter(m => !m.ghost).length} {ko ? '개 날짜' : 'dates set'}{marks.some(m => m.ghost) ? ` · ${marks.filter(m => m.ghost).length} ${ko ? '미정' : 'not set yet'}` : ''}</span></p>
+        <p className="eyebrow mb-1">{ko ? `${yearLabel} 학년도` : `School year ${yearLabel}`} <span className="text-ink-3">· {marks.filter(m => !m.ghost).length} {ko ? '개 날짜' : 'dates set'}{marks.some(m => m.ghost) ? ` · ${marks.filter(m => m.ghost).length} ${ko ? '미정' : 'not set yet'}` : ''}</span></p>
         <div className="relative h-[112px] select-none overflow-visible">
           {/* labels above, two staggered rows so neighbours do not sit on each other */}
           {marks.map((m, i) => (

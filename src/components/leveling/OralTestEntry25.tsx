@@ -1011,7 +1011,7 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
             in once there is a timed reading to judge. */}
         <div className="px-6 py-2 border-b border-border bg-surface-alt/40 shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mr-0.5">Reading level</span>
+            <span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mr-0.5">Reading level</span>
             {refBands.map(b => {
               const live = elapsed > 0 && b.key === liveBand
               return (
@@ -1080,17 +1080,17 @@ function PassageReaderModal({ passage, level, readingLevels, prevLevel, onSave, 
             )}
             <span className={`text-[length:calc(24px*var(--ts))] font-mono font-bold tabular-nums ${pausedForBreak ? 'text-warn' : ''}`}>{formatTime(elapsed)}</span>
             {pausedForBreak && (
-              <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-warn uppercase tracking-wider">
+              <span className="text-[length:calc(12px*var(--ts))] font-semibold text-warn">
                 Paused {'\u2014'} clock stopped for a break
               </span>
             )}
           </div>
           <div className="flex items-center gap-5 text-[length:calc(11.5px*var(--ts))]">
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Errors</div></div>
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">SC</div></div>
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-accent">{elapsed > 0 ? cwpm : '\u2014'}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">CWPM</div></div>
-            <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-good' : accuracy >= FRUSTRATION_ACCURACY ? 'text-warn' : elapsed > 0 ? 'text-bad' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '\u2014'}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Acc</div></div>
-            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Words</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">Errors</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">SC</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-accent">{elapsed > 0 ? cwpm : '\u2014'}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">CWPM</div></div>
+            <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= INDEPENDENT_ACCURACY ? 'text-good' : accuracy >= FRUSTRATION_ACCURACY ? 'text-warn' : elapsed > 0 ? 'text-bad' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '\u2014'}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">Acc</div></div>
+            <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">Words</div></div>
           </div>
         </div>
 
@@ -2038,7 +2038,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
           })}
         </div>
         <div className="px-4 py-2 border-b border-border bg-surface">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider">Students</p>
+          <p className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary">Students</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
             {classStudents.filter(s => studentHasData(s.id)).length}/{classStudents.length} entered
           </p>
@@ -2260,7 +2260,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                   {/* Previous attempts -- click to restore */}
                   {Array.isArray(sc.passages_attempted) && sc.passages_attempted.length > 0 && (
                     <div className="mb-4 bg-paper-2 border border-rule rounded-lg px-3 py-2">
-                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink font-semibold mb-1">Previous Attempts (click to restore)</p>
+                      <p className="text-[length:calc(12px*var(--ts))] text-ink font-semibold mb-1">Previous attempts (click to restore)</p>
                       <div className="flex gap-2 flex-wrap">
                         {sc.passages_attempted.map((att: any, i: number) => (
                           <button key={i} onClick={async () => {
@@ -2314,7 +2314,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-4">Oral Reading Fluency Results</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div>
-                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Words Read</label>
+                        <label className="text-[length:calc(12px*var(--ts))] font-medium text-ink-2 block mb-1">Words read</label>
                         <input type="number" min={0} max={passage.wordCount}
                           value={sc.orf_words_read ?? ''}
                           onChange={e => updateScore(student.id, 'orf_words_read', e.target.value === '' ? null : Number(e.target.value))}
@@ -2323,7 +2323,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         />
                       </div>
                       <div>
-                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Errors</label>
+                        <label className="text-[length:calc(12px*var(--ts))] font-medium text-ink-2 block mb-1">Errors</label>
                         <input type="number" min={0}
                           value={sc.orf_errors ?? ''}
                           onChange={e => updateScore(student.id, 'orf_errors', e.target.value === '' ? null : Number(e.target.value))}
@@ -2332,7 +2332,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         />
                       </div>
                       <div>
-                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">Time (seconds)</label>
+                        <label className="text-[length:calc(12px*var(--ts))] font-medium text-ink-2 block mb-1">Time (seconds)</label>
                         <input type="number" min={1}
                           value={sc.orf_time_seconds ?? ''}
                           onChange={e => updateScore(student.id, 'orf_time_seconds', e.target.value === '' ? null : Number(e.target.value))}
@@ -2341,7 +2341,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                         />
                       </div>
                       <div>
-                        <label className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-tertiary uppercase tracking-wider block mb-1">CWPM</label>
+                        <label className="text-[length:calc(12px*var(--ts))] font-medium text-ink-2 block mb-1">CWPM</label>
                         <div className={`px-3 py-2 rounded-lg text-[length:calc(16px*var(--ts))] font-bold text-center ${cwpm ? 'bg-paper-2 text-ink border border-rule' : 'bg-surface-alt text-text-tertiary border border-border'}`}>
                           {cwpm ?? '--'}
                         </div>
@@ -2517,23 +2517,23 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     <h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-3">Summary for {student.english_name}</h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div className="text-center">
-                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Passage</div>
+                        <div className="text-[length:calc(12px*var(--ts))] text-ink-2">Passage</div>
                         <div className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Level {passageLevel}</div>
                         <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{passage?.title}</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">CWPM</div>
+                        <div className="text-[length:calc(12px*var(--ts))] text-ink-2">CWPM</div>
                         <div className="text-[length:calc(16px*var(--ts))] font-bold text-ink">{cwpm}</div>
                         {weightedCwpm && weightedCwpm !== cwpm && <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Adjusted: {weightedCwpm} ({passageLevel})</div>}
                       </div>
                       <div className="text-center">
-                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Accuracy</div>
+                        <div className="text-[length:calc(12px*var(--ts))] text-ink-2">Accuracy</div>
                         <div className={`text-[length:calc(16px*var(--ts))] font-bold ${accuracy != null && accuracy >= INDEPENDENT_ACCURACY ? 'text-good' : accuracy != null && accuracy >= FRUSTRATION_ACCURACY ? 'text-warn' : 'text-bad'}`}>
                           {accuracy}%
                         </div>
                       </div>
                       <div className="text-center">
-                        <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Comprehension</div>
+                        <div className="text-[length:calc(12px*var(--ts))] text-ink-2">Comprehension</div>
                         <div className="text-[length:calc(16px*var(--ts))] font-bold text-navy" title={compNotAdministered ? 'Student was stopped during the passage; the questions were never asked.' : undefined}>
                           {compNotAdministered ? <span className="text-text-tertiary text-[length:calc(13px*var(--ts))]">n/a</span> : `${compTotal} / ${config.compMax}`}
                         </div>
@@ -2542,11 +2542,11 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                     {config.hasPhonics && (
                       <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-navy/10">
                         <div className="text-center">
-                          <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Phonics</div>
+                          <div className="text-[length:calc(12px*var(--ts))] text-ink-2">Phonics</div>
                           <div className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{phonicsTotal} / {config.phonicsMax}</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Sentences</div>
+                          <div className="text-[length:calc(12px*var(--ts))] text-ink-2">Sentences</div>
                           <div className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{sentTotal} / {config.sentenceMax}</div>
                         </div>
                       </div>
@@ -2561,7 +2561,7 @@ export default function OralTestGrades2to5({ levelTest, teacherClass, isAdmin }:
                       const met = stds.filter(s => s.met).length
                       return stds.length > 0 ? (
                         <div className="mt-3 pt-3 border-t border-navy/10">
-                          <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy uppercase tracking-wider mb-2">CCSS Standards ({met}/{stds.length} met)</p>
+                          <p className="text-[length:calc(12px*var(--ts))] font-bold text-navy mb-2">CCSS Standards ({met}/{stds.length} met)</p>
                           <div className="flex flex-wrap gap-1.5">
                             {stds.map((std, i) => (
                               <span key={i} className={`px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${

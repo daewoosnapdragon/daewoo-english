@@ -45,8 +45,8 @@ export default function PhonicsCellDetail({ student, skill, checks, lang, initia
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
           <div>
-            <p className="eyebrow">{getDisplayName(student)} · {student.korean_name}</p>
-            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-tight text-ink mt-1">{lang === 'ko' ? sk.label_ko : sk.label}</h3>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-tight text-ink">{lang === 'ko' ? sk.label_ko : sk.label}</h3>
+            <p className="text-[length:calc(13px*var(--ts))] font-medium text-ink-2 mt-1">{getDisplayName(student)} · {student.korean_name}</p>
             <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">
               <span className={`inline-block px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-semibold mr-2 ${BAND_TONE[band]}`} title={PHONICS_BAND_LABELS[band].means}>{PHONICS_BAND_LABELS[band][lang]}</span>
               {scoreText(score)} · {score.pct}%{score.partial > 0 && <span className="text-ink-3"> · {score.partial} {lang === 'ko' ? '부분 정답' : 'partly'}</span>} · {fmtLong(showing.date, lang)}{score.unread > 0 && <span className="text-ink-3"> · {score.unread} {lang === 'ko' ? '미읽음' : 'not read'}</span>}

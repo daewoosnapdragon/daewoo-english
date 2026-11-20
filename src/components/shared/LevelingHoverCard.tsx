@@ -6,6 +6,7 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToTextColor, classTint, classDot } from '@/lib/utils'
 import { WIDA_LEVELS } from '@/lib/wida'
+import { ArrowUp, ArrowDown, ArrowRight } from 'lucide-react'
 import { latestBySkill, orderSkills, phonicsBand, phonicsSkill, summarizeStudent, scoreText, type LatestBySkill } from '@/lib/phonics'
 import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
 
@@ -156,7 +157,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Level Test Comparison Bars ────────────────── */}
               {levelTestData && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Level Test vs. Class Averages</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-2">Level test vs. class averages</p>
                   <ComparisonBars
                     studentScores={{
                       oral: levelTestData.rawCwpm,
@@ -179,20 +180,20 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                 <div className="flex gap-2">
                   {levelTestData.percentile != null && (
                     <div className="flex-1 bg-surface-alt rounded-lg px-2.5 py-1.5 text-center">
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">RANK</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">Rank</p>
                       <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{Math.round(levelTestData.percentile * 100)}%ile</p>
                     </div>
                   )}
                   {levelTestData.suggestedClass && (
                     <div className="flex-1 rounded-lg px-2.5 py-1.5 text-center border"
                       style={{ borderColor: classTint(levelTestData.suggestedClass as EnglishClass, 38), backgroundColor: classTint(levelTestData.suggestedClass as EnglishClass, 6) }}>
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">SUGGESTED</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">Suggested</p>
                       <p className="text-[length:calc(12px*var(--ts))] font-bold" style={{ color: classToTextColor(levelTestData.suggestedClass as EnglishClass) }}>{levelTestData.suggestedClass}</p>
                     </div>
                   )}
                   {levelTestData.passageLevel && (
                     <div className="flex-1 bg-surface-alt rounded-lg px-2.5 py-1.5 text-center">
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">PASSAGE</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">Passage</p>
                       <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{levelTestData.passageLevel}</p>
                     </div>
                   )}
@@ -202,14 +203,14 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── WIDA domains ─────────────────────────────── */}
               {widaVals.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">WIDA Profile</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">WIDA profile</p>
                   <div className="flex gap-1.5">
                     {Object.entries(data.wida).map(([d, v]) => {
                       const info = WIDA_LEVELS.find(w => w.level === Math.floor(v))
                       return (
                         <div key={d} className="flex-1 rounded-lg p-1.5 text-center border"
                           style={info ? { backgroundColor: `var(--wida-${info.level})`, borderColor: `color-mix(in srgb, var(--wida-${info.level}-ink) 30%, transparent)` } : { backgroundColor: 'rgb(var(--paper-2))', borderColor: 'rgb(var(--rule))' }}>
-                          <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-ink-2 uppercase">{domainLabels[d] || d}</p>
+                          <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink-2">{domainLabels[d] || d}</p>
                           <p className="text-[length:calc(14px*var(--ts))] font-bold" style={{ color: info ? `var(--wida-${info.level}-ink)` : 'rgb(var(--ink-3))' }}>{v}</p>
                         </div>
                       )
@@ -225,7 +226,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                 const tone = (b: string) => b === 'mastered' ? 'bg-good border-good text-white' : b === 'developing' ? 'bg-warn-soft border-warn/30 text-warn' : 'bg-bad-soft border-bad/30 text-bad'
                 return (
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
                     <div className="flex flex-wrap gap-1">
                       {orderSkills(Object.keys(data.phonics)).map(id => { const l = data.phonics[id]; return (
                         <span key={id} className={`px-1.5 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
@@ -238,7 +239,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Semester Grades ──────────────────────────── */}
               {data.grades.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Fall Semester Grades</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Fall semester grades</p>
                   <div className="flex flex-wrap gap-1">
                     {data.grades.slice(0, 6).map((g, i) => (
                       <div key={i} className={`px-2 py-1 rounded-lg text-center min-w-[46px] ${g.score >= 80 ? 'bg-good-soft border border-good/30' : g.score >= 60 ? 'bg-warn-soft border border-warn/30' : 'bg-bad-soft border border-bad/30'}`}>
@@ -253,7 +254,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Reading trend ────────────────────────────── */}
               {readings.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Reading Fluency</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Reading fluency</p>
                   <div className="flex items-center gap-2">
                     {readings.slice(0, 3).map((r, i) => (
                       <div key={i} className="bg-surface-alt rounded-lg px-2.5 py-1.5 text-center flex-1">
@@ -261,8 +262,8 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                         <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{r.cwpm ? Math.round(r.cwpm) : '--'}</p>
                       </div>
                     ))}
-                    <div className={`text-[length:calc(16px*var(--ts))] ${readTrend === 'up' ? 'text-good' : readTrend === 'down' ? 'text-bad' : 'text-text-tertiary'}`}>
-                      {readTrend === 'up' ? '↑' : readTrend === 'down' ? '↓' : '→'}
+                    <div className={readTrend === 'up' ? 'text-good' : readTrend === 'down' ? 'text-bad' : 'text-text-tertiary'} aria-label={readTrend === 'up' ? 'Reading speed up' : readTrend === 'down' ? 'Reading speed down' : 'Reading speed steady'}>
+                      {readTrend === 'up' ? <ArrowUp size={16} /> : readTrend === 'down' ? <ArrowDown size={16} /> : <ArrowRight size={16} />}
                     </div>
                   </div>
                 </div>

@@ -403,7 +403,7 @@ function ClusterTracker() {
       {/* Class + Grade selector */}
       <div className="flex flex-wrap items-center gap-3 mb-5">
         <div>
-          <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Class</label>
+          <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Class</label>
           <div className="flex gap-1">
             {ENGLISH_CLASSES.map(c => (
               <button key={c} onClick={() => setCls(c)} className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${cls === c ? 'text-white' : 'text-text-secondary hover:bg-surface-alt'}`}
@@ -412,7 +412,7 @@ function ClusterTracker() {
           </div>
         </div>
         <div>
-          <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Student Grade</label>
+          <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Student Grade</label>
           <div className="flex gap-1">{GRADES.map(g => <button key={g} onClick={() => setGr(g)} className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium ${gr === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Gr {g}</button>)}</div>
         </div>
       </div>
@@ -513,7 +513,7 @@ function ClusterTracker() {
           return (
             <div key={domKey} className="bg-surface border border-border rounded-xl overflow-hidden">
               <div className="px-4 py-2.5 bg-surface-alt border-b border-border">
-                <h3 className="text-[length:calc(12px*var(--ts))] font-bold text-navy uppercase tracking-wider">{domInfo?.label || domKey}</h3>
+                <h3 className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{domInfo?.label || domKey}</h3>
               </div>
               <div className="divide-y divide-border/50">
                 {Array.from(clusterGroups.entries()).map(([clusterName, clusterStds]) => (

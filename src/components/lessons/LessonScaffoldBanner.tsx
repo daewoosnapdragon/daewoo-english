@@ -124,7 +124,7 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
           {/* Grade tabs for quick switching */}
           {onGradeChange && (
             <div className="flex items-center gap-1.5 mb-3">
-              <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-blue-600 font-semibold mr-1">Grade:</span>
+              <span className="text-[length:calc(12px*var(--ts))] text-blue-600 font-semibold mr-1">Grade:</span>
               {[1, 2, 3, 4, 5].map(g => (
                 <button key={g} onClick={() => onGradeChange(g as Grade)}
                   className={`px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${grade === g ? 'bg-navy text-white' : 'bg-white text-blue-700 border border-blue-200 hover:bg-blue-50'}`}>
@@ -135,8 +135,8 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-blue-800 font-semibold mb-2">
-                <Users size={10} className="inline mr-1" />Class WIDA Distribution ({studentCount} students)
+              <p className="text-[length:calc(12px*var(--ts))] text-blue-800 font-semibold mb-2">
+                <Users size={10} className="inline mr-1" />Class WIDA distribution ({studentCount} students)
               </p>
               <div className="space-y-1">
                 {distribution.map(d => {
@@ -165,8 +165,8 @@ export default function LessonScaffoldBanner({ englishClass, grade, onGradeChang
               </p>
             </div>
             <div>
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-blue-800 font-semibold mb-2">
-                <Lightbulb size={10} className="inline mr-1" />Scaffolding Strategies
+              <p className="text-[length:calc(12px*var(--ts))] text-blue-800 font-semibold mb-2">
+                <Lightbulb size={10} className="inline mr-1" />Scaffolding strategies
               </p>
               {/* Level filter tabs */}
               <div className="flex gap-1 mb-2 flex-wrap">

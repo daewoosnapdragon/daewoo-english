@@ -75,9 +75,9 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
         <button onClick={onClose} className="absolute top-3 right-3 w-8 h-8 rounded text-ink-3 hover:text-ink hover:bg-paper-2 flex items-center justify-center" aria-label={ko ? '닫기' : 'Close'}><X size={16} /></button>
 
         <div className="pr-8">
-          {fresh && <p className="eyebrow eyebrow-accent mb-1">{ko ? '추가됨 · 담당 없음 · 단계와 세부 내용을 적어 두세요' : 'Added · nobody yet · add the steps and details while it is in mind'}</p>}
-          <p className="eyebrow mb-1">{job.category || (ko ? '분류 없음' : 'No category')} · <span>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id), ctx.semesterStart(job.semester_id))}</span></p>
           <input value={title} onChange={e => setTitle(e.target.value)} onBlur={() => title.trim() && saveField({ title: title.trim() })} className="w-full bg-transparent font-display text-[length:calc(26px*var(--ts))] leading-tight text-ink border-b border-transparent hover:border-rule-2 focus:border-rule-2 outline-none" aria-label={ko ? '제목' : 'Title'} />
+          <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mt-1.5">{job.category || (ko ? '분류 없음' : 'No category')} · <span>{dueLabel(job, ctx.today, ko, ctx.semesterName(job.semester_id), ctx.semesterStart(job.semester_id))}</span></p>
+          {fresh && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">{ko ? '추가됨 · 담당 없음 · 단계와 세부 내용을 적어 두세요' : 'Added · nobody yet · add the steps and details while it is in mind'}</p>}
         </div>
 
         {/* Owner */}
@@ -115,7 +115,7 @@ export default function JobDrawer({ job, ctx, fresh = false, onClose, onOpen }: 
 
         {/* Steps */}
         <div>
-          <p className={label}>{ko ? '단계' : 'Steps'}{job.steps.length ? ` · ${stepsDone}/${job.steps.length} · ${percent(job)}%` : ''}{(() => { const e = pace(job, ctx.today); return e !== null ? <span className={`normal-case tracking-normal ${e > (percent(job) || 0) + 10 ? 'text-warn' : 'text-ink-3'}`}> · {ko ? `기간의 ${e}% 경과` : `${e}% of the time gone`}</span> : null })()}</p>
+          <p className={label}>{ko ? '단계' : 'Steps'}{job.steps.length ? ` · ${stepsDone}/${job.steps.length} · ${percent(job)}%` : ''}{(() => { const e = pace(job, ctx.today); return e !== null ? <span className={`${e > (percent(job) || 0) + 10 ? 'text-warn' : 'text-ink-3'}`}> · {ko ? `기간의 ${e}% 경과` : `${e}% of the time gone`}</span> : null })()}</p>
           {percent(job) !== null && job.status !== 'done' && (() => { const e = pace(job, ctx.today), p = percent(job)!; return <span className="block relative h-[4px] bg-paper-2 rounded mb-2"><span className="block h-full bg-good rounded" style={{ width: `${p}%` }} />{e !== null && <span className={`absolute -top-[2px] w-px h-[8px] ${e > p + 10 ? 'bg-warn' : 'bg-ink-3'}`} style={{ left: `${e}%` }} />}</span> })()}
           <ul className="border-t border-rule">
             {job.steps.map(s => (

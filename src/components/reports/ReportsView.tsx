@@ -34,6 +34,8 @@ import CommentBuilder from '@/components/reports/CommentBuilder'
 import { goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
 import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 type LangKey = 'en' | 'ko'
 
@@ -239,8 +241,8 @@ export default function ReportsView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}{!canEdit ? ` · ${lang === 'ko' ? '읽기 전용' : 'read-only'}` : ''}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{t.reports.title}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}{!canEdit ? ` · ${lang === 'ko' ? '읽기 전용' : 'read-only'}` : ''}</p>
         </div>
       </div>
       <div className="flex border-b border-rule-2 mb-4 overflow-x-auto">
@@ -356,14 +358,14 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-        <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Recent Behavior Logs</p>
+        <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1">Recent behavior logs</p>
         <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic">No behavior logs yet.</p>
       </div>
     )
   }
   return (
     <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Recent Behavior Logs ({logs.length})</p>
+      <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Recent Behavior Logs ({logs.length})</p>
       <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
         {logs.map((log: any) => {
           const style = BEHAVIOR_TYPE_STYLE[log.type] || BEHAVIOR_TYPE_STYLE.note
@@ -372,7 +374,7 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
           return (
             <div key={log.id} className={`flex items-start gap-2 px-2 py-1 rounded border ${style.bg}`}>
               <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold whitespace-nowrap mt-px w-10 flex-shrink-0">{dt}</span>
-              <span className={`text-[length:calc(11.5px*var(--ts))] font-bold uppercase ${style.text} whitespace-nowrap mt-px w-16 flex-shrink-0`}>{style.label}</span>
+              <span className={`text-[length:calc(12px*var(--ts))] font-bold ${style.text} whitespace-nowrap mt-px w-16 flex-shrink-0`}>{style.label}</span>
               <span className="text-[length:calc(11.5px*var(--ts))] text-[#475569] leading-snug">{summary}</span>
               {log.is_flagged && <span className="text-amber-600 text-[length:calc(11.5px*var(--ts))] flex-shrink-0">★</span>}
             </div>
@@ -781,7 +783,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const prev = pronoun
     setPronoun(p)
     const { error } = await supabase.from('students').update({ pronoun: p, updated_at: new Date().toISOString() }).eq('id', studentId)
-    if (error) { setPronoun(prev); showToast(error.message?.includes('pronoun') ? 'Run supabase/migration-comment-phrases.sql first.' : `Error: ${error.message}`); return }
+    if (error) { setPronoun(prev); showToast(error.message?.includes('pronoun') ? /* supabase/migration-comment-phrases.sql */ partNeedsUpdate({ en: 'Saving the pronoun', ko: '대명사 저장' }, { en: 'comment phrases', ko: '코멘트 문구' }, lang === 'ko') : `Error: ${error.message}`, { tone: 'error' }); return }
     ;(students.find((x: any) => x.id === studentId) || {} as any).pronoun = p
     logActivity('edited', `Pronoun set · ${studentName} · ${p}`)
   }
@@ -792,7 +794,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const prev = goesBy
     setGoesBy(next)
     const { error } = await supabase.from('students').update({ goes_by: next, updated_at: new Date().toISOString() }).eq('id', studentId)
-    if (error) { setGoesBy(prev); setCalledDraft(goesByFrom(data?.student?.english_name, prev)); showToast(error.message?.includes('goes_by') ? 'Run supabase/migration-goes-by.sql first.' : `Error: ${error.message}`); return }
+    if (error) { setGoesBy(prev); setCalledDraft(goesByFrom(data?.student?.english_name, prev)); showToast(error.message?.includes('goes_by') ? /* supabase/migration-goes-by.sql */ partNeedsUpdate({ en: 'Saving the name used in comments', ko: '코멘트에 쓰는 이름 저장' }, { en: 'goes-by name', ko: '부르는 이름' }, lang === 'ko') : `Error: ${error.message}`, { tone: 'error' }); return }
     ;(students.find((x: any) => x.id === studentId) || {} as any).goes_by = next
     logActivity('edited', `Called ${next} in comments · ${studentName}`)
   }
@@ -806,7 +808,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
     const next = !hideComparison
     setHideComparison(next)
     const { error } = await supabase.from('comments').upsert({ student_id: studentId, semester_id: semesterId, report_type: 'report_card', hide_comparison: next, text: comment.trim(), is_skipped: commentSkipped, created_by: currentTeacher?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'student_id,semester_id,report_type' })
-    if (error) { setHideComparison(!next); showToast(error.message?.includes('hide_comparison') ? 'Run the hide_comparison migration first.' : `Error: ${error.message}`) }
+    if (error) { setHideComparison(!next); showToast(error.message?.includes('hide_comparison') ? partNeedsUpdate({ en: 'Hiding the class comparison', ko: '반 비교 숨기기' }, { en: 'hide comparison', ko: '비교 숨기기' }, lang === 'ko') : `Error: ${error.message}`, { tone: 'error' }) }
     else { showToast(next ? 'Class comparison hidden' : 'Class comparison shown'); logActivity('edited', `Report card · ${data?.student?.english_name || ''} · class comparison ${next ? 'hidden' : 'shown'}`) }
   }
 
@@ -874,7 +876,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Header ─── */}
         <div className="bg-navy px-7 py-5 text-white flex justify-between items-center">
           <div>
-            <div className="text-[length:calc(11.5px*var(--ts))] opacity-50 tracking-[2.5px] uppercase font-medium">Daewoo Elementary School</div>
+            <div className="text-[length:calc(12px*var(--ts))] opacity-50 font-medium">Daewoo Elementary School</div>
             <div className="text-[length:calc(22px*var(--ts))] font-bold mt-1 font-display">{d.semesterName} Report Card</div>
             <div className="text-[length:calc(11.5px*var(--ts))] opacity-75 mt-0.5 font-semibold tracking-wide">Daewoo English Village</div>
           </div>
@@ -918,7 +920,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Score Tiles ─── */}
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
-            <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Academic Performance{!hideGrowth && d.prevSemesterName && <span className="normal-case tracking-normal font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
+            <div className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold">Academic Performance{!hideGrowth && d.prevSemesterName && <span className="font-normal text-[#b8b0a6]"> &nbsp;·&nbsp; ▲▼ vs {d.prevSemesterName}</span>}</div>
             {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
@@ -1032,7 +1034,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         {/* ─── Class Comparison (bars: student vs class) ─── */}
         <div className="bg-white px-7 pt-5 pb-4" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3">
-            <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Class Comparison</div>
+            <div className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold">Class comparison</div>
             <div className="flex items-center gap-4">
               {!hideComparison && (
                 <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">
@@ -1062,7 +1064,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
             <div className="min-w-0 max-w-[760px]" style={{ flex: '999 1 480px' }}>
               <div className="flex items-start justify-between gap-4 mb-2.5 flex-wrap">
                 <div>
-                  <label htmlFor="rc-comment" className="block text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Report card comment</label>
+                  <label htmlFor="rc-comment" className="block text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold">Report card comment</label>
                   <div className="text-[length:calc(14px*var(--ts))] font-bold text-[#1e293b] leading-tight mt-0.5">{d.teacherName} Teacher<span className="font-normal text-[#94a3b8] text-[length:calc(11.5px*var(--ts))]"> &middot; {d.semesterClass || s.english_class} Class</span></div>
                 </div>
                 {canEdit && (
@@ -1153,7 +1155,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
 
         {/* ─── Grading Scale + Footer ─── */}
         <div className="bg-white px-7 py-4">
-          <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold mb-2.5">Grading Scale</div>
+          <div className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-2.5">Grading scale</div>
           <div className="flex gap-1 flex-wrap">
             {SCALE_DISPLAY.map((r: any) => (
               <span key={r.letter + r.range} className="px-2 py-0.5 rounded bg-[#EDF1F8] border border-[#C8CED8] text-[length:calc(11.5px*var(--ts))] inline-flex gap-1">
@@ -1915,7 +1917,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         <div className="rounded-xl border border-border overflow-hidden">
         <div className="bg-white px-7 py-5" style={{ borderBottom: '1px solid #C8CED8' }}>
           <div className="flex items-center justify-between mb-3.5">
-            <div className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Domain Performance</div>
+            <div className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold">Domain performance</div>
             {!editingGrades ? (canEdit ? (
               <button onClick={() => {
                 const eg: Record<string, string> = {}
@@ -2058,7 +2060,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-2">Domain Grades</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-2">Domain grades</p>
                   {DOMAINS.map(dom => {
                     const isNa = !!d.domainNa[dom]
                     const v = d.domainGrades[dom]
@@ -2078,7 +2080,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                 </div>
                 <div className="space-y-2">
                   <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Reading Fluency</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1">Reading fluency</p>
                     <div className="flex gap-4">
                       <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">CWPM</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.cwpm != null ? Math.round(d.latestReading.cwpm) : '--'}</p></div>
                       <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Lexile</p><p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{d.latestReading?.reading_level || d.latestReading?.passage_level || '--'}</p></div>
@@ -2087,7 +2089,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                     </div>
                   </div>
                   <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1">Attendance / Behavior</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1">Attendance / behavior</p>
                     <div className="flex gap-4">
                       <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Attendance</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
                       <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Behavior Logs</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.behaviorCount}</p></div>
@@ -2100,11 +2102,11 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               {d.scaffolds && d.scaffolds.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {d.scaffolds.map((sc: any, i: number) => (
                       <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[length:calc(11.5px*var(--ts))] text-blue-800">
-                        <span className="font-bold uppercase text-[length:calc(11.5px*var(--ts))]">{sc.domain}</span> {sc.scaffold_text}
+                        <span className="font-bold text-[length:calc(12px*var(--ts))]">{sc.domain}</span> {sc.scaffold_text}
                         {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
                         {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
                       </span>
@@ -2115,7 +2117,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               {d.goals && d.goals.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
                   <div className="space-y-0.5">
                     {d.goals.map((g: any, i: number) => (
                       <div key={i} className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))]">
@@ -2136,7 +2138,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
       <div className="rounded-xl border border-border bg-surface p-5 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[length:calc(11.5px*var(--ts))] tracking-[2px] uppercase text-[#94a3b8] font-semibold">Progress report comment</p>
+            <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold">Progress report comment</p>
             <p className="text-[length:calc(13.5px*var(--ts))] font-semibold text-ink">{d.teacherName} <span className="font-normal text-ink-3">· {s.english_class} class</span></p>
           </div>
           {canEdit ? (
@@ -2271,7 +2273,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
   const saveAll = async () => {
     if (!dirtyIds.length) return
     setSaving(true)
-    let errors = 0
+    const failed: string[] = []
     for (const id of dirtyIds) {
       const r = rows[id]
       const { error } = await supabase.from('comments').upsert({
@@ -2279,11 +2281,13 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
         text: r.text.trim(), is_skipped: r.skipped,
         created_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
       }, { onConflict: 'student_id,semester_id,report_type' })
-      if (error) errors++
+      // A failed comment stays dirty with its text in the box, so Retry sends it again.
+      if (error) failed.push(students.find((s: any) => s.id === id)?.english_name || id)
       else setRows(prev => ({ ...prev, [id]: { ...prev[id], dirty: false } }))
     }
     setSaving(false)
-    showToast(errors ? `Saved with ${errors} error(s)` : `Saved ${dirtyIds.length} comment${dirtyIds.length === 1 ? '' : 's'}`)
+    if (failed.length) showToast(notSavedMessage(failed, lang === 'ko', { en: 'comments', ko: '코멘트' }), { tone: 'error', action: { label: retryLabel(lang === 'ko'), onClick: () => { saveAll() } } })
+    else showToast(`Saved ${dirtyIds.length} comment${dirtyIds.length === 1 ? '' : 's'}`)
     logActivity('saved', `${docLabel} comments · ${selectedClass} · Grade ${selectedGrade} · ${dirtyIds.map(id => students.find((s: any) => s.id === id)?.english_name).filter(Boolean).join(', ').slice(0, 120)}`, { key: `comments:${docType}:${selectedClass}:${selectedGrade}` })
   }
 
@@ -2416,7 +2420,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       onConflict: 'student_id,semester_id'
     }).select().single()
     if (error) {
-      showToast(error.message?.includes('404') || error.code === '42P01' ? 'Report card reviews table not set up yet. Run the SQL migration.' : `Error: ${error.message}`)
+      showToast(error.message?.includes('404') || error.code === '42P01' ? partNeedsUpdate({ en: 'Report card review', ko: '성적표 검토' }, { en: 'report card reviews', ko: '성적표 검토' }, false) : `Error: ${error.message}`, { tone: 'error' })
     } else {
       setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
       setJustApproved(prev => { const n = new Set(prev); if (newVal) n.add(studentId); else n.delete(studentId); return n })
@@ -2462,7 +2466,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
     }
     const { data, error } = await supabase.from('report_card_reviews').upsert(row, { onConflict: 'student_id,semester_id' }).select().single()
     if (error) {
-      showToast(error.code === '42P01' || error.message?.includes('reviewer_note') ? 'Run the reviewer-note SQL migration first.' : `Error: ${error.message}`)
+      showToast(error.code === '42P01' || error.message?.includes('reviewer_note') ? partNeedsUpdate({ en: 'A note to the teacher', ko: '교사에게 남기는 메모' }, { en: 'reviewer note', ko: '검토 메모' }, false) : `Error: ${error.message}`, { tone: 'error' })
     } else {
       setReviews(prev => ({ ...prev, [studentId]: { ...prev[studentId], ...data } }))
       logActivity('edited', `Reviewer note ${text ? 'left for the teacher' : 'cleared'} · ${students.find((s: any) => s.id === studentId)?.english_name || ''}${text ? ` · ${text.slice(0, 80)}` : ''}`)
@@ -2526,11 +2530,11 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
           <div className="flex gap-4 text-center">
             <div>
               <p className="text-[length:calc(22px*var(--ts))] font-bold text-green-600">{adminCount}/{students.length}</p>
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary">Admin Approved · Ready to Print</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Admin approved · ready to print</p>
             </div>
             <div>
               <p className={`text-[length:calc(22px*var(--ts))] font-bold ${flaggedCount > 0 ? 'text-orange-500' : 'text-text-tertiary'}`}>{flaggedCount}</p>
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary">Needs Changes</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Needs changes</p>
             </div>
           </div>
         </div>
@@ -2557,9 +2561,9 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="px-4 py-2.5 bg-surface-alt border-b border-border grid grid-cols-[auto,1fr,8rem,6rem] items-center gap-4">
           <span className="w-4" />
-          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
-          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold text-center">Admin Approval</span>
-          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold text-center">Status</span>
+          <span className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Student</span>
+          <span className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold text-center">Admin approval</span>
+          <span className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold text-center">Status</span>
         </div>
         {students.map(student => {
           const r = reviews[student.id]
@@ -2611,7 +2615,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                 <div className="px-4 pb-4 pl-11 grid gap-3 bg-surface-alt/20">
                   {/* Teacher comment (read-only) */}
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold mb-1">Teacher's Comment</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold mb-1">Teacher's comment</p>
                     <div className="bg-white border border-border rounded-lg p-3 text-[length:calc(12px*var(--ts))] leading-relaxed text-text-primary whitespace-pre-wrap">
                       {c?.is_skipped ? <span className="italic text-text-tertiary">Comment skipped for this student.</span>
                         : (c?.text?.trim() ? c.text : <span className="italic text-text-tertiary">No comment entered yet.</span>)}
@@ -2619,7 +2623,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   </div>
                   {/* Reviewer feedback */}
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold mb-1">Reviewer Feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold mb-1">Reviewer Feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
                     {canLeaveFeedback ? (
                       <>
                         <textarea value={noteDraft[student.id] ?? r?.reviewer_note ?? ''}
@@ -2692,7 +2696,7 @@ function PrintCenter({ students, semesterId, selectedClass, selectedGrade, isAdm
       updated_by: currentTeacher?.id || null, updated_at: new Date().toISOString(),
     }, { onConflict: 'semester_id,grade' })
     setSavingReady(false)
-    if (error) { showToast(error.code === '42P01' ? 'grade_print_status table not set up yet. Run the SQL migration.' : `Error: ${error.message}`); return }
+    if (error) { showToast(error.code === '42P01' ? partNeedsUpdate({ en: 'Marking a grade as printed', ko: '인쇄 표시' }, { en: 'print status', ko: '인쇄 상태' }, false) : `Error: ${error.message}`, { tone: 'error' }); return }
     setGradeReady(next); if (next) setOverride(false)
     logActivity('edited', `Grade ${selectedGrade} ${next ? 'marked ready to print' : 'unmarked as ready to print'}`)
     showToast(next ? `Grade ${selectedGrade} marked ready to print` : `Grade ${selectedGrade} unmarked`)
@@ -2896,7 +2900,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
         <div className="flex gap-6">
           {DOMAINS.map((d) => (
             <div key={d} className="text-center">
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{DOMAIN_SHORT[d]}</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{DOMAIN_SHORT[d]}</p>
               <p className="text-lg font-bold text-navy">{classAvgs[d] > 0 ? `${classAvgs[d]}%` : '\u2014'}</p>
             </div>
           ))}
@@ -2907,11 +2911,11 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
       <div className="bg-surface border border-border rounded-xl shadow-sm overflow-hidden">
         <table className="w-full text-[length:calc(13px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8">#</th>
-            <th className="text-left px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-            {DOMAINS.map((d) => <th key={d} className="text-center px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">{DOMAIN_SHORT[d]}</th>)}
-            <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Overall</th>
-            <th className="text-center px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Grade</th>
+            <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-8">#</th>
+            <th className="text-left px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Student</th>
+            {DOMAINS.map((d) => <th key={d} className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">{DOMAIN_SHORT[d]}</th>)}
+            <th className="text-center px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Overall</th>
+            <th className="text-center px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Grade</th>
           </tr></thead>
           <tbody>
             {summaries.map((s: any, i: number) => (
@@ -3138,7 +3142,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
                   </td>
                 ))}
                 <td className="text-center py-2 px-2">
-                  {commentSkipped ? <span title="Comment skipped" className="text-ink-3 text-[length:calc(11.5px*var(--ts))] font-semibold">SKIP</span> : hasComment ? <span title="Comment written" className="text-good font-bold">&#10003;</span> : <span title="No comment" className="text-ink-3">&mdash;</span>}
+                  {commentSkipped ? <span title="Comment skipped" className="text-ink-3 text-[length:calc(11.5px*var(--ts))] font-semibold">Skip</span> : hasComment ? <span title="Comment written" className="text-good font-bold">&#10003;</span> : <span title="No comment" className="text-ink-3">&mdash;</span>}
                 </td>
                 <td className="text-right py-2 px-2 text-ink-3"><ChevronRight size={14} className={isComplete ? '' : 'opacity-50'} /></td>
               </tr>

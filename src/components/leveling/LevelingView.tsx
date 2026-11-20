@@ -12,7 +12,7 @@ import { loadClassTeacherMap } from '@/lib/classTeacherData'
 import { Student, EnglishClass, Grade, ENGLISH_CLASSES, GRADES, LevelTest, TeacherAnecdotalRating } from '@/types'
 import { classToColor, classToTextColor, domainLabel, compRatioForComposite, capComponent, COMPONENT_CAP,
   compositeWeightsFor, COMPOSITE_TERM_LABELS, DECODING_WEIGHTS, IMPLAUSIBLE_CWPM, IMPLAUSIBLE_READ_SECONDS, writingTotalFrom, type CompositeTerm, type CompositeWeights, classTint, classDot } from '@/lib/utils'
-import { Plus, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2, BarChart3 } from 'lucide-react'
+import { Plus, Pencil, Loader2, Save, Lock, GripVertical, ArrowUp, ArrowDown, Minus, AlertTriangle, ChevronLeft, ChevronRight, Star, X, SlidersHorizontal, Printer, Download, Users, BookOpen, Upload, Check, Shield, RefreshCw, Archive, ArchiveRestore, Trash2, BarChart3 } from 'lucide-react'
 import WIDABadge from '@/components/shared/WIDABadge'
 import LevelingHoverCard from '@/components/shared/LevelingHoverCard'
 import Grade1ScoreEntry, { G1ResultsView } from '@/components/leveling/Grade1ScoreEntry'
@@ -37,6 +37,8 @@ import {
 } from '@/components/leveling/placement'
 import StudentLevelingCard, { PrintDossier } from '@/components/leveling/StudentLevelingCard'
 import Overlay from '@/components/ui/Overlay'
+import { chip, chipRow, tab as tabClass } from '@/components/ui/Controls'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 
 type Phase = 'setup' | 'scores' | 'written_test' | 'anecdotal' | 'results' | 'history' | 'meeting'
 
@@ -226,8 +228,8 @@ function LevelingView() {
                   <p className="text-[length:calc(12px*var(--ts))] text-text-tertiary mt-0.5">Grade {t.grade} | {t.semester === 'spring' ? 'Spring' : t.semester === 'fall' ? 'Fall' : t.semester} | {t.academic_year}</p>
                 </button>
                 <div className="flex items-center gap-2 shrink-0 ml-3">
-                  {archived && <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-2 py-1 rounded-full bg-paper-3 text-ink">ARCHIVED</span>}
-                  <span className={`text-[length:calc(11.5px*var(--ts))] font-bold px-2 py-1 rounded-full ${t.status === 'finalized' ? 'bg-good-soft text-good' : 'bg-warn-soft text-warn'}`}>{t.status.toUpperCase()}</span>
+                  {archived && <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-2 py-1 rounded-full bg-paper-3 text-ink">Archived</span>}
+                  <span className={`text-[length:calc(11.5px*var(--ts))] font-bold px-2 py-1 rounded-full ${t.status === 'finalized' ? 'bg-good-soft text-good' : 'bg-warn-soft text-warn'}`}>{t.status.charAt(0).toUpperCase() + t.status.slice(1)}</span>
                   {isLeadTeacher && (
                     <button onClick={() => handleToggleArchive(t)}
                       title={archived ? 'Show this test in the list again' : 'Hide from this list. Scores are kept.'}
@@ -259,7 +261,7 @@ function LevelingView() {
       <div className="px-10 pt-8 pb-6 bg-surface border-b border-border">
         <h2 className="font-display text-[length:calc(26px*var(--ts))] font-semibold tracking-tight text-navy">{pageTitle}</h2>
       </div>
-      <div className="px-10 py-3 bg-surface-alt border-b border-border flex items-center gap-1">
+      <div className="scroll-row px-4 sm:px-10 bg-surface border-b border-rule-2 flex items-center gap-1">
         <button onClick={() => setSelectedTest(null)} className="text-[length:calc(12px*var(--ts))] text-text-tertiary hover:text-navy mr-3"><ChevronLeft size={14} className="inline" /> All Tests</button>
         <span className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mr-4">{selectedTest.name}</span>
         {/* Grade 1 Wave 1 (oral only): skip Teacher Ratings. Wave 2 (has written): show all phases. */}
@@ -269,15 +271,15 @@ function LevelingView() {
           ? (['scores', 'anecdotal', 'results', 'history', 'meeting'] as Phase[])
           : (['scores', 'written_test', 'anecdotal', 'results', 'history', 'meeting'] as Phase[])
         ).map(p => (
-          <button key={p} onClick={() => setPhase(p)} className={`px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${phase === p ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-surface'}`}>
+          <button key={p} role="tab" aria-selected={phase === p} onClick={() => setPhase(p)} className={tabClass(phase === p)}>
             {p === 'scores'
               // Grade 1 has no separate Written Test phase -- both tests are
               // entered as tabs inside this one, so "Oral Test" undersells it.
-              ? (String(selectedTest.grade) === '1' ? 'Tests' : 'Oral Test')
-              : p === 'written_test' ? 'Written Test' : p === 'anecdotal' ? 'Teacher Ratings' : p === 'results' ? 'Results' : p === 'history' ? 'History' : 'Leveling Meeting'}
+              ? (String(selectedTest.grade) === '1' ? 'Tests' : 'Oral test')
+              : p === 'written_test' ? 'Written test' : p === 'anecdotal' ? 'Teacher ratings' : p === 'results' ? 'Results' : p === 'history' ? 'History' : 'Leveling meeting'}
           </button>
         ))}
-        <span className={`ml-auto text-[length:calc(11.5px*var(--ts))] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-good-soft text-good' : 'bg-warn-soft text-warn'}`}>{selectedTest.status.toUpperCase()}</span>
+        <span className={`ml-auto text-[length:calc(11.5px*var(--ts))] font-bold px-2 py-1 rounded-full ${selectedTest.status === 'finalized' ? 'bg-good-soft text-good' : 'bg-warn-soft text-warn'}`}>{selectedTest.status.charAt(0).toUpperCase() + selectedTest.status.slice(1)}</span>
       </div>
       {/* Grade 1 has no separate Written Test phase, so "continue" from the
           test screens goes to Teacher Ratings, which is genuinely next. */}
@@ -362,7 +364,7 @@ function EmergencyLeveling() {
       <div className="bg-surface border border-rule rounded-xl p-4 space-y-3">
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student</label>
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Student</label>
             <select value={selectedStudent} onChange={e => { setSelectedStudent(e.target.value); const s = students.find(st => st.id === e.target.value); if (s) setNewClass(s.english_class as EnglishClass) }}
               className="w-full px-2.5 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] bg-surface outline-none focus:border-accent">
               <option value="">Select student...</option>
@@ -370,14 +372,14 @@ function EmergencyLeveling() {
             </select>
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Move To</label>
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Move to</label>
             <select value={newClass} onChange={e => setNewClass(e.target.value as EnglishClass)}
               className="w-full px-2.5 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] bg-surface outline-none focus:border-accent">
               {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Reason *</label>
+            <label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Reason *</label>
             <input value={reason} onChange={e => setReason(e.target.value)} placeholder="Why is this student being moved?"
               className="w-full px-2.5 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] bg-surface outline-none focus:border-accent" />
           </div>
@@ -575,15 +577,16 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
   const handleSaveClass = async () => {
     setSaving(true)
     const cs = students.filter(s => s.english_class === activeTab)
-    let errors = 0
+    const failed: string[] = []
     for (const s of cs) {
       const { error } = await supabase.from('level_test_scores').upsert({
         level_test_id: levelTest.id, student_id: s.id, raw_scores: scores[s.id] || {}, previous_class: s.english_class, entered_by: currentTeacher?.id || null,
       }, { onConflict: 'level_test_id,student_id' })
-      if (error) errors++
+      if (error) failed.push(s.english_name)
     }
     setSaving(false)
-    showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved ${activeTab} scores (${cs.length} students)`)
+    if (failed.length) { showToast(notSavedMessage(failed, false), { tone: 'error', action: { label: retryLabel(false), onClick: () => { handleSaveClass() } } }); return }
+    showToast(`Saved ${activeTab} scores (${cs.length} students)`)
     logActivity('scored', `${levelTest.name} · scores · ${activeTab} · ${cs.length} students`, { key: `lt:${levelTest.id}:${activeTab}` })
   }
 
@@ -709,8 +712,8 @@ function GenericScoreEntry({ levelTest, teacherClass, isAdmin, onContinue }: { l
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-[length:calc(12px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-4 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[200px]">Student</th>
-            {sections.map(s => <th key={s.key} className="text-center px-3 py-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[80px]">{s.label}{s.max ? <span className="text-text-tertiary font-normal"> /{s.max}</span> : ''}</th>)}
+            <th className="text-left px-4 py-3 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[200px]">Student</th>
+            {sections.map(s => <th key={s.key} className="text-center px-3 py-3 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[80px]">{s.label}{s.max ? <span className="text-text-tertiary font-normal"> /{s.max}</span> : ''}</th>)}
           </tr></thead>
           <tbody>{classStudents.length === 0 ? <tr><td colSpan={sections.length + 1} className="text-center py-8 text-text-tertiary">No students in {activeTab}</td></tr> :
             classStudents.map(student => (
@@ -872,11 +875,14 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
 
   const saveAll = async () => {
     setSaving(true)
-    const cs = students.filter(s => s.english_class === activeTab); let errors = 0
-    for (const s of cs) { const r = ratings[s.id] || {}; const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({ level_test_id: levelTest.id, student_id: s.id, teacher_id: currentTeacher?.id || null, receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null, engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null, notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null }, { onConflict: 'level_test_id,student_id' }); if (error) errors++ }
-    setDirtyIds(prev => { const next = new Set(prev); cs.forEach(s => next.delete(s.id)); return next })
+    const cs = students.filter(s => s.english_class === activeTab); const failed: { id: string; name: string }[] = []
+    for (const s of cs) { const r = ratings[s.id] || {}; const { error } = await supabase.from('teacher_anecdotal_ratings').upsert({ level_test_id: levelTest.id, student_id: s.id, teacher_id: currentTeacher?.id || null, receptive_language: r.receptive_language ?? null, productive_language: r.productive_language ?? null, engagement_pace: r.engagement_pace ?? null, placement_recommendation: r.placement_recommendation ?? null, notes: r.notes || '', is_watchlist: r.is_watchlist || false, teacher_recommends: r.teacher_recommends || null }, { onConflict: 'level_test_id,student_id' }); if (error) failed.push({ id: s.id, name: s.english_name }) }
+    // Only the ratings that reached the database stop being unsaved; the rest keep their marks for Retry.
+    setDirtyIds(prev => { const next = new Set(prev); cs.forEach(s => { if (!failed.some(f => f.id === s.id)) next.delete(s.id) }); return next })
     setLastSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-    setSaving(false); showToast(errors > 0 ? `Saved with ${errors} error(s)` : `Saved all ${activeTab} ratings`)
+    setSaving(false)
+    if (failed.length) showToast(notSavedMessage(failed.map(f => f.name), false, { en: 'ratings', ko: '평가' }), { tone: 'error', action: { label: retryLabel(false), onClick: () => { saveAll() } } })
+    else showToast(`Saved all ${activeTab} ratings`)
     logActivity('scored', `${levelTest.name} · teacher ratings · ${activeTab} · all ${cs.length} students`, { key: `rate:${levelTest.id}:${activeTab}` })
   }
 
@@ -985,8 +991,8 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
       {/* Student list */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">
         <div className="px-4 py-2 bg-surface-alt border-b border-border grid grid-cols-[1fr,auto] items-center">
-          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</span>
-          <div className="flex gap-4 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">
+          <span className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Student</span>
+          <div className="flex gap-4 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">
             <span className="w-[80px] text-center">Receptive</span>
             <span className="w-[80px] text-center">Productive</span>
             <span className="w-[80px] text-center">Engagement</span>
@@ -1020,7 +1026,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                 <span className="text-[length:calc(12px*var(--ts))] font-bold text-navy w-8 text-center">{avg != null ? avg.toFixed(1) : '—'}</span>
                 <div className="w-20 flex items-center justify-end gap-1">
                   {r.is_watchlist && <Star size={12} className="text-warn fill-warn" />}
-                  {r.teacher_recommends && <span className={`text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded ${r.teacher_recommends === 'keep' ? 'bg-info-soft text-info' : r.teacher_recommends === 'move_up' ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{r.teacher_recommends === 'keep' ? 'KEEP' : r.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</span>}
+                  {r.teacher_recommends && <span className={`text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded ${r.teacher_recommends === 'keep' ? 'bg-info-soft text-info' : r.teacher_recommends === 'move_up' ? 'bg-good-soft text-good' : 'bg-bad-soft text-bad'}`}>{r.teacher_recommends === 'keep' ? 'Keep' : r.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</span>}
                   <ChevronRight size={14} className="text-text-tertiary" />
                 </div>
               </div>
@@ -1051,7 +1057,7 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
               <div className="px-6 py-3 bg-surface-alt/50 border-b border-border">
                 <div className="grid grid-cols-4 gap-3 text-[length:calc(11.5px*var(--ts))]">
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Level Test Scores</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Level test scores</p>
                     {studentData[modalStudent.id]?.scores ? (
                       <div className="space-y-0.5">
                         {(studentData[modalStudent.id].calc?.best_weighted_cwpm ?? studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm) != null && <p>Oral: <span className="font-bold text-navy">{Math.round(studentData[modalStudent.id].calc?.best_weighted_cwpm ?? studentData[modalStudent.id].calc?.weighted_cwpm ?? studentData[modalStudent.id].scores.passage_cwpm ?? studentData[modalStudent.id].scores.orf_cwpm)}</span>{studentData[modalStudent.id].calc?.best_passage_level && <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))] ml-1">(Lv {studentData[modalStudent.id].calc.best_passage_level})</span>}{studentData[modalStudent.id].calc?.best_weighted_cwpm != null && studentData[modalStudent.id].calc?.weighted_cwpm != null && studentData[modalStudent.id].calc.best_weighted_cwpm > studentData[modalStudent.id].calc.weighted_cwpm && <span className="text-good text-[length:calc(11.5px*var(--ts))] ml-1">best</span>}</p>}
@@ -1065,10 +1071,10 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Semester Grades</p>
+                      <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Semester grades</p>
                       <button onClick={() => editingManualGrades ? setEditingManualGrades(false) : openGradeEditor(modalStudent.id)}
-                        className="text-[length:calc(11.5px*var(--ts))] text-accent hover:text-accent-hover font-medium flex items-center gap-0.5">
-                        {editingManualGrades ? '✕ Close' : '✏️ Add/Edit'}
+                        className="text-[length:calc(11.5px*var(--ts))] text-accent hover:text-accent-hover font-medium flex items-center gap-1">
+                        {editingManualGrades ? <><X size={12} /> Close</> : <><Pencil size={12} /> Add or edit</>}
                       </button>
                     </div>
                     {studentData[modalStudent.id]?.grades.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].grades.slice(0, 5).map((g: any, i: number) => <p key={i}>{domainLabel(g.domain)}: <span className="font-bold text-navy">{g.score?.toFixed(0)}%</span> <span className="text-text-tertiary">({g.semesters?.name})</span></p>)}</div> : <p className="text-text-tertiary italic">No grades</p>}
@@ -1101,11 +1107,11 @@ function AnecdotalPhase({ levelTest, teacherClass, isAdmin }: { levelTest: Level
                     )}
                   </div>
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Recent Reading</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Recent reading</p>
                     {studentData[modalStudent.id]?.reading.length > 0 ? <div className="space-y-0.5">{studentData[modalStudent.id].reading.slice(0, 3).map((r: any, i: number) => <p key={i}>{r.date}: <span className="font-bold text-navy">{Math.round(r.cwpm)} CWPM</span> {r.accuracy_rate != null && <span className="text-text-tertiary">({r.accuracy_rate}%)</span>}</p>)}</div> : <p className="text-text-tertiary italic">No reading data</p>}
                   </div>
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">WIDA Profile</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">WIDA profile</p>
                     <WIDABadge studentId={modalStudent.id} />
                     <WIDADetail studentId={modalStudent.id} />
                   </div>
@@ -1501,14 +1507,15 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
   return (
     <div className="px-10 py-6">
       <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div className="flex gap-1">
-          <button onClick={() => setFilterClass('all')} className={`px-3 py-1.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === 'all' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>All</button>
-          {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === cls ? '' : 'text-ink-2 hover:bg-paper-2'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
+        <div className={chipRow}>
+          <button onClick={() => setFilterClass('all')} aria-pressed={filterClass === 'all'} className={chip(filterClass === 'all')}>All</button>
+          {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} aria-pressed={filterClass === cls} className={chip(filterClass === cls)}><span className="w-2 h-2 rounded-full" style={{ backgroundColor: classDot(cls) }} />{cls}</button>)}
         </div>
-        <div className="flex gap-1 border-l border-border pl-3">
-          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary self-center mr-1">Passage:</span>
-          <button onClick={() => setFilterPassage('all')} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === 'all' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>All</button>
-          {['A', 'B', 'C', 'D', 'E'].map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === lv ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>{lv}</button>)}
+        <span className="hidden sm:block w-px h-6 bg-rule" />
+        <div className={`${chipRow} items-center`}>
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-2 mr-1">Passage</span>
+          <button onClick={() => setFilterPassage('all')} aria-pressed={filterPassage === 'all'} className={chip(filterPassage === 'all')}>All</button>
+          {['A', 'B', 'C', 'D', 'E'].map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} aria-pressed={filterPassage === lv} className={chip(filterPassage === lv)}>{lv}</button>)}
         </div>
         <select value={sortBy} onChange={(e: any) => setSortBy(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] bg-surface">
           <option value="composite">Sort: Composite</option><option value="percentile">Sort: Rank</option><option value="cwpm">Sort: Oral (CWPM)</option><option value="comp">Sort: Comprehension</option><option value="writing">Sort: Writing</option><option value="mc">Sort: MC</option><option value="suggested">Sort: Suggested Class</option><option value="name">Sort: Name</option>
@@ -1562,23 +1569,23 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Words correct per minute, as clocked, on the passage in brackets. Passage difficulty is not baked into this number -- it is carried by the Band, which is what placement ranks on.">CWPM</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
-            {hasPhonics && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Phonics grid from the oral test. Together with sentence reading it forms the decoding term of the composite, weighted in its own right rather than averaged into the written multiple choice.">Phonics</th>}
-            {hasSentences && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Sentence reading from the oral test. Together with phonics it forms the decoding term of the composite, weighted in its own right rather than averaged into the written multiple choice.">Sent</th>}
-            {hasSyllables && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Syllable counting from the oral test. Reference only -- unlike phonics and sentence reading it does not feed the composite; it moves the absolute Band and nothing else.">Syll<br/><span className="normal-case">(ref)</span></th>}
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
-            {hasShortWriting && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="The short constructed-response item on the written paper, scored on its own checklist. It carries its own small share of the composite.">Short<br/><span className="normal-case">Wr</span></th>}
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
-            {excludedQuestions.length > 0 && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-info bg-info-soft">Adj MC</th>}
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Teacher</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Composite</th>
-            {hasBands && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Absolute band from the passage the student sustained. Reference only -- placement ranks on the composite.">Band<br/><span className="normal-case">(ref)</span></th>}
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Rank</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Suggested</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Rec.</th>
+            <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Current</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Words correct per minute, as clocked, on the passage in brackets. Passage difficulty is not baked into this number -- it is carried by the Band, which is what placement ranks on.">CWPM</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Comp</th>
+            {hasPhonics && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Phonics grid from the oral test. Together with sentence reading it forms the decoding term of the composite, weighted in its own right rather than averaged into the written multiple choice.">Phonics</th>}
+            {hasSentences && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Sentence reading from the oral test. Together with phonics it forms the decoding term of the composite, weighted in its own right rather than averaged into the written multiple choice.">Sent</th>}
+            {hasSyllables && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Syllable counting from the oral test. Reference only -- unlike phonics and sentence reading it does not feed the composite; it moves the absolute Band and nothing else.">Syll<br/><span className="">(ref)</span></th>}
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Writing</th>
+            {hasShortWriting && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="The short constructed-response item on the written paper, scored on its own checklist. It carries its own small share of the composite.">Short<br/><span className="">Wr</span></th>}
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">MC</th>
+            {excludedQuestions.length > 0 && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] font-semibold text-info bg-info-soft">Adj MC</th>}
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Teacher</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Composite</th>
+            {hasBands && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Absolute band from the passage the student sustained. Reference only -- placement ranks on the composite.">Band<br/><span className="">(ref)</span></th>}
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Rank</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Suggested</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Rec.</th>
           </tr></thead>
           <tbody>{displayed.map(row => {
             const move = row.suggestedClass != null && row.suggestedClass !== row.student.english_class
@@ -1641,7 +1648,7 @@ function ResultsPhase({ levelTest }: { levelTest: LevelTest }) {
                         <span className="font-medium text-text-secondary">{Math.round(row.band.composite)}</span>
                         <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
                           {row.band.suggestedClass}
-                          {row.band.downgraded && <span className="text-warn ml-0.5">&darr;{row.band.effectiveLevel}</span>}
+                          {row.band.downgraded && <span className="text-warn ml-0.5 inline-flex items-center"><ArrowDown size={11} aria-label="dropped to" />{row.band.effectiveLevel}</span>}
                         </span>
                       </span>
                     ) : <span className="text-text-tertiary">&mdash;</span>}
@@ -1984,7 +1991,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
             <div className="space-y-3">
               {/* ── Grouped Bar Chart ─────────────────────────── */}
               <div className="bg-surface rounded-lg border border-rule p-4">
-                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-4">Score Comparison</p>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-4">Score comparison</p>
                 <div className="space-y-4">
                   {metrics.map(m => {
                     const scale = m.max > 0 ? m.max : 1
@@ -2069,7 +2076,7 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                           <div className="flex justify-between"><span className="text-text-tertiary">Suggested</span><span className="font-bold px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))]" style={{ backgroundColor: classTint(cs.suggestedClass as EnglishClass, 25), color: classToTextColor(cs.suggestedClass as EnglishClass) }}>{cs.suggestedClass}</span></div>
                         )}
                         <div className="flex justify-between"><span className="text-text-tertiary">Grade Avg</span><span className={`font-bold ${cs.gradeAvg != null ? (cs.gradeAvg >= 80 ? 'text-good' : cs.gradeAvg >= 60 ? 'text-warn' : 'text-bad') : ''}`}>{cs.gradeAvg != null ? `${cs.gradeAvg.toFixed(0)}%` : '--'}</span></div>
-                        <div className="flex justify-between"><span className="text-text-tertiary">Teacher Rec</span><span className={`font-bold text-[length:calc(11.5px*var(--ts))] ${an?.teacher_recommends === 'move_up' ? 'text-good' : an?.teacher_recommends === 'move_down' ? 'text-bad' : 'text-info'}`}>{an?.teacher_recommends === 'keep' ? 'KEEP' : an?.teacher_recommends === 'move_up' ? 'MOVE UP' : an?.teacher_recommends === 'move_down' ? 'MOVE DOWN' : '--'}</span></div>
+                        <div className="flex justify-between"><span className="text-text-tertiary">Teacher rec.</span><span className={`font-bold text-[length:calc(11.5px*var(--ts))] ${an?.teacher_recommends === 'move_up' ? 'text-good' : an?.teacher_recommends === 'move_down' ? 'text-bad' : 'text-info'}`}>{an?.teacher_recommends === 'keep' ? 'Keep' : an?.teacher_recommends === 'move_up' ? 'Move up' : an?.teacher_recommends === 'move_down' ? 'Move down' : '--'}</span></div>
                         {an?.notes && <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary bg-surface-alt rounded px-2 py-1 mt-1 italic">"{an.notes}"</p>}
                       </div>
                     </div>
@@ -2123,8 +2130,8 @@ function MeetingPhase({ levelTest, onFinalize }: { levelTest: LevelTest; onFinal
                       </div>
                     </div>
                     {score?.raw_scores && <div className="flex gap-1 mt-1 text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm) != null && <span>O:{Math.round(score.calculated_metrics?.best_weighted_cwpm ?? score.calculated_metrics?.weighted_cwpm ?? score.calculated_metrics?.cwpm ?? score.raw_scores.passage_cwpm ?? score.raw_scores.orf_cwpm)}{score.calculated_metrics?.best_passage_level ? `(${score.calculated_metrics.best_passage_level})` : score.calculated_metrics?.passage_level ? `(${score.calculated_metrics.passage_level})` : ''}</span>}{score.calculated_metrics?.comp_not_administered ? <span title="Comprehension not administered">C:n/a</span> : score.calculated_metrics?.comp_total != null && <span>C:{score.calculated_metrics.comp_total}</span>}{writingTotalFrom(score.raw_scores, score.calculated_metrics) != null && <span>W:{writingTotalFrom(score.raw_scores, score.calculated_metrics)}</span>}{score.raw_scores.written_mc != null && <span>M:{score.raw_scores.written_mc}</span>}</div>}
-                    {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? 'rgb(var(--paper-3))' : v <= 1 ? 'rgb(var(--bad))' : v === 2 ? 'rgb(var(--warn))' : v === 3 ? 'rgb(var(--info))' : 'rgb(var(--good))'; return <div key={d.key} className="w-3 h-3 rounded-sm flex items-center justify-center" style={{ backgroundColor: c, color: v ? 'rgb(var(--white))' : 'rgb(var(--ink-3))', fontSize: '7px', fontWeight: 700 }}>{v || '—'}</div> })}</div>}
-                    {anec?.teacher_recommends && <p className={`text-[length:calc(11.5px*var(--ts))] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-info' : anec.teacher_recommends === 'move_up' ? 'text-good' : 'text-bad'}`}>{anec.teacher_recommends === 'keep' ? 'KEEP' : anec.teacher_recommends === 'move_up' ? 'UP' : 'DOWN'}</p>}
+                    {anec && <div className="flex gap-0.5 mt-1">{DIMS.map(d => { const v = anec[d.key]; const c = !v ? 'rgb(var(--paper-3))' : v <= 1 ? 'rgb(var(--bad))' : v === 2 ? 'rgb(var(--warn))' : v === 3 ? 'rgb(var(--info))' : 'rgb(var(--good))'; return <div key={d.key} title={`${d.label}: ${v || '—'}`} className="min-w-[18px] h-[18px] px-0.5 rounded-sm flex items-center justify-center text-[length:calc(11.5px*var(--ts))] font-bold leading-none tabular-nums" style={{ backgroundColor: c, color: v ? 'rgb(var(--white))' : 'rgb(var(--ink-3))' }}>{v || '—'}</div> })}</div>}
+                    {anec?.teacher_recommends && <p className={`text-[length:calc(11.5px*var(--ts))] font-bold mt-0.5 ${anec.teacher_recommends === 'keep' ? 'text-info' : anec.teacher_recommends === 'move_up' ? 'text-good' : 'text-bad'}`}>{anec.teacher_recommends === 'keep' ? 'Keep' : anec.teacher_recommends === 'move_up' ? 'Up' : 'Down'}</p>}
                     {expandedCard === student.id && (
                       <div className="mt-2 pt-2 border-t border-border text-[length:calc(11.5px*var(--ts))] space-y-1" onClick={e => e.stopPropagation()}>
                         <p className="text-text-secondary">Was: <b>{student.english_class}</b> | Auto: <b>{auto || '—'}</b></p>

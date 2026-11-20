@@ -49,7 +49,7 @@ export default function TestNotesPanel({ groups, storageKey, title = 'Before you
         {all.map((g, gi) => (
           <div key={gi}>
             {g.label && (
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold mb-1">{g.label}</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">{g.label}</p>
             )}
             <ul className="space-y-1 pl-4 list-disc">
               {g.notes.map((n, i) => (

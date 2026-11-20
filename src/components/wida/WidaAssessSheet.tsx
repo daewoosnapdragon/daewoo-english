@@ -9,6 +9,7 @@ import { WIDA_DOMAINS, type WIDADomainKey } from '@/lib/wida'
 import { invalidateWIDACache } from '@/components/shared/WIDABadge'
 import { WIDA_CAN_DO, LEVELS, suggestLevel, ticksThrough, ticksClearFrom, widaBandForGrade, widaLevelName, type Level } from '@/components/curriculum/wida-cando'
 import { Check, ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 // ─── Assess the class ────────────────────────────────────────────
 // The whole class's questionnaires as one sitting: students down the left,
@@ -88,7 +89,8 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
     ])
     setSaving(false)
     const err = (a as any).error || (b as any).error || (c as any).error
-    if (err) { showToast(`Error: ${err.message}${/student_wida_cando/.test(err.message) ? ' · run supabase/migration-wida-cando.sql' : /numeric|integer|invalid input/.test(err.message) ? ' · run supabase/migration-wida-decimals.sql' : ''}`); return false }
+    // supabase/migration-wida-cando.sql keeps the ticks; supabase/migration-wida-decimals.sql allows half levels.
+    if (err) { showToast(/student_wida_cando/.test(err.message) ? partNeedsUpdate({ en: 'Saving the ticks', ko: '체크 항목 저장' }, { en: 'WIDA can-do', ko: 'WIDA 할 수 있어요' }, ko) : /numeric|integer|invalid input/.test(err.message) ? partNeedsUpdate({ en: 'A level like 2.5', ko: '2.5 같은 수준' }, { en: 'WIDA decimals', ko: 'WIDA 소수 수준' }, ko) : (ko ? `저장하지 못했습니다: ${err.message}` : `Could not save: ${err.message}`), { tone: 'error' }); return false }
     setLevels(prev => ({ ...prev, [student.id]: { ...(prev[student.id] || {}), [domain]: chosen } }))
     setTicks(prev => ({ ...prev, [student.id]: { ...(prev[student.id] || {}), [domain]: new Set(draft) } }))
     setLastSaved(`${student.english_name} · ${dl(domain)} ${chosen}`)
@@ -153,13 +155,13 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
       <div className="flex flex-col min-h-0">
         <div className="px-5 py-3 border-b border-rule-2 flex items-center gap-4 flex-wrap">
           <div>
-            <p className="eyebrow">{ko ? `${idx + 1} / ${students.length}번째 학생` : `Student ${idx + 1} of ${students.length}`}</p>
-            <h2 className="font-display text-[length:calc(24px*var(--ts))] leading-none text-ink mt-0.5">{student.english_name}<span className="font-sans text-[length:calc(12.5px*var(--ts))] text-ink-3 ml-2">{student.korean_name}</span></h2>
+            <h2 className="font-display text-[length:calc(24px*var(--ts))] leading-none text-ink">{student.english_name}<span className="font-sans text-[length:calc(12.5px*var(--ts))] text-ink-3 ml-2">{student.korean_name}</span></h2>
+            <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">{ko ? `${idx + 1} / ${students.length}번째 학생` : `Student ${idx + 1} of ${students.length}`}</p>
           </div>
           <div className="ml-auto flex border border-rule-2 rounded overflow-hidden">
             {WIDA_DOMAINS.map((d, di) => {
               const lv = levels[student.id]?.[d]
-              return <button key={d} onClick={() => goTo(idx, di)} className={`h-11 px-3.5 text-left border-r border-rule-2 last:border-r-0 ${di === domIdx ? 'bg-ink text-paper' : 'bg-surface hover:bg-paper-2'}`}><span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider opacity-70">{dl(d)}</span><span className="block text-[length:calc(14px*var(--ts))] font-semibold tabular-nums leading-tight">{lv ?? '—'}{lv ? <span className="text-[length:calc(11.5px*var(--ts))] font-normal opacity-70 ml-1">{widaLevelName(lv)}</span> : null}</span></button>
+              return <button key={d} onClick={() => goTo(idx, di)} className={`h-11 px-3.5 text-left border-r border-rule-2 last:border-r-0 ${di === domIdx ? 'bg-ink text-paper' : 'bg-surface hover:bg-paper-2'}`}><span className="block text-[length:calc(12px*var(--ts))] opacity-70">{dl(d)}</span><span className="block text-[length:calc(14px*var(--ts))] font-semibold tabular-nums leading-tight">{lv ?? '—'}{lv ? <span className="text-[length:calc(11.5px*var(--ts))] font-normal opacity-70 ml-1">{widaLevelName(lv)}</span> : null}</span></button>
             })}
           </div>
         </div>
@@ -177,7 +179,7 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
                 <div key={lv} className={`grid grid-cols-[120px_minmax(0,1fr)] gap-4 rounded-md px-3 py-2.5 border ${cur ? 'bg-paper-2 border-rule-2' : 'border-transparent'}`}>
                   <div>
                     <span className={`font-display text-[length:calc(24px*var(--ts))] tabular-nums leading-none ${cur ? 'text-ink' : 'text-ink-3'}`}>{lv}</span>
-                    <span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 mt-0.5">{widaLevelName(lv)}</span>
+                    <span className="block text-[length:calc(12px*var(--ts))] text-ink-2 mt-0.5">{widaLevelName(lv)}</span>
                     <span className="block h-1 rounded-sm bg-paper-3 mt-1.5 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
                     {suggestion.strength[lv] === 1
                       ? <button onClick={() => { setDraft(ticksClearFrom(domain, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-bad">{ko ? '여기부터 해제' : 'Clear from here'}</button>
@@ -228,7 +230,7 @@ export default function WidaAssessSheet({ students, grade, startStudentId, onExi
           <span className="eyebrow">{ko ? '키보드' : 'Keyboard'}</span>
           <p className="text-ink-3 mt-1 leading-relaxed">↵ {ko ? '저장 후 다음' : 'save and next'} · 1–6 {ko ? '그 수준까지 전부' : 'everything through that level'} · ← → {ko ? '영역' : 'section'} · ↑ ↓ {ko ? '학생' : 'student'} · Esc {ko ? '나가기' : 'exit'}</p>
         </div>
-        {candoMissing && <p className="text-warn">{ko ? '체크 항목 저장에는 migration-wida-cando.sql이 필요합니다.' : 'Ticks are not remembered until supabase/migration-wida-cando.sql is run; levels still save.'}</p>}
+        {candoMissing && <p className="text-warn">{partNeedsUpdate({ en: 'Remembering the ticks', ko: '체크 항목 저장' }, { en: 'WIDA can-do', ko: 'WIDA 할 수 있어요' }, ko)} {ko ? '수준은 저장됩니다.' : 'Levels still save.'}</p>}
       </div>
     </div>
   )

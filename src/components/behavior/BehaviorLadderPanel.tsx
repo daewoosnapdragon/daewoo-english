@@ -7,6 +7,7 @@ import { getKSTDateString, toKSTDateString } from '@/lib/utils'
 import { type BehaviorCase, type LadderSettings, DEFAULT_LADDER, loadLadderSettings, fetchCases, acknowledgeCase, closeCase, updateAsk, noticeSeenBy, isOverdue, schoolDaysSince, isLadderMissing, sweepLadder } from '@/lib/behaviorLadder'
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, Printer, X } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 // ─── Behavior ladder panel ───────────────────────────────────────
 // Admin mode: the cases that need an action, at the top of the dashboard,
@@ -114,7 +115,7 @@ export default function BehaviorLadderPanel({ mode, studentId, onChanged }: Prop
   }
 
   if (loading) return null
-  if (missing) return isAdmin ? <div className="border border-warn/40 bg-warn-soft/40 rounded-lg px-4 py-3 text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '행동 단계 기능을 쓰려면 supabase/migration-behavior-ladder.sql을 실행하세요.' : 'The behavior ladder needs supabase/migration-behavior-ladder.sql to be run first.'}</div> : null
+  if (missing) return isAdmin ? <div className="border border-warn/40 bg-warn-soft/40 rounded-lg px-4 py-3 text-[length:calc(12.5px*var(--ts))] text-ink-2">{/* supabase/migration-behavior-ladder.sql */}{partNeedsUpdate({ en: 'The behavior ladder', ko: '행동 단계' }, { en: 'behavior ladder', ko: '행동 단계' }, ko)}</div> : null
   if (open.length === 0 && (!studentId || closed.length === 0)) {
     return mode === 'admin' ? <div className="border border-rule-2 rounded-lg px-4 py-2.5 text-[length:calc(12.5px*var(--ts))] text-ink-3 flex items-center gap-2"><Check size={13} className="text-good" />{ko ? '행동 단계: 처리할 사례가 없습니다' : 'Behavior ladder: nothing needs your action'}</div> : null
   }

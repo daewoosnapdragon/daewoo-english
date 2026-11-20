@@ -144,7 +144,7 @@ export default function GuideView() {
 
   const fmt = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString(ko ? 'ko-KR' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   const listItem = 'grid grid-cols-[22px_minmax(0,1fr)] gap-2 text-[length:calc(13.5px*var(--ts))] leading-snug'
-  const subhead = 'eyebrow mt-6 mb-2'
+  const subhead = 'text-[length:calc(14px*var(--ts))] font-semibold text-ink mt-6 mb-2'
 
   // A block's header: the name is the button that opens and closes it.
   // These are called as functions, not mounted as components, so a click
@@ -233,7 +233,6 @@ export default function GuideView() {
     <div className="px-4 sm:px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-x-6 gap-y-3 flex-wrap mb-5">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">Daewoo English</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '사용 안내' : 'How to use this app'}</h1>
           {ko && <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mt-2">안내 내용은 영어로 되어 있습니다.</p>}
         </div>
@@ -356,7 +355,7 @@ export default function GuideView() {
           )}
 
           {shownAdmin.length > 0 && <>
-            <div className="border-t-2 border-ink pt-6 mt-2"><p className="eyebrow eyebrow-accent">{ko ? '관리자 안내' : 'Admin chapter'}</p><p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-1 max-w-[65ch]">{ko ? '관리자에게만 보이는 부분: 일정, 사람, 공지와 새로운 기능.' : isAdmin ? 'The parts only admins see: the calendar, people, and how changes reach teachers.' : 'How changes reach teachers.'}</p></div>
+            <div className="border-t-2 border-ink pt-6 mt-2"><h2 className="font-display text-[length:calc(28px*var(--ts))] leading-tight text-ink">{ko ? '관리자 안내' : 'Admin chapter'}</h2><p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-1 max-w-[65ch]">{ko ? '관리자에게만 보이는 부분: 일정, 사람, 공지와 새로운 기능.' : isAdmin ? 'The parts only admins see: the calendar, people, and how changes reach teachers.' : 'How changes reach teachers.'}</p></div>
             {shownAdmin.map(section)}
           </>}
         </div>

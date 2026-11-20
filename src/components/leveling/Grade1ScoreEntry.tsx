@@ -1601,12 +1601,12 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead>
             <tr className="bg-surface-alt/50">
-              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">#</th>
-              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">Section</th>
-              <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">Answer</th>
-              <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">Difficulty</th>
-              <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">rpb</th>
-              <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">Flag</th>
+              <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">#</th>
+              <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">Section</th>
+              <th className="text-center px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">Answer</th>
+              <th className="text-center px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">Difficulty</th>
+              <th className="text-center px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">rpb</th>
+              <th className="text-center px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">Flag</th>
             </tr>
           </thead>
           <tbody>
@@ -1661,11 +1661,11 @@ function G1AnalyticsView({ scores, students, content }: { scores: Record<string,
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead>
               <tr className="bg-surface-alt/50">
-                <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">Student</th>
+                <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">Student</th>
                 {G1_WRITING_CATEGORIES.map(cat => (
-                  <th key={cat.key} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-text-tertiary">{cat.label.split(' ')[0]}</th>
+                  <th key={cat.key} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-ink-2">{cat.label.split(' ')[0]}</th>
                 ))}
-                <th className="text-center px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase text-navy font-bold">Total</th>
+                <th className="text-center px-3 py-2 text-[length:calc(12px*var(--ts))] text-navy font-bold">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -2454,7 +2454,7 @@ function PhonemeManipulation({ sc, studentId, updateScore, content }: {
         <div className="bg-paper-2 rounded-xl px-5 py-4 border border-rule">
           <div className="flex items-center gap-2 mb-2">
             <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink">Teacher model first</p>
-            <span className="text-[length:calc(11.5px*var(--ts))] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-warn-soft text-warn">
+            <span className="text-[length:calc(12px*var(--ts))] font-bold px-2 py-0.5 rounded-full bg-warn-soft text-warn">
               Not scored
             </span>
           </div>
@@ -2829,7 +2829,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 currently in once there is a timed reading to judge. */}
             <div className="px-6 py-2 border-b border-border bg-surface-alt/40 shrink-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mr-0.5">Reading level</span>
+                <span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mr-0.5">Reading level</span>
                 {REF_BANDS.map(b => {
                   const live = elapsed > 0 && b.key === liveBand
                   return (
@@ -2901,7 +2901,7 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                     : elapsed >= content.timing.struggleStopSeconds ? 'text-accent' : ''
                 }`}>{formatTime(elapsed)}</span>
                 {pausedForBreak && (
-                  <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-warn uppercase tracking-wider">
+                  <span className="text-[length:calc(12px*var(--ts))] font-semibold text-warn">
                     Paused &mdash; clock stopped for a break
                   </span>
                 )}
@@ -2916,11 +2916,11 @@ function LevelDEFPassage({ level, wordsRead, errors, timeSeconds, initialWordMar
                 )}
               </div>
               <div className="flex items-center gap-5 text-[length:calc(11.5px*var(--ts))]">
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Errors</div></div>
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">SC</div></div>
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-accent">{elapsed > 0 ? cwpm : '--'}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">CWPM</div></div>
-                <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-good' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-warn' : elapsed > 0 ? 'text-bad' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Acc</div></div>
-                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-ink-3 text-[length:calc(11.5px*var(--ts))] uppercase">Words</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{errCount}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">Errors</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{scCount}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">SC</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold text-accent">{elapsed > 0 ? cwpm : '--'}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">CWPM</div></div>
+                <div className="text-center"><div className={`text-[length:calc(18px*var(--ts))] font-bold ${accuracy >= G1_INDEPENDENT_ACCURACY ? 'text-good' : accuracy >= G1_FRUSTRATION_ACCURACY ? 'text-warn' : elapsed > 0 ? 'text-bad' : ''}`}>{elapsed > 0 ? `${accuracy}%` : '--'}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">Acc</div></div>
+                <div className="text-center"><div className="text-[length:calc(18px*var(--ts))] font-bold">{wRead}/{words.length}</div><div className="text-ink-2 text-[length:calc(12px*var(--ts))]">Words</div></div>
               </div>
             </div>
 
@@ -3082,7 +3082,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
       {/* Student List Sidebar */}
       <div className="w-64 border-r border-border bg-surface-alt/50 overflow-y-auto flex-shrink-0">
         <div className="px-4 py-3 border-b border-border bg-surface">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wider">Students</p>
+          <p className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary">Students</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">{students.filter(s => studentHasOralData(s.id)).length}/{students.length} entered</p>
         </div>
         <div className="py-1">
@@ -3213,7 +3213,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
           {/* Previous attempts -- click to restore */}
           {Array.isArray((sc as any).passages_attempted) && (sc as any).passages_attempted.length > 0 && (
             <div className="mb-4 bg-paper-2 border border-rule rounded-lg px-4 py-2.5">
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink font-semibold mb-1">Previous Attempts (click to restore)</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink font-semibold mb-1">Previous attempts (click to restore)</p>
               <div className="flex gap-2 flex-wrap">
                 {(sc as any).passages_attempted.map((att: any, i: number) => (
                   <button key={i} onClick={async () => {
@@ -3256,7 +3256,7 @@ function OralTestEntry({ content, students, scores, updateScore, onSave, saving,
               </div>
 
               <div className="bg-surface-alt/50 rounded-xl p-4">
-                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase tracking-wide mb-2">Ask all five questions</p>
+                <p className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary mb-2">Ask all five questions</p>
                 <ol className="space-y-1 list-decimal list-inside">
                   {LEVEL_A_QUESTIONS.map((q, qi) => (
                     <li key={qi} className="text-[length:calc(12px*var(--ts))] text-text-primary">{q.q}</li>
@@ -3732,7 +3732,7 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
       </h4>
       <div className="grid grid-cols-4 gap-3 mb-4">
         <div className="bg-surface rounded-lg p-3 text-center">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider">Written</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Written</p>
           <p className="text-[length:calc(18px*var(--ts))] font-bold text-navy">{Math.round(metrics.writtenPct)}%</p>
           {content.extendedWriting.scoring === 'in_total' && (
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
@@ -3741,15 +3741,15 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
           )}
         </div>
         <div className="bg-surface rounded-lg p-3 text-center">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider">Oral</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Oral</p>
           <p className="text-[length:calc(18px*var(--ts))] font-bold text-navy">{Math.round(metrics.oralScore)}</p>
         </div>
         <div className="bg-surface rounded-lg p-3 text-center">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider">Composite</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Composite</p>
           <p className="text-[length:calc(18px*var(--ts))] font-bold text-navy">{Math.round(metrics.composite)}</p>
         </div>
         <div className="bg-surface rounded-lg p-3 text-center">
-          <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider">Suggested</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Suggested</p>
           <p className="text-[length:calc(14px*var(--ts))] font-bold px-2 py-0.5 rounded-full inline-block mt-0.5"
             style={{ backgroundColor: classToColor(metrics.suggestedClass), color: classToTextColor(metrics.suggestedClass) }}>
             {metrics.suggestedClass}
@@ -3782,7 +3782,7 @@ function StudentScorePreview({ scores, student, content }: { scores: G1Scores; s
       )}
 
       <div className="mt-3 pt-3 border-t border-navy/10">
-        <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy mb-2 uppercase tracking-wider">Standards Baseline</p>
+        <p className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-2">Standards baseline</p>
         <div className="flex flex-wrap gap-1.5">
           {metrics.standardsBaseline.map(std => (
             <span key={std.code}
@@ -4038,7 +4038,7 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
           {ENGLISH_CLASSES.map(cls => <button key={cls} onClick={() => setFilterClass(cls)} className={`px-3 py-1.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterClass === cls ? '' : 'text-ink-2 hover:bg-paper-2'}`} style={filterClass === cls ? { backgroundColor: classToColor(cls), color: classToTextColor(cls) } : {}}>{cls}</button>)}
         </div>
         <div className="flex gap-1 border-l border-border pl-3">
-          <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary self-center mr-1">Passage:</span>
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-2 self-center mr-1">Passage:</span>
           <button onClick={() => setFilterPassage('all')} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === 'all' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>All</button>
           {PASSAGE_LEVELS.map(lv => <button key={lv} onClick={() => setFilterPassage(lv)} className={`px-2 py-1 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium ${filterPassage === lv ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}>{lv}</button>)}
         </div>
@@ -4120,19 +4120,19 @@ function ResultsView({ students, scores, levelTest, anecdotals }: {
       <div className="bg-surface border border-border rounded-xl overflow-x-auto">
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
-            <th className="text-left px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Current</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Levels D-F: CWPM adjusted for passage difficulty and NAEP, not the stopwatch number. Levels A-C are untimed, so the cell shows what the student read instead — the interview rating (A) or words read correctly (B, C).">Oral<br/><span className="normal-case">(adj)</span></th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Comp</th>
-            {hasShortWriting && <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="The short constructed-response item on the written paper, scored on its own checklist. It carries its own small share of the composite.">Short<br/><span className="normal-case">Wr</span></th>}
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Writing</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">MC</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Teacher</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Composite</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold" title="Absolute band from the passage the student sustained. Reference only -- placement ranks on the composite.">Band<br/><span className="normal-case">(ref)</span></th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Rank</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Suggested</th>
-            <th className="text-center px-2 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Rec.</th>
+            <th className="text-left px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold sticky left-0 bg-surface-alt min-w-[180px]">Student</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Current</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Levels D-F: CWPM adjusted for passage difficulty and NAEP, not the stopwatch number. Levels A-C are untimed, so the cell shows what the student read instead — the interview rating (A) or words read correctly (B, C).">Oral<br/><span className="">(adj)</span></th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Comp</th>
+            {hasShortWriting && <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="The short constructed-response item on the written paper, scored on its own checklist. It carries its own small share of the composite.">Short<br/><span className="">Wr</span></th>}
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Writing</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">MC</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Teacher</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Composite</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold" title="Absolute band from the passage the student sustained. Reference only -- placement ranks on the composite.">Band<br/><span className="">(ref)</span></th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Rank</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Suggested</th>
+            <th className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Rec.</th>
           </tr></thead>
           <tbody>{displayed.map(row => {
             const move = row.suggestedClass != null && row.suggestedClass !== row.student.english_class
