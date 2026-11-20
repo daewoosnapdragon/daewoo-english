@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { NAV_ORDER, VIEW_PATHS, PAGE_TITLES } from '@/lib/routes'
 import { getDisplayName } from '@/lib/utils'
 import { Search, User, ArrowRight, Moon, Sun, Globe, Megaphone, Plus, ClipboardCheck, CalendarDays, FileText, BookOpen, Sparkles } from 'lucide-react'
-import { GUIDE_SECTIONS, ADMIN_SECTIONS } from '@/content/guide'
+import { guideSectionsFor, taskAnchor } from '@/content/guide'
 import { useWhatsNew } from '@/components/guide/useWhatsNew'
 import { confirmLeave } from '@/lib/unsaved'
 
@@ -100,9 +100,9 @@ export default function CommandPalette() {
         run: alt => go(alt ? `/students/${st.id}#sec-behavior` : `/students/${st.id}`),
       }))
     const help: Item[] = [
-      ...GUIDE_SECTIONS.concat(currentTeacher?.role === 'admin' ? ADMIN_SECTIONS : []).flatMap(sec => [
+      ...guideSectionsFor(currentTeacher).flatMap(sec => [
         { key: `g-${sec.id}`, kind: 'help' as const, label: `Guide · ${sec.title}`, hint: sec.purpose, icon: BookOpen, run: () => go(`/guide#${sec.id}`) },
-        ...sec.tasks.map(t => ({ key: `g-${sec.id}-${t.title}`, kind: 'help' as const, label: t.title, hint: `Guide · ${sec.title}`, icon: BookOpen, run: () => go(`/guide#${sec.id}`) })),
+        ...sec.tasks.map(t => ({ key: `g-${sec.id}-${t.title}`, kind: 'help' as const, label: t.title, hint: `Guide · ${sec.title}`, icon: BookOpen, run: () => go(`/guide#${taskAnchor(sec.id, t.title)}`) })),
       ]),
       ...released.map(e => ({ key: `n-${e.id}`, kind: 'help' as const, label: e.title, hint: 'What’s new', icon: Sparkles, run: () => go('/whats-new') })),
     ]

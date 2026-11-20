@@ -149,7 +149,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen bg-paper flex items-center justify-center" role="status" aria-label="Loading Daewoo English">
         <div className="text-center">
           <p className={`font-display text-[length:calc(44px*var(--ts))] leading-none text-ink ${intro === 'pending' ? 'wordmark-pending' : intro === 'soak' ? 'wordmark-soak' : ''}`}>Daewoo English</p>
-          <p className={`eyebrow eyebrow-accent mt-4 ${intro === 'soak' ? 'wordmark-sub' : intro === 'pending' ? 'wordmark-pending' : ''}`}>Daewoo Elementary · English Program</p>
+          <p className={`text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-3 ${intro === 'soak' ? 'wordmark-sub' : intro === 'pending' ? 'wordmark-pending' : ''}`}>Daewoo Elementary · English Program</p>
         </div>
       </div>
     )

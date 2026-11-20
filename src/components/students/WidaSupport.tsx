@@ -9,6 +9,7 @@ import { WIDA_DOMAINS, WIDA_LEVELS, type WIDADomainKey } from '@/lib/wida'
 import { invalidateWIDACache } from '@/components/shared/WIDABadge'
 import { WIDA_CAN_DO, LEVELS, SCAFFOLD_SUGGESTIONS, suggestLevel, ticksThrough, ticksClearFrom, widaBandForGrade, widaLevelName, type Level } from '@/components/curriculum/wida-cando'
 import { Check, ChevronDown, ChevronUp, Loader2, Plus, X } from 'lucide-react'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 // ─── WIDA support on the student page ────────────────────────────
 // The four current levels as big numbers; a questionnaire per domain that
@@ -30,9 +31,11 @@ interface Props {
   /** Open this domain's questionnaire as soon as the data is in (WIDA page cell click). */
   initialDomain?: WIDADomainKey
   onSaved?: () => void
+  /** The student page folds the section to one line when there are no levels and no scaffolds. */
+  onCount?: (n: number) => void
 }
 
-export default function WidaSupport({ studentId, studentName = '', grade, summary = false, initialDomain, onSaved }: Props) {
+export default function WidaSupport({ studentId, studentName = '', grade, summary = false, initialDomain, onSaved, onCount }: Props) {
   const { currentTeacher, language: lang, showToast, activeSemester } = useApp()
   const band = widaBandForGrade(grade)
   const [levels, setLevels] = useState<Record<string, number>>({})
@@ -63,6 +66,8 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
     setLevels(l); setTicks(t); setHistory((hs.data as any) || []); setScaffolds((sc.data as Scaffold[]) || []); setLoading(false)
   }
   useEffect(() => { setLoading(true); load() }, [studentId])
+  const filled = Object.values(levels).filter(v => v > 0).length + scaffolds.length
+  useEffect(() => { if (!loading) onCount?.(filled) }, [loading, filled]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!loading && initialDomain && !summary) openDomain(initialDomain) }, [loading, initialDomain]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openDomain = (d: WIDADomainKey) => { setOpen(d); setDraft(new Set(ticks[d] || [])); setOverride(null) }
@@ -83,7 +88,8 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
     ])
     setSaving(false)
     const err = (a as any).error || (b as any).error || (c as any).error
-    if (err) { showToast(`Error: ${err.message}${/student_wida_cando/.test(err.message) ? ' · run supabase/migration-wida-cando.sql' : ''}`); return }
+    // supabase/migration-wida-cando.sql keeps the ticks.
+    if (err) { showToast(/student_wida_cando/.test(err.message) ? partNeedsUpdate({ en: 'Saving the ticks', ko: '체크 항목 저장' }, { en: 'WIDA can-do', ko: 'WIDA 할 수 있어요' }, lang === 'ko') : (lang === 'ko' ? `저장하지 못했습니다: ${err.message}` : `Could not save: ${err.message}`), { tone: 'error' }); return }
     invalidateWIDACache()
     logActivity('saved', `WIDA ${DOMAIN_LABEL[open][0].toLowerCase()} level · ${studentName} · ${chosen} ${widaLevelName(chosen)}${levels[open] && levels[open] !== chosen ? ` (was ${levels[open]})` : ''}`)
     showToast(lang === 'ko' ? `${DOMAIN_LABEL[open][1]} ${chosen} (${widaLevelName(chosen)}) 저장됨` : `${DOMAIN_LABEL[open][0]} set to ${chosen} · ${widaLevelName(chosen)}`)
@@ -152,7 +158,7 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
           <div className="grid gap-3">
             {LEVELS.map(lv => (
               <div key={lv} className={`grid grid-cols-[110px_1fr] gap-3 rounded px-2 py-1.5 ${floorLv(chosen) === lv ? 'bg-surface' : ''}`}>
-                <div><span className={`font-display text-[length:calc(20px*var(--ts))] tabular-nums ${floorLv(chosen) === lv ? 'text-ink' : 'text-ink-3'}`}>{lv}</span><span className="block text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3">{widaLevelName(lv)}</span><span className="block h-1 rounded-sm bg-paper-3 mt-1 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
+                <div><span className={`font-display text-[length:calc(20px*var(--ts))] tabular-nums ${floorLv(chosen) === lv ? 'text-ink' : 'text-ink-3'}`}>{lv}</span><span className="block text-[length:calc(12px*var(--ts))] text-ink-2">{widaLevelName(lv)}</span><span className="block h-1 rounded-sm bg-paper-3 mt-1 overflow-hidden"><span className="block h-full bg-ink-3" style={{ width: `${suggestion.strength[lv] * 100}%` }} /></span>
                   {suggestion.strength[lv] === 1
                     ? <button onClick={() => { setDraft(ticksClearFrom(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-bad">{lang === 'ko' ? '여기부터 해제' : 'Clear from here'}</button>
                     : <button onClick={() => { setDraft(ticksThrough(open, band, lv, draft)); setOverride(null) }} className="mt-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{lang === 'ko' ? '여기까지 전부' : 'All through here'}</button>}
@@ -175,7 +181,7 @@ export default function WidaSupport({ studentId, studentName = '', grade, summar
             <input value={ovText} onChange={e => { if (/^\d?(\.\d?)?$/.test(e.target.value)) setOvText(e.target.value) }} onBlur={commitOverride} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commitOverride() } }} inputMode="decimal" title={lang === 'ko' ? '소수점 한 자리 (예: 3.5)' : 'One decimal, e.g. 3.5'} className="w-14 h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] tabular-nums text-center text-ink" />
             <button onClick={saveLevel} disabled={saving} className="ml-auto h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5">{saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}{lang === 'ko' ? `${dl(open)} ${chosen}로 저장` : `Save ${dl(open)} as ${chosen}`}</button>
           </div>
-          {candoMissing && <p className="text-[length:calc(11.5px*var(--ts))] text-warn mt-2">{lang === 'ko' ? '체크 항목을 저장하려면 supabase/migration-wida-cando.sql을 실행하세요. 수준은 저장됩니다.' : 'Ticks are not remembered until supabase/migration-wida-cando.sql is run; the level still saves.'}</p>}
+          {candoMissing && <p className="text-[length:calc(11.5px*var(--ts))] text-warn mt-2">{partNeedsUpdate({ en: 'Remembering the ticks', ko: '체크 항목 저장' }, { en: 'WIDA can-do', ko: 'WIDA 할 수 있어요' }, lang === 'ko')} {lang === 'ko' ? '수준은 저장됩니다.' : 'The level still saves.'}</p>}
         </div>
       )}
 

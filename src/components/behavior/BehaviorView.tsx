@@ -9,6 +9,8 @@ import { getKSTDateString } from '@/lib/utils'
 import { type BehaviorCase, type LadderSettings, DEFAULT_LADDER, loadLadderSettings, fetchCases, noticeSeenBy, isOverdue, schoolDaysSince, isLadderMissing, sendReminder, reminderSentToday } from '@/lib/behaviorLadder'
 import { CaseModal, type TeacherRow } from './BehaviorLadderPanel'
 import { AlertTriangle, Bell, Flag, Loader2, RefreshCw } from 'lucide-react'
+import { chip } from '@/components/ui/Controls'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Behavior ────────────────────────────────────────────────────
 // Every ladder case with its story so far (opened, the ask, read by admin,
@@ -106,7 +108,6 @@ export default function BehaviorView() {
     load()
   }
 
-  const chip = (on: boolean) => `px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   const sel = 'h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
   const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5'
 
@@ -114,32 +115,33 @@ export default function BehaviorView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{allClasses ? (ko ? '모든 반' : 'Every class') : own}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '행동' : 'Behavior'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{allClasses ? (ko ? '모든 반' : 'Every class') : own}</p>
         </div>
         <button onClick={load} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
       </div>
 
-      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-behavior-ladder.sql을 먼저 실행하세요.' : 'The behavior ladder tables are missing. Run supabase/migration-behavior-ladder.sql first.'}</p>}
+      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-behavior-ladder.sql */}{needsUpdate({ en: 'behavior ladder', ko: '행동 단계' }, ko)}</p>}
 
-      <div className="flex items-center gap-3 flex-wrap mb-5">
-        {allClasses && (
+      {/* Only a reader of every class picks one; the note says the pick covers both lists. */}
+      {allClasses && (
+        <div className="flex items-center gap-3 flex-wrap mb-5">
           <select value={cls} onChange={e => setCls(e.target.value)} className={sel}>
             <option value="all">{ko ? '모든 반' : 'All classes'}</option>
             {classes.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-        )}
-        <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '사례와 기록 모두에 적용됩니다' : 'applies to the cases and the notes'}</span>
-      </div>
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '사례와 기록 모두에 적용됩니다' : 'Applies to the cases and the notes'}</span>
+        </div>
+      )}
 
       {/* ── Cases ── */}
       <section className="mb-10">
         <div className="flex items-baseline justify-between gap-3 flex-wrap border-b border-rule-2 pb-2 mb-3">
           <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '행동 단계 사례' : 'Ladder cases'} <span className="text-ink-3 text-[length:calc(14px*var(--ts))] font-sans">· {needsCount} {ko ? '건 진행 중' : needsCount === 1 ? 'needs action' : 'need action'}</span></h2>
           <div className="flex gap-1.5">
-            <button onClick={() => setCaseState('needs')} className={chip(caseState === 'needs')}>{ko ? '진행 중' : 'Needs action'}</button>
-            <button onClick={() => setCaseState('closed')} className={chip(caseState === 'closed')}>{ko ? '종결' : 'Closed'}</button>
-            <button onClick={() => setCaseState('all')} className={chip(caseState === 'all')}>{ko ? '전체' : 'All'}</button>
+            <button onClick={() => setCaseState('needs')} aria-pressed={caseState === 'needs'} className={chip(caseState === 'needs')}>{ko ? '진행 중' : 'Needs action'}</button>
+            <button onClick={() => setCaseState('closed')} aria-pressed={caseState === 'closed'} className={chip(caseState === 'closed')}>{ko ? '종결' : 'Closed'}</button>
+            <button onClick={() => setCaseState('all')} aria-pressed={caseState === 'all'} className={chip(caseState === 'all')}>{ko ? '전체' : 'All'}</button>
           </div>
         </div>
         {loading ? <Loading rows={4} />
@@ -200,7 +202,7 @@ export default function BehaviorView() {
         <div className="flex items-baseline justify-between gap-3 flex-wrap border-b border-rule-2 pb-2 mb-3">
           <h2 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{ko ? '행동 기록' : 'Behavior notes'} <span className="text-ink-3 text-[length:calc(14px*var(--ts))] font-sans">· {visibleLogs.length}</span></h2>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex gap-1.5">{[30, 60, 180].map(d => <button key={d} onClick={() => setDays(d)} className={chip(days === d)}>{ko ? `${d}일` : `${d} days`}</button>)}</div>
+            <div className="flex gap-1.5">{[30, 60, 180].map(d => <button key={d} onClick={() => setDays(d)} aria-pressed={days === d} className={chip(days === d)}>{ko ? `${d}일` : `${d} days`}</button>)}</div>
             <select value={type} onChange={e => setType(e.target.value)} className={sel}><option value="all">{ko ? '모든 종류' : 'All kinds'}</option>{types.map(t => <option key={t} value={t}>{t.replace('_', ' ')}</option>)}</select>
             <label className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2 cursor-pointer select-none"><input type="checkbox" checked={flaggedOnly} onChange={e => setFlaggedOnly(e.target.checked)} /> {ko ? '표시된 것만' : 'flagged only'}</label>
             <input value={q} onChange={e => setQ(e.target.value)} placeholder={ko ? '학생 찾기' : 'Find a student'} className="h-7 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink w-[150px]" />

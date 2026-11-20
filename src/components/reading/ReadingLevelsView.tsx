@@ -23,6 +23,7 @@ import type { RunningRecordResult } from '@/components/shared/RunningRecord'
 import PhonicsView, { SKILLS_STORAGE_KEY } from '@/components/reading/PhonicsView'
 import PhonicsCompare, { type PhonicsScope } from '@/components/reading/PhonicsCompare'
 import Overlay from '@/components/ui/Overlay'
+import { chip, chipRow, segGroup, seg, tabRow, tab as tab_ } from '@/components/ui/Controls'
 
 type LangKey = 'en' | 'ko'
 interface ReadingRecord {
@@ -132,15 +133,15 @@ export default function ReadingLevelsView() {
     <div className="px-4 sm:px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '읽기' : 'Reading'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
         </div>
         <button data-guide="reading.add" onClick={() => { setShowAddModal(true); setAddForStudentId(selectedStudentId || (students[0]?.id || null)) }}
           className="inline-flex items-center gap-1.5 h-9 max-sm:h-11 px-4 rounded text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
           <Plus size={15} /> {lang === 'ko' ? '읽기 기록 추가' : 'Add reading record'}
         </button>
       </div>
-      <div className="scroll-row flex border-b border-rule-2 mb-4">
+      <div role="tablist" className={`${tabRow} mb-4`}>
         {([
           { id: 'class', label: lang === 'ko' ? '반 개요' : 'Class overview' },
           { id: 'student', label: lang === 'ko' ? '학생별' : 'Student detail' },
@@ -148,26 +149,26 @@ export default function ReadingLevelsView() {
           { id: 'bypassage', label: lang === 'ko' ? '지문별' : 'By passage' },
           { id: 'passages', label: lang === 'ko' ? '지문 라이브러리' : 'Passage library' },
         ] as const).map((tab) => (
-          <button key={tab.id} onClick={() => tab.id !== subView && leaveFirst(() => setSubView(tab.id))} data-guide={`reading.tab.${tab.id}`}
-            className={`relative px-4 h-10 text-[length:calc(13.5px*var(--ts))] font-medium ${subView === tab.id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
-            {tab.label}{subView === tab.id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
+          <button key={tab.id} role="tab" aria-selected={subView === tab.id} onClick={() => tab.id !== subView && leaveFirst(() => setSubView(tab.id))} data-guide={`reading.tab.${tab.id}`}
+            className={tab_(subView === tab.id)}>
+            {tab.label}
           </button>
         ))}
       </div>
       <div className="flex items-center gap-3 flex-wrap mb-6">
         {subView === 'phonics' && <>
-          <div className="chip-scroll inline-flex p-0.5 rounded border border-rule-2 bg-surface" data-guide="reading.phonics.scope">
+          <div className={`chip-scroll ${segGroup}`} data-guide="reading.phonics.scope">
             {([['class', lang === 'ko' ? '이 반' : 'This class'], ['grade', lang === 'ko' ? '학년 전체' : 'Whole grade'], ['all', lang === 'ko' ? '전 학년' : 'All grades']] as const).map(([id, label]) => (
-              <button key={id} onClick={() => id !== phonicsScope && leaveFirst(() => { setPhonicsScope(id); setPhonicsStudentId(null) })} className={`px-3 h-7 whitespace-nowrap rounded text-[length:calc(12px*var(--ts))] font-medium ${phonicsScope === id ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>{label}</button>
+              <button key={id} onClick={() => id !== phonicsScope && leaveFirst(() => { setPhonicsScope(id); setPhonicsStudentId(null) })} aria-pressed={phonicsScope === id} className={seg(phonicsScope === id)}>{label}</button>
             ))}
           </div>
           {phonicsScope !== 'all' && <span className="hidden sm:block w-px h-6 bg-rule" />}
         </>}
-        {!(subView === 'phonics' && phonicsScope === 'all') && <div className="chip-scroll flex gap-1.5 max-sm:w-full">{GRADES.map((g: any) => <button key={g} onClick={() => g !== selectedGrade && leaveFirst(() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) })} className={`px-2.5 h-7 whitespace-nowrap rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
+        {!(subView === 'phonics' && phonicsScope === 'all') && <div className={chipRow}>{GRADES.map((g: any) => <button key={g} onClick={() => g !== selectedGrade && leaveFirst(() => { setSelectedGrade(g); localStorage.setItem('daewoo_reading_grade', String(g)) })} aria-pressed={selectedGrade === g} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>}
         {!(subView === 'phonics' && phonicsScope !== 'class') && <>
         <span className="hidden sm:block w-px h-6 bg-rule" />
         {availableClasses.length > 1
-          ? <div className="chip-scroll flex gap-1.5 max-sm:w-full">{availableClasses.map((cls: any) => <button key={cls} onClick={() => cls !== selectedClass && leaveFirst(() => setSelectedClass(cls))} className={`inline-flex items-center gap-1.5 px-2.5 h-7 whitespace-nowrap rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          ? <div className={chipRow}>{availableClasses.map((cls: any) => <button key={cls} onClick={() => cls !== selectedClass && leaveFirst(() => setSelectedClass(cls))} aria-pressed={selectedClass === cls} className={chip(selectedClass === cls)}><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
           : <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${READING_CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
         </>}
       </div>
@@ -489,7 +490,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
   return (
     <div className="space-y-4">
       <div className="chip-scroll flex flex-wrap gap-1.5">
-        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className={`px-2.5 h-7 whitespace-nowrap rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedStudentId === s.id ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{s.english_name}</button>)}
+        {students.map((s: any) => <button key={s.id} onClick={() => setSelectedStudentId(s.id)} aria-pressed={selectedStudentId === s.id} className={chip(selectedStudentId === s.id)}>{s.english_name}</button>)}
       </div>
 
       {selected && !loading && (
@@ -558,7 +559,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                     <tr key={r.id} className="border-t border-rule hover:bg-paper-2/60 group cursor-pointer" onClick={() => setDetailRecord(r)}>
                       <td className="px-2 py-2 text-ink-2">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                       <td className="px-3 py-2 font-medium">
-                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold uppercase tracking-wide bg-info-soft text-info mr-1.5">Level test</span>}
+                        {r.is_level_test && <span className="inline-block px-1.5 py-0.5 rounded text-[length:calc(12px*var(--ts))] font-bold bg-info-soft text-info mr-1.5">Level test</span>}
                         {r.passage_title || '—'}
                       </td>
                       <td className="px-2 py-2 text-center text-ink-2">{r.reading_level || '—'}</td>
@@ -620,19 +621,19 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               <div className="border-t border-b border-rule-2 py-3">
                 <div className="grid grid-cols-4 gap-4 text-center">
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Time</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Time</p>
                     <p className="font-display text-[length:calc(24px*var(--ts))] text-ink">{detailRecord.time_seconds ? `${Math.floor(detailRecord.time_seconds / 60)}:${String(detailRecord.time_seconds % 60).padStart(2, '0')}` : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Errors</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Errors</p>
                     <p className="font-display text-[length:calc(24px*var(--ts))] text-bad">{detailRecord.errors ?? '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">CWPM</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2">CWPM</p>
                     <p className="font-display text-[length:calc(24px*var(--ts))] text-ink">{detailRecord.cwpm != null ? Math.round(detailRecord.cwpm) : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase">Accuracy</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Accuracy</p>
                     <p className={`font-display text-[length:calc(24px*var(--ts))] ${detailRecord.accuracy_rate >= 96 ? 'text-good' : detailRecord.accuracy_rate >= 90 ? 'text-warn' : 'text-bad'}`}>
                       {detailRecord.accuracy_rate != null ? `${detailRecord.accuracy_rate.toFixed(1)}%` : '—'}
                     </p>
@@ -695,19 +696,19 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
         </div>
         <div className="p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Date</label>
               <input type="date" value={form.date} onChange={e => set('date', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
-          <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
+          <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Passage title</label>
             <input value={form.passage_title} onChange={e => set('passage_title', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           <div className="grid grid-cols-4 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Words</label>
               <input type="number" value={form.word_count} onChange={e => set('word_count', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Time (sec)</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Time (sec)</label>
               <input type="number" value={form.time_seconds} onChange={e => set('time_seconds', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Errors</label>
               <input type="number" value={form.errors} onChange={e => set('errors', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Self-Corr</label>
               <input type="number" value={form.self_corrections} onChange={e => set('self_corrections', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           {(previewCwpm != null || previewAcc != null) && (
@@ -717,9 +718,9 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Lexile level</label>
               <input value={form.reading_level} onChange={e => set('reading_level', e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[length:calc(11.5px*var(--ts))] text-text-tertiary">(1-4)</span></label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">NAEP fluency <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">(1-4)</span></label>
               <select value={form.naep_fluency} onChange={e => set('naep_fluency', e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy bg-surface">
                 <option value="">--</option>
                 <option value="1">1 - Word by word</option>
@@ -728,7 +729,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
                 <option value="4">4 - Phrased, expressive</option>
               </select></div>
           </div>
-          <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
+          <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Notes</label>
             <textarea value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-none" /></div>
         </div>
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
@@ -922,7 +923,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
                 )}
                 {/* Unassigned students in this band */}
                 <div>
-                  {bandSubgroups.length > 0 && <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold mb-1.5 uppercase tracking-wider">Unassigned</p>}
+                  {bandSubgroups.length > 0 && <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Unassigned</p>}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                     {bandStudents.filter(item => !members[item.student.id] || !bandSubgroups.find(sg => sg.id === members[item.student.id])).map((item: any) => (
                       <div key={item.student.id} className="bg-surface rounded-lg border border-border/60 px-3 py-2">
@@ -1192,9 +1193,9 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>
           <div className="flex items-center gap-2">
-            <div className="flex gap-1 bg-surface-alt rounded-lg p-0.5">
-              <button onClick={() => setMode('single')} className={`px-3 py-1 rounded-md text-[length:calc(11.5px*var(--ts))] font-medium ${mode === 'single' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Single</button>
-              <button onClick={() => setMode('batch')} className={`px-3 py-1 rounded-md text-[length:calc(11.5px*var(--ts))] font-medium ${mode === 'batch' ? 'bg-white shadow-sm text-navy' : 'text-text-tertiary'}`}>Batch</button>
+            <div className={segGroup}>
+              <button onClick={() => setMode('single')} aria-pressed={mode === 'single'} className={seg(mode === 'single')}>{lang === 'ko' ? '한 명' : 'Single'}</button>
+              <button onClick={() => setMode('batch')} aria-pressed={mode === 'batch'} className={seg(mode === 'batch')}>{lang === 'ko' ? '여러 명' : 'Batch'}</button>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={18} /></button>
           </div>
@@ -1232,11 +1233,11 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           />
 
           <div className="grid grid-cols-3 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Date</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Date</label>
               <input type="date" value={date} onChange={(e: any) => setDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Title</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Passage title</label>
               <input value={passageTitle} onChange={(e: any) => setPassageTitle(e.target.value)} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Passage Difficulty</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Passage difficulty</label>
               <select value={passageDifficulty} onChange={(e: any) => setPassageDifficulty(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy bg-surface">
                 {DIFFICULTY_OPTIONS.map(d => <option key={d.id} value={d.id}>{d.label}</option>)}
               </select>
@@ -1247,16 +1248,16 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
 
         {mode === 'single' ? (
           <div className="p-6 space-y-4">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Student *</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Student *</label>
               <select value={selStudent} onChange={(e: any) => setSelStudent(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy">
                 <option value="">Select...</option>
                 {students.map((s: any) => <option key={s.id} value={s.id}>{s.english_name}</option>)}
               </select></div>
             <div className="grid grid-cols-4 gap-3">
-              <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Words *</label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Words *</label>
                 <input type="number" min={0} value={wordCount} onChange={(e: any) => setWordCount(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-              <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">
-                Time * <button onClick={() => { setTimeMode(timeMode === 'sec' ? 'minsec' : 'sec'); setTimeSeconds(''); setTimeMin(''); setTimeSec('') }} className="text-[length:calc(11.5px*var(--ts))] text-navy hover:underline ml-1 normal-case">({timeMode === 'sec' ? 'switch to min:sec' : 'switch to seconds'})</button></label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">
+                Time * <button onClick={() => { setTimeMode(timeMode === 'sec' ? 'minsec' : 'sec'); setTimeSeconds(''); setTimeMin(''); setTimeSec('') }} className="text-[length:calc(11.5px*var(--ts))] text-navy hover:underline ml-1">({timeMode === 'sec' ? 'switch to min:sec' : 'switch to seconds'})</button></label>
                 {timeMode === 'sec' ? (
                   <input type="number" min={1} value={timeSeconds} onChange={(e: any) => setTimeSeconds(e.target.value ? parseInt(e.target.value) : '')} placeholder="seconds" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" />
                 ) : (
@@ -1266,24 +1267,24 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                     <input type="number" min={0} max={59} value={timeSec} onChange={(e: any) => { setTimeSec(e.target.value); const m = parseInt(timeMin) || 0; const s = parseInt(e.target.value) || 0; setTimeSeconds(m * 60 + s || '') }} placeholder="sec" className="w-1/2 px-2 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy text-center" />
                   </div>
                 )}</div>
-              <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Errors</label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Errors</label>
                 <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-              <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Self-Corr</label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Self-Corr</label>
                 <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
             </div>
             {wc > 0 && ts > 0 && (
               <div className="bg-accent-light rounded-lg p-4 grid grid-cols-2 gap-4">
-                <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">CWPM</span>
+                <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">CWPM</span>
                   <p className="text-2xl font-display font-bold text-navy">{Math.round(cwpm)}</p></div>
-                <div><span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Accuracy</span>
+                <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Accuracy</span>
                   <p className={`text-2xl font-display font-bold ${accuracy >= 96 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
                   <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{accuracy >= 96 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration'}</p></div>
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Lexile Level</label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Lexile level</label>
                 <input value={lexile} onChange={(e: any) => setLexile(e.target.value)} placeholder="e.g. 250L" className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-              <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">NAEP Fluency <span className="normal-case text-[length:calc(11.5px*var(--ts))] text-text-tertiary">(1-4)</span></label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">NAEP fluency <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">(1-4)</span></label>
                 <select value={naepScore} onChange={(e: any) => setNaepScore(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy bg-surface">
                   <option value="">--</option>
                   <option value="1">1 - Word by word</option>
@@ -1292,7 +1293,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   <option value="4">4 - Phrased, expressive, natural</option>
                 </select></div>
             </div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Notes</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Notes</label>
               <textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} rows={2} placeholder="Observations..." className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-none" /></div>
           </div>
         ) : (
@@ -1300,15 +1301,15 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">Enter word count and time for each student who read this passage. Leave blank to skip.</p>
             <table className="w-full text-[length:calc(12px*var(--ts))]">
               <thead><tr className="border-b border-border">
-                <th className="text-left py-2 px-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-36">Student</th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-8"></th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Words</th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-20">Time <span className="text-[length:calc(11.5px*var(--ts))] normal-case">(m:ss or sec)</span></th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">Err</th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">SC</th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">CWPM</th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-16">Acc%</th>
-                <th className="text-center py-2 px-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold w-14">NAEP</th>
+                <th className="text-left py-2 px-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-36">Student</th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-8"></th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-16">Words</th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-20">Time <span className="text-[length:calc(11.5px*var(--ts))]">(m:ss or sec)</span></th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-14">Err</th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-14">SC</th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-16">CWPM</th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-16">Acc%</th>
+                <th className="text-center py-2 px-1 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-14">NAEP</th>
               </tr></thead>
               <tbody>
                 {students.map((s: any) => {
@@ -1321,7 +1322,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                     <tr key={s.id} className={`border-b border-border/50 ${alreadySaved ? 'bg-blue-50/50' : filled ? 'bg-green-50/50' : ''}`}>
                       <td className="py-1.5 px-2 text-[length:calc(12px*var(--ts))] font-medium">
                         {s.english_name}
-                        {alreadySaved && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] text-blue-500 font-bold">SAVED</span>}
+                        {alreadySaved && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] text-blue-500 font-bold">Saved</span>}
                       </td>
                       <td className="py-1.5 px-1 text-center">
                         {selectedPassage ? (
@@ -1518,14 +1519,14 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                   <table className="w-full text-[length:calc(11.5px*var(--ts))]">
                     <thead>
                       <tr className="bg-surface-alt/50 border-b border-border">
-                        <th className="text-left px-5 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Student</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Date</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Words</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Time</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Errors</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">CWPM</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">Accuracy</th>
-                        <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold">NAEP</th>
+                        <th className="text-left px-5 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Student</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Date</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Words</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Time</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Errors</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">CWPM</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">Accuracy</th>
+                        <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold">NAEP</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1736,24 +1737,24 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
           <p className="text-[length:calc(12px*var(--ts))] font-semibold text-blue-800">New Passage</p>
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-2">
-              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title *</label>
+              <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Title *</label>
               <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div>
-              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
+              <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Lexile</label>
               <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div>
-              <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+              <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Grade range</label>
               <input value={newForm.grade_range} onChange={e => setNewForm(f => ({ ...f, grade_range: e.target.value }))} placeholder="e.g. 1-2" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+            <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Source</label>
             <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Reading A-Z" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text * <span className="normal-case text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
+            <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Passage text * <span className="text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
             <textarea value={newForm.text} onChange={e => setNewForm(f => ({ ...f, text: e.target.value }))} rows={6} placeholder="Paste or type the full passage text here..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
           </div>
           <div className="flex gap-2">
@@ -1786,24 +1787,24 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                 <div key={p.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
                   <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-2">
-                      <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Title</label>
+                      <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Title</label>
                       <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
-                      <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Lexile</label>
+                      <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Lexile</label>
                       <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
-                      <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Grade Range</label>
+                      <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Grade range</label>
                       <input value={editForm.grade_range} onChange={e => setEditForm((f: any) => ({ ...f, grade_range: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                   </div>
                   <div>
-                    <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Source</label>
+                    <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Source</label>
                     <input value={editForm.source} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                   </div>
                   <div>
-                    <label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold block mb-1">Passage Text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
+                    <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Passage Text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
                     <textarea value={editForm.text} onChange={e => setEditForm((f: any) => ({ ...f, text: e.target.value }))} rows={8} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
                   </div>
                   <div className="flex gap-2">
@@ -2067,7 +2068,7 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
         <h3 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">Generate Student Groups</h3>
         <div className="flex items-end gap-4">
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase block mb-1">Grouping Strategy</label>
+            <label className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary block mb-1">Grouping strategy</label>
             <div className="flex gap-1">
               {[
                 { id: 'homogeneous', label: 'Same Level', desc: 'Students with similar CWPM together' },
@@ -2083,7 +2084,7 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
             </div>
           </div>
           <div>
-            <label className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-secondary uppercase block mb-1">Group Size</label>
+            <label className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary block mb-1">Group size</label>
             <select value={groupSize} onChange={e => setGroupSize(+e.target.value)}
               className="px-3 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] bg-surface outline-none">
               {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} students</option>)}

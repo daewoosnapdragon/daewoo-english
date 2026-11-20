@@ -148,7 +148,7 @@ export default function ClassPlanView() {
               <div key={'h' + w.n} title={hol.names.get(w.n)} className="absolute top-0 bottom-0" style={{ left: left(i), width: `calc((100% - ${LABEL_W}px) / ${N})`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-3)) 0 6px, transparent 6px 10px)' }} />
             ))}
             <div className="relative flex h-9 border-b border-rule">
-              <div className="shrink-0 px-3 flex items-center text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3" style={{ width: LABEL_W }}>{ko ? '교재' : 'Book'}</div>
+              <div className="shrink-0 px-3 flex items-center text-[length:calc(12px*var(--ts))] text-ink-2" style={{ width: LABEL_W }}>{ko ? '교재' : 'Book'}</div>
               <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${N}, minmax(0, 1fr))` }}>
                 {weeks.map((w, i) => {
                   const newMonth = i === 0 || w.monday.slice(5, 7) !== weeks[i - 1].monday.slice(5, 7)
@@ -216,13 +216,13 @@ export default function ClassPlanView() {
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               {bank.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+                  <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
                   <ul className="space-y-1">{bank.map(o => <li key={o.text} className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</li>)}</ul>
                 </div>
               )}
               {lessons.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mb-1">{ko ? '차시' : 'Lessons'}</p>
+                  <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '차시' : 'Lessons'}</p>
                   <ol className="space-y-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-2">{lessons.map((x, i) => <li key={x.id}>{i + 1}. {x.title}</li>)}</ol>
                 </div>
               )}
@@ -240,7 +240,7 @@ export default function ClassPlanView() {
       {canManage && N > 0 && (
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide font-semibold text-ink-3 mr-2">{ko ? `${cls} ${grade}학년 계획 편집` : `Edit ${cls} Grade ${grade}'s plan`}</p>
+            <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mr-2">{ko ? `${cls} ${grade}학년 계획 편집` : `Edit ${cls} Grade ${grade}'s plan`}</p>
             <button onClick={() => { setPlacing(v => !v); setCopying(false) }} className={`${btnS} ${placing ? 'bg-ink text-paper border-ink' : ''}`}><Plus size={11} />{ko ? '교재 추가' : 'Add a book'}</button>
             <button onClick={() => { setCopying(v => !v); setPlacing(false) }} className={`${btnS} ${copying ? 'bg-ink text-paper border-ink' : ''}`}><Copy size={11} />{ko ? '다른 학년에서 복사' : 'Copy another grade’s books'}</button>
           </div>

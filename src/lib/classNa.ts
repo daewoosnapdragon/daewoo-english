@@ -42,8 +42,8 @@ export async function saveClassNa(semesterId: string, englishClass: string, grad
   const supabase = await db()
   const { error } = await supabase.from('class_report_settings').upsert(row, { onConflict: 'semester_id,english_class,grade,domain,report_type' })
   if (!error) return null
-  if (unscoped(error)) return 'Run supabase/migration-class-na-by-document.sql first: the N/A flags are not yet kept per document.'
-  if (error.code === '42P01') return 'class_report_settings table not set up yet. Run the SQL migration.'
+  if (unscoped(error)) return /* supabase/migration-class-na-by-document.sql */ 'N/A for one report only needs a database update. Ask the person who manages the app’s database to run the class N/A update.'
+  if (error.code === '42P01') return 'Class report settings need a database update. Ask the person who manages the app’s database to run the class report settings update.'
   return error.message
 }
 

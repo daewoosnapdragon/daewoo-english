@@ -75,9 +75,9 @@ export default function RubricGrid({ assessment, students, refreshKey = 0, onOpe
       <div className="border border-rule-2 rounded-lg overflow-x-auto">
         <table className="w-full text-[length:calc(12.5px*var(--ts))]">
           <thead>
-            <tr className="bg-paper-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3">
+            <tr className="bg-paper-2 text-[length:calc(12px*var(--ts))] text-ink-2">
               <th className="text-left px-3 py-2 font-semibold">{ko ? '학생' : 'Student'}</th>
-              {criteria.map(c => <th key={c.key} className="px-2 py-2 font-semibold text-center" title={c.standard || undefined}><span className="block truncate max-w-[120px] mx-auto">{c.label}</span>{c.standard && <span className="block text-[length:calc(11.5px*var(--ts))] text-info normal-case tracking-normal">{c.standard}</span>}</th>)}
+              {criteria.map(c => <th key={c.key} className="px-2 py-2 font-semibold text-center" title={c.standard || undefined}><span className="block truncate max-w-[120px] mx-auto">{c.label}</span>{c.standard && <span className="block text-[length:calc(11.5px*var(--ts))] text-info">{c.standard}</span>}</th>)}
               <th className="text-right px-3 py-2 font-semibold whitespace-nowrap">/{assessment.max_score}</th>
             </tr>
           </thead>

@@ -1126,13 +1126,13 @@ function StandardBadge({ code, description }: { code: string; description: strin
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary mb-2">{description}</p>
           {progression && (
             <div className="border-t border-border pt-2 space-y-1">
-              <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Skill Progression</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Skill progression</p>
               {[2, 3, 4, 5].map(g => {
                 if (!progression[g]) return null
                 const gCode = code.replace(/\.\d+\./, `.${g}.`)
                 const isCurrent = String(g) === currentGrade
                 return (
-                  <div key={g} className={`text-[length:calc(11.5px*var(--ts))] flex gap-2 ${isCurrent ? 'text-navy font-semibold bg-blue-50 -mx-1 px-1 py-0.5 rounded' : 'text-text-tertiary'}`}>
+                  <div key={g} className={`text-[length:calc(11.5px*var(--ts))] flex gap-2 ${isCurrent ? 'text-navy font-semibold bg-navy/10 -mx-1 px-1 py-0.5 rounded' : 'text-text-tertiary'}`}>
                     <span className="font-mono w-12 shrink-0">{gCode}</span>
                     <span>{progression[g]}</span>
                   </div>
@@ -1292,7 +1292,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             {writingTotal == null
               ? <div className="text-[length:calc(20px*var(--ts))] font-bold text-text-tertiary">&mdash;<span className="text-[length:calc(14px*var(--ts))] text-text-tertiary">/{config.writingMax}</span></div>
               : <div className="text-[length:calc(20px*var(--ts))] font-bold text-navy">{writingTotal}<span className="text-[length:calc(14px*var(--ts))] text-text-tertiary">/{config.writingMax}</span></div>}
-            <div className={`text-[length:calc(11.5px*var(--ts))] ${writingTotal == null && complete ? 'text-green-700' : 'text-text-tertiary'}`}
+            <div className={`text-[length:calc(11.5px*var(--ts))] ${writingTotal == null && complete ? 'text-good' : 'text-text-tertiary'}`}
               title={writingTotal != null ? undefined
                 : complete ? 'The paper is marked and the rubric is empty, so writing scores 0. That is a judgement about the script, not a gap in the record.'
                 : 'The writing rubric has not been marked. It counts as no score at all -- not as a zero -- so nothing about this student\'s placement is decided by writing until somebody reads the script.'}>
@@ -1300,7 +1300,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             </div>
           </div>
           {studentHasData && (
-            <button onClick={clearStudent} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700 border border-red-200 px-2 py-1 rounded flex items-center gap-1">
+            <button onClick={clearStudent} className="text-[length:calc(11.5px*var(--ts))] text-bad hover:bg-bad-soft border border-bad/30 px-2 py-1 rounded flex items-center gap-1">
               <RotateCcw size={12} /> Clear
             </button>
           )}
@@ -1319,12 +1319,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
           answer wrong and never find out. Stated once at the top, and again
           on the item itself. */}
       {corrections.length > 0 && (
-        <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-amber-900 flex items-center gap-1.5 mb-1">
+        <div className="mb-3 rounded-lg border border-warn/30 bg-warn-soft px-3 py-2">
+          <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-warn flex items-center gap-1.5 mb-1">
             <AlertTriangle size={12} /> Corrections to this paper &mdash; already applied to the marking
           </p>
           <ul className="space-y-0.5 pl-4 list-disc">
-            {corrections.map((c, i) => <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-amber-800 leading-snug">{c}</li>)}
+            {corrections.map((c, i) => <li key={i} className="text-[length:calc(11.5px*var(--ts))] text-warn leading-snug">{c}</li>)}
           </ul>
         </div>
       )}
@@ -1366,17 +1366,17 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                 return (
                   <div key={q.qNum} id={`q-row-${q.qNum}`}
                     onClick={() => setFocusedQ(q.qNum)}
-                    className={`px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} ${chosen && !isCorrect ? 'bg-red-50/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-blue-50/30' : ''}`}>
+                    className={`px-3 py-1.5 cursor-pointer transition-all ${qi % 2 === 0 ? 'bg-white' : 'bg-paper-2/50'} ${chosen && !isCorrect ? 'bg-bad-soft/40' : ''} ${isFocused ? 'ring-2 ring-navy/40 ring-inset bg-info-soft/30' : ''}`}>
                     <div className="flex items-center gap-3">
-                      <span className={`w-5 text-[length:calc(11.5px*var(--ts))] text-right font-mono ${q.dok >= 2 && config.dokWeighted ? 'text-amber-600 font-bold' : isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
+                      <span className={`w-5 text-[length:calc(11.5px*var(--ts))] text-right font-mono ${q.dok >= 2 && config.dokWeighted ? 'text-warn font-bold' : isFocused ? 'text-navy font-bold' : 'text-text-tertiary'}`}>{q.qNum}</span>
                       <div className="flex gap-1">
                         {letters.map(letter => {
                           const isChosen = chosen === letter
                           const scores = accepted.includes(letter)
-                          let bg = 'bg-white border-gray-200 hover:border-navy/40'
-                          if (isChosen && isCorrect) bg = 'bg-green-500 border-green-500 text-white'
-                          else if (isChosen && !isCorrect) bg = 'bg-red-400 border-red-400 text-white'
-                          else if (chosen && scores) bg = 'bg-green-100 border-green-300 text-green-700'
+                          let bg = 'bg-white border-rule hover:border-navy/40'
+                          if (isChosen && isCorrect) bg = 'bg-good border-good text-white'
+                          else if (isChosen && !isCorrect) bg = 'bg-bad border-bad/60 text-white'
+                          else if (chosen && scores) bg = 'bg-good-soft border-good/40 text-good'
                           return (
                             <button key={letter} onClick={(e) => { e.stopPropagation(); setAnswer(q.qNum, isChosen ? '' : letter); setFocusedQ(q.qNum) }}
                               className={`w-7 h-7 rounded-full text-[length:calc(11.5px*var(--ts))] font-bold border-2 transition-all ${bg}`}>
@@ -1387,7 +1387,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       </div>
                       <span className="flex-1 text-[length:calc(11.5px*var(--ts))] text-text-tertiary truncate">{q.text}</span>
                       {multiKey && (
-                        <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold shrink-0"
+                        <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-warn-soft text-warn border border-warn/30 font-semibold shrink-0"
                           title={q.acceptAny
                             ? 'Every answer is accepted on this item -- the printed question does not rule any choice out. Nobody loses a mark here.'
                             : `More than one answer is accepted on this item: ${accepted.map(l => l.toUpperCase()).join(' or ')}.`}>
@@ -1396,8 +1396,8 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       )}
                       <StandardBadge code={q.standard} description={q.standardDesc} />
                       {chosen && (isCorrect
-                        ? <Check size={12} className="text-green-500" />
-                        : <X size={12} className="text-red-400" />
+                        ? <Check size={12} className="text-good" />
+                        : <X size={12} className="text-bad" />
                       )}
                     </div>
                     {/* The options as printed on the student page. Shown on the
@@ -1409,12 +1409,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         {q.choices.map((choice, i) => {
                           const letter = String.fromCharCode(97 + i)
                           return (
-                            <p key={letter} className={`text-[length:calc(11.5px*var(--ts))] ${accepted.includes(letter) ? 'text-green-700 font-semibold' : 'text-text-tertiary'}`}>
+                            <p key={letter} className={`text-[length:calc(11.5px*var(--ts))] ${accepted.includes(letter) ? 'text-good font-semibold' : 'text-text-tertiary'}`}>
                               {letter}. {choice}
                             </p>
                           )
                         })}
-                        {multiKey && q.note && <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 pt-1 leading-snug">{q.note}</p>}
+                        {multiKey && q.note && <p className="text-[length:calc(11.5px*var(--ts))] text-warn pt-1 leading-snug">{q.note}</p>}
                       </div>
                     )}
                   </div>
@@ -1466,14 +1466,14 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                 marking happens. Buried in a collapsed notes panel it was found
                 by whoever went looking, which is not the same as everyone. */}
             {short.paperError && (
-              <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2">
-                <AlertTriangle size={13} className="text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-[length:calc(11.5px*var(--ts))] text-amber-800 leading-snug"><span className="font-semibold">Error on the printed paper. </span>{short.paperError}</p>
+              <div className="mb-2 flex items-start gap-2 rounded-lg border border-warn/30 bg-warn-soft px-2.5 py-2">
+                <AlertTriangle size={13} className="text-warn shrink-0 mt-0.5" />
+                <p className="text-[length:calc(11.5px*var(--ts))] text-warn leading-snug"><span className="font-semibold">Error on the printed paper. </span>{short.paperError}</p>
               </div>
             )}
             {legacyDirect && (
-              <div className="mb-2 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-2">
-                <p className="text-[length:calc(11.5px*var(--ts))] text-blue-900 leading-snug">
+              <div className="mb-2 rounded-lg border border-info/30 bg-info-soft px-2.5 py-2">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-info leading-snug">
                   <span className="font-semibold">Scored {sc.shortWriting}/{short.max} before this rubric existed.</span>{' '}
                   That mark stands and nothing needs re-entering. Tick a box below only if you want to re-score this student &mdash; the boxes then replace the {sc.shortWriting}.
                 </p>
@@ -1490,10 +1490,10 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                     return (
                       <button key={box.key} onClick={() => toggleShortChecklistBox(box.key)}
                         className={`w-full flex items-start gap-2 text-left rounded-lg px-2.5 py-1.5 border transition-all ${
-                          on ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-navy/40'
+                          on ? 'bg-good-soft border-good/40' : 'bg-white border-rule hover:border-navy/40'
                         }`}>
                         <span className={`w-4 h-4 mt-0.5 rounded border-2 shrink-0 flex items-center justify-center ${
-                          on ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                          on ? 'bg-good border-good' : 'border-rule-2'
                         }`}>
                           {on && <Check size={11} className="text-white" />}
                         </span>
@@ -1524,7 +1524,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                 {Array.from({ length: short.max + 1 }, (_, i) => (
                   <button key={i} onClick={() => setShortWriting(sc.shortWriting === i ? null : i)}
                     className={`w-8 h-8 rounded text-[length:calc(12px*var(--ts))] font-bold border-2 transition-all ${
-                      sc.shortWriting === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                      sc.shortWriting === i ? 'bg-navy border-navy text-white' : 'bg-white border-rule hover:border-navy/40'
                     }`}>
                     {i}
                   </button>
@@ -1551,7 +1551,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                   </ul>
                 )}
                 {short.sayBeforeStarting && (
-                  <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 pt-1">Say before students begin: &ldquo;{short.sayBeforeStarting}&rdquo;</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 pt-1">Say before students begin: &ldquo;{short.sayBeforeStarting}&rdquo;</p>
                 )}
               </div>
             )}
@@ -1564,7 +1564,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
       <div className="mb-6">
         {config.writingPrompt && (
           <div className="mb-2 bg-surface-alt/60 border border-border rounded-lg px-3 py-2">
-            <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-0.5">Extended writing prompt</p>
+            <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-0.5">Extended writing prompt</p>
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary">{config.writingPrompt}</p>
           </div>
         )}
@@ -1578,9 +1578,9 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
           </div>
           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
             {writingTotal == null
-              ? <span className="px-1.5 py-0.5 rounded bg-surface-alt border border-border text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider">Not graded</span>
+              ? <span className="px-1.5 py-0.5 rounded bg-surface-alt border border-border text-[length:calc(12px*var(--ts))] font-semibold">Not graded</span>
               : <>{writingTotal}/{config.writingMax}{writingMarkedCount < config.writingCategories.length &&
-                  <span className="ml-1.5 text-amber-700" title="Not every category has been scored yet. The total counts what is marked so far.">{writingMarkedCount}/{config.writingCategories.length} categories</span>}</>}
+                  <span className="ml-1.5 text-warn" title="Not every category has been scored yet. The total counts what is marked so far.">{writingMarkedCount}/{config.writingCategories.length} categories</span>}</>}
           </span>
         </div>
         {writingTotal == null && (
@@ -1601,12 +1601,12 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             if (cat.kind === 'checklist' && cat.checklist) {
               const checked = new Set(sc.checklist?.[cat.key] || [])
               return (
-                <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                <div key={cat.key} className={`${ci % 2 === 0 ? 'bg-white' : 'bg-paper-2/50'}`}>
                   <div className="flex items-start gap-3 px-3 py-2">
                     <div className="w-40 shrink-0">
                       <div className="text-[length:calc(12px*var(--ts))] font-medium">{cat.label}</div>
                       <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{cat.standard} -- {cat.standardDesc}</div>
-                      <div className="text-[length:calc(11.5px*var(--ts))] text-amber-700 mt-0.5 font-semibold">Checklist -- tick what is present</div>
+                      <div className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-0.5 font-semibold">Checklist -- tick what is present</div>
                     </div>
                     <div className="flex-1 space-y-1">
                       {cat.checklist.map(box => {
@@ -1614,10 +1614,10 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         return (
                           <button key={box.key} onClick={() => toggleChecklistBox(cat.key, box.key)}
                             className={`w-full flex items-start gap-2 text-left rounded-lg px-2.5 py-1.5 border transition-all ${
-                              on ? 'bg-green-50 border-green-300' : 'bg-white border-gray-200 hover:border-navy/40'
+                              on ? 'bg-good-soft border-good/40' : 'bg-white border-rule hover:border-navy/40'
                             }`}>
                             <span className={`w-4 h-4 mt-0.5 rounded border-2 shrink-0 flex items-center justify-center ${
-                              on ? 'bg-green-500 border-green-500' : 'border-gray-300'
+                              on ? 'bg-good border-good' : 'border-rule-2'
                             }`}>
                               {on && <Check size={11} className="text-white" />}
                             </span>
@@ -1639,9 +1639,9 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                         return (
                           <button key={tier.key} onClick={() => toggleChecklistCap(cat.key, tier.key)}
                             className={`w-full flex items-start gap-2 text-left rounded-lg px-2.5 py-1.5 border transition-all ${
-                              on ? 'bg-amber-50 border-amber-300' : 'bg-white border-gray-200 hover:border-navy/40'
+                              on ? 'bg-warn-soft border-warn/40' : 'bg-white border-rule hover:border-navy/40'
                             }`}>
-                            <span className={`w-3.5 h-3.5 mt-0.5 rounded-full border-2 shrink-0 ${on ? 'bg-amber-500 border-amber-500' : 'border-gray-300'}`} />
+                            <span className={`w-3.5 h-3.5 mt-0.5 rounded-full border-2 shrink-0 ${on ? 'bg-warn border-warn' : 'border-rule-2'}`} />
                             <span>
                               <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-primary">{tier.label}</span>
                               <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-snug">{tier.desc}</span>
@@ -1657,7 +1657,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
 
             return (
               <div key={cat.key} onClick={() => setFocusedCat(cat.key)}
-                className={`transition-colors ${focusedCat === cat.key ? 'bg-navy/[0.06] ring-1 ring-inset ring-navy/25' : ci % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                className={`transition-colors ${focusedCat === cat.key ? 'bg-navy/[0.06] ring-1 ring-inset ring-navy/25' : ci % 2 === 0 ? 'bg-white' : 'bg-paper-2/50'}`}>
                 <div className="flex items-start gap-3 px-3 py-2.5">
                   <div className="w-40 shrink-0 pt-1">
                     <div className="text-[length:calc(12.5px*var(--ts))] font-semibold">{cat.label}{focusedCat === cat.key && <span className="text-[length:calc(11.5px*var(--ts))] font-normal text-navy/60 ml-1.5">0&ndash;{cat.max}</span>}</div>
@@ -1675,7 +1675,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                           <button key={i} onClick={() => setWritingScore(cat.key, i)}
                             aria-pressed={on}
                             className={`group relative text-left rounded-xl px-3 py-2.5 border transition-all text-[length:calc(11.5px*var(--ts))] leading-[1.45] min-h-[92px] ${
-                              on ? 'bg-navy/[0.07] border-navy text-navy shadow-[inset_0_0_0_1px_var(--navy,#4E63A0)] font-medium'
+                              on ? 'bg-navy/[0.07] border-navy text-navy shadow-[inset_0_0_0_1px_rgb(var(--ink))] font-medium'
                                  : 'bg-white border-border text-text-secondary hover:border-navy/40 hover:bg-navy/[0.02]'
                             }`}>
                             {on && (
@@ -1693,7 +1693,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                       {Array.from({ length: cat.max + 1 }, (_, i) => (
                         <button key={i} onClick={() => setWritingScore(cat.key, i)}
                           className={`w-9 h-9 rounded-lg text-[length:calc(12px*var(--ts))] font-bold border-2 transition-all ${
-                            val === i ? 'bg-navy border-navy text-white' : 'bg-white border-gray-200 hover:border-navy/40'
+                            val === i ? 'bg-navy border-navy text-white' : 'bg-white border-rule hover:border-navy/40'
                           }`}>{i}</button>
                       ))}
                     </div>
@@ -1720,11 +1720,11 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
           </summary>
           <div className="px-3 py-3 space-y-3">
             {config.scoringNote && (
-              <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 bg-amber-50/60 border border-amber-100 rounded px-2.5 py-1.5">{config.scoringNote}</p>
+              <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 bg-paper-2 border border-rule rounded px-2.5 py-1.5">{config.scoringNote}</p>
             )}
             {config.listeningScript && (
               <div>
-                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Listening script</p>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Listening script</p>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary leading-relaxed">{config.listeningScript.script}</p>
                 {config.listeningScript.closingLine && <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary italic mt-1">{config.listeningScript.closingLine}</p>}
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1.5">{config.listeningScript.instructions}</p>
@@ -1732,8 +1732,8 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             )}
             {config.readingPassages?.map(p => (
               <div key={p.key}>
-                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
-                  {p.title || 'Reading passage'} <span className="normal-case tracking-normal">(items {p.range[0]}&ndash;{p.range[1]})</span>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">
+                  {p.title || 'Reading passage'} <span className="">(items {p.range[0]}&ndash;{p.range[1]})</span>
                 </p>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary leading-relaxed">{p.text}</p>
               </div>
@@ -1770,13 +1770,13 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             : 'Records that this paper has been marked. Any section still blank counts as 0 from then on, so a student who wrote nothing is scored rather than left out of the results as untested.'}
           className={`w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl text-[length:calc(14px*var(--ts))] font-bold border-2 transition-all disabled:opacity-50 ${
             complete
-              ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100'
+              ? 'bg-good-soft text-good border-good/40 hover:bg-good-soft'
               : 'bg-surface text-navy border-navy/25 hover:border-navy/50 hover:bg-surface-alt'}`}>
           {complete ? <CheckCircle2 size={17} /> : <Circle size={17} />}
           {complete ? 'Test graded' : 'Mark test graded'}
         </button>
         {complete && blankSections.length > 0 && (
-          <p className="text-[length:calc(11.5px*var(--ts))] text-green-700 text-center mt-2">
+          <p className="text-[length:calc(11.5px*var(--ts))] text-good text-center mt-2">
             Marked. {blankSections.join(', ')} {blankSections.length === 1 ? 'counts' : 'count'} as 0.
           </p>
         )}
@@ -1821,13 +1821,14 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         {Object.entries(domains).map(([domain, data]) => {
           const pct = Math.round((data.correct / data.total) * 100)
-          const color = pct >= 80 ? 'green' : pct >= 50 ? 'amber' : 'red'
+          // Written out in full so Tailwind sees each class name.
+          const tone = pct >= 80 ? { text: 'text-good', bar: 'bg-good' } : pct >= 50 ? { text: 'text-warn', bar: 'bg-warn' } : { text: 'text-bad', bar: 'bg-bad' }
           return (
             <div key={domain} className="border border-border rounded-lg p-3">
               <div className="text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary mb-1">{domain}</div>
-              <div className={`text-[length:calc(22px*var(--ts))] font-bold text-${color}-600`}>{pct}%</div>
-              <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1">
-                <div className={`h-full rounded-full bg-${color}-500`} style={{ width: `${pct}%` }} />
+              <div className={`text-[length:calc(22px*var(--ts))] font-bold ${tone.text}`}>{pct}%</div>
+              <div className="w-full h-1.5 bg-paper-2 rounded-full mt-1">
+                <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           )
@@ -1838,7 +1839,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
       <div className="flex items-center gap-2 mb-3">
         <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Test Quality</h4>
         <div className="relative">
-          <button onClick={() => setShowInfoCard(!showInfoCard)} className="w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center hover:bg-blue-200 transition-colors">?</button>
+          <button onClick={() => setShowInfoCard(!showInfoCard)} className="w-5 h-5 rounded-full bg-info-soft text-info text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center hover:bg-info-soft transition-colors">?</button>
           {showInfoCard && (
             <div className="absolute left-0 top-7 w-96 bg-white border border-border rounded-xl shadow-xl p-4 z-50 text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-relaxed">
               <p className="font-semibold text-navy mb-2">How Question Discrimination Works</p>
@@ -1849,25 +1850,25 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
           )}
         </div>
         {excludedCount > 0 && (
-          <span className="text-[length:calc(11.5px*var(--ts))] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{excludedCount} question{excludedCount !== 1 ? 's' : ''} excluded</span>
+          <span className="text-[length:calc(11.5px*var(--ts))] bg-info-soft text-info px-2 py-0.5 rounded-full font-medium">{excludedCount} question{excludedCount !== 1 ? 's' : ''} excluded</span>
         )}
       </div>
 
       {/* Discrimination flag legend */}
       {discrimination && (
         <div className="flex flex-wrap gap-2 mb-4 text-[length:calc(11.5px*var(--ts))]">
-          {flagCounts.KEEP > 0 && <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">KEEP ({flagCounts.KEEP})</span>}
-          {flagCounts['TOO EASY'] > 0 && <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">TOO EASY ({flagCounts['TOO EASY']})</span>}
-          {flagCounts['TOO HARD'] > 0 && <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">TOO HARD ({flagCounts['TOO HARD']})</span>}
-          {flagCounts['BAD DISCRIMINATOR'] > 0 && <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">BAD DISCRIMINATOR ({flagCounts['BAD DISCRIMINATOR']})</span>}
-          {flagCounts['CHECK KEY'] > 0 && <span className="px-2 py-0.5 rounded-full bg-red-200 text-red-800 font-bold">CHECK KEY ({flagCounts['CHECK KEY']})</span>}
+          {flagCounts.KEEP > 0 && <span className="px-2 py-0.5 rounded-full bg-good-soft text-good font-medium">KEEP ({flagCounts.KEEP})</span>}
+          {flagCounts['TOO EASY'] > 0 && <span className="px-2 py-0.5 rounded-full bg-info-soft text-info font-medium">TOO EASY ({flagCounts['TOO EASY']})</span>}
+          {flagCounts['TOO HARD'] > 0 && <span className="px-2 py-0.5 rounded-full bg-warn-soft text-warn font-medium">TOO HARD ({flagCounts['TOO HARD']})</span>}
+          {flagCounts['BAD DISCRIMINATOR'] > 0 && <span className="px-2 py-0.5 rounded-full bg-bad-soft text-bad font-medium">BAD DISCRIMINATOR ({flagCounts['BAD DISCRIMINATOR']})</span>}
+          {flagCounts['CHECK KEY'] > 0 && <span className="px-2 py-0.5 rounded-full bg-bad-soft text-bad font-bold">CHECK KEY ({flagCounts['CHECK KEY']})</span>}
         </div>
       )}
 
       {/* Item Analysis Table with Discrimination */}
       <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Item Analysis</h4>
       <div className="border border-border rounded-lg mb-6">
-        <div className="grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] bg-gray-50 px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary border-b border-border">
+        <div className="grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] bg-paper-2 px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary border-b border-border">
           {canToggleExclude && <span className="text-center">Excl</span>}
           {!canToggleExclude && <span />}
           <span>#</span><span>Question</span><span>Standard</span><span>Domain</span>
@@ -1878,27 +1879,27 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
         {config.questions.map(q => {
           const item = itemDifficulty[q.qNum]
           const pct = item.total > 0 ? Math.round((item.correct / item.total) * 100) : 0
-          const bgColor = pct >= 80 ? 'bg-green-50' : pct >= 50 ? 'bg-amber-50' : 'bg-red-50'
+          const bgColor = pct >= 80 ? 'bg-good-soft' : pct >= 50 ? 'bg-warn-soft' : 'bg-bad-soft'
           const isExcluded = excludedSet.has(q.qNum)
           const disc = discrimination?.[q.qNum]
-          const flagBg: Record<string, string> = { green: 'bg-green-100 text-green-700', blue: 'bg-blue-100 text-blue-700', amber: 'bg-amber-100 text-amber-700', red: 'bg-red-100 text-red-700', gray: 'bg-gray-100 text-gray-500' }
+          const flagBg: Record<string, string> = { green: 'bg-good-soft text-good', blue: 'bg-info-soft text-info', amber: 'bg-warn-soft text-warn', red: 'bg-bad-soft text-bad', gray: 'bg-paper-2 text-ink-3' }
           return (
             <div key={q.qNum} className={isExcluded ? 'opacity-50' : ''}>
               <button onClick={() => setExpandedQ(expandedQ === q.qNum ? null : q.qNum)}
-                className={`w-full grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] border-b border-border/50 hover:bg-gray-50 ${isExcluded ? 'bg-gray-100' : bgColor}`}>
+                className={`w-full grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] border-b border-border/50 hover:bg-paper-2 ${isExcluded ? 'bg-paper-2' : bgColor}`}>
                 {canToggleExclude ? (
                   <span className="text-center" onClick={e => { e.stopPropagation(); onToggleExclude(q.qNum) }}>
-                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded border-2 cursor-pointer transition-all ${isExcluded ? 'bg-red-500 border-red-500 text-white' : 'border-gray-300 hover:border-navy'}`}>
+                    <span className={`inline-flex items-center justify-center w-5 h-5 rounded border-2 cursor-pointer transition-all ${isExcluded ? 'bg-bad border-bad text-white' : 'border-rule-2 hover:border-navy'}`}>
                       {isExcluded && <X size={10} />}
                     </span>
                   </span>
                 ) : (
-                  <span className="text-center">{isExcluded && <X size={10} className="inline text-red-400" />}</span>
+                  <span className="text-center">{isExcluded && <X size={10} className="inline text-bad" />}</span>
                 )}
                 <span className={`font-mono ${isExcluded ? 'line-through' : ''}`}>{q.qNum}</span>
                 <span className={`text-left truncate ${isExcluded ? 'line-through' : ''}`}>
                   {hasMultipleKeys(q) && (
-                    <span className="inline-block mr-1 px-1 rounded bg-amber-100 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-bold align-middle"
+                    <span className="inline-block mr-1 px-1 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))] font-bold align-middle"
                       title={q.acceptAny
                         ? 'Every answer is accepted on this item, so its percentage measures nothing. Do not read it as a class strength.'
                         : `More than one answer is accepted: ${acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}.`}>
@@ -1914,17 +1915,17 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                   const letterPct = item.total > 0 ? Math.round((count / item.total) * 100) : 0
                   const isCorrect = isCorrectAnswer(q, letter)
                   return (
-                    <span key={letter} className={`text-center font-mono ${isCorrect ? 'font-bold text-green-700' : count > 0 ? 'text-red-400' : 'text-gray-300'}`}>
+                    <span key={letter} className={`text-center font-mono ${isCorrect ? 'font-bold text-good' : count > 0 ? 'text-bad' : 'text-ink-3'}`}>
                       {letterPct > 0 ? `${letterPct}%` : '-'}
                     </span>
                   )
                 })}
-                <span className={`text-center font-bold ${pct >= 80 ? 'text-green-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                <span className={`text-center font-bold ${pct >= 80 ? 'text-good' : pct >= 50 ? 'text-warn' : 'text-bad'}`}>
                   {pct}%
                 </span>
                 <span className="text-center">
                   {disc && (
-                    <span className={`inline-block px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold ${flagBg[disc.flagColor] || 'bg-gray-100 text-gray-500'} ${disc.flag === 'CHECK KEY' ? 'font-extrabold' : ''}`}>
+                    <span className={`inline-block px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold ${flagBg[disc.flagColor] || 'bg-paper-2 text-ink-3'} ${disc.flag === 'CHECK KEY' ? 'font-extrabold' : ''}`}>
                       {disc.flag}
                       {disc.flag !== 'LOW N' && <span className="font-normal ml-0.5">({disc.rpb.toFixed(2)})</span>}
                     </span>
@@ -1932,13 +1933,13 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                 </span>
               </button>
               {expandedQ === q.qNum && (
-                <div className="px-6 py-3 bg-blue-50/50 border-b border-border text-[length:calc(11.5px*var(--ts))]">
+                <div className="px-6 py-3 bg-paper-2 border-b border-border text-[length:calc(11.5px*var(--ts))]">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
                     <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok} ({qWeight(config, q)}pt)</span></div>
-                    <div><span className="text-text-tertiary">{hasMultipleKeys(q) ? 'Accepted answers:' : 'Correct Answer:'}</span> <span className="font-bold text-green-700">{q.acceptAny ? 'any answer' : acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}</span></div>
+                    <div><span className="text-text-tertiary">{hasMultipleKeys(q) ? 'Accepted answers:' : 'Correct Answer:'}</span> <span className="font-bold text-good">{q.acceptAny ? 'any answer' : acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
-                    {disc && <div><span className="text-text-tertiary">Discrimination (r_pb):</span> <span className={`font-bold ${disc.rpb < 0 ? 'text-red-600' : disc.rpb > 0.2 ? 'text-green-600' : 'text-amber-600'}`}>{disc.rpb.toFixed(3)}</span></div>}
+                    {disc && <div><span className="text-text-tertiary">Discrimination (r_pb):</span> <span className={`font-bold ${disc.rpb < 0 ? 'text-bad' : disc.rpb > 0.2 ? 'text-good' : 'text-warn'}`}>{disc.rpb.toFixed(3)}</span></div>}
                     <div><span className="text-text-tertiary">Status:</span> <span className="font-medium">{isExcluded ? 'EXCLUDED from MC scoring' : 'Included'}</span></div>
                   </div>
                   <div className="mt-2 flex gap-4">
@@ -1947,7 +1948,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                       const isCorrect = isCorrectAnswer(q, letter)
                       return (
                         <div key={letter} className="flex items-center gap-1">
-                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[length:calc(11.5px*var(--ts))] font-bold ${isCorrect ? 'bg-green-500 text-white' : count > 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'}`}>
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[length:calc(11.5px*var(--ts))] font-bold ${isCorrect ? 'bg-good text-white' : count > 0 ? 'bg-bad-soft text-bad' : 'bg-paper-2 text-ink-3'}`}>
                             {letter.toUpperCase()}
                           </span>
                           <span className="font-mono">{count}</span>
@@ -1986,17 +1987,17 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
               .sort((a, b) => b[1] - a[1])
             const topWrong = wrongDistractors[0]
             return (
-              <div key={q.qNum} className={`flex items-center gap-3 px-3 py-2 border-b border-border/50 ${isExcluded ? 'opacity-50 bg-gray-50' : ''}`}>
+              <div key={q.qNum} className={`flex items-center gap-3 px-3 py-2 border-b border-border/50 ${isExcluded ? 'opacity-50 bg-paper-2' : ''}`}>
                 <span className="text-[length:calc(11.5px*var(--ts))] font-mono text-text-tertiary w-5">Q{q.qNum}</span>
                 <span className={`text-[length:calc(11.5px*var(--ts))] flex-1 ${isExcluded ? 'line-through' : ''}`}>{q.text}</span>
                 <StandardBadge code={q.standard} description={q.standardDesc} />
-                <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-red-600 w-10 text-right">{pct}%</span>
+                <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-bad w-10 text-right">{pct}%</span>
                 {topWrong && topWrong[1] > 0 && (
-                  <span className="text-[length:calc(11.5px*var(--ts))] text-red-400">
+                  <span className="text-[length:calc(11.5px*var(--ts))] text-bad">
                     {Math.round((topWrong[1] / item.total) * 100)}% chose {topWrong[0].toUpperCase()}
                   </span>
                 )}
-                {isExcluded && <span className="text-[length:calc(11.5px*var(--ts))] text-red-500 font-bold">EXCL</span>}
+                {isExcluded && <span className="text-[length:calc(11.5px*var(--ts))] text-bad font-bold">Excl.</span>}
               </div>
             )
           })}
@@ -2008,7 +2009,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
       {/* Writing Summary */}
       <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Writing Scores Summary</h4>
       <div className="border border-border rounded-lg overflow-hidden">
-        <div className="grid grid-cols-[1fr_repeat(6,60px)] bg-gray-50 px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary border-b border-border">
+        <div className="grid grid-cols-[1fr_repeat(6,60px)] bg-paper-2 px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary border-b border-border">
           <span>Category</span>
           {config.writingCategories.map(cat => <span key={cat.key} className="text-center">{cat.label.split(' ')[0]}</span>)}
           <span className="text-center">Total</span>
@@ -2628,7 +2629,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
         {/* Which question set this test is scored against. Shown so a test
             falling back to the original content is never a silent surprise. */}
         <div className="px-3 py-2 border-b border-border bg-surface-alt/40" title="The question set this test is scored against. Historical tests keep their original questions.">
-          <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Questions</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Questions</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary font-medium">{versionLabel(versionKey)}</p>
         </div>
         {/* View toggle */}
@@ -2661,15 +2662,15 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
             const sComplete = !!scores[s.id]?.complete
             return (
               <button key={s.id} onClick={() => setSelectedIdx(idx)}
-                className={`w-full text-left px-3 py-2 border-b border-border/50 flex items-center gap-2 transition-colors ${idx === selectedIdx ? 'bg-blue-50' : 'hover:bg-surface-alt'}`}>
+                className={`w-full text-left px-3 py-2 border-b border-border/50 flex items-center gap-2 transition-colors ${idx === selectedIdx ? 'bg-navy/10' : 'hover:bg-surface-alt'}`}>
                 <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: classDot(s.english_class as EnglishClass) }} />
                 <div className="flex-1 min-w-0">
                   <div className="text-[length:calc(12px*var(--ts))] font-medium truncate">{s.english_name || s.korean_name}</div>
                   {hasData && <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{sAnswered}/{config.questionCount} MC</div>}
                 </div>
                 {sComplete
-                  ? <CheckCircle2 size={12} className="text-green-600 flex-shrink-0" aria-label="Test graded" />
-                  : hasData && <Check size={12} className="text-green-500 flex-shrink-0" />}
+                  ? <CheckCircle2 size={12} className="text-good flex-shrink-0" aria-label="Test graded" />
+                  : hasData && <Check size={12} className="text-good flex-shrink-0" />}
               </button>
             )
           })}
@@ -2677,9 +2678,9 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
 
         {/* Save button */}
         <div className="p-3 border-t border-border">
-          {hasDirtyData && <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600 font-medium text-center mb-1">Unsaved changes</p>}
+          {hasDirtyData && <p className="text-[length:calc(11.5px*var(--ts))] text-warn font-medium text-center mb-1">Unsaved changes</p>}
           <button onClick={handleSave} disabled={saving}
-            className={`w-full py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${hasDirtyData ? 'bg-amber-500 text-white hover:bg-amber-600 animate-pulse' : 'bg-navy text-white hover:bg-navy/90'}`}>
+            className={`w-full py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${hasDirtyData ? 'bg-accent text-white hover:bg-accent-hover animate-pulse' : 'border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
             Save All
           </button>

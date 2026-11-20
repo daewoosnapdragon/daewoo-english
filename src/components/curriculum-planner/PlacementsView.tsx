@@ -13,6 +13,7 @@ import { usePlanner, type Planner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import StoryPicker from './StoryPicker'
 import { ArrowDown, ArrowUp, Check, Copy, Loader2, Maximize2, Plus, Trash2, X } from 'lucide-react'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Books by class: every class plan at a glance (admin) ───────────────────
 // One grid for the year: a row per level, a column per grade, each book as
@@ -63,7 +64,7 @@ export default function MapView() {
   const activeKey = placing || copying || (open ? (() => { const pl = masters.find(x => x.id === open); return pl ? rowKey(pl.english_class, pl.grade) : null })() : null)
 
   if (p.loading) return <Loading rows={5} />
-  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{p.missing === 'catalogue' ? 'Run supabase/migration-curriculum-catalogue.sql first.' : 'The placements tables are missing. Admin runs supabase/migration-curriculum-placements.sql once.'}</p>
+  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql, supabase/migration-curriculum-placements.sql */}{p.missing === 'catalogue' ? needsUpdate({ en: 'curriculum catalogue', ko: '교재 목록' }, ko) : needsUpdate({ en: 'curriculum placements', ko: '교재 배치' }, ko)}</p>
 
   const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Sp', fall: ko ? '가을' : 'F', year: ko ? '한 해' : 'Yr' }
   const showTags = terms.length > 1 || masters.some(x => !terms.includes(x.term))
@@ -102,7 +103,7 @@ export default function MapView() {
       <div className="mb-4"><PeriodsLine year={theYear} /></div>
 
       <div className="border border-rule rounded overflow-hidden bg-surface">
-        <div className="grid border-b border-rule text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
+        <div className="grid border-b border-rule text-[length:calc(12px*var(--ts))] text-ink-2" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
           <div className="px-3 py-2">{ko ? '레벨' : 'Level'}</div>
           {GRADES.map(g => <div key={g} className="px-2 py-2 border-l border-rule">{ko ? `${g}학년` : `Grade ${g}`}</div>)}
         </div>
@@ -132,7 +133,7 @@ export default function MapView() {
 
       {(placing || copying || opened) && (
         <div className="mt-4 border border-rule-2 rounded bg-paper-2 p-3 flex flex-col gap-2">
-          <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
           {placing && <PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
           {copying && <CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cellOf(copying).cls, grade: cellOf(copying).grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} />}
           {opened && <PlacementCard terms={terms} hc={hcOf(opened.grade)} pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
@@ -198,11 +199,11 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
       {rows.length === 0 && <p className="px-4 py-3 text-[length:calc(12.5px*var(--ts))] text-ink-3">{units.length ? (ko ? '아직 고른 것이 없습니다. 추가를 누르세요.' : `Nothing picked yet. Press Add ${anthology ? 'stories' : 'units'}.`) : (ko ? '이 책에는 아직 단원이 없습니다. 책꽂이에서 먼저 색인하세요.' : 'This book has no units yet. Add them on the Bookshelf first.')}</p>}
       {rows.length > 0 && (
         <table className="w-full text-[length:calc(12.5px*var(--ts))]">
-          <thead><tr className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3"><th className="text-left font-medium px-4 py-1.5 w-10">#</th><th className="text-left font-medium py-1.5">{anthology ? (ko ? '이야기' : 'Story') : (ko ? '단원' : 'Unit')}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '주' : 'Weeks'}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '위치' : 'Weeks of the term'}</th><th className="w-48" /></tr></thead>
+          <thead><tr className="text-[length:calc(12px*var(--ts))] text-ink-2"><th className="text-left font-medium px-4 py-1.5 w-10">#</th><th className="text-left font-medium py-1.5">{anthology ? (ko ? '이야기' : 'Story') : (ko ? '단원' : 'Unit')}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '주' : 'Weeks'}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '위치' : 'Weeks of the term'}</th><th className="w-48" /></tr></thead>
           <tbody>
             {groups.map(g => (
               <Fragment key={g.key}>
-                {showGroups && <tr className="border-t border-rule bg-paper"><td colSpan={5} className="px-4 py-1 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3">{g.label}</td></tr>}
+                {showGroups && <tr className="border-t border-rule bg-paper"><td colSpan={5} className="px-4 py-1 text-[length:calc(12px*var(--ts))] text-ink-2">{g.label}</td></tr>}
                 {g.units.map(b => {
                   n += 1; const i = n - 1
                   const t = splitUnitTitle(b.unit.title)

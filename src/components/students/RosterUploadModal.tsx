@@ -395,9 +395,9 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                     <thead className="bg-surface-alt sticky top-0 z-10">
                       <tr>
                         <th className="px-2 py-2 text-center w-8"><input type="checkbox" checked={filtered.every(r => r.include)} onChange={e => { const s = new Set(filtered.map((_, i) => comparison.indexOf(filtered[i]))); setComparison(prev => prev.map((r, i) => s.has(i) ? { ...r, include: e.target.checked } : r)) }} /></th>
-                        <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary" colSpan={3}>File → </th>
-                        <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary" colSpan={3}>DB (current)</th>
-                        <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary">Changes</th>
+                        <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary" colSpan={3}>File → </th>
+                        <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary" colSpan={3}>DB (current)</th>
+                        <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Changes</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -614,7 +614,7 @@ export function BatchAssignEnglishClass({ onDone }: { onDone: () => void }) {
       <div className="border border-border rounded-xl overflow-hidden mb-4"><div className="max-h-[400px] overflow-y-auto">
         <table className="w-full text-[length:calc(11.5px*var(--ts))]"><thead className="bg-surface-alt sticky top-0 z-10"><tr>
           <th className="px-3 py-2 w-8"><input type="checkbox" checked={students.every(s => selected.has(s.id))} onChange={e => e.target.checked ? all() : none()} /></th>
-          <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase text-text-secondary">Name</th><th className="px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] uppercase text-text-secondary">Gr</th><th className="px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] uppercase text-text-secondary">반/번</th><th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase text-text-secondary">Current</th><th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase text-text-secondary">→ Assign</th>
+          <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Name</th><th className="px-3 py-2 text-center text-[length:calc(12px*var(--ts))] text-text-secondary">Gr</th><th className="px-3 py-2 text-center text-[length:calc(12px*var(--ts))] text-text-secondary">반/번</th><th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Current</th><th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">→ Assign</th>
         </tr></thead><tbody className="divide-y divide-border">
           {students.map(s => { const cur = assignments[s.id] || s.english_class; const ch = cur !== s.english_class; return (
             <tr key={s.id} className={selected.has(s.id) ? 'bg-blue-50/50' : ''}>

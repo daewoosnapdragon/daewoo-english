@@ -10,6 +10,7 @@ import { LEVEL_LABELS, LEVEL_LABELS_KO, LEVEL_ZERO_TEXT, LEVEL_ZERO_TEXT_KO, rub
 import RubricPrintDialog from './RubricPrintDialog'
 import { Check, ChevronLeft, ChevronRight, Loader2, X, Eraser, Printer } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 
 // ─── Rubric scoring ──────────────────────────────────────────────
 // A full-screen sheet (portaled above the Masthead by Overlay): students on the left, the rubric in the
@@ -93,12 +94,21 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
     })
     const { error } = await supabase.from('grades').upsert(rows, { onConflict: 'student_id,assessment_id' })
     setSaving(false)
-    if (error) { showToast(`Error: ${error.message}${error.message.includes('rubric_scores') ? ' · run supabase/migration-rubrics.sql' : ''}`); return false }
+    if (error) {
+      const ko = lang === 'ko'
+      // A missing rubric_scores column is the database, not the teacher: say who can fix it.
+      if (error.message.includes('rubric_scores')) showToast(ko ? '루브릭 점수에는 데이터베이스 업데이트가 필요합니다. 앱 데이터베이스 담당자에게 "루브릭" 업데이트를 요청하세요. 입력한 내용은 그대로 있습니다.' : 'Rubric scores need a database update. Ask the person who manages the app’s database to run the rubrics update. What you entered is still here.', { tone: 'error' })
+      else {
+        const names = students.filter(s => ids.includes(s.id)).map(s => s.english_name)
+        showToast(notSavedMessage(names, ko), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { saveStudents(ids) } } })
+      }
+      return false
+    }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
     logActivity('scored', assessment.name, { key: assessment.id })
     onSaved?.()
     return true
-  }, [assessment.id, assessment.max_score, criteria.length, currentTeacher?.id, showToast, onSaved])
+  }, [assessment.id, assessment.max_score, criteria.length, currentTeacher?.id, showToast, onSaved, students, lang])
 
   const saveAll = () => saveStudents(Array.from(dirtyRef.current))
 
@@ -268,8 +278,8 @@ export default function RubricScoreSheet({ assessment, students, onSaved, onExit
                               return (
                                 <button key={n} onClick={e => { e.stopPropagation(); setRow(i); setLevel(c.key, n) }} title={n === 0 ? zeroText : undefined}
                                   className={`text-left rounded-md border px-3 py-2.5 flex flex-col gap-1 transition-colors ${n === 0 ? 'items-center justify-center' : ''} ${on ? tone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
-                                  <span className="flex items-baseline gap-2"><span className="font-display text-[length:calc(22px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[n]}</span>}</span>
-                                  {n === 0 ? <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{labels[0]}</span>
+                                  <span className="flex items-baseline gap-2"><span className="font-display text-[length:calc(22px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(12px*var(--ts))] font-semibold ${on ? 'opacity-80' : 'text-ink-2'}`}>{labels[n]}</span>}</span>
+                                  {n === 0 ? <span className={`text-[length:calc(12px*var(--ts))] font-semibold ${on ? 'opacity-80' : 'text-ink-2'}`}>{labels[0]}</span>
                                     : <span className={`text-[length:calc(12.5px*var(--ts))] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
                                 </button>
                               )

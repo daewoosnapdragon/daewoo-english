@@ -51,8 +51,8 @@ export default function PhonicsStudentCompare({ skills = PHONICS_SKILLS, student
       <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-3.5 border-b border-rule-2 flex items-center justify-between gap-3">
           <div>
-            <p className="eyebrow">{lang === 'ko' ? '파닉스 비교' : 'Phonics, side by side'}</p>
-            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-tight text-ink mt-0.5">{students.length} {lang === 'ko' ? '명' : 'students'}</h3>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-tight text-ink">{lang === 'ko' ? '파닉스 비교' : 'Phonics, side by side'}</h3>
+            <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mt-0.5">{students.length} {lang === 'ko' ? '명' : 'students'}</p>
           </div>
           <div className="flex items-center gap-3">
             <label className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2">

@@ -361,7 +361,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
               <div className="flex items-baseline gap-2">
                 <span className={`text-3xl font-display font-bold ${toneOf(overall)}`}>{overall != null ? `${overall.toFixed(1)}%` : '—'}</span>
                 {overall != null && <span className="text-[length:calc(13px*var(--ts))] font-semibold text-text-secondary">{percentToLetter(overall)}</span>}
-                <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase tracking-wider font-semibold">{ko ? '전체' : 'Overall'}</span>
+                <span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{ko ? '전체' : 'Overall'}</span>
               </div>
               <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{ko ? '영역 평균의 평균, 성적표와 같은 값' : 'the mean of the domain averages, the same number the report card uses'}</span>
               <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto tabular-nums">{scoredCount}/{allAssessments.length} {ko ? '채점됨' : 'scored'}{unscored.length ? ` · ${unscored.length} ${ko ? '미채점' : 'to score'}` : ''}</span>
@@ -376,7 +376,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                 const drop = seq.length >= 3 ? ((seq[seq.length - 3] + seq[seq.length - 2]) / 2) - seq[seq.length - 1] : 0
                 return (
                   <div key={d} className="px-4 py-3 min-w-0" style={{ backgroundColor: b ? domainTint(d, '0A') : undefined }}>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold truncate" style={{ color: DOMAIN_COLOR[d] }} title={DOMAIN_LABELS[d][lang]}>{DOMAIN_LABELS[d][lang]}</p>
+                    <p className="text-[length:calc(12px*var(--ts))] font-semibold truncate" style={{ color: DOMAIN_COLOR[d] }} title={DOMAIN_LABELS[d][lang]}>{DOMAIN_LABELS[d][lang]}</p>
                     {!b ? (
                       <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-2 leading-snug">{ko ? '아직 평가 없음' : 'no assessments yet'}</p>
                     ) : (
@@ -406,7 +406,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
             <div className={`grid gap-4 ${notes.length > 0 && unscored.length > 0 ? 'md:grid-cols-2' : ''}`}>
               {notes.length > 0 && (
                 <div className="bg-surface border border-border rounded-xl p-4">
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">{ko ? '눈여겨볼 점' : 'Worth a look'}</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-2">{ko ? '눈여겨볼 점' : 'Worth a look'}</p>
                   <ul className="space-y-1.5">
                     {notes.map((n, i) => <li key={i} className="flex items-start gap-2 text-[length:calc(12.5px*var(--ts))] text-text-primary"><span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.tone === 'good' ? 'bg-success' : n.tone === 'bad' ? 'bg-danger' : n.tone === 'warn' ? 'bg-amber-500' : 'bg-navy/40'}`} />{n.text}</li>)}
                   </ul>
@@ -414,7 +414,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
               )}
               {unscored.length > 0 && (
                 <div className="bg-surface border border-amber-300/60 rounded-xl p-4 bg-amber-50/30">
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-amber-700 font-semibold mb-2">{ko ? '미채점' : 'Not yet scored'} · {unscored.length}</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-amber-700 font-semibold mb-2">{ko ? '미채점' : 'Not yet scored'} · {unscored.length}</p>
                   <ul className="space-y-1">
                     {unscored.map(a => (
                       <li key={a.id} className="flex items-center gap-2 text-[length:calc(12.5px*var(--ts))]">
@@ -434,7 +434,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
           <div className="bg-surface border border-border rounded-xl overflow-hidden">
             <table className="w-full text-[length:calc(12px*var(--ts))] table-fixed">
               <colgroup><col /><col className="w-[88px]" /><col className="w-[64px]" /><col className="w-[120px]" /><col className="w-[72px]" /><col className="w-[72px]" /></colgroup>
-              <thead><tr className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary bg-surface-alt/60">
+              <thead><tr className="text-[length:calc(12px*var(--ts))] text-ink-2 bg-surface-alt/60">
                 <th className="text-left px-5 py-2">{ko ? '평가' : 'Assessment'}</th><th className="text-left px-3 py-2">{ko ? '점수' : 'Score'}</th><th className="text-left px-3 py-2">%</th><th className="text-left px-3 py-2">{ko ? '반 분포' : 'In the class'}</th><th className="text-right px-3 py-2">{ko ? '반 평균' : 'Class avg'}</th><th className="text-right px-3 py-2">{ko ? '차이' : 'vs. class'}</th>
               </tr></thead>
               {DOMAINS.map(domain => {
@@ -449,7 +449,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                     <tr className="bg-surface-alt">
                       <td colSpan={6} className="px-5 py-2.5">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <button onClick={() => setOpen(p => ({ ...p, [domain]: collapsed }))} className="inline-flex items-center gap-2 text-[length:calc(12px*var(--ts))] font-semibold uppercase tracking-wider" style={{ color: DOMAIN_COLOR[domain] }}>
+                          <button onClick={() => setOpen(p => ({ ...p, [domain]: collapsed }))} className="inline-flex items-center gap-2 text-[length:calc(12px*var(--ts))] font-semibold" style={{ color: DOMAIN_COLOR[domain] }}>
                             {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}<span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: DOMAIN_COLOR[domain] }} />{DOMAIN_LABELS[domain][lang]}
                           </button>
                           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{d.rows.length} {ko ? '개 평가' : d.rows.length === 1 ? 'assessment' : 'assessments'}</span>
@@ -485,7 +485,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
                             <span className="text-text-tertiary ml-1.5 text-[length:calc(11.5px*var(--ts))]">{r.a.type !== 'formative' ? typeLabel(r.a.type, ko) : ''}{r.date ? `${r.a.type !== 'formative' ? ' · ' : ''}${new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
                             {r.whole && <span className="block text-[length:calc(11.5px*var(--ts))] text-text-tertiary tabular-nums">{ko ? '시험지 전체' : 'whole paper'} {r.whole.score != null ? `${fmtPts(r.whole.score)}/${fmtPts(r.whole.max)} · ${pct1(r.whole.pct)}` : '—'}{r.whole.classPct != null && <span className="ml-1.5">({ko ? '반' : 'class'} {pct1(r.whole.classPct)})</span>}</span>}
                           </td>
-                          <td className="px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">{r.flag}</span> : <span className="text-amber-700 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider">{ko ? '미채점' : 'unscored'}</span>}</td>
+                          <td className="px-3 py-2 font-medium tabular-nums">{r.score != null ? `${fmtPts(r.score)}/${fmtPts(r.max)}` : r.flag ? <span className="text-ink-2 text-[length:calc(12px*var(--ts))]">{r.flag === 'absent' ? (ko ? '결석' : 'Absent') : (ko ? '면제' : 'Exempt')}</span> : <span className="text-amber-700 text-[length:calc(12px*var(--ts))]">{ko ? '미채점' : 'Not scored'}</span>}</td>
                           <td className={`px-3 py-2 font-semibold tabular-nums ${toneOf(r.pct)}`}>{r.pct != null ? `${r.pct.toFixed(1)}%` : '—'}</td>
                           <td className="px-3 py-1.5"><PositionStrip vals={r.classVals} me={selected.id} color={DOMAIN_COLOR[domain]} /></td>
                           <td className="px-3 py-2 text-right text-text-secondary tabular-nums">{r.classPct != null ? `${r.classPct.toFixed(1)}%` : '—'}</td>
@@ -504,7 +504,7 @@ export default function StudentDrillDown({ allAssessments, students, selectedStu
           {standards.length > 0 && (
             <div className="bg-surface border border-border rounded-xl p-4">
               <div className="flex items-baseline justify-between mb-1 flex-wrap gap-2">
-                <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">{ko ? '기준별 도달' : 'Standards from the answer sheets'}</p>
+                <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{ko ? '기준별 도달' : 'Standards from the answer sheets'}</p>
                 <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{ko ? `도달 ${bands.on}%+ · 근접 ${bands.approaching}%+` : `Met ${bands.on}%+ · Approaching ${bands.approaching}%+ · weakest first`}</span>
               </div>
               <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">{ko ? '문항별로 채점한 평가에서만 집계됩니다.' : 'Only assessments marked question by question count here, so this is the "what to reteach" list for this student.'}</p>

@@ -170,8 +170,8 @@ export default function WeeklySchedule({ onCollapse, onPickPeriod }: { onCollaps
               <span className="flex items-center gap-2 min-w-0">
                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${gradeDot(slot.label)}`} />
                 <span className={`text-[length:calc(13px*var(--ts))] ${isActive ? 'font-semibold text-ink' : slot.label === 'Prep' || slot.label === 'Lunch' ? 'text-ink-3' : 'text-ink'}`}>{slot.label}</span>
-                {isActive && <span className="eyebrow eyebrow-accent">now</span>}
-                {isNext && !isActive && <span className="eyebrow">next</span>}
+                {isActive && <span className="eyebrow text-ink">Now</span>}
+                {isNext && !isActive && <span className="eyebrow">Next</span>}
                 {slot.note && <span className="text-[length:calc(11.5px*var(--ts))] text-accent ml-auto flex-shrink-0">{slot.note}</span>}
               </span>
             </Row>

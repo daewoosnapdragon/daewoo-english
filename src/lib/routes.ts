@@ -88,3 +88,20 @@ export const PAGE_TITLES: Record<string, string> = {
   readingLevels: 'Reading', lessonPlans: 'Lesson Plans',
   curriculum: 'Standards', wida: 'WIDA', settings: 'Settings', guide: 'How to use this app', whatsNew: 'What’s new', activity: 'Activity', behavior: 'Behavior', supplies: 'Supplies', budget: 'Budget', overtime: 'Overtime', planner: 'Curriculum', jobs: 'Jobs',
 }
+
+/**
+ * The guide section for each page, for the Help link in the context row and
+ * the phone's More sheet. Section ids live in src/content/guide.ts; a page
+ * missing here opens the guide at the top.
+ */
+export const GUIDE_SECTION_FOR_VIEW: Record<string, string> = {
+  dashboard: 'dashboard', attendance: 'attendance', grades: 'grades', readingLevels: 'reading', students: 'students',
+  lessonPlans: 'lessons', planner: 'bookshelf', curriculum: 'standards', wida: 'wida', leveling: 'leveltests', reports: 'reports',
+  behavior: 'behavior', jobs: 'jobs', supplies: 'supplies', overtime: 'overtime', budget: 'budget', activity: 'activity', settings: 'admin-settings',
+}
+
+/** Where Help goes from a page: the guide, opened at that page's section. */
+export function guideHrefFor(view: string): string {
+  const id = GUIDE_SECTION_FOR_VIEW[view]
+  return id ? `/guide#${id}` : '/guide'
+}

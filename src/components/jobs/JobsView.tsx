@@ -20,6 +20,7 @@ import RoutinesPanel from './RoutinesPanel'
 import YearView from './YearView'
 import { DoneLogList, TermSummary } from './DoneLog'
 import type { Teacher } from '@/types'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Jobs: the office and admin work ─────────────────────────────
 // For the two admin accounts. The board opens with the big jobs (this
@@ -85,8 +86,8 @@ export default function JobsView() {
     <div className="px-8 py-6 animate-fade-in max-w-[1280px]">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{d.loading ? '' : `${open.length} ${ko ? '개 진행 중' : 'open'}${overdue ? ` · ${overdue} ${ko ? '기한 지남' : 'overdue'}` : ''}${unowned ? ` · ${unowned} ${ko ? '담당 없음' : 'with nobody yet'}` : ''}${d.questions.length ? ` · ${d.questions.length} ${ko ? '질문' : d.questions.length === 1 ? 'question' : 'questions'}` : ''}`}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '업무' : 'Jobs'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{d.loading ? '' : `${open.length} ${ko ? '개 진행 중' : 'open'}${overdue ? ` · ${overdue} ${ko ? '기한 지남' : 'overdue'}` : ''}${unowned ? ` · ${unowned} ${ko ? '담당 없음' : 'with nobody yet'}` : ''}${d.questions.length ? ` · ${d.questions.length} ${ko ? '질문' : d.questions.length === 1 ? 'question' : 'questions'}` : ''}`}</p>
         </div>
         <div className="flex gap-1 flex-wrap">
           {tabs.map(([t, l]) => <button key={t} onClick={() => setTab(t)} className={`h-8 px-3 rounded text-[length:calc(12.5px*var(--ts))] ${tab === t ? 'bg-ink text-paper font-semibold' : 'text-ink-2 hover:bg-paper-2'}`}>{l}</button>)}
@@ -94,7 +95,7 @@ export default function JobsView() {
       </div>
 
       {d.missing ? (
-        <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{ko ? 'supabase/migration-admin-jobs.sql을 Supabase SQL Editor에서 한 번 실행하세요.' : 'Run supabase/migration-admin-jobs.sql once in the Supabase SQL Editor.'}</p>
+        <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{/* supabase/migration-admin-jobs.sql */}{needsUpdate({ en: 'admin jobs', ko: '업무' }, ko)}</p>
       ) : d.loading ? <Loading rows={6} /> : (
         <>
           {d.error && <p className="text-[length:calc(12px*var(--ts))] text-bad mb-3">{d.error}</p>}
@@ -120,7 +121,7 @@ export default function JobsView() {
                       <div className="grid gap-4">
                         {sections.map(({ sec, cards, bites: bs }) => (
                           <div key={sec}>
-                            <p className={`eyebrow mb-1.5 ${sec === 'working' ? 'eyebrow-accent' : sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {cards.length + bs.length}</span></p>
+                            <p className={`eyebrow mb-1.5 ${sec === 'working' || sec === 'week' ? 'text-ink' : ''}`}>{BOARD_SECTION_LABELS[sec][ko ? 'ko' : 'en']} <span className="text-ink-3">· {cards.length + bs.length}</span></p>
                             <div className="grid gap-2">
                               {cards.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}
                               {bs.map(b => <BiteLine key={`${b.job.id}-${b.step.id}`} bite={b} ko={ko} today={d.today} who={who} reload={d.reload} patchJob={d.patchJob} onOpen={() => setOpenId(b.job.id)} />)}
@@ -131,7 +132,7 @@ export default function JobsView() {
                       </div>
                       {done.length > 0 && (
                         <div className="mt-4">
-                          <p className="eyebrow mb-2">{ko ? '완료' : 'Done'} <span className="normal-case tracking-normal">· {ko ? '최근 2주' : 'last two weeks'}</span></p>
+                          <p className="eyebrow mb-2">{ko ? '완료' : 'Done'} <span className="">· {ko ? '최근 2주' : 'last two weeks'}</span></p>
                           <div className="grid gap-2">{done.map(j => <JobCard key={j.id} job={j} ko={ko} today={d.today} semesterName={d.semesterName(j.semester_id)} semesterStart={d.semesterStart(j.semester_id)} me={currentTeacher.id} onOpen={() => setOpenId(j.id)} />)}</div>
                         </div>
                       )}
@@ -172,7 +173,7 @@ function LaterShelf({ jobs, ko, today, activeSemesterId, me, nameOf, semesterNam
   const total = groups.reduce((n, g) => n + g.jobs.length, 0)
   return (
     <section className="mt-10 border-t border-rule-2 pt-4">
-      <p className="eyebrow mb-3">{BOARD_SECTION_LABELS.later[ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {total} · {ko ? '때가 되면 위로 올라옵니다' : 'each comes up into its column when its time is near'}</span></p>
+      <p className="eyebrow mb-3">{BOARD_SECTION_LABELS.later[ko ? 'ko' : 'en']} <span className="text-ink-3">· {total} · {ko ? '때가 되면 위로 올라옵니다' : 'each comes up into its column when its time is near'}</span></p>
       <div className="grid gap-6">
         {groups.map(g => (
           <div key={g.key}>
@@ -222,7 +223,7 @@ function GoalsBand({ jobs, ko, today, me, nameOf, semesterName, semesterStart, w
   const sorted = [...jobs].sort((a, b) => Number(b.is_shared) - Number(a.is_shared) || (a.due_date || '9999').localeCompare(b.due_date || '9999'))
   return (
     <section className="mb-8">
-      <p className="eyebrow eyebrow-accent mb-2">{BOARD_SECTION_LABELS.goal[ko ? 'ko' : 'en']} <span className="text-ink-3 normal-case tracking-normal">· {ko ? '이번 학기의 긴 일과 함께 하는 일' : 'this semester’s long jobs, and anything shared'}</span></p>
+      <p className="eyebrow text-ink mb-2">{BOARD_SECTION_LABELS.goal[ko ? 'ko' : 'en']} <span className="text-ink-3">· {ko ? '이번 학기의 긴 일과 함께 하는 일' : 'this semester’s long jobs, and anything shared'}</span></p>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {sorted.map(j => {
           const p = percent(j), e = pace(j, today), pr = progress(j), since = daysSinceTouched(j, today), nx = nextStep(j, me)

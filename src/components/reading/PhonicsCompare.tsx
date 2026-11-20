@@ -26,6 +26,7 @@ import PhonicsPatterns, { type PatternColumn } from '@/components/reading/Phonic
 import PhonicsGroups from '@/components/reading/PhonicsGroups'
 import { nextToTeach } from '@/lib/phonicsPatterns'
 import { AlertTriangle, ChevronDown, ChevronRight, Columns3, Download, Loader2, X } from 'lucide-react'
+import { segGroup, seg, tabRow, tab as tabClass } from '@/components/ui/Controls'
 
 // ─── Phonics: whole grade and all grades ─────────────────────────
 // Reading → Phonics with the scope set past one class. Every teacher sees
@@ -205,7 +206,6 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       }))
   }
 
-  const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
   const openStudent = open ? students.find(s => s.id === open.sid) : null
 
   if (loading || loadingChecks || !skipsLoaded) return <Loading rows={5} />
@@ -214,9 +214,9 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-3">
-        {tab === 'overview' && <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface">
-          <button onClick={() => setSort('class')} className={seg(sort === 'class')}>{lang === 'ko' ? '반별' : 'By class'}</button>
-          <button onClick={() => setSort('position')} className={seg(sort === 'position')}>{lang === 'ko' ? '위치순' : 'By position'}</button>
+        {tab === 'overview' && <div className={segGroup}>
+          <button onClick={() => setSort('class')} aria-pressed={sort === 'class'} className={seg(sort === 'class')}>{lang === 'ko' ? '반별' : 'By class'}</button>
+          <button onClick={() => setSort('position')} aria-pressed={sort === 'position'} className={seg(sort === 'position')}>{lang === 'ko' ? '위치순' : 'By position'}</button>
         </div>}
         <label className="inline-flex items-center gap-1.5 text-[length:calc(12px*var(--ts))] text-ink-2">
           {lang === 'ko' ? '이후 점검만' : 'Checks since'}
@@ -231,15 +231,15 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
         {since && <> {lang === 'ko' ? `${since} 이후 점검만 셉니다.` : `Counting checks from ${fmtShort(since, lang)} on.`}</>}
       </p>
 
-      <div className="flex border-b border-rule-2 mb-5" data-guide="reading.phonics.compare-tabs">
+      <div role="tablist" className={`${tabRow} mb-5`} data-guide="reading.phonics.compare-tabs">
         {([
           ['overview', lang === 'ko' ? '반과 학생' : 'Classes & students'],
           ['leveling', lang === 'ko' ? `레벨링 · ${candidates.length}` : `Leveling · ${candidates.length}`],
           ['patterns', lang === 'ko' ? '오류 패턴' : 'Error patterns'],
           ['groups', lang === 'ko' ? '그룹' : 'Groups'],
         ] as const).map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} className={`relative px-4 h-9 text-[length:calc(13px*var(--ts))] font-medium ${tab === id ? 'text-ink' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
-            {label}{tab === id && <span className="absolute left-4 right-4 bottom-0 h-[2px] bg-accent" />}
+          <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={tabClass(tab === id)}>
+            {label}
           </button>
         ))}
       </div>
@@ -250,7 +250,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       {tab === 'overview' && <>
 
       {/* ─── Classes compared ─── */}
-      <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
+      <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-tight text-ink mb-2">{lang === 'ko' ? '반 비교' : 'Classes compared'}</h3>
       <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2">{lang === 'ko'
         ? `각 칸은 완성/점검: 그 시트를 점검한 학생 중 완성한(최근 점검 90% 이상) 학생 수. 5/8은 점검한 8명 중 5명. 색은 비율을 따릅니다. 테두리 칸은 그 반의 경계: 완성 ${EDGE_PCT}% 미만인 첫 시트입니다.`
         : `Each cell is mastered / checked: how many of the students checked on that sheet have mastered it (90% or more on their latest check), so 5/8 is five of the eight checked. Colour follows the share. The outlined cell is the class’s edge, the first sheet under ${EDGE_PCT}% mastered.`}
@@ -300,7 +300,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
 
       {tab === 'leveling' && <>
       {/* ─── Leveling ─── */}
-      <h3 className="eyebrow eyebrow-accent mb-2">{lang === 'ko' ? '레벨링' : 'Leveling'}</h3>
+      <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-tight text-ink mb-2">{lang === 'ko' ? '레벨링' : 'Leveling'}</h3>
       <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-2 max-w-[920px]">{lang === 'ko'
         ? `점 하나가 학생 한 명, 위치(0–20, 단어 시트)에 놓입니다. 음영은 그 반의 중간 50%, 막대는 중앙값. 초록 테두리: 위 반의 중앙값에 이름. 빨간 테두리: 아래 반의 중앙값 이하. 노란 테두리: 아래 반 수준이지만 그 위로는 점검하지 않음.`
         : `A dot per checked student at their position (0–20, the word sheets; the alphabet sheets do not move it). Shaded: the class’s middle half; bar: its median. Ringed green: at or past the median of the class above. Ringed red: at or under the median of the class below. Ringed amber: the same, but never tested past that point, so check further first.`}</p>
@@ -347,7 +347,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       {/* ─── Students ─── */}
       <div className="flex items-end justify-between gap-3 flex-wrap mb-2">
         <div>
-          <h3 className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '학생' : 'Students'}</h3>
+          <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-tight text-ink mb-1">{lang === 'ko' ? '학생' : 'Students'}</h3>
           <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{lang === 'ko'
             ? `위치 = 완성한 가장 먼 단어 시트 (20개 중, 알파벳 시트 제외). ⚠ = 그 아래에 90% 미만인 시트가 있음. 이름을 클릭하면 시도별 진전, 칸을 클릭하면 단어가 보입니다. 체크하면 최대 ${MAX_COMPARE}명까지 나란히 비교합니다.`
             : `Position = the furthest of the 20 word sheets mastered; the alphabet sheets do not count toward it. ⚠ = a sheet below it still under 90%. Click a name for progress, a cell for the words. Tick up to ${MAX_COMPARE} students to compare them side by side.`}</p>

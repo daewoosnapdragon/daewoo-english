@@ -49,8 +49,8 @@ export default function OfficeJobs() {
         <>
           {mine && (
             <div className="mb-2.5">
-              <p className="eyebrow eyebrow-accent">{ko ? '내 담당' : 'Your job'}</p>
               <p className="font-display text-[length:calc(24px*var(--ts))] leading-tight text-ink">{mine.job.name}</p>
+              <p className="text-[length:calc(12.5px*var(--ts))] font-medium text-ink-2">{ko ? '내 담당' : 'Your job'}</p>
               {todays && mine.job.description && <p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 mt-1 leading-snug">{mine.job.description}</p>}
             </div>
           )}

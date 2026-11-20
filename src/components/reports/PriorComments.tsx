@@ -23,7 +23,7 @@ export default function PriorComments({ comments, className = '' }: { comments: 
   return (
     <section aria-label="What parents already read" className={`flex flex-col gap-2 ${className}`}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
-        <h3 className="text-[length:calc(11.5px*var(--ts))] tracking-[1.6px] uppercase font-semibold m-0" style={{ color: MUTED }}>What parents already read</h3>
+        <h3 className="text-[length:calc(12px*var(--ts))] font-semibold m-0" style={{ color: MUTED }}>What parents already read</h3>
         <div role="tablist" aria-label="Document" className="flex items-center gap-1 flex-wrap">
           {recent.map((c, i) => (
             <button key={i} type="button" role="tab" aria-selected={tab === i} onClick={() => setTab(i)}

@@ -19,6 +19,7 @@ import { exportToCSV } from '@/lib/export'
 import EmptyState from '@/components/shared/EmptyState'
 import AnimatedNumber from '@/components/shared/AnimatedNumber'
 import Overlay from '@/components/ui/Overlay'
+import { chip, chipRow, segGroup, seg as segment } from '@/components/ui/Controls'
 
 type Status = 'present' | 'absent' | 'tardy'
 
@@ -541,7 +542,6 @@ export default function AttendanceView() {
   }
 
   const CLASS_DOT: Record<string, string> = { Lily: 'bg-level-lily', Camellia: 'bg-level-camellia', Daisy: 'bg-level-daisy', Sunflower: 'bg-level-sunflower', Marigold: 'bg-level-marigold', Snapdragon: 'bg-level-snapdragon' }
-  const chip = (on: boolean) => `inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${on ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`
   const seg = (on: boolean, tone: string) => `w-9 h-8 text-[length:calc(12px*var(--ts))] font-bold border-l first:border-l-0 border-rule-2 ${on ? tone : 'text-ink-3 hover:bg-paper-2'}`
   const dateHeading = new Date(selectedDate + 'T12:00:00').toLocaleDateString(lang === 'ko' ? 'ko-KR' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })
   const weekdayName = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' })
@@ -552,8 +552,8 @@ export default function AttendanceView() {
       {/* Header */}
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{t.nav.attendance}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{selectedClass} · {lang === 'ko' ? `${selectedGrade}학년` : `Grade ${selectedGrade}`}{loadingStudents ? '' : ` · ${students.length} ${lang === 'ko' ? '명' : 'students'}`}</p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative" ref={printDropdownRef}>
@@ -594,15 +594,15 @@ export default function AttendanceView() {
 
       {/* Controls */}
       <div className="flex items-center gap-3 flex-wrap border-t border-b border-rule-2 py-3 mb-6">
-        <div className="chip-scroll flex gap-1.5 max-sm:w-full">{GRADES.map(g => <button key={g} onClick={() => guardUnsaved(() => setSelectedGrade(g))} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+        <div className={chipRow}>{GRADES.map(g => <button key={g} onClick={() => guardUnsaved(() => setSelectedGrade(g))} aria-pressed={selectedGrade === g} className={chip(selectedGrade === g)}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
         <span className="hidden sm:block w-px h-6 bg-rule" />
         {availableClasses.length > 1
-          ? <div className="chip-scroll flex gap-1.5 max-sm:w-full">{availableClasses.map(cls => <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))} className={chip(selectedClass === cls)}><span className={`w-2 h-2 rounded-full ${CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+          ? <div className={chipRow}>{availableClasses.map(cls => <button key={cls} onClick={() => guardUnsaved(() => setSelectedClass(cls))} aria-pressed={selectedClass === cls} className={chip(selectedClass === cls)}><span className={`w-2 h-2 rounded-full ${CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
           : <span className="inline-flex items-center gap-1.5 text-[length:calc(13px*var(--ts))] font-semibold text-ink"><span className={`w-2 h-2 rounded-full ${CLASS_DOT[selectedClass] || 'bg-ink-3'}`} />{selectedClass}</span>}
         <span className="hidden sm:block w-px h-6 bg-rule" />
-        <div className="inline-flex border border-rule-2 rounded overflow-hidden">
-          <button onClick={() => setViewMode('day')} className={`inline-flex items-center gap-1.5 h-7 max-sm:h-10 px-3 whitespace-nowrap text-[length:calc(12px*var(--ts))] font-medium ${viewMode === 'day' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><List size={13} /> {lang === 'ko' ? '일별' : 'Day'}</button>
-          <button onClick={() => setViewMode('month')} className={`inline-flex items-center gap-1.5 h-7 max-sm:h-10 px-3 whitespace-nowrap text-[length:calc(12px*var(--ts))] font-medium border-l border-rule-2 ${viewMode === 'month' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}</button>
+        <div className={segGroup}>
+          <button onClick={() => setViewMode('day')} aria-pressed={viewMode === 'day'} className={segment(viewMode === 'day')}><List size={13} /> {lang === 'ko' ? '일별' : 'Day'}</button>
+          <button onClick={() => setViewMode('month')} aria-pressed={viewMode === 'month'} className={segment(viewMode === 'month')}><CalendarDays size={13} /> {lang === 'ko' ? '월별' : 'Month'}</button>
         </div>
         {viewMode === 'day' && (
           <div className="flex items-center gap-1 ml-auto">
@@ -617,8 +617,7 @@ export default function AttendanceView() {
       {viewMode === 'day' && (<>
         <div className="flex items-end justify-between gap-4 flex-wrap mb-4">
           <div>
-            {isToday && <p className="eyebrow eyebrow-accent mb-1">{lang === 'ko' ? '오늘' : 'Today'}</p>}
-            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink inline-flex items-center gap-3 flex-wrap">{dateHeading}
+            <h2 className="font-display text-[length:calc(26px*var(--ts))] leading-none text-ink inline-flex items-center gap-3 flex-wrap">{isToday ? (lang === 'ko' ? `오늘, ${dateHeading}` : `Today, ${dateHeading}`) : dateHeading}
               {!isNoClassDay && !loading && !loadingStudents && !hasChanges && !saving && students.length > 0 && marked === students.length && (
                 <span className="inline-flex items-center gap-1.5 font-sans text-[length:calc(12.5px*var(--ts))] font-medium text-good" role="status"><DrawnCheck size={14} />{lang === 'ko' ? '모두 출석 체크됨' : 'All marked'}</span>
               )}
@@ -675,7 +674,7 @@ export default function AttendanceView() {
                     <div className="flex items-center gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-[length:calc(15px*var(--ts))] font-medium text-ink leading-tight truncate">{s.english_name}
-                          {away && <span className={`ml-2 text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}
+                          {away && <span className={`ml-2 text-[length:calc(12px*var(--ts))] font-semibold ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}
                         </p>
                         <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-0.5 tabular-nums truncate"><span className="ko-name">{s.korean_name}</span> · {formatHomeroom(s)}</p>
                       </div>
@@ -714,7 +713,7 @@ export default function AttendanceView() {
                   return (
                     <tr key={s.id} onClick={() => setFocusedRow(i)} className={`${focused ? 'bg-paper-2 shadow-[inset_3px_0_0_rgb(var(--accent))]' : 'hover:bg-paper-2/50'}`}>
                       <td className="px-2 py-1.5 text-ink-3 tabular-nums">{i + 1}</td>
-                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="ko-name text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wide ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
+                      <td className="px-2 py-1.5"><span className="font-medium text-ink">{s.english_name}</span><span className="ko-name text-ink-3 ml-2 text-[length:calc(12px*var(--ts))]">{s.korean_name}</span>{status && status !== 'present' && <span className={`ml-2 text-[length:calc(12px*var(--ts))] font-semibold ${status === 'absent' ? 'text-bad' : 'text-warn'}`}>{lang === 'ko' ? STATUS_CONFIG[status as Status].labelKo : STATUS_CONFIG[status as Status].label}</span>}</td>
                       <td className="px-2 py-1.5 text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums whitespace-nowrap">{formatHomeroom(s)}</td>
                       <td className="px-2 py-1.5 text-center">
                         <div className="inline-flex border border-rule-2 rounded overflow-hidden bg-surface">

@@ -173,8 +173,8 @@ export default function ProgramMapView() {
       {N > 0 && rows.length > 0 && (
         <div className="border border-rule rounded bg-surface overflow-hidden">
           <div className="grid border-b border-rule bg-paper" style={grid}>
-            <span className="px-4 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 font-semibold">{ko ? '반 · 학년' : 'Class · grade'}</span>
-            {strandsShown.map(st => <span key={st} className="px-3 py-2.5 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wide text-ink-3 font-semibold border-l border-rule">{ko ? STRAND_LABEL[st].ko : STRAND_LABEL[st].en}</span>)}
+            <span className="px-4 py-2.5 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">{ko ? '반 · 학년' : 'Class · grade'}</span>
+            {strandsShown.map(st => <span key={st} className="px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold border-l border-rule">{ko ? STRAND_LABEL[st].ko : STRAND_LABEL[st].en}</span>)}
           </div>
           {levels.map(l => (
             <div key={l.cls}>

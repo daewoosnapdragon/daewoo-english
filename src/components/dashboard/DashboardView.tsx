@@ -22,6 +22,7 @@ import AttendanceDrawer, { ATTENDANCE_SAVED_EVENT } from '@/components/attendanc
 import { withoutAwayDays } from '@/lib/calendarDays'
 import { loadAttendanceDay, unmarkedByGrade, type AttendanceDay } from '@/lib/attendanceToday'
 import Overlay from '@/components/ui/Overlay'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Event types ─────────────────────────────────────────────────
 // Nine stored types, five colors: fewer hues means each one is recognizable
@@ -239,8 +240,8 @@ export default function DashboardView() {
       {/* ─── Header ─── */}
       <div className="flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{dayStr}{sem ? ` · ${lang === 'ko' ? sem.name_ko || sem.name : sem.name}` : ''}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{greeting}{currentTeacher?.name ? `, ${currentTeacher.name}` : ''}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{dayStr}{sem ? ` · ${lang === 'ko' ? sem.name_ko || sem.name : sem.name}` : ''}</p>
         </div>
         <div className="flex gap-2">
           <Link href="/attendance" className="h-9 max-sm:h-11 px-3.5 inline-flex items-center rounded border border-rule-2 bg-surface text-[length:calc(13px*var(--ts))] font-medium text-ink hover:border-ink-3">
@@ -618,7 +619,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
             <button onClick={() => setCur(new Date())} className="px-2 h-7 rounded text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:bg-paper-2">{lang === 'ko' ? '오늘' : 'Today'}</button>
           </div>
         </div>
-        <button onClick={() => { if (tableError) { showToast('Run the SQL migration first to create the calendar_events table'); return }; setShowAdd(true) }}
+        <button onClick={() => { if (tableError) { showToast(needsUpdate({ en: 'calendar events', ko: '달력 일정' }, lang === 'ko'), { tone: 'error' }); return }; setShowAdd(true) }}
           className="inline-flex items-center gap-1.5 h-8 max-sm:h-11 px-3 rounded border border-rule-2 bg-surface text-[length:calc(12.5px*var(--ts))] font-medium text-ink hover:border-ink-3"><Plus size={13} /> {lang === 'ko' ? '일정 추가' : 'Add event'}</button>
       </div>
 
@@ -633,7 +634,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
             gives way to the "Coming up" list beside it, which holds the same events. */}
         <div className="hidden sm:block">
           <div className="grid" style={cols}>
-            {dayN.map(d => <div key={d} className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 font-semibold py-1 px-1.5">{d}</div>)}
+            {dayN.map(d => <div key={d} className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold py-1 px-1.5">{d}</div>)}
           </div>
           <div className="grid gap-px bg-rule border border-rule" style={cols}>{cells}</div>
           <div className="flex gap-4 flex-wrap mt-2.5">
@@ -650,7 +651,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
           <div>
             <div className="flex items-baseline justify-between border-b border-rule-2 pb-1.5 mb-1">
               <h3 className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '다가오는 일정' : 'Coming up'}</h3>
-              <span className="eyebrow">{lang === 'ko' ? `${monthsKo[nextM.getMonth()]}까지` : `through ${months[nextM.getMonth()]}`}</span>
+              <span className="eyebrow">{lang === 'ko' ? `${monthsKo[nextM.getMonth()]}까지` : `Through ${months[nextM.getMonth()]}`}</span>
             </div>
             {agenda.length === 0 ? (
               <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 py-3">{lang === 'ko' ? '예정된 일정이 없습니다.' : 'Nothing scheduled.'}</p>
@@ -662,7 +663,7 @@ function SharedCalendar({ aside }: { aside: ReactNode }) {
                   return (
                     <button key={ev.id} onClick={() => setSelDay(ev.date >= today ? ev.date : today)}
                       className="w-full grid grid-cols-[64px_1fr] gap-2 items-baseline py-2 text-left hover:bg-paper-2/60 -mx-1 px-1 rounded">
-                      <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wide tabular-nums ${isTodayEv ? 'text-accent' : 'text-ink-3'}`}>
+                      <span className={`text-[length:calc(12px*var(--ts))] font-semibold tabular-nums ${isTodayEv ? 'text-accent' : 'text-ink-2'}`}>
                         {isTodayEv ? (lang === 'ko' ? '오늘' : 'Today') : agendaDate(ev.date)}
                       </span>
                       <span className="min-w-0">
@@ -870,28 +871,28 @@ function AdminAlertPanel() {
                 <div><span className="text-text-tertiary">Type</span><p className="font-medium capitalize">{detail.type === 'abc' || detail.type === 'negative' ? 'Negative' : detail.type}</p></div>
                 <div><span className="text-text-tertiary">Teacher</span><p className="font-medium">{teacherOf(detail) || '—'}</p></div>
               </div>
-              {detail.activity && <div><p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Activity / Task</p><p className="text-[length:calc(12px*var(--ts))]">{detail.activity}</p></div>}
-              {detail.duration && <div><p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Duration</p><p className="text-[length:calc(12px*var(--ts))]">{detail.duration}</p></div>}
+              {detail.activity && <div><p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Activity / task</p><p className="text-[length:calc(12px*var(--ts))]">{detail.activity}</p></div>}
+              {detail.duration && <div><p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Duration</p><p className="text-[length:calc(12px*var(--ts))]">{detail.duration}</p></div>}
               {(detail.antecedents || []).length > 0 && (
-                <div><p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Antecedent</p>
+                <div><p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Antecedent</p>
                   <div className="flex flex-wrap gap-1">{detail.antecedents.map((a: string, i: number) => <span key={i} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full bg-info-soft text-info">{a}</span>)}</div></div>
               )}
               {(detail.behaviors || []).length > 0 && (
-                <div><p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Behaviors</p>
+                <div><p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Behaviors</p>
                   <div className="flex flex-wrap gap-1">{detail.behaviors.map((b: string, i: number) => <span key={i} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full bg-warn-soft text-warn">{b}</span>)}</div></div>
               )}
               {(detail.consequences || []).length > 0 && (
-                <div><p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Consequence</p>
+                <div><p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Consequence</p>
                   <div className="flex flex-wrap gap-1">{detail.consequences.map((c: string, i: number) => <span key={i} className="text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full bg-bad-soft text-bad">{c}</span>)}</div></div>
               )}
               {detail.intensity > 1 && (
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold uppercase">Intensity:</span>
+                  <span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Intensity:</span>
                   {[1,2,3,4,5].map(i => <div key={i} className={`w-4 h-4 rounded-full ${i <= detail.intensity ? (detail.intensity >= 4 ? 'bg-bad' : detail.intensity >= 3 ? 'bg-warn' : 'bg-good') : 'bg-paper-3'}`} />)}
                 </div>
               )}
-              {detail.frequency > 1 && <div><span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold uppercase">Frequency:</span><span className="text-[length:calc(12px*var(--ts))] ml-1">{detail.frequency}x</span></div>}
-              {detail.note && <div><p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">Notes</p><p className="text-[length:calc(13px*var(--ts))] whitespace-pre-wrap">{detail.note}</p></div>}
+              {detail.frequency > 1 && <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Frequency:</span><span className="text-[length:calc(12px*var(--ts))] ml-1">{detail.frequency}x</span></div>}
+              {detail.note && <div><p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">Notes</p><p className="text-[length:calc(13px*var(--ts))] whitespace-pre-wrap">{detail.note}</p></div>}
             </div>
             <div className="px-5 py-3 border-t border-border flex justify-between">
               <button onClick={() => { dismiss(detail.id); setDetail(null) }} className="px-3 py-1.5 rounded border border-rule-2 text-[length:calc(12px*var(--ts))] font-medium text-ink-2 hover:text-ink">{ko ? '표시 해제' : 'Dismiss flag'}</button>
@@ -955,7 +956,8 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
         const res = await supabase.from('calendar_events').insert({ ...basePayload, created_by: currentTeacher?.id || null })
         error = res.error
       }
-      if (!error) showToast('Saved — run the calendar migrations (parent-calendar + end_date) to enable multi-day and parent-calendar features')
+      // The parent-calendar and end_date migrations add those two features.
+      if (!error) showToast('Saved. Events over several days and the parent calendar need a database update: ask the person who manages the app’s database to run the calendar updates.', { tone: 'info' })
     }
 
     setSaving(false)
@@ -971,25 +973,25 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
           <button onClick={onClose} aria-label="Close" className="p-1.5 rounded hover:bg-paper-2"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-3 overflow-y-auto min-h-0">
-          <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Title *</label>
+          <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Title *</label>
             <input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="e.g. Phonics Unit 3 Lesson Plan" autoFocus
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Start date</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Start date</label>
               <input type="date" value={eventDate} onChange={(e: any) => { setEventDate(e.target.value); if (endDate && endDate < e.target.value) setEndDate('') }}
                 className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">End date <span className="normal-case text-text-tertiary">(opt)</span></label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">End date <span className="text-text-tertiary">(opt)</span></label>
               <input type="date" value={endDate} min={eventDate} onChange={(e: any) => setEndDate(e.target.value)}
                 className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           {endDate && endDate > eventDate && (
             <p className="text-[length:calc(11.5px*var(--ts))] text-navy -mt-1">Multi-day event — shows on every day from {eventDate} to {endDate}.</p>
           )}
-          <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Type</label>
+          <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Type</label>
             <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none">
               {EVENT_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select></div>
-          <div><label className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1">Description <span className="normal-case text-text-tertiary">(opt)</span></label>
+          <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Description <span className="text-text-tertiary">(opt)</span></label>
             <textarea value={desc} onChange={(e: any) => setDesc(e.target.value)} rows={2} placeholder="Details..."
               className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy resize-none" /></div>
 
@@ -1005,7 +1007,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
 
             {showOnParentCalendar && (
               <div className="ml-7">
-                <span className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold block mb-1.5">Which grades?</span>
+                <span className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1.5">Which grades?</span>
                 <div className="flex gap-1.5">
                   <button onClick={() => setTargetGrades(targetGrades.length === 5 ? [] : [1, 2, 3, 4, 5])}
                     className={`px-2 py-1 rounded text-[length:calc(11.5px*var(--ts))] font-medium ${targetGrades.length === 5 ? 'bg-navy text-white' : 'bg-surface border border-border text-text-secondary'}`}>

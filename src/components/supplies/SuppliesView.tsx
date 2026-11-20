@@ -14,6 +14,7 @@ import { printCountSheet } from './countSheet'
 import { useSupplies } from './useSupplies'
 import { AlertTriangle, Check, ClipboardCheck, Copy, ExternalLink, History, Loader2, Package, Plus, Printer, Receipt, RefreshCw, ShoppingCart, X } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Supplies ────────────────────────────────────────────────────
 // Four things on one page. Stock: the staples with an on-hand number (kept
@@ -72,13 +73,12 @@ export default function SuppliesView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '사무실' : 'The office'}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '비품' : 'Supplies'}</h1>
         </div>
         <button onClick={s.reload} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
       </div>
 
-      {s.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-supplies.sql을 먼저 실행하세요.' : 'The supplies tables are missing or out of date. Admin runs supabase/migration-supplies.sql once.'}</p>}
+      {s.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-supplies.sql */}{needsUpdate({ en: 'supplies', ko: '비품' }, ko)}</p>}
 
       {!s.loading && !s.missing && (
         <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-5 leading-relaxed">

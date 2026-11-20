@@ -6,6 +6,7 @@ import { withoutAwayDays } from '@/lib/calendarDays'
 import { EnglishClass, ENGLISH_CLASSES } from '@/types'
 import { classToTextColor, classTint, classDot } from '@/lib/utils'
 import { WIDA_LEVELS } from '@/lib/wida'
+import { ArrowUp, ArrowDown, ArrowRight } from 'lucide-react'
 import { latestBySkill, orderSkills, phonicsBand, phonicsSkill, summarizeStudent, scoreText, type LatestBySkill } from '@/lib/phonics'
 import { loadStudentPhonicsChecks } from '@/lib/phonicsData'
 
@@ -123,25 +124,24 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
       {trigger}
       {show && (
         <div ref={cardRef} onMouseEnter={handleCardEnter} onMouseLeave={handleCardLeave}
-          className={`absolute z-[200] top-full mt-1 ${posStyles[position]} ${levelTestData ? 'w-[380px]' : 'w-[320px]'} bg-white border border-border rounded-xl shadow-xl overflow-hidden`}
-          style={{ filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.15))' }}>
+          className={`absolute z-[200] top-full mt-1 ${posStyles[position]} ${levelTestData ? 'w-[380px]' : 'w-[320px]'} bg-surface border border-rule-2 rounded-xl shadow-xl overflow-hidden`}>
 
           {/* Header */}
-          <div className="px-4 py-2.5 bg-navy text-white">
+          <div className="px-4 py-2.5 bg-paper-2 border-b border-rule">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[length:calc(13px*var(--ts))] font-bold">{studentName}</p>
-                <p className="text-[length:calc(11.5px*var(--ts))] text-blue-200/70">{koreanName} -- {className} -- Grade {grade}</p>
+                <p className="text-[length:calc(13px*var(--ts))] font-bold text-ink">{studentName}</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{koreanName} -- {className} -- Grade {grade}</p>
               </div>
               <div className="flex items-center gap-1.5">
                 {widaInfo && (
-                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold"
-                    style={{ backgroundColor: widaInfo.bg, color: '#374151', borderLeft: `3px solid ${widaInfo.color}` }}>
+                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold border"
+                    style={{ backgroundColor: `var(--wida-${widaInfo.level})`, color: `var(--wida-${widaInfo.level}-ink)`, borderColor: `color-mix(in srgb, var(--wida-${widaInfo.level}-ink) 30%, transparent)` }}>
                     L{widaInfo.level}
                   </span>
                 )}
                 {levelTestData?.composite != null && (
-                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold bg-white/20 text-white">
+                  <span className="px-2 py-0.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-bold bg-ink text-paper">
                     {(levelTestData.composite * 100).toFixed(0)}%
                   </span>
                 )}
@@ -157,7 +157,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Level Test Comparison Bars ────────────────── */}
               {levelTestData && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-2">Level Test vs. Class Averages</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-2">Level test vs. class averages</p>
                   <ComparisonBars
                     studentScores={{
                       oral: levelTestData.rawCwpm,
@@ -180,20 +180,20 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                 <div className="flex gap-2">
                   {levelTestData.percentile != null && (
                     <div className="flex-1 bg-surface-alt rounded-lg px-2.5 py-1.5 text-center">
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">RANK</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">Rank</p>
                       <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{Math.round(levelTestData.percentile * 100)}%ile</p>
                     </div>
                   )}
                   {levelTestData.suggestedClass && (
                     <div className="flex-1 rounded-lg px-2.5 py-1.5 text-center border"
                       style={{ borderColor: classTint(levelTestData.suggestedClass as EnglishClass, 38), backgroundColor: classTint(levelTestData.suggestedClass as EnglishClass, 6) }}>
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">SUGGESTED</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">Suggested</p>
                       <p className="text-[length:calc(12px*var(--ts))] font-bold" style={{ color: classToTextColor(levelTestData.suggestedClass as EnglishClass) }}>{levelTestData.suggestedClass}</p>
                     </div>
                   )}
                   {levelTestData.passageLevel && (
                     <div className="flex-1 bg-surface-alt rounded-lg px-2.5 py-1.5 text-center">
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">PASSAGE</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold">Passage</p>
                       <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{levelTestData.passageLevel}</p>
                     </div>
                   )}
@@ -203,15 +203,15 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── WIDA domains ─────────────────────────────── */}
               {widaVals.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">WIDA Profile</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">WIDA profile</p>
                   <div className="flex gap-1.5">
                     {Object.entries(data.wida).map(([d, v]) => {
                       const info = WIDA_LEVELS.find(w => w.level === Math.floor(v))
                       return (
                         <div key={d} className="flex-1 rounded-lg p-1.5 text-center border"
-                          style={{ backgroundColor: info?.bg || '#f8fafc', borderColor: info?.color || '#e2e8f0' }}>
-                          <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-text-tertiary uppercase">{domainLabels[d] || d}</p>
-                          <p className="text-[length:calc(14px*var(--ts))] font-bold" style={{ color: info?.color || '#64748b' }}>{v}</p>
+                          style={info ? { backgroundColor: `var(--wida-${info.level})`, borderColor: `color-mix(in srgb, var(--wida-${info.level}-ink) 30%, transparent)` } : { backgroundColor: 'rgb(var(--paper-2))', borderColor: 'rgb(var(--rule))' }}>
+                          <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink-2">{domainLabels[d] || d}</p>
+                          <p className="text-[length:calc(14px*var(--ts))] font-bold" style={{ color: info ? `var(--wida-${info.level}-ink)` : 'rgb(var(--ink-3))' }}>{v}</p>
                         </div>
                       )
                     })}
@@ -223,10 +223,10 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Phonics (decoding) ───────────────────────── */}
               {Object.keys(data.phonics).length > 0 && (() => {
                 const sum = summarizeStudent(data.phonics)
-                const tone = (b: string) => b === 'mastered' ? 'bg-green-600 border-green-600 text-white' : b === 'developing' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-600'
+                const tone = (b: string) => b === 'mastered' ? 'bg-good border-good text-white' : b === 'developing' ? 'bg-warn-soft border-warn/30 text-warn' : 'bg-bad-soft border-bad/30 text-bad'
                 return (
                   <div>
-                    <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Phonics (decoding) · {sum.frontier ? `working on ${phonicsSkill(sum.frontier)?.label}` : 'every checked sheet mastered'}</p>
                     <div className="flex flex-wrap gap-1">
                       {orderSkills(Object.keys(data.phonics)).map(id => { const l = data.phonics[id]; return (
                         <span key={id} className={`px-1.5 py-0.5 rounded border text-[length:calc(11.5px*var(--ts))] font-semibold tabular-nums ${tone(phonicsBand(l.score))}`} title={`${phonicsSkill(id)?.label} · ${l.date}`}>{phonicsSkill(id)?.short} {scoreText(l.score)}</span>
@@ -239,12 +239,12 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Semester Grades ──────────────────────────── */}
               {data.grades.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Fall Semester Grades</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Fall semester grades</p>
                   <div className="flex flex-wrap gap-1">
                     {data.grades.slice(0, 6).map((g, i) => (
-                      <div key={i} className={`px-2 py-1 rounded-lg text-center min-w-[46px] ${g.score >= 80 ? 'bg-green-50 border border-green-200' : g.score >= 60 ? 'bg-amber-50 border border-amber-200' : 'bg-red-50 border border-red-200'}`}>
+                      <div key={i} className={`px-2 py-1 rounded-lg text-center min-w-[46px] ${g.score >= 80 ? 'bg-good-soft border border-good/30' : g.score >= 60 ? 'bg-warn-soft border border-warn/30' : 'bg-bad-soft border border-bad/30'}`}>
                         <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary capitalize truncate">{g.domain}</p>
-                        <p className={`text-[length:calc(12px*var(--ts))] font-bold ${g.score >= 80 ? 'text-green-600' : g.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{g.score.toFixed(0)}%</p>
+                        <p className={`text-[length:calc(12px*var(--ts))] font-bold ${g.score >= 80 ? 'text-good' : g.score >= 60 ? 'text-warn' : 'text-bad'}`}>{g.score.toFixed(0)}%</p>
                       </div>
                     ))}
                   </div>
@@ -254,7 +254,7 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
               {/* ── Reading trend ────────────────────────────── */}
               {readings.length > 0 && (
                 <div>
-                  <p className="text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1.5">Reading Fluency</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Reading fluency</p>
                   <div className="flex items-center gap-2">
                     {readings.slice(0, 3).map((r, i) => (
                       <div key={i} className="bg-surface-alt rounded-lg px-2.5 py-1.5 text-center flex-1">
@@ -262,8 +262,8 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
                         <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{r.cwpm ? Math.round(r.cwpm) : '--'}</p>
                       </div>
                     ))}
-                    <div className={`text-[length:calc(16px*var(--ts))] ${readTrend === 'up' ? 'text-green-500' : readTrend === 'down' ? 'text-red-500' : 'text-text-tertiary'}`}>
-                      {readTrend === 'up' ? '↑' : readTrend === 'down' ? '↓' : '→'}
+                    <div className={readTrend === 'up' ? 'text-good' : readTrend === 'down' ? 'text-bad' : 'text-text-tertiary'} aria-label={readTrend === 'up' ? 'Reading speed up' : readTrend === 'down' ? 'Reading speed down' : 'Reading speed steady'}>
+                      {readTrend === 'up' ? <ArrowUp size={16} /> : readTrend === 'down' ? <ArrowDown size={16} /> : <ArrowRight size={16} />}
                     </div>
                   </div>
                 </div>
@@ -271,9 +271,9 @@ export default function LevelingHoverCard({ studentId, studentName, koreanName, 
 
               {/* ── Attendance ───────────────────────────────── */}
               <div className="flex gap-1.5 pt-1 border-t border-border">
-                <div className="flex-1 text-center py-1 rounded bg-green-50 text-green-700 text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.present}P</div>
-                <div className="flex-1 text-center py-1 rounded bg-red-50 text-red-700 text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.absent}A</div>
-                <div className="flex-1 text-center py-1 rounded bg-amber-50 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.tardy}T</div>
+                <div className="flex-1 text-center py-1 rounded bg-good-soft text-good text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.present}P</div>
+                <div className="flex-1 text-center py-1 rounded bg-bad-soft text-bad text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.absent}A</div>
+                <div className="flex-1 text-center py-1 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))] font-medium">{data.attCounts.tardy}T</div>
               </div>
             </div>
           )}
@@ -333,7 +333,7 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
                 return (
                   <div className="flex items-center gap-1">
                     <span className="w-14 text-[length:calc(11.5px*var(--ts))] text-right text-text-tertiary truncate">{classBelow}</span>
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div className="flex-1 h-2 bg-paper-2 rounded-full overflow-hidden relative">
                       <div className="h-full rounded-full opacity-40" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classDot(classBelow) }} />
                     </div>
                     <span className="w-6 text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-right">{Math.round(avg)}</span>
@@ -346,13 +346,13 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
                 return (
                   <div className="flex items-center gap-1">
                     <span className="w-14 text-[length:calc(11.5px*var(--ts))] text-right font-semibold truncate" style={{ color: classToTextColor(currentClass) }}>{currentClass}</span>
-                    <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div className="flex-1 h-3 bg-paper-2 rounded-full overflow-hidden relative">
                       {/* Class average bar */}
                       {avg != null && <div className="absolute h-full rounded-full opacity-25" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classDot(currentClass) }} />}
                       {/* Class average marker */}
                       {avg != null && <div className="absolute top-0 h-full w-0.5" style={{ left: `${(avg / scale) * 100}%`, backgroundColor: classDot(currentClass), opacity: 0.5 }} />}
                       {/* Student marker (diamond) */}
-                      <div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rotate-45 border-2 border-white shadow-sm" style={{ left: `${(m.value / scale) * 100}%`, transform: `translateX(-50%) translateY(-50%) rotate(45deg)`, backgroundColor: m.value >= (avg ?? 0) ? '#22C55E' : '#EF4444' }} />
+                      <div className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rotate-45 border-2 border-white shadow-sm" style={{ left: `${(m.value / scale) * 100}%`, transform: `translateX(-50%) translateY(-50%) rotate(45deg)`, backgroundColor: m.value >= (avg ?? 0) ? 'var(--c-good)' : 'var(--c-bad)' }} />
                     </div>
                     <span className="w-6 text-[length:calc(11.5px*var(--ts))] font-bold text-right" style={{ color: classToTextColor(currentClass) }}>{avg != null ? Math.round(avg) : '--'}</span>
                   </div>
@@ -365,7 +365,7 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
                 return (
                   <div className="flex items-center gap-1">
                     <span className="w-14 text-[length:calc(11.5px*var(--ts))] text-right text-text-tertiary truncate">{classAbove}</span>
-                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden relative">
+                    <div className="flex-1 h-2 bg-paper-2 rounded-full overflow-hidden relative">
                       <div className="h-full rounded-full opacity-40" style={{ width: `${(avg / scale) * 100}%`, backgroundColor: classDot(classAbove) }} />
                     </div>
                     <span className="w-6 text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-right">{Math.round(avg)}</span>
@@ -378,9 +378,9 @@ function ComparisonBars({ studentScores, currentClass, classBelow, classAbove, c
       })}
       {/* Legend */}
       <div className="flex items-center gap-3 text-[length:calc(11.5px*var(--ts))] text-text-tertiary pt-0.5">
-        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rotate-45 bg-green-500" /> Student (above avg)</span>
-        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rotate-45 bg-red-500" /> Student (below avg)</span>
-        <span className="flex items-center gap-0.5"><span className="w-3 h-0.5 bg-gray-400 opacity-50" /> Class avg</span>
+        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rotate-45 bg-good" /> Student (above avg)</span>
+        <span className="flex items-center gap-0.5"><span className="w-1.5 h-1.5 rotate-45 bg-bad" /> Student (below avg)</span>
+        <span className="flex items-center gap-0.5"><span className="w-3 h-0.5 bg-ink-3 opacity-50" /> Class avg</span>
       </div>
     </div>
   )

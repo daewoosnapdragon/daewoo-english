@@ -53,8 +53,8 @@ export default function CurriculumView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '가르칠 것, 언제' : 'What to teach, and when'}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '교육과정' : 'Curriculum'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{ko ? '가르칠 것, 언제' : 'What to teach, and when'}</p>
         </div>
       </div>
       <div className="flex gap-1.5 flex-wrap mb-6">

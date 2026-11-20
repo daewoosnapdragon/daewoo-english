@@ -173,7 +173,7 @@ export default function StandardsHeatMap() {
         <Overlay><div className="fixed inset-0 z-[100] bg-black/30 flex items-center justify-center p-6" onClick={() => setOpen(null)}>
           <div className="bg-surface border border-rule-2 rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-3.5 border-b border-rule-2 flex items-start justify-between gap-3">
-              <div><p className="eyebrow">{open.code} · {getDisplayName(openStudent)}</p><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-tight text-ink mt-1">{plainName(open.code)}</h3><p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">{Math.round(pct(openCell)!)}% · {openCell.earned} / {openCell.possible} {lang === 'ko' ? '점' : 'points'}</p></div>
+              <div><h3 className="font-display text-[length:calc(20px*var(--ts))] leading-tight text-ink">{plainName(open.code)}</h3><p className="text-[length:calc(13px*var(--ts))] font-medium text-ink-2 mt-1">{open.code} · {getDisplayName(openStudent)}</p><p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-1">{Math.round(pct(openCell)!)}% · {openCell.earned} / {openCell.possible} {lang === 'ko' ? '점' : 'points'}</p></div>
               <button onClick={() => setOpen(null)} aria-label="Close" className="w-7 h-7 rounded hover:bg-paper-2 flex items-center justify-center text-ink-3 hover:text-ink"><X size={15} /></button>
             </div>
             <div className="overflow-y-auto divide-y divide-rule">

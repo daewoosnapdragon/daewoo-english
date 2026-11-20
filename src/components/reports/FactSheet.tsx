@@ -35,7 +35,7 @@ export interface FactSheetProps {
 }
 
 const INK = '#1e293b', MUTED = '#64748b', RULE = '#DFE4EB'
-const H = ({ children }: { children: React.ReactNode }) => <h3 className="text-[length:calc(11.5px*var(--ts))] tracking-[1.6px] uppercase font-semibold m-0" style={{ color: MUTED }}>{children}</h3>
+const H = ({ children }: { children: React.ReactNode }) => <h3 className="text-[length:calc(12px*var(--ts))] font-semibold m-0" style={{ color: MUTED }}>{children}</h3>
 
 function MonthDay({ iso }: { iso: string | null }) {
   if (!iso) return null

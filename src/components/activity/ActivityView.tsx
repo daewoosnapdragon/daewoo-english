@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { useTeachers } from '@/hooks/useData'
 import { ACTION_LABELS, canViewActivity, type ActivityAction } from '@/lib/activity'
 import { Loader2, RefreshCw } from 'lucide-react'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Activity ────────────────────────────────────────────────────
 // Who signed in and what they did, newest first, with a strip of when each
@@ -70,13 +71,13 @@ export default function ActivityView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '누가 언제 무엇을' : 'Who did what, and when'}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '활동 기록' : 'Activity'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{ko ? '누가 언제 무엇을' : 'Who did what, and when'}</p>
         </div>
         <button onClick={load} className="inline-flex items-center gap-1.5 h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink"><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
       </div>
 
-      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-activity-log.sql을 먼저 실행하세요.' : 'The activity_log table is missing. Run supabase/migration-activity-log.sql in the Supabase SQL editor, then reload.'}</p>}
+      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-activity-log.sql */}{needsUpdate({ en: 'activity log', ko: '활동 기록' }, ko)}</p>}
 
       <div className="flex items-center gap-3 flex-wrap mb-6">
         <div className="flex gap-1.5">{[1, 7, 30].map(d => <button key={d} onClick={() => setDays(d)} className={chip(days === d)}>{d === 1 ? (ko ? '오늘' : 'Today') : (ko ? `${d}일` : `${d} days`)}</button>)}</div>

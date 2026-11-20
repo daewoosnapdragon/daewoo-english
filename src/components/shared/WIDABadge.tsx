@@ -82,22 +82,29 @@ export default function WIDABadge({ studentId, compact }: { studentId: string; c
   const domainLabels: Record<string, string> = { listening: 'L', speaking: 'S', reading: 'R', writing: 'W' }
   const breakdown = Object.entries(sl).map(([d, v]) => `${domainLabels[d] || d}${v}`).join(' ')
 
+  // Fill, ink and dot all come from the --wida-N tokens in globals.css, so the
+  // badge reads in dark mode and sits in the paper palette.
+  const fill = `var(--wida-${info.level})`
+  const ink = `var(--wida-${info.level}-ink)`
+  const tip = (
+    <>
+      <span className="font-semibold text-ink block mb-1">L{info.level} {info.name} <span className="font-normal text-ink-3">({breakdown})</span></span>
+      <span className="block text-ink-2 mb-1.5">{info.desc}</span>
+      <span className="block text-ink font-semibold">Scaffolds:</span>
+      <span className="block text-ink-2">{info.scaffolds}</span>
+    </>
+  )
+  const tipBox = 'absolute w-56 bg-surface border border-rule-2 text-ink rounded-lg shadow-lg p-3 text-[length:calc(11.5px*var(--ts))] leading-relaxed pointer-events-none'
+
   if (compact) {
     return (
       <span className="relative inline-block"
         onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold cursor-help"
-          style={{ backgroundColor: info.bg, color: '#374151', borderLeft: `2px solid ${info.color}` }}>
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold cursor-help border"
+          style={{ backgroundColor: fill, color: ink, borderColor: `color-mix(in srgb, ${ink} 30%, transparent)` }}>
           L{info.level}
         </span>
-        {showTip && (
-          <span className="absolute left-0 top-full mt-1 w-56 bg-navy-dark text-white rounded-lg shadow-lg p-3 z-[200] text-[length:calc(11.5px*var(--ts))] leading-relaxed pointer-events-none">
-            <span className="font-bold text-gold block mb-1">L{info.level} {info.name} ({breakdown})</span>
-            <span className="block text-blue-200 mb-1.5">{info.desc}</span>
-            <span className="block text-green-300 font-medium">Scaffolds:</span>
-            <span className="block text-green-200">{info.scaffolds}</span>
-          </span>
-        )}
+        {showTip && <span className={`${tipBox} left-0 top-full mt-1 z-[200]`}>{tip}</span>}
       </span>
     )
   }
@@ -106,18 +113,11 @@ export default function WIDABadge({ studentId, compact }: { studentId: string; c
     <span className="relative inline-block"
       onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-medium cursor-help"
-        style={{ backgroundColor: info.bg, color: '#374151' }}>
-        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: info.color }} />
+        style={{ backgroundColor: fill, color: ink }}>
+        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ink }} />
         L{info.level}
       </span>
-      {showTip && (
-        <span className="absolute bottom-full left-0 mb-1 w-56 bg-navy-dark text-white rounded-lg shadow-lg p-3 z-[90] text-[length:calc(11.5px*var(--ts))] leading-relaxed pointer-events-none">
-          <span className="font-bold text-gold block mb-1">L{info.level} {info.name} ({breakdown})</span>
-          <span className="block text-blue-200 mb-1.5">{info.desc}</span>
-          <span className="block text-green-300 font-medium">Scaffolds:</span>
-          <span className="block text-green-200">{info.scaffolds}</span>
-        </span>
-      )}
+      {showTip && <span className={`${tipBox} bottom-full left-0 mb-1 z-[90]`}>{tip}</span>}
     </span>
   )
 }

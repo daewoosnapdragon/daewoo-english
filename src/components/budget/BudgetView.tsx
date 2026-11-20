@@ -10,6 +10,7 @@ import { budgetSummary, isSuppliesMissing, won, type SupplyBudget, type SupplyPu
 import { fetchBudget, saveBudget, updatePurchase } from '@/lib/suppliesData'
 import { Check, Loader2, RefreshCw, X } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Budget ──────────────────────────────────────────────────────
 // What the office has spent this semester, from the receipts on the
@@ -84,7 +85,6 @@ export default function BudgetView() {
     <div className="px-8 py-6 animate-fade-in">
       <div className="flex items-end justify-between gap-6 flex-wrap mb-4">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '사무실' : 'The office'}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '예산' : 'Budget'}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export default function BudgetView() {
       </div>
       <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mb-5">{ko ? '비품 페이지에 입력한 영수증이 여기에 합산됩니다. ' : 'Every receipt entered on the Supplies page lands here. '}<Link href="/supplies#receipts" className="text-accent hover:underline">{ko ? '영수증 입력' : 'Enter a receipt'}</Link>{semester?.start_date ? ` · ${fmtDay(semester.start_date, ko)}${semester.end_date ? ` – ${fmtDay(semester.end_date, ko)}` : ''}` : ''}</p>
 
-      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{ko ? 'supabase/migration-supplies.sql을 먼저 실행하세요.' : 'The supplies tables are missing or out of date. Admin runs supabase/migration-supplies.sql once.'}</p>}
+      {missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-supplies.sql */}{needsUpdate({ en: 'supplies', ko: '비품' }, ko)}</p>}
       {loading ? <Loading rows={5} /> : missing ? null : (
         <>
           <section className="mb-8">

@@ -10,6 +10,7 @@ import RubricBuilder, { type RubricDraft } from './RubricBuilder'
 import RubricPrintDialog from './RubricPrintDialog'
 import { X, Pencil, Plus, Trash2, Printer } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 // ─── Rubric picker ───────────────────────────────────────────────
 // Templates by task on the left, the school's and your class's saved rubrics
@@ -99,7 +100,7 @@ export default function RubricPicker({ grade, englishClass, onClose, onUse }: Pr
               <div className="px-3 text-[length:calc(12px*var(--ts))] text-warn space-y-1">
                 <p>{lang === 'ko' ? '저장된 루브릭을 불러올 수 없습니다.' : 'Saved rubrics could not be loaded.'}</p>
                 <p className="text-ink-3 break-words">{loadError}</p>
-                <p className="text-ink-3">{/schema cache|does not exist|relation/i.test(loadError) ? (lang === 'ko' ? 'migration-rubrics.sql을 실행했다면 Supabase SQL 편집기에서 NOTIFY pgrst, \'reload schema\'; 를 실행하거나 잠시 후 다시 시도하세요.' : "If migration-rubrics.sql has been run, the API may not have noticed yet: run NOTIFY pgrst, 'reload schema'; in the SQL Editor, or retry in a minute.") : ''}</p>
+                <p className="text-ink-3">{/schema cache|does not exist|relation/i.test(loadError) ? /* supabase/migration-rubrics.sql, then NOTIFY pgrst, 'reload schema' */ partNeedsUpdate({ en: 'Saved rubrics', ko: '저장된 루브릭' }, { en: 'rubrics', ko: '루브릭' }, lang === 'ko') + (lang === 'ko' ? ' 이미 했다면 잠시 후 다시 시도하세요.' : ' If that has been done, try again in a minute.') : ''}</p>
                 <button onClick={load} className="h-7 px-2.5 rounded border border-rule-2 text-ink-2 hover:text-ink">{lang === 'ko' ? '다시 시도' : 'Retry'}</button>
               </div>
             ) : (

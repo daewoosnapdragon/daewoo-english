@@ -123,7 +123,7 @@ export async function sendReminder(c: BehaviorCase, adminIds: string[]): Promise
   const { data: notice, error: nErr } = await supabase.from('notices').insert({ body, style: 'urgent', author_id: null, audience: adminIds, expires_on: expires.toISOString().slice(0, 10) }).select('id').single()
   if (nErr) return nErr.message
   const { error } = await supabase.from('behavior_cases').update({ reminder_at: now, reminder_count: (c.reminder_count || 0) + 1, reminder_notice_id: notice?.id || null, updated_at: now }).eq('id', c.id)
-  if (error) return /reminder_/.test(error.message || '') ? 'Run supabase/migration-behavior-reminders.sql first' : error.message
+  if (error) return /reminder_/.test(error.message || '') ? /* supabase/migration-behavior-reminders.sql */ 'Reminders need a database update. Ask the person who manages the app’s database to run the behavior reminders update.' : error.message
   logActivity('posted', `Behavior reminder to admin · ${c.students?.english_name || ''} · step ${c.step}`)
   return null
 }

@@ -44,9 +44,9 @@ export default function LoginPage({ teachers }: { teachers: Teacher[] }) {
     <div className="min-h-screen bg-paper flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-[380px]">
         <div className="text-center mb-8">
-          <p className="eyebrow eyebrow-accent mb-3">Daewoo Elementary · English Program</p>
           <h1 className="font-display text-[length:calc(44px*var(--ts))] leading-none text-ink">Daewoo English</h1>
-          <p className="text-ink-3 text-[length:calc(13px*var(--ts))] mt-3">{language === 'ko' ? '계속하려면 로그인하세요' : 'Log in to continue'}</p>
+          <p className="text-ink-2 text-[length:calc(13.5px*var(--ts))] mt-3">Daewoo Elementary · English Program</p>
+          <p className="text-ink-3 text-[length:calc(13px*var(--ts))] mt-6">{language === 'ko' ? '계속하려면 로그인하세요' : 'Log in to continue'}</p>
         </div>
 
         <div className="border-t border-b border-rule-2 py-7 space-y-5">

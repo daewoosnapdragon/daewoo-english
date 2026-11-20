@@ -22,6 +22,8 @@ import RubricPrintDialog from './RubricPrintDialog'
 import { scoredForItem } from './rubricPrint'
 import { BarChart3, Check, ChevronLeft, ChevronRight, Eraser, Loader2, LayoutGrid, ListChecks, Printer } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
+import { segGroup, seg } from '@/components/ui/Controls'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 
 // ─── Answer sheet scoring ────────────────────────────────────────
 // The same bubble sheet the written level test uses: one student at a time,
@@ -229,15 +231,19 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
     if (error && isRoutingColumnError(error.message)) {
       // The grades.domain_scores column needs supabase/migration-mixed-assessments.sql; keep the marks regardless.
       ;({ error } = await supabase.from('grades').upsert(rows.map(({ domain_scores: _d, ...r }: any) => r), { onConflict: 'student_id,assessment_id' }))
-      if (!error) showToast(lang === 'ko' ? '영역별 점수 없이 저장됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Saved without per-domain points: run supabase/migration-mixed-assessments.sql')
+      if (!error) showToast(lang === 'ko' ? '저장했지만 영역별 점수는 빠졌습니다. 이 기능에는 데이터베이스 업데이트가 필요합니다. 앱 데이터베이스 담당자에게 "혼합 평가" 업데이트를 요청하세요.' : 'Saved, but without points per domain. That needs a database update: ask the person who manages the app’s database to run the mixed assessments update.', { tone: 'info' })
     }
     setSaving(false)
-    if (error) { showToast(`Error: ${error.message}`); return false }
+    if (error) {
+      const names = students.filter(s => ids.includes(s.id)).map(s => s.english_name)
+      showToast(notSavedMessage(names, lang === 'ko'), { tone: 'error', action: { label: retryLabel(lang === 'ko'), onClick: () => { saveStudents(ids) } } })
+      return false
+    }
     setDirty(prev => { const n = new Set(prev); ids.forEach(id => n.delete(id)); return n })
     logActivity('scored', `${assessment.name}${assessment.english_class ? ` · ${assessment.english_class}` : ''}`, { key: assessment.id })
     onSaved?.()
     return true
-  }, [assessment.id, map, routed, currentTeacher?.id, showToast, onSaved, lang])
+  }, [assessment.id, map, routed, currentTeacher?.id, showToast, onSaved, lang, students])
 
   // ── Clear ──
   // A paper marked against the wrong student, or the wrong paper: wipe the
@@ -396,10 +402,10 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
       <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
         <div className="flex items-center gap-3">
           <span className="text-[length:calc(13px*var(--ts))] text-ink-2 tabular-nums">{doneCount} / {students.length} {lang === 'ko' ? '완료' : 'done'}</span>
-          <div data-guide="grades.views" className="inline-flex border border-rule-2 rounded overflow-hidden">
-            <button onClick={() => setView('sheet')} className={`h-8 px-3 text-[length:calc(12.5px*var(--ts))] font-medium inline-flex items-center gap-1.5 ${view === 'sheet' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><ListChecks size={13} />{lang === 'ko' ? '답안지' : 'Answer sheet'}</button>
-            <button onClick={() => setView('grid')} className={`h-8 px-3 text-[length:calc(12.5px*var(--ts))] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'grid' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><LayoutGrid size={13} />{lang === 'ko' ? '반 전체' : 'Class grid'}</button>
-            <button onClick={() => setView('analysis')} className={`h-8 px-3 text-[length:calc(12.5px*var(--ts))] font-medium inline-flex items-center gap-1.5 border-l border-rule-2 ${view === 'analysis' ? 'bg-ink text-paper' : 'text-ink-2 hover:bg-paper-2'}`}><BarChart3 size={13} />{lang === 'ko' ? '분석' : 'Analysis'}</button>
+          <div data-guide="grades.views" className={segGroup}>
+            <button onClick={() => setView('sheet')} aria-pressed={view === 'sheet'} className={seg(view === 'sheet')}><ListChecks size={13} />{lang === 'ko' ? '답안지' : 'Answer sheet'}</button>
+            <button onClick={() => setView('grid')} aria-pressed={view === 'grid'} className={seg(view === 'grid')}><LayoutGrid size={13} />{lang === 'ko' ? '반 전체' : 'Class grid'}</button>
+            <button onClick={() => setView('analysis')} aria-pressed={view === 'analysis'} className={seg(view === 'analysis')}><BarChart3 size={13} />{lang === 'ko' ? '분석' : 'Analysis'}</button>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -504,9 +510,9 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                       const rowTone = isBlank || wasSkipped ? `${focused ? 'bg-warn-soft' : 'bg-warn-soft/50'} shadow-[inset_3px_0_0_rgb(var(--warn))]` : focused ? 'bg-paper-2' : ''
                       const awayStyle = away && !isBlank && !wasSkipped && !focused ? { backgroundColor: domainTint(dom, '0F') } : undefined
                       const band = run ? (
-                        <div className="flex items-center gap-2 pt-2.5 pb-1 -mx-2 px-2 text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider" style={{ color: domainColor(run.dom) }}>
+                        <div className="flex items-center gap-2 pt-2.5 pb-1 -mx-2 px-2 text-[length:calc(12px*var(--ts))] font-semibold" style={{ color: domainColor(run.dom) }}>
                           <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: domainColor(run.dom) }} />{runLabel(run)}
-                          <span className="font-normal normal-case tracking-normal text-ink-3">{run.dom === here ? (lang === 'ko' ? '이 탭에 반영' : 'counts here') : (lang === 'ko' ? `${domainLabel(run.dom)} 탭에 반영` : `counts in ${domainLabel(run.dom)}`)}</span>
+                          <span className="font-normal text-ink-3">{run.dom === here ? (lang === 'ko' ? '이 탭에 반영' : 'counts here') : (lang === 'ko' ? `${domainLabel(run.dom)} 탭에 반영` : `counts in ${domainLabel(run.dom)}`)}</span>
                         </div>
                       ) : null
                       const blankNote = isBlank
@@ -542,8 +548,8 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                                         return (
                                           <button key={n} title={n === 0 ? zeroText : undefined} onClick={e => { e.stopPropagation(); setFocusedQ(it.num); setCritIdx(ci); setCritLevel(it.num, c.key, n) }}
                                             className={`text-left rounded border px-2 py-1.5 flex flex-col gap-0.5 min-w-0 ${n === 0 ? 'items-center justify-center' : ''} ${on ? levelTone(n) : 'bg-surface border-rule-2 text-ink hover:border-ink-3 hover:bg-paper-2/60'}`}>
-                                            <span className="flex items-baseline gap-1.5"><span className="font-display text-[length:calc(17px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[n]}</span>}</span>
-                                            {n === 0 ? <span className={`text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider ${on ? 'opacity-80' : 'text-ink-3'}`}>{levelLabels[0]}</span>
+                                            <span className="flex items-baseline gap-1.5"><span className="font-display text-[length:calc(17px*var(--ts))] tabular-nums leading-none">{n}</span>{n !== 0 && <span className={`text-[length:calc(12px*var(--ts))] font-semibold ${on ? 'opacity-80' : 'text-ink-2'}`}>{levelLabels[n]}</span>}</span>
+                                            {n === 0 ? <span className={`text-[length:calc(12px*var(--ts))] font-semibold ${on ? 'opacity-80' : 'text-ink-2'}`}>{levelLabels[0]}</span>
                                               : <span className={`text-[length:calc(11.5px*var(--ts))] leading-snug ${on ? 'opacity-95' : 'text-ink-2'}`}>{c.levels[n - 1]}</span>}
                                           </button>
                                         )
@@ -632,7 +638,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                   if (!rows.length) return null
                   return (
                     <div key={d} className={routed ? 'mb-1.5' : ''}>
-                      {routed && <p className="text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider mt-1" style={{ color: domainColor(d) }}>{domainLabel(d)}</p>}
+                      {routed && <p className="text-[length:calc(12px*var(--ts))] font-semibold mt-1" style={{ color: domainColor(d) }}>{domainLabel(d)}</p>}
                       {rows.map(([code, v]) => (
                         <div key={code} className="grid grid-cols-[64px_1fr_40px] gap-2 items-center py-0.5">
                           <span className="truncate" style={{ color: routed ? domainColor(d) : undefined }}>{routed ? code : <span className="text-info">{code}</span>}</span>
@@ -662,7 +668,7 @@ export default function KeyScoreSheet({ assessment, students, currentDomain, onS
                 <tr>
                   <th className="border-b border-rule" />
                   {runs.map((r, i) => (
-                    <th key={i} colSpan={r.items.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-2 py-1 text-[length:calc(11.5px*var(--ts))] font-semibold uppercase tracking-wider border-b border-rule text-center whitespace-nowrap" style={{ color: domainColor(r.dom), backgroundColor: domainTint(r.dom, r.dom === here ? '22' : '0F') }}>
+                    <th key={i} colSpan={r.items.reduce((n, it) => n + (hasRubric(it) ? it.rubric!.criteria.length : 1), 0)} className="px-2 py-1 text-[length:calc(12px*var(--ts))] font-semibold border-b border-rule text-center whitespace-nowrap" style={{ color: domainColor(r.dom), backgroundColor: domainTint(r.dom, r.dom === here ? '22' : '0F') }}>
                       {runLabel(r)}{r.dom === here ? '' : ` · ${lang === 'ko' ? `${domainLabel(r.dom)} 탭` : `in ${domainLabel(r.dom)}`}`}
                     </th>
                   ))}

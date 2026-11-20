@@ -9,6 +9,7 @@ import { PHONICS_GROUPS, phonicsSkill, sheetNo, type LatestBySkill, type Phonics
 import { nextToTeach, teachingGroups, troubleCounts, missedWords, splitPatternKey, type GroupBy, type TeachGroup } from '@/lib/phonicsPatterns'
 import { printWordSheet } from '@/lib/phonicsPrint'
 import { Printer } from 'lucide-react'
+import { chip, segGroup, seg } from '@/components/ui/Controls'
 
 // ─── Teaching groups across classes ──────────────────────────────
 // Per grade, students gathered by the sheet to teach next (or by family:
@@ -84,18 +85,17 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
     logActivity('printed', 'Phonics groups', { path: '/reading' })
   }
 
-  const seg = (on: boolean) => `px-3 h-8 rounded text-[length:calc(12.5px*var(--ts))] font-medium ${on ? 'bg-ink text-paper' : 'text-ink-2 hover:text-ink hover:bg-paper-2'}`
 
   return (
     <div>
       <div className="flex items-center gap-3 flex-wrap mb-2">
-        <div className="inline-flex p-0.5 rounded border border-rule-2 bg-surface">
-          <button onClick={() => setBy('sheet')} className={seg(by === 'sheet')}>{lang === 'ko' ? '시트별' : 'By sheet'}</button>
-          <button onClick={() => setBy('family')} className={seg(by === 'family')}>{lang === 'ko' ? '영역별' : 'By family'}</button>
+        <div className={segGroup}>
+          <button onClick={() => setBy('sheet')} aria-pressed={by === 'sheet'} className={seg(by === 'sheet')}>{lang === 'ko' ? '시트별' : 'By sheet'}</button>
+          <button onClick={() => setBy('family')} aria-pressed={by === 'family'} className={seg(by === 'family')}>{lang === 'ko' ? '영역별' : 'By family'}</button>
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {classes.map(c => (
-            <button key={c} onClick={() => toggleClass(c)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${off.includes(c) ? 'bg-surface text-ink-3 border-rule-2 line-through' : 'bg-ink text-paper border-ink'}`}>
+            <button key={c} onClick={() => toggleClass(c)} aria-pressed={!off.includes(c)} className={`${chip(!off.includes(c))} ${off.includes(c) ? 'line-through' : ''}`}>
               <span className={`w-2 h-2 rounded-full ${CLASS_DOT[c] || 'bg-ink-3'}`} />{c}
             </button>
           ))}

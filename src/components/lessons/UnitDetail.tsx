@@ -85,7 +85,7 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
           )}
           {unit.lessons.length > 0 && (
             <>
-              <p className="mt-3 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold text-text-tertiary">Lessons</p>
+              <p className="mt-3 text-[length:calc(12px*var(--ts))] font-semibold text-ink-2">Lessons</p>
               <ol className="mt-1 space-y-0.5">
                 {unit.lessons.map((l, i) => <li key={l.id} className={l.id === lessonId ? 'font-semibold text-navy' : ''}>{i + 1}. {l.title}</li>)}
               </ol>

@@ -35,7 +35,7 @@ export async function loadPhraseBank(): Promise<{ rows: Phrase[]; error: string 
   if (cacheError) return { rows: [], error: cacheError }
   const { data, error } = await supabase.from('comment_phrases').select('*').eq('is_active', true).order('sort_order', { ascending: true })
   if (error) {
-    cacheError = error.code === '42P01' || /comment_phrases/.test(error.message || '') ? 'The phrase bank is not set up yet: run supabase/migration-comment-phrases.sql, then seed-comment-phrases.sql.' : error.message
+    cacheError = error.code === '42P01' || /comment_phrases/.test(error.message || '') ? /* supabase/migration-comment-phrases.sql, then seed-comment-phrases.sql */ 'The phrase bank needs a database update. Ask the person who manages the app’s database to run the comment phrases update.' : error.message
     return { rows: [], error: cacheError }
   }
   cache = (data || []) as Phrase[]

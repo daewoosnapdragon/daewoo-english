@@ -326,7 +326,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
 
         <div className="px-5 py-3 bg-white flex flex-col gap-2.5" style={{ borderTop: `1px solid ${RULE}` }}>
           <div className="flex items-baseline justify-between gap-4 flex-wrap">
-            <span className="text-[length:calc(11.5px*var(--ts))] tracking-[1.6px] uppercase font-semibold" style={{ color: MUTED }}>Draft</span>
+            <span className="text-[length:calc(12px*var(--ts))] font-semibold" style={{ color: MUTED }}>Draft</span>
             <span className="text-[length:calc(11.5px*var(--ts))] tabular-nums" style={{ color: MUTED }}>{ticked} ticked · {words} words · aim for about 200{steps >= 4 ? ` · ${steps} things to work on; parents remember one or two` : ''}</span>
           </div>
           <p className="m-0 max-h-[150px] overflow-y-auto whitespace-pre-wrap text-[length:calc(13.5px*var(--ts))] leading-[1.6] rounded-md px-3 py-2" style={{ background: '#fafaf8', border: `1px solid ${RULE}`, color: draft ? INK : MUTED }}>{draft || 'Tick sentences above and the draft appears here.'}</p>

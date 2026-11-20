@@ -204,7 +204,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
     if (error && isRoutingColumnError(error.message)) {
       const { mixed: _m, domain_split: _d, ...plain } = base as any
       ;({ data, error } = await supabase.from('assessments').insert({ ...plain, english_class: englishClass }).select().single())
-      if (!error) showToast(ko ? '영역별 배분 없이 생성됨: supabase/migration-mixed-assessments.sql을 실행하세요' : 'Created without domain routing: run supabase/migration-mixed-assessments.sql, then NOTIFY pgrst, \'reload schema\'')
+      if (!error) /* supabase/migration-mixed-assessments.sql */ showToast(ko ? '만들었지만 영역별 배분은 빠졌습니다. 이 기능에는 데이터베이스 업데이트가 필요합니다. 앱 데이터베이스 담당자에게 "혼합 평가" 업데이트를 요청하세요.' : 'Created, but without the split across domains. That needs a database update: ask the person who manages the app’s database to run the mixed assessments update.', { tone: 'info' })
     }
     if (error) { setSaving(false); showToast(`Error: ${error.message}`); return }
     if (share.size) await supabase.from('assessments').insert(Array.from(share).map(cls => ({ ...base, english_class: cls })))
@@ -232,7 +232,7 @@ export default function NewAssessmentFlow({ grade, englishClass, domain, semeste
       {/* Steps */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-rule-2">
         <div className="flex items-center gap-6 text-[length:calc(13px*var(--ts))]">
-          {editing && <span className="eyebrow eyebrow-accent">{ko ? '수정' : 'Editing'}</span>}
+          {editing && <span className="eyebrow text-ink">{ko ? '수정' : 'Editing'}</span>}
           {[[1, ko ? '설정' : 'Set up'], [2, scoring === 'rubric' ? (ko ? '루브릭' : 'Rubric') : scoring === 'points' ? (ko ? '총점' : 'Points') : (ko ? '정답 키' : 'Answer key')]].map(([n, l]) => (
             <button key={n} onClick={() => setStep(n as 1 | 2)} className={`flex items-center gap-2 ${step === n ? 'text-ink font-semibold' : 'text-ink-3'}`}>
               <span className={`w-5 h-5 rounded-full text-[length:calc(11.5px*var(--ts))] flex items-center justify-center ${step === n ? 'bg-accent text-white' : step > (n as number) ? 'bg-good text-white' : 'border border-rule-2'}`}>{step > (n as number) ? <Check size={11} /> : n}</span>{l}

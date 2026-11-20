@@ -110,8 +110,8 @@ export default function PrintView({ settings, teachers, admin, initialFrom, init
     <div>
       <button onClick={onBack} className="mb-4 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink inline-flex items-center gap-1.5"><ArrowLeft size={13} />{ko ? '기록으로 돌아가기' : 'Back to the log'}</button>
       <div className="mb-5">
-        <p className="eyebrow eyebrow-accent mb-1.5">{admin && !single ? (ko ? '전체 교사' : 'All teachers') : single ? `${single.name}${single.role !== 'admin' ? ` · ${single.english_class}` : ''}` : ''}</p>
         <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '양식 인쇄' : 'Print the sheet'}</h1>
+        <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{admin && !single ? (ko ? '전체 교사' : 'All teachers') : single ? `${single.name}${single.role !== 'admin' ? ` · ${single.english_class}` : ''}` : ''}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-7 items-start">

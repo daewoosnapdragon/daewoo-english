@@ -5,20 +5,25 @@ import { useState, useEffect, useMemo, Fragment } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Student, EnglishClass, ENGLISH_CLASSES, PLACED_ENGLISH_CLASSES, LevelTest } from '@/types'
 import { classToTextColor, IMPLAUSIBLE_CWPM, isCorrectAnswer, acceptedLetters, hasMultipleKeys, writingTotalFrom, classTint, classDot } from '@/lib/utils'
-import { Loader2, ChevronDown } from 'lucide-react'
+import { Loader2, ChevronDown, ArrowDown } from 'lucide-react'
 import { bandFromCalc, g2ClassFromBand, BAND_LEVEL_ORDER } from './grade2Band'
 import { computeRow, rankRows, buildLevelCwpmNorms, versionKeyForTest } from './placement'
 import { calculateG1Composite, g1WeightedComposite, g1ClassFromRank } from './Grade1ScoreEntry'
 import { g1ContentForTest } from './grade1Content'
 
-/** 0 = red, 100 = violet. Used for the per-class tags on a question. */
-function rainbow(pct: number): string {
-  return `hsl(${Math.round(Math.max(0, Math.min(1, pct)) * 280)}, 72%, 45%)`
+/** The share-correct bands the question bars use, as token classes for a tag. */
+function bandTag(pct: number): string {
+  return pct >= 0.75 ? 'bg-good-soft text-good' : pct >= 0.45 ? 'bg-warn-soft text-warn' : 'bg-bad-soft text-bad'
 }
 
-const PASSAGE_COLORS: Record<string, string> = {
-  A: '#EF4444', B: '#F97316', C: '#EAB308', D: '#22C55E', E: '#3B82F6', F: '#A855F7',
-}
+/** Passages A (easiest) to F as one blue ramp from the chart palette: they are
+ *  steps of one scale, not six categories. The chart variables switch with the
+ *  theme, so the ramp turns over in dark mode by itself. */
+const PASSAGE_STEP: Record<string, number> = { A: 14, B: 28, C: 44, D: 82, E: 91, F: 100 }
+const PASSAGE_COLORS: Record<string, string> = Object.fromEntries(
+  Object.entries(PASSAGE_STEP).map(([l, p]) => [l, `color-mix(in srgb, var(--c-1) ${p}%, var(--c-track))`]))
+/** The letter on a passage segment: ink on the pale steps, paper on the deep ones (4.5:1 either way). */
+const passageInk = (l: string) => (PASSAGE_STEP[l] ?? 100) >= 80 ? 'text-white' : 'text-ink'
 /** Where g2ClassFromBand cuts. Drawn on the picture so the colours explain themselves. */
 const CLASS_CUTS = [20, 35, 50, 65, 80]
 /** Maximum class size. Shown, never enforced -- placement is a teacher's call. */
@@ -309,9 +314,9 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         <table className="text-[length:calc(11.5px*var(--ts))] w-full">
           <thead>
             <tr>
-              <th className="px-3 py-2 text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">In</th>
+              <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">In</th>
               {PLACED_ENGLISH_CLASSES.map(c => (
-                <th key={c} className="px-2 py-2 text-center text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
+                <th key={c} className="px-2 py-2 text-center text-[length:calc(12px*var(--ts))] font-semibold min-w-[64px]" style={{ color: classToTextColor(c) }}>{c}</th>
               ))}
             </tr>
           </thead>
@@ -342,15 +347,15 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           })}</tbody>
           <tfoot>
             <tr className="border-t-2 border-border bg-surface-alt/50">
-              <td className="px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold">Would be</td>
+              <td className="px-3 py-2 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Would be</td>
               {PLACED_ENGLISH_CLASSES.map(to => {
                 const n = classes.reduce((sum, from) => sum + (matrix[from]?.[to]?.length ?? 0), 0)
                 const over = n > CLASS_CAP
                 return (
                   <td key={to} className="px-2 py-2 text-center">
-                    <span className={`font-bold ${over ? 'text-red-600' : 'text-navy'}`}
+                    <span className={`font-bold ${over ? 'text-bad' : 'text-navy'}`}
                       title={over ? `${n} is over the cap of ${CLASS_CAP}` : undefined}>{n || '·'}</span>
-                    {over && <span className="block text-[length:calc(11.5px*var(--ts))] text-red-600">over {CLASS_CAP}</span>}
+                    {over && <span className="block text-[length:calc(11.5px*var(--ts))] text-bad">over {CLASS_CAP}</span>}
                   </td>
                 )
               })}
@@ -386,7 +391,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
           Left: the range of ability in the room. The bar is the middle half of the class and the line is the middle student.
           Right: which passage they sustained &mdash; two classes on the same passage are reading the same text, whatever the rooms are called.
         </p>
-        <div className="flex text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold mb-1">
+        <div className="flex text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1">
           <span className="w-20 shrink-0" />
           <span className="flex-[3]">Range of ability</span>
           <span className="w-14 shrink-0" />
@@ -422,7 +427,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                   if (!n) return null
                   return <div key={l} title={`Passage ${l}: ${n}`} className="h-full flex items-center justify-center"
                     style={{ width: `${(n / withBand) * 100}%`, backgroundColor: PASSAGE_COLORS[l] }}>
-                    {(n / withBand) > 0.16 && <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-white">{l}</span>}
+                    {(n / withBand) > 0.16 && <span className={`text-[length:calc(11.5px*var(--ts))] font-bold ${passageInk(l)}`}>{l}</span>}
                   </div>
                 })}
               </div>
@@ -459,7 +464,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr className="bg-surface-alt">
             {['Student', 'In', 'Composite', 'Band', 'Passage', 'Test suggests', 'Last placed'].map((h, i) => (
-              <th key={h} className={`px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
+              <th key={h} className={`px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold ${i === 0 ? 'text-left' : 'text-center'}`}>{h}</th>
             ))}
           </tr></thead>
           <tbody>{listed.map(r => {
@@ -470,7 +475,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
             const sug = r.suggested as EnglishClass
             const diff = sug !== r.student.english_class
             return (
-              <tr key={r.student.id} className={`border-t border-border ${diff ? 'bg-amber-50/30' : ''}`}>
+              <tr key={r.student.id} className={`border-t border-border ${diff ? 'bg-warn-soft/30' : ''}`}>
                 <td className="px-3 py-2 whitespace-nowrap">
                   <span className="font-medium text-navy">{r.student.english_name}</span>
                   <span className="text-text-tertiary ml-1.5 text-[length:calc(11.5px*var(--ts))]">{r.student.korean_name}</span>
@@ -485,7 +490,7 @@ function Placement({ test, rows }: { test: LevelTest; rows: Row[] }) {
                     <span className="inline-flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: PASSAGE_COLORS[r.band.effectiveLevel] }} />
                       {r.band.effectiveLevel}
-                      {r.band.downgraded && <span className="text-[length:calc(11.5px*var(--ts))] text-amber-600" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}>&darr;</span>}
+                      {r.band.downgraded && <span className="text-[length:calc(11.5px*var(--ts))] text-warn" title={`Tried ${r.band.attemptedLevel}, did not sustain it`}><ArrowDown size={11} className="inline" aria-label="dropped" /></span>}
                     </span>
                   ) : <span className="text-text-tertiary">—</span>}
                 </td>
@@ -629,8 +634,8 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
           </div>
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead><tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
-              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+              <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[200px]">&nbsp;</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
             </tr></thead>
             <tbody>
               {Object.keys(oral.dok).sort().map(k => (
@@ -680,7 +685,7 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
                 <button key={it.q.qNum} onClick={() => setOpenQ(openQ === it.q.qNum ? null : it.q.qNum)}
                   title={`Q${it.q.qNum} — ${it.answered ? Math.round(pct * 100) + '%' : 'not marked'}`}
                   className={`flex-1 min-w-[5px] rounded-t transition-all ${openQ === it.q.qNum ? 'ring-2 ring-navy' : ''}`}
-                  style={{ height: `${dead ? 4 : Math.max(8, pct * 100)}%`, backgroundColor: dead ? '#E2E8F0' : pct >= 0.75 ? '#22C55E' : pct >= 0.45 ? '#F59E0B' : '#EF4444' }} />
+                  style={{ height: `${dead ? 4 : Math.max(8, pct * 100)}%`, backgroundColor: dead ? 'var(--c-track)' : pct >= 0.75 ? 'var(--c-good)' : pct >= 0.45 ? 'var(--c-warn)' : 'var(--c-bad)' }} />
               )
             })}
           </div>
@@ -702,8 +707,8 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
           </div>
           <table className="w-full text-[length:calc(11.5px*var(--ts))]">
             <thead><tr className="bg-surface-alt">
-              <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[200px]">Category</th>
-              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+              <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[200px]">Category</th>
+              {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
             </tr></thead>
             <tbody>{writing.map(w => {
               const open = openCat === w.cat.key
@@ -751,9 +756,9 @@ function Questions({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper:
 function Cell({ v, sub, small }: { v: { hit: number; n: number } | null; sub?: string; small?: boolean }) {
   if (!v || v.n === 0) return <td className="px-2 py-2 text-center text-text-tertiary">—</td>
   const pct = Math.round((v.hit / v.n) * 100)
-  const tone = pct >= 75 ? 'bg-green-50 text-green-700 border-green-200'
-    : pct >= 45 ? 'bg-amber-50 text-amber-700 border-amber-200'
-    : 'bg-red-50 text-red-700 border-red-200'
+  const tone = pct >= 75 ? 'bg-good-soft text-good border-good/30'
+    : pct >= 45 ? 'bg-warn-soft text-warn border-warn/30'
+    : 'bg-bad-soft text-bad border-bad/30'
   return (
     <td className="px-2 py-1.5 text-center">
       <span className={`inline-block px-2 py-0.5 rounded border font-semibold ${small ? 'text-[length:calc(11.5px*var(--ts))]' : 'text-[length:calc(11.5px*var(--ts))]'} ${tone}`}
@@ -774,8 +779,8 @@ function Rollup({ title, blurb, acc, classes, prefix = '' }: { title: string; bl
       </div>
       <table className="w-full text-[length:calc(11.5px*var(--ts))]">
         <thead><tr className="bg-surface-alt">
-          <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">&nbsp;</th>
-          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+          <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[150px]">&nbsp;</th>
+          {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
         </tr></thead>
         <tbody>{keys.map(k => (
           <tr key={k} className="border-t border-border">
@@ -797,7 +802,7 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
         <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">Q{q.qNum}</span>
         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{it.correct}/{it.answered}</span>
         {hasMultipleKeys(q) && (
-          <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-semibold"
+          <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded-full bg-warn-soft text-warn border border-warn/30 font-semibold"
             title={q.acceptAny
               ? 'Every answer is accepted on this item -- the printed question rules nothing out, so its percentage measures nothing. Do not read it as a class strength.'
               : 'More than one answer is accepted on this item, so it no longer separates students the way the standard implies.'}>
@@ -816,10 +821,10 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
           const isTopWrong = it.topWrong && it.topWrong[0] === L
           return (
             <div key={L} className="flex items-center gap-2">
-              <span className={`w-4 text-[length:calc(11.5px*var(--ts))] font-bold shrink-0 ${isKey ? 'text-green-700' : 'text-text-tertiary'}`}>{L})</span>
-              <span className={`text-[length:calc(11.5px*var(--ts))] flex-1 min-w-0 truncate ${isKey ? 'text-green-800 font-medium' : 'text-text-secondary'}`}>{q.choices?.[i]}</span>
-              <div className="w-32 h-3 bg-gray-100 rounded-full overflow-hidden shrink-0">
-                <div className="h-full rounded-full" style={{ width: `${share}%`, backgroundColor: isKey ? '#22C55E' : isTopWrong ? '#F59E0B' : '#CBD5E1' }} />
+              <span className={`w-4 text-[length:calc(11.5px*var(--ts))] font-bold shrink-0 ${isKey ? 'text-good' : 'text-text-tertiary'}`}>{L})</span>
+              <span className={`text-[length:calc(11.5px*var(--ts))] flex-1 min-w-0 truncate ${isKey ? 'text-good font-medium' : 'text-text-secondary'}`}>{q.choices?.[i]}</span>
+              <div className="w-32 h-3 bg-paper-2 rounded-full overflow-hidden shrink-0">
+                <div className="h-full rounded-full" style={{ width: `${share}%`, backgroundColor: isKey ? 'var(--c-good)' : isTopWrong ? 'var(--c-warn)' : 'rgb(var(--rule-2))' }} />
               </div>
               <span className="w-8 text-[length:calc(11.5px*var(--ts))] text-text-tertiary shrink-0 text-right">{n}</span>
             </div>
@@ -832,12 +837,10 @@ function Item({ it, classes }: { it: any; classes: EnglishClass[] }) {
           const v = it.byClass[c]
           if (!v || v.n === 0) return null
           const p = v.correct / v.n
-          // Red through the spectrum to violet, so a row of tags reads as a
-          // gradient and the weak class is the one that looks wrong.
-          const col = rainbow(p)
+          // The same bands as the bars above, so the weak class is the one
+          // that looks wrong.
           return <span key={c} title={`${v.correct} of ${v.n}`}
-            className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold text-white"
-            style={{ backgroundColor: col }}>{c} {Math.round(p * 100)}%</span>
+            className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded font-semibold ${bandTag(p)}`}>{c} {Math.round(p * 100)}%</span>
         })}
       </div>
     </div>
@@ -903,19 +906,19 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
 
       <div className="relative w-full mx-auto" style={{ maxWidth: 820 }}>
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto' }} onMouseLeave={() => setHover(null)}>
-          <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="var(--surface-alt, #F8FAFC)" stroke="#E2E8F0" />
+          <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="rgb(var(--paper-2))" stroke="var(--c-rule)" />
           {/* The two halves, named where they actually are */}
-          <polygon points={`${L},${T} ${px(100)},${T} ${L},${py(0)}`} fill="#3B82F6" opacity="0.045" />
-          <polygon points={`${px(100)},${T} ${px(100)},${py(0)} ${L},${py(0)}`} fill="#F59E0B" opacity="0.05" />
+          <polygon points={`${L},${T} ${px(100)},${T} ${L},${py(0)}`} fill="var(--c-1)" opacity="0.06" />
+          <polygon points={`${px(100)},${T} ${px(100)},${py(0)} ${L},${py(0)}`} fill="var(--c-warn)" opacity="0.07" />
           {[0, 25, 50, 75, 100].map(g => (
             <g key={g}>
-              <line x1={px(g)} x2={px(g)} y1={T} y2={py(0)} stroke="#E2E8F0" strokeWidth="1" />
-              <line x1={L} x2={px(100)} y1={py(g)} y2={py(g)} stroke="#E2E8F0" strokeWidth="1" />
+              <line x1={px(g)} x2={px(g)} y1={T} y2={py(0)} stroke="var(--c-rule)" strokeWidth="1" />
+              <line x1={L} x2={px(100)} y1={py(g)} y2={py(g)} stroke="var(--c-rule)" strokeWidth="1" />
               <text x={px(g)} y={py(0) + 16} fontSize="12" fill="var(--c-text)" textAnchor="middle">{g}</text>
               <text x={L - 8} y={py(g) + 3.5} fontSize="12" fill="var(--c-text)" textAnchor="end">{g}</text>
             </g>
           ))}
-          <line x1={L} y1={py(0)} x2={px(100)} y2={py(100)} stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 4" />
+          <line x1={L} y1={py(0)} x2={px(100)} y2={py(100)} stroke="var(--c-mute)" strokeWidth="1.2" strokeDasharray="5 4" />
           <text x={L + 12} y={T + 18} fontSize="12" fill="var(--c-1)">Stronger on paper</text>
           <text x={px(100) - 12} y={py(0) - 12} fontSize="12" fill="var(--c-warn)" textAnchor="end">Stronger reading aloud</text>
 
@@ -924,7 +927,7 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
             return (
               <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
                 fill={classDot(p.r.student.english_class as EnglishClass)}
-                stroke={on ? '#0F172A' : '#fff'} strokeWidth={on ? 2 : 1.4}
+                stroke={on ? 'rgb(var(--ink))' : 'var(--paper-hex)'} strokeWidth={on ? 2 : 1.4}
                 style={{ cursor: 'pointer', transition: 'r .1s' }}
                 onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
             )
@@ -955,7 +958,7 @@ function OralVsWritten({ rows }: { rows: Row[] }) {
 
 function Corner({ title, note, people, tone }: { title: string; note: string; tone: 'amber' | 'blue'; people: { r: Row; x: number; y: number }[] }) {
   return (
-    <div className={`rounded-lg border p-3 ${tone === 'amber' ? 'bg-amber-50/60 border-amber-200' : 'bg-blue-50/60 border-blue-200'}`}>
+    <div className={`rounded-lg border p-3 ${tone === 'amber' ? 'bg-warn-soft/60 border-warn/30' : 'bg-info-soft/60 border-info/30'}`}>
       <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">{title} <span className="text-text-tertiary font-normal">{people.length}</span></p>
       <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary leading-snug mb-2">{note}</p>
       {people.length === 0
@@ -1090,9 +1093,9 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
         </div>
         <table className="w-full text-[length:calc(11.5px*var(--ts))]">
           <thead><tr>
-            <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
-            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
-            <th className="text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px]">Grade</th>
+            <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[190px]">&nbsp;</th>
+            {classes.map(c => <th key={c} className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[74px]" style={{ color: classToTextColor(c) }}>{c}</th>)}
+            <th className="text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold min-w-[60px]">Grade</th>
           </tr></thead>
           <tbody>
             {rowsOut.map(({ def, line: l }) => (
@@ -1163,7 +1166,7 @@ function Skills({ test, rows, paper }: { test: LevelTest; rows: Row[]; paper: Pa
 /** Red below the grade, blue above, fading to nothing at the median. */
 function devColor(d: number): string {
   const a = Math.min(1, Math.abs(d) / 15) * 0.8
-  return d < 0 ? `rgba(200, 74, 62, ${a})` : `rgba(47, 112, 156, ${a})`
+  return `color-mix(in srgb, ${d < 0 ? 'var(--c-bad)' : 'var(--c-1)'} ${Math.round(a * 100)}%, transparent)`
 }
 
 function SkillRow({ name, src, l, classes, raw, pair, indent, strong, onToggle, open }: {
@@ -1252,18 +1255,18 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
 
       <div className="relative w-full mx-auto" style={{ maxWidth: 820 }}>
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" onMouseLeave={() => setHover(null)}>
-          <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="var(--surface-alt, #F8FAFC)" stroke="#E2E8F0" />
-          <rect x={px(midX)} y={py(60)} width={px(maxX) - px(midX)} height={py(0) - py(60)} fill="#EF4444" opacity="0.05" />
-          <rect x={L} y={T} width={px(midX) - L} height={py(75) - T} fill="#3B82F6" opacity="0.04" />
+          <rect x={L} y={T} width={W - L - R} height={H - T - B} fill="rgb(var(--paper-2))" stroke="var(--c-rule)" />
+          <rect x={px(midX)} y={py(60)} width={px(maxX) - px(midX)} height={py(0) - py(60)} fill="var(--c-bad)" opacity="0.07" />
+          <rect x={L} y={T} width={px(midX) - L} height={py(75) - T} fill="var(--c-1)" opacity="0.06" />
           {[0, 25, 50, 75, 100].map(g => (
             <g key={g}>
-              <line x1={L} x2={px(maxX)} y1={py(g)} y2={py(g)} stroke="#E2E8F0" />
+              <line x1={L} x2={px(maxX)} y1={py(g)} y2={py(g)} stroke="var(--c-rule)" />
               <text x={L - 8} y={py(g) + 3.5} fontSize="12" fill="var(--c-text)" textAnchor="end">{g}%</text>
             </g>
           ))}
           {[0, 50, 100, 150, 200].filter(v => v <= maxX).map(v => (
             <g key={v}>
-              <line x1={px(v)} x2={px(v)} y1={T} y2={py(0)} stroke="#E2E8F0" />
+              <line x1={px(v)} x2={px(v)} y1={T} y2={py(0)} stroke="var(--c-rule)" />
               <text x={px(v)} y={py(0) + 16} fontSize="12" fill="var(--c-text)" textAnchor="middle">{v}</text>
             </g>
           ))}
@@ -1274,14 +1277,14 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
             return (
               <circle key={p.r.student.id} cx={px(p.x)} cy={py(p.y)} r={on ? 8 : 6}
                 fill={classDot(p.r.student.english_class as EnglishClass)}
-                stroke={on ? '#0F172A' : '#fff'} strokeWidth={on ? 2 : 1.4}
+                stroke={on ? 'rgb(var(--ink))' : 'var(--paper-hex)'} strokeWidth={on ? 2 : 1.4}
                 style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })} />
             )
           })}
           {suspect.map(p => (
             <circle key={p.r.student.id} cx={px(maxX) - 7} cy={py(p.y)} r="7"
               fill={classDot(p.r.student.english_class as EnglishClass)}
-              stroke="#DC2626" strokeWidth="2.5" strokeDasharray="3 2"
+              stroke="var(--c-bad)" strokeWidth="2.5" strokeDasharray="3 2"
               style={{ cursor: 'pointer' }} onMouseEnter={() => setHover({ r: p.r, x: p.x, y: p.y })}>
               <title>{`${p.r.student.english_name}: ${Math.round(p.x)} wpm — off the scale`}</title>
             </circle>
@@ -1300,7 +1303,7 @@ function FluencyVsComprehension({ rows }: { rows: Row[] }) {
       </div>
 
       {suspect.length > 0 && (
-        <p className="text-[length:calc(11.5px*var(--ts))] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-3">
+        <p className="text-[length:calc(11.5px*var(--ts))] text-bad bg-bad-soft border border-bad/30 rounded-lg px-3 py-2 mt-3">
           <strong>{suspect.map(p => `${p.r.student.english_name} (${Math.round(p.x)} wpm)`).join(', ')}</strong>{' '}
           {suspect.length === 1 ? 'is' : 'are'} shown pinned at the right edge, because {suspect.length === 1 ? 'that rate is' : 'those rates are'} faster
           than fluent adult reading aloud and cannot be real. Almost always a stopwatch started partway through the read, so the whole passage counts
@@ -1400,11 +1403,11 @@ function StandardsByClass({ rows, classes }: { rows: Row[]; classes: EnglishClas
       </div>
       <table className="w-full text-[length:calc(11.5px*var(--ts))]">
         <thead><tr className="bg-surface-alt">
-          <th className="text-left px-3 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-secondary font-semibold min-w-[150px]">Standard</th>
+          <th className="text-left px-3 py-2 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[150px]">Standard</th>
           {classes.map(c => (
-            <th key={c} className={`text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
+            <th key={c} className={`text-center px-2 py-2 text-[length:calc(12px*var(--ts))] font-semibold min-w-[70px] ${lens === c ? 'bg-navy/10' : ''}`} style={{ color: classToTextColor(c) }}>{c}</th>
           ))}
-          <th className={`text-center px-2 py-2 text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-text-tertiary font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
+          <th className={`text-center px-2 py-2 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold min-w-[60px] ${lens === 'grade' ? 'bg-navy/10' : ''}`}>Grade</th>
         </tr></thead>
         <tbody>{shown.map(st => (
           <tr key={st.code} className="border-t border-border">

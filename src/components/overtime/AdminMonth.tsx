@@ -49,8 +49,8 @@ export default function AdminMonth({ staff, settings, month, setMonth, onOpen }:
     <div>
       <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
         <div>
-          <p className="eyebrow eyebrow-accent mb-1.5">{ko ? '전체 교사' : 'All teachers'}</p>
           <h1 className="font-display text-[length:calc(34px*var(--ts))] leading-none text-ink">{ko ? '초과근무' : 'Overtime'}</h1>
+          <p className="text-[length:calc(13.5px*var(--ts))] text-ink-2 mt-2">{ko ? '전체 교사' : 'All teachers'}</p>
         </div>
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-1">
@@ -75,7 +75,7 @@ export default function AdminMonth({ staff, settings, month, setMonth, onOpen }:
         <div className="overflow-x-auto">
           <table className="w-full text-[length:calc(13px*var(--ts))]">
             <thead>
-              <tr className="text-left text-[length:calc(11.5px*var(--ts))] uppercase tracking-wider text-ink-3 border-b border-rule-2">
+              <tr className="text-left text-[length:calc(12px*var(--ts))] text-ink-2 border-b border-rule-2">
                 <th className="py-2 pr-3 font-semibold">{ko ? '교사' : 'Teacher'}</th>
                 <th className="py-2 pr-3 font-semibold">{ko ? '반' : 'Class'}</th>
                 <th className="py-2 pr-3 font-semibold text-right">{ko ? '기록' : 'Entries'}</th>
