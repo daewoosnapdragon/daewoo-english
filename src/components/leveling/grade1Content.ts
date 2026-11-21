@@ -246,10 +246,10 @@ export interface G1Content {
 // Do not edit. Existing scores are interpreted against exactly these values.
 
 const LEGACY_WRITTEN_SECTIONS: G1WrittenSection[] = [
-  { key: 'w_letter_names', label: 'Letter Names', shortLabel: 'LN', max: 5, standards: ['RF.K.1d'] },
-  { key: 'w_letter_sounds', label: 'Letter Sounds', shortLabel: 'LS', max: 5, standards: ['RF.K.3a'] },
+  { key: 'w_letter_names', label: 'Letter names', shortLabel: 'LN', max: 5, standards: ['RF.K.1d'] },
+  { key: 'w_letter_sounds', label: 'Letter sounds', shortLabel: 'LS', max: 5, standards: ['RF.K.3a'] },
   { key: 'w_word_picture', label: 'Word-Picture', shortLabel: 'WP', max: 10, standards: ['RF.K.3c', 'RF.1.3g'] },
-  { key: 'w_passage_comp', label: 'Passage Comp', shortLabel: 'PC', max: 5, standards: ['RL.K.1', 'SL.K.2'] },
+  { key: 'w_passage_comp', label: 'Passage comp', shortLabel: 'PC', max: 5, standards: ['RL.K.1', 'SL.K.2'] },
   { key: 'w_writing', label: 'Writing', shortLabel: 'Wr', max: 5, standards: ['W.K.2', 'W.1.2'] },
 ]
 
@@ -287,8 +287,8 @@ const LEGACY_QUESTIONS: G1QuestionDef[] = [
 
 const LEGACY_WRITING_CATEGORIES: G1WritingCategory[] = [
   { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.K.2', standardDesc: 'Informative writing: name topic, supply detail', kind: 'ladder' },
-  { key: 'content', label: 'Content & Vocabulary', max: 5, standard: 'W.K.2', standardDesc: 'Use words to supply information about topic', kind: 'ladder' },
-  { key: 'sentence_structure', label: 'Sentence Structure', max: 5, standard: 'L.K.1f', standardDesc: 'Produce complete sentences', kind: 'ladder' },
+  { key: 'content', label: 'Content & vocabulary', max: 5, standard: 'W.K.2', standardDesc: 'Use words to supply information about topic', kind: 'ladder' },
+  { key: 'sentence_structure', label: 'Sentence structure', max: 5, standard: 'L.K.1f', standardDesc: 'Produce complete sentences', kind: 'ladder' },
   { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.K.2', standardDesc: 'Capitalization, punctuation, spelling', kind: 'ladder' },
 ]
 
@@ -615,11 +615,11 @@ const LEGACY_CONTENT: G1Content = {
 // (19 MC + 3 short writing + 20 extended writing).
 
 const F26_WRITTEN_SECTIONS: G1WrittenSection[] = [
-  { key: 'w_letter_names', label: 'Letter Names', shortLabel: 'LN', max: 5, standards: ['RF.K.1d'] },
-  { key: 'w_letter_sounds', label: 'Letter Sounds', shortLabel: 'LS', max: 5, standards: ['RF.K.3a'] },
-  { key: 'w_picture_match', label: 'Picture Match', shortLabel: 'PM', max: 5, standards: ['SL.1.2', 'L.K.5c'] },
-  { key: 'w_story_comp', label: 'Story Comp', shortLabel: 'SC', max: 4, standards: ['RL.K.1', 'SL.K.2'] },
-  { key: 'w_short_writing', label: 'Short Writing', shortLabel: 'SW', max: 3, standards: ['W.K.2', 'L.K.2d'] },
+  { key: 'w_letter_names', label: 'Letter names', shortLabel: 'LN', max: 5, standards: ['RF.K.1d'] },
+  { key: 'w_letter_sounds', label: 'Letter sounds', shortLabel: 'LS', max: 5, standards: ['RF.K.3a'] },
+  { key: 'w_picture_match', label: 'Picture match', shortLabel: 'PM', max: 5, standards: ['SL.1.2', 'L.K.5c'] },
+  { key: 'w_story_comp', label: 'Story comp', shortLabel: 'SC', max: 4, standards: ['RL.K.1', 'SL.K.2'] },
+  { key: 'w_short_writing', label: 'Short writing', shortLabel: 'SW', max: 3, standards: ['W.K.2', 'L.K.2d'] },
   // w_writing is the 0-5 compatibility field derived from the 20-point extended
   // writing rubric, not the rubric total itself. Standards read it on this scale.
   { key: 'w_writing', label: 'Writing', shortLabel: 'Wr', max: 5, standards: ['W.1.2', 'L.1.1', 'L.1.2'] },
@@ -662,7 +662,7 @@ const F26_SHORT_WRITING_RUBRIC: G1RubricRow[] = [
 const F26_WRITING_CATEGORIES: G1WritingCategory[] = [
   { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.1.2', standardDesc: 'How much on-task writing', kind: 'ladder' },
   {
-    key: 'content', label: 'Content and Detail', max: 5, standard: 'W.1.2', standardDesc: 'Ideas in the writing',
+    key: 'content', label: 'Content and detail', max: 5, standard: 'W.1.2', standardDesc: 'Ideas in the writing',
     kind: 'checklist',
     checklist: [
       { key: 'names_things', label: 'Names things', desc: 'Names at least two different things that are in the picture (snowman, kids, snow, hat, carrot, house, tree, scarf).' },
@@ -672,7 +672,7 @@ const F26_WRITING_CATEGORIES: G1WritingCategory[] = [
       { key: 'story_shape', label: 'Story shape', desc: 'The sentences form one event with a beginning and some kind of ending, rather than a list of separate observations.' },
     ],
   },
-  { key: 'language_grammar', label: 'Language and Grammar', max: 5, standard: 'L.1.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
+  { key: 'language_grammar', label: 'Language and grammar', max: 5, standard: 'L.1.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
   { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.1.2', standardDesc: 'Capitalization, punctuation, spelling', kind: 'ladder' },
 ]
 

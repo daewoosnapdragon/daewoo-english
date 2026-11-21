@@ -50,11 +50,11 @@ export const NAV_LABELS: Record<string, { en: string; ko: string }> = {
   grades: { en: 'Grades', ko: '성적 입력' },
   readingLevels: { en: 'Reading', ko: '읽기 수준' },
   students: { en: 'Students', ko: '학생 명단' },
-  lessonPlans: { en: 'Lesson Plans', ko: '수업 계획' },
+  lessonPlans: { en: 'Lesson plans', ko: '수업 계획' },
   planner: { en: 'Curriculum', ko: '교육과정' },
   curriculum: { en: 'Standards', ko: '표준' },
   wida: { en: 'WIDA', ko: 'WIDA' },
-  leveling: { en: 'Level Tests', ko: '레벨 테스트' },
+  leveling: { en: 'Level tests', ko: '레벨 테스트' },
   reports: { en: 'Reports', ko: '보고서' },
   behavior: { en: 'Behavior', ko: '행동' },
   jobs: { en: 'Jobs', ko: '업무' },
@@ -84,8 +84,8 @@ export function viewForPath(pathname: string | null): string {
 
 export const PAGE_TITLES: Record<string, string> = {
   dashboard: 'Dashboard', students: 'Students', grades: 'Grades',
-  reports: 'Reports', leveling: 'Level Tests', attendance: 'Attendance',
-  readingLevels: 'Reading', lessonPlans: 'Lesson Plans',
+  reports: 'Reports', leveling: 'Level tests', attendance: 'Attendance',
+  readingLevels: 'Reading', lessonPlans: 'Lesson plans',
   curriculum: 'Standards', wida: 'WIDA', settings: 'Settings', guide: 'How to use this app', whatsNew: 'What’s new', activity: 'Activity', behavior: 'Behavior', supplies: 'Supplies', budget: 'Budget', overtime: 'Overtime', planner: 'Curriculum', jobs: 'Jobs',
 }
 

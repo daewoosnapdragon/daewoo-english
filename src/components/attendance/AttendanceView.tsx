@@ -29,9 +29,9 @@ const addDaysKey = (key: string, n: number) => { const d = new Date(key + 'T12:0
 type LangKey = 'en' | 'ko'
 
 const STATUS_CONFIG: Record<Status, { label: string; labelKo: string; icon: typeof UserCheck; color: string; bg: string; short: string }> = {
-  present: { label: 'Present', labelKo: '출석', icon: UserCheck, color: 'text-green-600', bg: 'bg-green-100 border-green-300 text-green-700', short: 'P' },
-  absent: { label: 'Absent', labelKo: '결석', icon: UserX, color: 'text-red-600', bg: 'bg-red-100 border-red-300 text-red-700', short: 'A' },
-  tardy: { label: 'Tardy', labelKo: '지각', icon: Clock, color: 'text-amber-600', bg: 'bg-amber-100 border-amber-300 text-amber-700', short: 'T' },
+  present: { label: 'Present', labelKo: '출석', icon: UserCheck, color: 'text-good', bg: 'bg-good-soft border-good/40 text-good', short: 'P' },
+  absent: { label: 'Absent', labelKo: '결석', icon: UserX, color: 'text-bad', bg: 'bg-bad-soft border-bad/40 text-bad', short: 'A' },
+  tardy: { label: 'Tardy', labelKo: '지각', icon: Clock, color: 'text-warn', bg: 'bg-warn-soft border-warn/40 text-warn', short: 'T' },
 }
 
 // Fetch every attendance row for the given students + date range, paging past

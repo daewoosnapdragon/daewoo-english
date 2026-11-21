@@ -494,7 +494,16 @@ export default function Masthead() {
           <div className="max-sm:hidden mx-auto max-w-[1440px] px-6 grid grid-cols-[auto_1fr_auto] items-center gap-4">
             <Link href="/dashboard" className="font-display text-[length:calc(18px*var(--ts))] leading-none text-ink tracking-tight whitespace-nowrap">Daewoo English</Link>
             <NavLinks active={active} signals={signals} />
-            <div className="flex items-center gap-2"><UserMenu />{toggle}</div>
+            <div className="flex items-center gap-2">
+              {/* The slim context row has no room for Help, so it sits here. */}
+              {active !== 'guide' && (
+                <Link href={guideHrefFor(active)} aria-label={ko ? '이 페이지 도움말' : 'Help with this page'} title={ko ? '이 페이지 도움말' : 'Help with this page'}
+                  className="w-7 h-7 rounded flex items-center justify-center text-ink-2 hover:text-ink hover:bg-paper-2">
+                  <CircleHelp size={15} aria-hidden="true" />
+                </Link>
+              )}
+              <UserMenu />{toggle}
+            </div>
           </div>
           <div className="max-sm:hidden"><ContextRow now={now} ko={ko} slim /></div>
         </header>

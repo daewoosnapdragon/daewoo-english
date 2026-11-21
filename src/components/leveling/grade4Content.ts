@@ -313,9 +313,9 @@ const F26_QUESTIONS: G4QuestionDef[] = [
 // ─── Item 36: Writing ────────────────────────────────────────────────
 
 const F26_WRITING_CATEGORIES: G4WritingCategory[] = [
-  { key: 'story_structure', label: 'Story Structure', max: 4, standard: 'W.4.3', standardDesc: 'Clear event sequence', kind: 'ladder' },
+  { key: 'story_structure', label: 'Story structure', max: 4, standard: 'W.4.3', standardDesc: 'Clear event sequence', kind: 'ladder' },
   {
-    key: 'content', label: 'Content and Detail', max: 4, standard: 'W.4.3', standardDesc: 'What the writing shows', kind: 'checklist',
+    key: 'content', label: 'Content and detail', max: 4, standard: 'W.4.3', standardDesc: 'What the writing shows', kind: 'checklist',
     checklist: [
       { key: 'accomplishment', label: 'Names the accomplishment', desc: 'Says specifically what they did, not just that they were proud. "I won the swimming race" counts; "I did a good thing" does not.' },
       { key: 'people_place', label: 'People and place', desc: 'Says where it happened, or who else was there. Answers the prompt\'s "Who else knew about it?"' },
@@ -329,9 +329,9 @@ const F26_WRITING_CATEGORIES: G4WritingCategory[] = [
       ],
     },
   },
-  { key: 'language_grammar', label: 'Language and Grammar', max: 4, standard: 'L.4.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
+  { key: 'language_grammar', label: 'Language and grammar', max: 4, standard: 'L.4.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
   { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.4.2', standardDesc: 'Capitalization, punctuation, spelling', kind: 'ladder' },
-  { key: 'word_choice', label: 'Word Choice and Voice', max: 4, standard: 'L.4.3', standardDesc: 'Precision and voice', kind: 'ladder' },
+  { key: 'word_choice', label: 'Word choice and voice', max: 4, standard: 'L.4.3', standardDesc: 'Precision and voice', kind: 'ladder' },
 ]
 
 const F26_WRITING_RUBRIC: Record<string, Record<number, string>> = {

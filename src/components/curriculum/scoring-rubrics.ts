@@ -584,12 +584,12 @@ export const SCORING_RUBRICS: ScoringRubric[] = [
     ] },
 ]
 
-export const LEVEL_LABELS = ['Needs Guidance', 'Developing', 'Meets Standards', 'Exceeds Standards']
+export const LEVEL_LABELS = ['Needs guidance', 'Developing', 'Meets standards', 'Exceeds standards']
 export const LEVEL_COLORS = [
-  'bg-red-100 text-red-700 border-red-300 ring-red-300',
-  'bg-amber-100 text-amber-700 border-amber-300 ring-amber-300',
-  'bg-green-100 text-green-700 border-green-300 ring-green-300',
-  'bg-blue-100 text-blue-700 border-blue-300 ring-blue-300',
+  'bg-bad-soft text-bad border-bad/40 ring-bad/40',
+  'bg-warn-soft text-warn border-warn/40 ring-warn/40',
+  'bg-good-soft text-good border-good/40 ring-good/40',
+  'bg-info-soft text-info border-info/40 ring-info/40',
 ]
 
 // Get all unique categories for the picker

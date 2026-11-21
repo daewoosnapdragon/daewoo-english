@@ -32,9 +32,10 @@ import FactSheet, { type FactSheetFacts } from '@/components/reports/FactSheet'
 import PriorComments, { type PriorComment } from '@/components/reports/PriorComments'
 import CommentBuilder from '@/components/reports/CommentBuilder'
 import { goesByFrom, PRONOUNS, type Pronoun } from '@/lib/phrases'
-import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock } from 'lucide-react'
+import { Loader2, Printer, ChevronLeft, ChevronRight, ChevronDown, BarChart3, CheckCircle2, Circle, AlertTriangle, FileDown, Save, Lock, Star, Pencil, Check, X } from 'lucide-react'
 import Overlay from '@/components/ui/Overlay'
 import { notSavedMessage, retryLabel } from '@/lib/saveReport'
+import { chipRow } from '@/components/ui/Controls'
 import { partNeedsUpdate } from '@/lib/dbUpdate'
 
 type LangKey = 'en' | 'ko'
@@ -103,10 +104,10 @@ function letterColor(l: string): string {
 }
 
 function tileBgClass(v: number): string {
-  if (v >= 90) return 'bg-green-50 border-green-200'
-  if (v >= 80) return 'bg-blue-50 border-blue-200'
-  if (v >= 70) return 'bg-amber-50 border-amber-200'
-  return 'bg-red-50 border-red-200'
+  if (v >= 90) return 'bg-good-soft border-good/30'
+  if (v >= 80) return 'bg-info-soft border-info/30'
+  if (v >= 70) return 'bg-warn-soft border-warn/30'
+  return 'bg-bad-soft border-bad/30'
 }
 function tileBgPrint(v: number): { bg: string; border: string } {
   if (v >= 90) return { bg: '#f0fdf4', border: '#bbf7d0' }
@@ -263,10 +264,10 @@ export default function ReportsView() {
         ) : (
           <span title="The active semester is set by an admin" className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">{(semesters.find((s: any) => s.id === selectedSemesterId) || semesters[0]).name}</span>
         ))}
-        <span className="w-px h-6 bg-rule" />
-        <div className="flex gap-1.5">{GRADES.map((g: any) => <button key={g} onClick={() => setSelectedGrade(g)} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
-        <span className="w-px h-6 bg-rule" />
-        <div className="flex gap-1.5">{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${REPORT_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
+        <span className="w-px h-6 bg-rule max-sm:hidden" />
+        <div className={chipRow}>{GRADES.map((g: any) => <button key={g} onClick={() => setSelectedGrade(g)} className={`px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedGrade === g ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}>{lang === 'ko' ? `${g}학년` : `Grade ${g}`}</button>)}</div>
+        <span className="w-px h-6 bg-rule max-sm:hidden" />
+        <div className={chipRow}>{availableClasses.map((cls: any) => <button key={cls} onClick={() => setSelectedClass(cls)} className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full border text-[length:calc(12px*var(--ts))] font-medium ${selectedClass === cls ? 'bg-ink text-paper border-ink' : 'bg-surface text-ink-2 border-rule-2 hover:border-ink-3'}`}><span className={`w-2 h-2 rounded-full ${REPORT_CLASS_DOT[cls] || 'bg-ink-3'}`} />{cls}</button>)}</div>
         {!canEdit && <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-warn" title="You can review and leave feedback, but only the class's teacher or an admin can edit"><Lock size={12} /> {lang === 'ko' ? '읽기 전용' : 'Read-only'}</span>}
         {(mode === 'individual' || mode === 'progress') && (
           <div className="flex items-center gap-1 ml-auto">
@@ -345,13 +346,13 @@ function InfoCell({ label, value, bold = false }: { label: string; value: any; b
 // ─── Behavior Logs Panel (used in Student Reference) ─────────────────
 
 const BEHAVIOR_TYPE_STYLE: Record<string, { label: string; bg: string; text: string }> = {
-  positive: { label: 'POSITIVE', bg: 'bg-green-50 border-green-200', text: 'text-green-700' },
-  negative: { label: 'NEGATIVE', bg: 'bg-red-50 border-red-200', text: 'text-red-700' },
-  abc: { label: 'NEGATIVE', bg: 'bg-red-50 border-red-200', text: 'text-red-700' },
-  concern: { label: 'CONCERN', bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700' },
-  parent_contact: { label: 'PARENT', bg: 'bg-purple-50 border-purple-200', text: 'text-purple-700' },
-  intervention: { label: 'INTERVENTION', bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700' },
-  note: { label: 'NOTE', bg: 'bg-gray-50 border-gray-200', text: 'text-gray-700' },
+  positive: { label: 'Positive', bg: 'bg-good-soft border-good/30', text: 'text-good' },
+  negative: { label: 'Negative', bg: 'bg-bad-soft border-bad/30', text: 'text-bad' },
+  abc: { label: 'Negative', bg: 'bg-bad-soft border-bad/30', text: 'text-bad' },
+  concern: { label: 'Concern', bg: 'bg-warn-soft border-warn/30', text: 'text-warn' },
+  parent_contact: { label: 'Parent', bg: 'bg-info-soft border-info/30', text: 'text-info' },
+  intervention: { label: 'Intervention', bg: 'bg-info-soft border-info/30', text: 'text-info' },
+  note: { label: 'Note', bg: 'bg-paper-2 border-rule', text: 'text-ink-2' },
 }
 
 function BehaviorLogsPanel({ logs }: { logs: any[] }) {
@@ -365,7 +366,7 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
   }
   return (
     <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-      <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Recent Behavior Logs ({logs.length})</p>
+      <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Recent behavior logs ({logs.length})</p>
       <div className="space-y-1 max-h-44 overflow-y-auto pr-1">
         {logs.map((log: any) => {
           const style = BEHAVIOR_TYPE_STYLE[log.type] || BEHAVIOR_TYPE_STYLE.note
@@ -376,7 +377,7 @@ function BehaviorLogsPanel({ logs }: { logs: any[] }) {
               <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-semibold whitespace-nowrap mt-px w-10 flex-shrink-0">{dt}</span>
               <span className={`text-[length:calc(12px*var(--ts))] font-bold ${style.text} whitespace-nowrap mt-px w-16 flex-shrink-0`}>{style.label}</span>
               <span className="text-[length:calc(11.5px*var(--ts))] text-[#475569] leading-snug">{summary}</span>
-              {log.is_flagged && <span className="text-amber-600 text-[length:calc(11.5px*var(--ts))] flex-shrink-0">★</span>}
+              {log.is_flagged && <Star size={12} aria-label="Flagged" className="text-warn fill-current flex-shrink-0 mt-0.5" />}
             </div>
           )
         })}
@@ -852,7 +853,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
           {reviewStatus && (reviewStatus.admin_approved
             ? <span className="mr-2"><Stamp kind="approved" size="sm" /></span>
             : (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-gray-100 text-text-tertiary">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-paper-2 text-text-tertiary">
               <Circle size={11} /> Awaiting admin approval
             </span>
           ))}
@@ -860,12 +861,12 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
         </div>
         <div className="flex items-center gap-2">
           {reviewStatus && !reviewStatus.admin_approved && (
-            <span className="text-[length:calc(11.5px*var(--ts))] text-amber-600">Needs admin approval to print</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] text-warn">Needs admin approval to print</span>
           )}
           <button onClick={handlePrint}
             disabled={reviewStatus != null && !reviewStatus.admin_approved}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium border border-border hover:bg-surface-alt disabled:opacity-40 disabled:cursor-not-allowed">
-            <Printer size={15} /> Print Report Card
+            <Printer size={15} /> Print report card
           </button>
         </div>
       </div>
@@ -933,10 +934,10 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 setEditGradeValues(eg)
                 setEditNaValues(en)
                 setEditingGrades(true)
-              }} className="text-[length:calc(11.5px*var(--ts))] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
+              }} className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-accent font-medium hover:underline cursor-pointer"><Pencil size={11} aria-hidden /> Edit grades</button>
             ) : null) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-red-500">Cancel</button>
+                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-bad">Cancel</button>
                 <button onClick={async () => {
                   const student = students.find((s: any) => s.id === studentId)
                   // Save to semester_grades with class snapshot
@@ -970,7 +971,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                   showToast('Grades saved')
                   logActivity('saved', `Report card grades edited by hand · ${student?.english_name || ''} · ${DOMAINS.filter(dom => !isNaN(parseFloat(editGradeValues[dom]))).map(dom => `${dom} ${editGradeValues[dom]}`).join(', ')}${editGradeValues.behavior ? ` · behavior ${editGradeValues.behavior}` : ''}`)
                   loadReport()
-                }} className="px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
+                }} className="px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">Save</button>
               </div>
             )}
           </div>
@@ -994,7 +995,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                       </>
                     )}
                     {classNa ? (
-                      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
+                      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class overview</div>
                     ) : (
                       <button onClick={() => setEditNaValues(prev => ({ ...prev, [dom]: !prev[dom] }))}
                         className={`text-[length:calc(11.5px*var(--ts))] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
@@ -1070,7 +1071,7 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
                 {canEdit && (
                   <div className="print:hidden flex items-center gap-4 flex-wrap mt-1">
                     <div className="flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-text-secondary" role="group" aria-label="Pronoun">
-                      <span className={pronoun ? '' : 'text-amber-700 font-semibold'}>{pronoun ? 'Pronoun' : 'Pronoun?'}</span>
+                      <span className={pronoun ? '' : 'text-warn font-semibold'}>{pronoun ? 'Pronoun' : 'Pronoun?'}</span>
                       {PRONOUNS.map(p => (
                         <button key={p} type="button" onClick={() => savePronoun(p)} aria-pressed={pronoun === p}
                           className={`px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] ${pronoun === p ? 'bg-ink text-paper font-semibold' : 'text-[#64748b] hover:bg-[#f1f5f9]'}`}>{p}</button>
@@ -1087,21 +1088,21 @@ function IndividualReport({ studentId, semesterId, semester, students, allSemest
               </div>
               <PriorComments comments={d.quotes} className="print:hidden mb-4" />
               {canEdit && currentDoc === 'progress_report' && (
-                <div className="print:hidden mb-2.5 flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-amber-900">
+                <div className="print:hidden mb-2.5 flex items-center justify-between gap-3 rounded-lg border border-warn/30 bg-warn-soft px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-warn">
                   <span>This box is the end-of-semester report card comment. Mid-semester comments belong on the progress report.</span>
                   {onGoToProgress && <button onClick={onGoToProgress} className="shrink-0 font-semibold underline">Open the progress report</button>}
                 </div>
               )}
               {canEdit && d.reviewerNote && !d.reviewerNoteAck && (
-                <div className="mb-2.5 rounded-lg border border-orange-200 bg-orange-50 p-2.5 print:hidden">
+                <div className="mb-2.5 rounded-lg border border-warn/30 bg-warn-soft p-2.5 print:hidden">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <AlertTriangle size={13} className="text-orange-600" />
-                    <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-orange-800">Reviewer feedback{d.reviewerNoteByName ? ` from ${d.reviewerNoteByName}` : ''} — please review</span>
+                    <AlertTriangle size={13} className="text-warn" />
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-warn">Reviewer feedback{d.reviewerNoteByName ? ` from ${d.reviewerNoteByName}` : ''} — please review</span>
                   </div>
-                  <p className="text-[length:calc(12px*var(--ts))] text-orange-900 whitespace-pre-wrap leading-relaxed">{d.reviewerNote}</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-warn whitespace-pre-wrap leading-relaxed">{d.reviewerNote}</p>
                   <div className="flex justify-end mt-1.5">
                     <button onClick={acknowledgeReviewerNote} disabled={ackingNote}
-                      className="px-2.5 py-1 rounded-md text-[length:calc(11.5px*var(--ts))] font-medium bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-40">
+                      className="px-2.5 py-1 rounded-md text-[length:calc(11.5px*var(--ts))] font-medium border border-warn/40 bg-surface text-warn hover:border-warn disabled:opacity-40">
                       {ackingNote ? 'Saving…' : 'Mark as reviewed'}
                     </button>
                   </div>
@@ -1681,13 +1682,13 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
   const buttonLabel = generating
     ? <><Loader2 size={14} className="animate-spin" /> Generating {progress.current}{progress.total ? ` of ${progress.total}` : ''}…</>
     : (isGrade
-      ? <><Printer size={14} /> Print Whole Grade {grade} (all classes)</>
+      ? <><Printer size={14} /> Print whole Grade {grade} (all classes)</>
       : <><Printer size={14} /> Print {students.length} {kind === 'report_card' ? (students.length === 1 ? 'report card' : 'report cards') : (students.length === 1 ? 'progress report' : 'progress reports')}</>)
 
   return (
     <>
       <button onClick={handleStart} disabled={generating || (!isGrade && students.length === 0)}
-        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium disabled:opacity-50 ${isGrade ? 'bg-navy text-white hover:bg-navy-dark' : 'bg-gold text-navy-dark hover:bg-gold-light'}`}>
+        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium disabled:opacity-50 ${isGrade ? 'bg-accent text-white hover:bg-accent-hover' : 'bg-gold text-navy-dark hover:bg-gold-light'}`}>
         {buttonLabel}
       </button>
 
@@ -1726,7 +1727,7 @@ function BatchPrintButton({ students, semesterId, className: cls, kind = 'progre
                 Cancel
               </button>
               <button onClick={handlePrint}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
                 <Printer size={14} /> Print / Save as PDF
               </button>
             </div>
@@ -1929,10 +1930,10 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                 setEditGradeValues(eg)
                 setEditNaValues(en)
                 setEditingGrades(true)
-              }} className="text-[length:calc(11.5px*var(--ts))] text-navy font-medium hover:underline cursor-pointer">✎ Edit Grades</button>
+              }} className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-accent font-medium hover:underline cursor-pointer"><Pencil size={11} aria-hidden /> Edit grades</button>
             ) : null) : (
               <div className="flex items-center gap-2">
-                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-red-500">Cancel</button>
+                <button onClick={() => setEditingGrades(false)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-bad">Cancel</button>
                 <button onClick={async () => {
                   const student = students.find((st: any) => st.id === studentId)
                   for (const dom of DOMAINS) {
@@ -1959,7 +1960,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   showToast('Grades saved')
                   logActivity('saved', `Progress report grades edited by hand · ${student?.english_name || ''} · ${DOMAINS.filter(dom => !isNaN(parseFloat(editGradeValues[dom]))).map(dom => `${dom} ${editGradeValues[dom]}`).join(', ')}`)
                   loadReport()
-                }} className="px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark">Save</button>
+                }} className="px-3 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">Save</button>
               </div>
             )}
           </div>
@@ -1983,7 +1984,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                       </>
                     )}
                     {classNa ? (
-                      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class Overview</div>
+                      <div className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8] mt-2 leading-tight">Class N/A · change in Class overview</div>
                     ) : (
                       <button onClick={() => setEditNaValues(prev => ({ ...prev, [dom]: !prev[dom] }))}
                         className={`text-[length:calc(11.5px*var(--ts))] mt-2 px-2 py-0.5 rounded font-medium ${isNa ? 'bg-[#94a3b8] text-white hover:bg-[#64748b]' : 'bg-white text-text-secondary border border-border hover:bg-surface-alt'}`}>
@@ -2030,7 +2031,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
           {showRefPanel && (
             <div className="print:hidden bg-[#f8f9fb] border border-[#d1d5db] rounded-xl p-4 mb-3.5">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-[#475569]">Student Reference -- All Data at a Glance</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-[#475569]">Student reference: all data at a glance</p>
                 <button onClick={() => {
                   const lines = [
                     `${s.english_name} (${s.korean_name}) -- ${s.english_class} -- Grade ${s.grade}`,
@@ -2054,7 +2055,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                   navigator.clipboard.writeText(lines.join('\n'))
                   showToast('Copied to clipboard')
                 }} className="px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-white border border-[#d1d5db] text-[#475569] hover:bg-[#f1f5f9]">
-                  Copy to Clipboard
+                  Copy to clipboard
                 </button>
               </div>
 
@@ -2092,7 +2093,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
                     <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1">Attendance / behavior</p>
                     <div className="flex gap-4">
                       <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Attendance</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.totalAtt > 0 ? `${Math.round((d.attCounts.present / d.totalAtt) * 100)}%` : '--'}</p></div>
-                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Behavior Logs</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.behaviorCount}</p></div>
+                      <div><p className="text-[length:calc(11.5px*var(--ts))] text-[#94a3b8]">Behavior logs</p><p className="text-[length:calc(12px*var(--ts))] font-bold text-navy">{d.behaviorCount}</p></div>
                     </div>
                   </div>
                 </div>
@@ -2102,13 +2103,13 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               {d.scaffolds && d.scaffolds.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3 mb-2">
-                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Active Scaffolds ({d.scaffolds.length})</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Active scaffolds ({d.scaffolds.length})</p>
                   <div className="flex flex-wrap gap-1">
                     {d.scaffolds.map((sc: any, i: number) => (
-                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 border border-blue-200 text-[length:calc(11.5px*var(--ts))] text-blue-800">
+                      <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-info-soft border border-info/30 text-[length:calc(11.5px*var(--ts))] text-info">
                         <span className="font-bold text-[length:calc(12px*var(--ts))]">{sc.domain}</span> {sc.scaffold_text}
-                        {sc.effectiveness === 'working' && <span className="text-green-600">✓</span>}
-                        {sc.effectiveness === 'not_working' && <span className="text-red-600">✗</span>}
+                        {sc.effectiveness === 'working' && <Check size={11} aria-label="Working" className="text-good" />}
+                        {sc.effectiveness === 'not_working' && <X size={11} aria-label="Not working" className="text-bad" />}
                       </span>
                     ))}
                   </div>
@@ -2117,7 +2118,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
 
               {d.goals && d.goals.length > 0 && (
                 <div className="bg-white rounded-lg border border-[#e2e8f0] p-3">
-                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Student Goals ({d.goals.length})</p>
+                  <p className="text-[length:calc(12px*var(--ts))] text-[#94a3b8] font-semibold mb-1.5">Student goals ({d.goals.length})</p>
                   <div className="space-y-0.5">
                     {d.goals.map((g: any, i: number) => (
                       <div key={i} className="flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))]">
@@ -2163,7 +2164,7 @@ function ProgressReport({ studentId, semesterId, semester, students, allSemester
         {canEdit && (
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{commentSkipped ? (ko ? '인쇄본에 코멘트 칸이 없습니다.' : 'No comment on the printed report.') : chars > HALF_COMMENT_MAX ? (ko ? '반 페이지보다 깁니다: 이 학생은 전체 페이지로 인쇄됩니다.' : 'Longer than a half page holds, so this student prints on a full page.') : (ko ? `${HALF_COMMENT_MAX}자까지 반 페이지에 들어갑니다.` : `Up to ${HALF_COMMENT_MAX} characters fit on a half page.`)}</span>
-            <button onClick={saveComment} disabled={savingComment} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">{savingComment ? (ko ? '저장 중…' : 'Saving…') : (ko ? '코멘트 저장' : 'Save comment')}</button>
+            <button onClick={saveComment} disabled={savingComment} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">{savingComment ? (ko ? '저장 중…' : 'Saving…') : (ko ? '코멘트 저장' : 'Save comment')}</button>
           </div>
         )}
       </div>
@@ -2297,7 +2298,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
     <div className="space-y-4">
       <div className="bg-surface border border-border rounded-xl p-5 flex items-center justify-between">
         <div>
-          <h3 className="font-display text-lg font-semibold text-navy">Class Comments</h3>
+          <h3 className="font-display text-lg font-semibold text-navy">Class comments</h3>
           <p className="text-[length:calc(12px*var(--ts))] text-text-secondary">{selectedClass} · Grade {selectedGrade} · {students.length} students</p>
           <div className="flex items-center gap-2 mt-2.5 flex-wrap">
             <div className="flex gap-1">
@@ -2310,14 +2311,14 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
         </div>
         {canEdit ? (
           <div className="flex items-center gap-3">
-            {dirtyIds.length > 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-amber-600 font-medium">{dirtyIds.length} unsaved</span>}
+            {dirtyIds.length > 0 && <span className="text-[length:calc(11.5px*var(--ts))] text-warn font-medium">{dirtyIds.length} unsaved</span>}
             <button onClick={saveAll} disabled={saving || dirtyIds.length === 0}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-              <Save size={14} /> {saving ? 'Saving…' : 'Save All'}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+              <Save size={14} /> {saving ? 'Saving…' : 'Save all'}
             </button>
           </div>
         ) : (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-amber-50 text-amber-700 border border-amber-200"><Lock size={12} /> Read-only</span>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-warn-soft text-warn border border-warn/30"><Lock size={12} /> Read-only</span>
         )}
       </div>
 
@@ -2326,7 +2327,7 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
           const r = rows[student.id] || { text: '', skipped: false, dirty: false }
           const o = overall[student.id] || { pct: null, letter: '—' }
           return (
-            <div key={student.id} className={`bg-surface border rounded-xl p-4 ${r.dirty ? 'border-amber-300' : 'border-border'}`}>
+            <div key={student.id} className={`bg-surface border rounded-xl p-4 ${r.dirty ? 'border-warn/40' : 'border-border'}`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{student.english_name}</span>
@@ -2358,7 +2359,8 @@ function BulkComments({ students, semesterId, selectedClass, selectedGrade, canE
 function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, isOwnClass = false }: {
   students: any[]; semesterId: string; selectedClass: EnglishClass; selectedGrade: Grade; isOwnClass?: boolean
 }) {
-  const { showToast, currentTeacher } = useApp()
+  const { showToast, currentTeacher, language } = useApp()
+  const ko = language === 'ko'
   const isAdmin = currentTeacher?.role === 'admin' || currentTeacher?.is_head_teacher
   // Approval is admin-only. Teachers viewing another class can still leave feedback; you don't review your own.
   const canLeaveFeedback = !isOwnClass
@@ -2433,7 +2435,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
   const approveAll = async () => {
     if (!isAdmin) return
     setSaving('all')
-    let errors = 0
+    const failed: string[] = []
     for (const s of students) {
       const existing = reviews[s.id]
       if (existing?.admin_approved) continue // already approved
@@ -2446,12 +2448,16 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       if (!error) {
         setReviews(prev => ({ ...prev, [s.id]: { ...prev[s.id], ...row } }))
         setJustApproved(prev => new Set(prev).add(s.id))
-      } else errors++
+      } else failed.push(s.english_name || s.korean_name)
     }
     setSaving(null)
     logActivity('edited', `Report cards approved · ${selectedClass} · Grade ${selectedGrade} · all ${students.length} students`)
-    showToast(errors > 0 ? `Approved with ${errors} error(s)` : `All ${students.length} students approved`)
+    // Approved cards are already marked; Retry runs this again, which skips them.
+    if (failed.length) showToast(notSavedMessage(failed, ko, { en: 'approvals', ko: '승인' }), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { approveAllRef.current() } } })
+    else showToast(ko ? `${students.length}명 모두 승인됨` : `All ${students.length} students approved`)
   }
+  const approveAllRef = useRef(approveAll)
+  approveAllRef.current = approveAll
 
   // Save a single reviewer note per student; flags it back to the teacher (ack reset)
   const saveNote = async (studentId: string) => {
@@ -2478,11 +2484,11 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
   // Quality flag for a student's comment, or null when it looks complete
   const commentFlag = (studentId: string): { label: string; cls: string } | null => {
     const c = comments[studentId]
-    if (c?.is_skipped) return { label: 'Skipped', cls: 'bg-gray-100 text-gray-500 border-gray-200' }
+    if (c?.is_skipped) return { label: 'Skipped', cls: 'bg-paper-2 text-ink-3 border-rule' }
     const t = (c?.text || '').trim()
-    if (!t) return { label: 'No comment', cls: 'bg-red-50 text-red-600 border-red-200' }
-    if (t.length < 40) return { label: 'Very short', cls: 'bg-amber-50 text-amber-700 border-amber-200' }
-    if (c?.draft_source === 'ai') return { label: 'AI draft', cls: 'bg-amber-50 text-amber-700 border-amber-200' }
+    if (!t) return { label: 'No comment', cls: 'bg-bad-soft text-bad border-bad/30' }
+    if (t.length < 40) return { label: 'Very short', cls: 'bg-warn-soft text-warn border-warn/30' }
+    if (c?.draft_source === 'ai') return { label: 'AI draft', cls: 'bg-warn-soft text-warn border-warn/30' }
     return null
   }
 
@@ -2524,22 +2530,22 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       <div className="bg-surface border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="font-display text-lg font-semibold text-navy">Report Card Review</h3>
+            <h3 className="font-display text-lg font-semibold text-navy">Report card review</h3>
             <p className="text-[length:calc(12px*var(--ts))] text-text-secondary">{selectedClass} -- Grade {selectedGrade} -- {students.length} students</p>
           </div>
           <div className="flex gap-4 text-center">
             <div>
-              <p className="text-[length:calc(22px*var(--ts))] font-bold text-green-600">{adminCount}/{students.length}</p>
+              <p className="text-[length:calc(22px*var(--ts))] font-bold text-good">{adminCount}/{students.length}</p>
               <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Admin approved · ready to print</p>
             </div>
             <div>
-              <p className={`text-[length:calc(22px*var(--ts))] font-bold ${flaggedCount > 0 ? 'text-orange-500' : 'text-text-tertiary'}`}>{flaggedCount}</p>
+              <p className={`text-[length:calc(22px*var(--ts))] font-bold ${flaggedCount > 0 ? 'text-warn' : 'text-text-tertiary'}`}>{flaggedCount}</p>
               <p className="text-[length:calc(12px*var(--ts))] text-ink-2">Needs changes</p>
             </div>
           </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div className="h-2 rounded-full bg-green-500 transition-all" style={{ width: `${students.length > 0 ? (adminCount / students.length) * 100 : 0}%` }} />
+        <div className="w-full bg-paper-3 rounded-full h-2">
+          <div className="h-2 rounded-full bg-good transition-all" style={{ width: `${students.length > 0 ? (adminCount / students.length) * 100 : 0}%` }} />
         </div>
       </div>
 
@@ -2547,13 +2553,13 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
       <div className="flex gap-2 flex-wrap">
         {isAdmin && (
           <button onClick={approveAll} disabled={saving === 'all'}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40">
-            <CheckCircle2 size={14} /> Approve All as Admin
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+            <CheckCircle2 size={14} /> Approve all as admin
           </button>
         )}
         <button onClick={downloadComments}
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-navy border border-border hover:bg-surface ml-auto">
-          <FileDown size={14} /> Download All Comments (PDF)
+          <FileDown size={14} /> Download all comments (PDF)
         </button>
       </div>
 
@@ -2576,7 +2582,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
           const noteUnack = hasNote && !r?.reviewer_note_ack
 
           return (
-            <div key={student.id} className={`border-b border-border last:border-0 ${ready ? 'bg-green-50/30' : ''}`}>
+            <div key={student.id} className={`border-b border-border last:border-0 ${ready ? 'bg-good-soft/30' : ''}`}>
               <div className="px-4 py-3 grid grid-cols-[auto,1fr,8rem,6rem] items-center gap-4 cursor-pointer hover:bg-surface-alt/40"
                 onClick={() => setExpanded(isOpen ? null : student.id)}>
                 <span className="text-text-tertiary">{isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
@@ -2584,20 +2590,20 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   <span className="text-[length:calc(13px*var(--ts))] font-medium text-navy">{student.english_name}</span>
                   <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{student.korean_name}</span>
                   {flag && <span className={`text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border font-medium ${flag.cls}`}>{flag.label}</span>}
-                  {noteUnack && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border font-medium bg-orange-50 text-orange-700 border-orange-200 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
+                  {noteUnack && <span className="text-[length:calc(11.5px*var(--ts))] px-1.5 py-0.5 rounded border font-medium bg-warn-soft text-warn border-warn/30 inline-flex items-center gap-1"><AlertTriangle size={9} /> Needs changes</span>}
                 </div>
                 <div className="flex justify-center" onClick={e => e.stopPropagation()}>
                   {isAdmin ? (
                     <button onClick={() => toggleApproval(student.id)}
                       disabled={saving === student.id}
                       className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${
-                        adminOk ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-surface-alt text-text-tertiary border border-border hover:border-green-300'
+                        adminOk ? 'bg-good-soft text-good border border-good/40' : 'bg-surface-alt text-text-tertiary border border-border hover:border-good/40'
                       }`}>
                       {adminOk ? <CheckCircle2 size={13} /> : <Circle size={13} />}
                       {adminOk ? 'Approved' : 'Approve'}
                     </button>
                   ) : (
-                    <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ${adminOk ? 'text-green-600' : 'text-text-tertiary'}`}>
+                    <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ${adminOk ? 'text-good' : 'text-text-tertiary'}`}>
                       {adminOk ? 'Approved' : 'Pending'}
                     </span>
                   )}
@@ -2606,7 +2612,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   {ready ? (
                     <Stamp kind="approved" size="sm" date={r?.admin_approved_at} land={justApproved.has(student.id)} />
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-amber-600"><Circle size={13} /> Pending</span>
+                    <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-warn"><Circle size={13} /> Pending</span>
                   )}
                 </div>
               </div>
@@ -2623,7 +2629,7 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                   </div>
                   {/* Reviewer feedback */}
                   <div>
-                    <p className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold mb-1">Reviewer Feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
+                    <p className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold mb-1">Reviewer feedback{canLeaveFeedback ? ' — flagged to teacher' : ''}</p>
                     {canLeaveFeedback ? (
                       <>
                         <textarea value={noteDraft[student.id] ?? r?.reviewer_note ?? ''}
@@ -2633,18 +2639,18 @@ function ReviewApproval({ students, semesterId, selectedClass, selectedGrade, is
                           className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy resize-none bg-white" />
                         <div className="flex items-center justify-between mt-1.5">
                           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
-                            {hasNote ? (r?.reviewer_note_ack ? '✓ Acknowledged by teacher' : 'Flagged — awaiting teacher') : 'Saving a note flags it for the teacher to review.'}
+                            {hasNote ? (r?.reviewer_note_ack ? <span className="inline-flex items-center gap-1 text-good"><Check size={11} aria-hidden /> Acknowledged by teacher</span> : 'Flagged — awaiting teacher') : 'Saving a note flags it for the teacher to review.'}
                           </span>
                           <button onClick={() => saveNote(student.id)} disabled={saving === student.id}
-                            className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                            {saving === student.id ? 'Saving…' : 'Save Feedback'}
+                            className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+                            {saving === student.id ? 'Saving…' : 'Save feedback'}
                           </button>
                         </div>
                       </>
                     ) : (
                       <div className="bg-white border border-border rounded-lg p-3 text-[length:calc(12px*var(--ts))] text-text-primary whitespace-pre-wrap">
                         {hasNote ? r?.reviewer_note : <span className="italic text-text-tertiary">No reviewer feedback yet.</span>}
-                        {hasNote && <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1.5">{r?.reviewer_note_ack ? '✓ You marked this reviewed' : 'Flagged for your review'}</div>}
+                        {hasNote && <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1.5">{r?.reviewer_note_ack ? <span className="inline-flex items-center gap-1 text-good"><Check size={11} aria-hidden /> You marked this reviewed</span> : 'Flagged for your review'}</div>}
                       </div>
                     )}
                   </div>
@@ -2924,7 +2930,7 @@ function ClassSummary({ students, semesterId, semester, lang, selectedClass, sel
                 <td className="px-4 py-2.5"><span className="font-medium">{s.student.english_name}</span><span className="text-text-tertiary ml-2 text-[length:calc(11.5px*var(--ts))]">{s.student.korean_name}</span></td>
                 {DOMAINS.map((d) => (
                   <td key={d} className="px-3 py-2.5 text-center">
-                    {s.domainNa?.[d] ? <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary">N/A</span> : s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-green-600' : s.domainAvgs[d] >= 80 ? 'text-blue-600' : s.domainAvgs[d] >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">&mdash;</span>}
+                    {s.domainNa?.[d] ? <span className="text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary">N/A</span> : s.domainAvgs[d] != null ? <span className={`font-semibold ${s.domainAvgs[d] >= 90 ? 'text-good' : s.domainAvgs[d] >= 80 ? 'text-info' : s.domainAvgs[d] >= 70 ? 'text-warn' : 'text-bad'}`}>{s.domainAvgs[d].toFixed(1)}</span> : <span className="text-text-tertiary">&mdash;</span>}
                   </td>
                 ))}
                 <td className="px-4 py-2.5 text-center font-bold text-navy">{s.overall != null ? s.overall.toFixed(1) : '\u2014'}</td>
@@ -3121,6 +3127,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
           <p className="eyebrow">Students</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3">Click a student to open their {isCard ? 'report card' : 'progress report'}</p>
         </div>
+        <div className="table-scroll pin-first">
         <table className="w-full text-[length:calc(13px*var(--ts))] border-t border-rule-2">
           <thead>
             <tr>
@@ -3149,6 +3156,7 @@ function ClassOverview({ students, semesterId, semester, selectedClass, selected
             ))}
           </tbody>
         </table>
+        </div>
       </div>
         <div className="flex items-center justify-between flex-wrap gap-3 border-t border-rule-2 pt-4">
           <div className="text-[length:calc(11.5px*var(--ts))] text-ink-3">Save as PDF in the print dialog to download the whole class as one file.</div>

@@ -135,7 +135,7 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
           style={{ animation: 'fadeIn 0.15s ease-out' }}>
 
           {/* Header */}
-          <div className="px-4 py-3 border-b border-border bg-gradient-to-r from-navy/5 to-transparent">
+          <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-[length:calc(14px*var(--ts))] font-bold text-navy">{studentName}</p>
@@ -151,11 +151,11 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
             <div className="p-3 space-y-3">
               {/* WIDA Row */}
               {widaInfo && (
-                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ backgroundColor: widaInfo.bg }}>
-                  <span className="text-[length:calc(18px*var(--ts))] font-bold" style={{ color: widaInfo.color }}>L{widaRounded}</span>
+                <div className="flex items-center gap-2 px-2.5 py-2 rounded-lg" style={{ backgroundColor: `var(--wida-${widaInfo.level})` }}>
+                  <span className="text-[length:calc(18px*var(--ts))] font-bold" style={{ color: `var(--wida-${widaInfo.level}-ink)` }}>L{widaRounded}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[length:calc(11.5px*var(--ts))] font-semibold" style={{ color: '#374151' }}>{widaInfo.name}</p>
-                    <div className="flex gap-2 text-[length:calc(11.5px*var(--ts))] text-text-secondary mt-0.5">
+                    <p className="text-[length:calc(11.5px*var(--ts))] font-semibold" style={{ color: `var(--wida-${widaInfo.level}-ink)` }}>{widaInfo.name}</p>
+                    <div className="flex gap-2 text-[length:calc(11.5px*var(--ts))] mt-0.5" style={{ color: `var(--wida-${widaInfo.level}-ink)` }}>
                       {WIDA_DOMAINS.map(d => {
                         const v = data.wida[d]
                         const label = d === 'listening' ? 'L' : d === 'speaking' ? 'S' : d === 'reading' ? 'R' : 'W'
@@ -173,9 +173,9 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                   <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Current grades</p>
                   <div className="flex gap-1.5">
                     {data.domainGrades.slice(0, 5).map((g, i) => (
-                      <div key={i} className={`flex-1 text-center rounded-lg py-1.5 px-1 border ${g.score >= 80 ? 'bg-green-50 border-green-200' : g.score >= 65 ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200'}`}>
+                      <div key={i} className={`flex-1 text-center rounded-lg py-1.5 px-1 border ${g.score >= 80 ? 'bg-good-soft border-good/30' : g.score >= 65 ? 'bg-warn-soft border-warn/30' : 'bg-bad-soft border-bad/30'}`}>
                         <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary uppercase truncate">{domainLabel(g.domain).slice(0, 4)}</p>
-                        <p className={`text-[length:calc(13px*var(--ts))] font-bold ${g.score >= 80 ? 'text-green-700' : g.score >= 65 ? 'text-amber-700' : 'text-red-700'}`}>{g.score.toFixed(0)}%</p>
+                        <p className={`text-[length:calc(13px*var(--ts))] font-bold ${g.score >= 80 ? 'text-good' : g.score >= 65 ? 'text-warn' : 'text-bad'}`}>{g.score.toFixed(0)}%</p>
                       </div>
                     ))}
                   </div>
@@ -187,8 +187,8 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                 <div>
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Reading fluency</p>
-                    {readingTrend === 'up' && <TrendingUp size={11} className="text-green-500" />}
-                    {readingTrend === 'down' && <TrendingDown size={11} className="text-red-500" />}
+                    {readingTrend === 'up' && <TrendingUp size={11} className="text-good" />}
+                    {readingTrend === 'down' && <TrendingDown size={11} className="text-bad" />}
                     {readingTrend === 'flat' && <Minus size={11} className="text-text-tertiary" />}
                   </div>
                   <div className="flex gap-1.5">
@@ -209,9 +209,9 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
                   <p className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold mb-1.5">Active scaffolds</p>
                   <div className="space-y-1">
                     {data.scaffolds.map((s, i) => (
-                      <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-blue-50 border border-blue-100">
-                        <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-700 uppercase flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
-                        <p className="text-[length:calc(11.5px*var(--ts))] text-blue-800 leading-snug">{s.text}</p>
+                      <div key={i} className="flex items-start gap-1.5 px-2 py-1 rounded bg-paper-2 border border-rule">
+                        <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1 py-0.5 rounded bg-surface text-ink-2 capitalize flex-shrink-0 mt-px">{s.domain.slice(0, 4)}</span>
+                        <p className="text-[length:calc(11.5px*var(--ts))] text-ink leading-snug">{s.text}</p>
                       </div>
                     ))}
                   </div>
@@ -221,14 +221,14 @@ export default function StudentHoverCard({ studentId, studentName, koreanName, e
               {/* Teacher recommendation if present */}
               {data.anecdotal?.teacher_recommends && (
                 <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold ${
-                  data.anecdotal.teacher_recommends === 'move_up' ? 'bg-green-50 text-green-700' :
-                  data.anecdotal.teacher_recommends === 'move_down' ? 'bg-red-50 text-red-700' :
-                  'bg-blue-50 text-blue-700'
+                  data.anecdotal.teacher_recommends === 'move_up' ? 'bg-good-soft text-good' :
+                  data.anecdotal.teacher_recommends === 'move_down' ? 'bg-bad-soft text-bad' :
+                  'bg-paper-2 text-ink-2'
                 }`}>
                   {data.anecdotal.teacher_recommends === 'move_up' && <><ArrowUp size={13} /> Teacher recommends moving up</>}
                   {data.anecdotal.teacher_recommends === 'move_down' && <><ArrowDown size={13} /> Teacher recommends moving down</>}
                   {data.anecdotal.teacher_recommends === 'keep' && <><Minus size={13} /> Teacher recommends keeping in place</>}
-                  {data.anecdotal.is_watchlist && <Star size={11} className="text-amber-500 fill-amber-500 ml-auto" />}
+                  {data.anecdotal.is_watchlist && <Star size={11} className="text-warn fill-warn ml-auto" />}
                 </div>
               )}
 

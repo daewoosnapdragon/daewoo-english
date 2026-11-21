@@ -28,13 +28,13 @@ import { needsUpdate } from '@/lib/dbUpdate'
 // Nine stored types, five colors: fewer hues means each one is recognizable
 // at a glance. Days off and exams also fill their day (`fills`).
 const EVENT_TYPES = [
-  { value: 'day_off', label: 'Day Off', color: 'var(--ev-good)', fills: true },
+  { value: 'day_off', label: 'Day off', color: 'var(--ev-good)', fills: true },
   { value: 'deadline', label: 'Deadline', color: 'var(--ev-accent)', fills: false },
   { value: 'meeting', label: 'Meeting', color: 'var(--ev-info)', fills: false },
   { value: 'midterm', label: 'Midterm', color: 'var(--ev-accent)', fills: true },
-  { value: 'report_cards', label: 'Report Cards', color: 'var(--ev-info)', fills: false },
-  { value: 'event', label: 'School Event', color: 'var(--ev-warn)', fills: false },
-  { value: 'field_trip', label: 'Field Trip', color: 'var(--ev-teal)', fills: false },
+  { value: 'report_cards', label: 'Report cards', color: 'var(--ev-info)', fills: false },
+  { value: 'event', label: 'School event', color: 'var(--ev-warn)', fills: false },
+  { value: 'field_trip', label: 'Field trip', color: 'var(--ev-teal)', fills: false },
   { value: 'testing', label: 'Testing', color: 'var(--ev-teal)', fills: true },
   { value: 'other', label: 'Other', color: 'var(--ev-other)', fills: false },
 ]
@@ -1000,7 +1000,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
               <input type="checkbox" checked={showOnParentCalendar} onChange={e => setShowOnParentCalendar(e.target.checked)}
                 className="w-4 h-4 rounded border-border text-navy focus:ring-navy" />
               <div>
-                <span className="text-[length:calc(12px*var(--ts))] font-medium text-text-primary">Show on Parent Calendar</span>
+                <span className="text-[length:calc(12px*var(--ts))] font-medium text-text-primary">Show on parent calendar</span>
                 <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary block">Display this event on the parent calendar for selected grades</span>
               </div>
             </label>
@@ -1021,7 +1021,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
                   ))}
                 </div>
                 {targetGrades.length === 0 && (
-                  <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600 mt-1">No grades selected = shows on ALL parent calendars</p>
+                  <p className="text-[length:calc(11.5px*var(--ts))] text-warn mt-1">No grades selected = shows on ALL parent calendars</p>
                 )}
               </div>
             )}
@@ -1031,7 +1031,7 @@ function AddEventModal({ date, onClose, onSaved, existingEvent }: { date: string
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium hover:bg-surface-alt">Cancel</button>
           <button onClick={handleSave} disabled={saving || !title.trim()}
             className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40 flex items-center gap-1.5">
-            {saving && <Loader2 size={12} className="animate-spin" />} {isEdit ? 'Update' : 'Add Event'}
+            {saving && <Loader2 size={12} className="animate-spin" />} {isEdit ? 'Update' : 'Add event'}
           </button>
         </div>
       </div>

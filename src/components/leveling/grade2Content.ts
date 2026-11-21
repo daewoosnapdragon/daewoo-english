@@ -424,7 +424,7 @@ const F26_QUESTIONS: G2QuestionDef[] = [
 const F26_WRITING_CATEGORIES: G2WritingCategory[] = [
   { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.2.1', standardDesc: 'How many of the four questions are answered', kind: 'ladder' },
   {
-    key: 'content', label: 'Content and Detail', max: 5, standard: 'W.2.1', standardDesc: 'Richness of the ideas',
+    key: 'content', label: 'Content and detail', max: 5, standard: 'W.2.1', standardDesc: 'Richness of the ideas',
     kind: 'checklist',
     checklist: [
       { key: 'specific_detail', label: 'Specific detail', desc: 'Gives at least one concrete detail rather than a general statement ("I make a snowman with my sister" rather than "It is fun").' },
@@ -434,7 +434,7 @@ const F26_WRITING_CATEGORIES: G2WritingCategory[] = [
       { key: 'explanation', label: 'Explanation or comparison', desc: 'Gives a real because reason, or compares this season to another ("I like summer more than winter because…").' },
     ],
   },
-  { key: 'language_grammar', label: 'Language and Grammar', max: 5, standard: 'L.2.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
+  { key: 'language_grammar', label: 'Language and grammar', max: 5, standard: 'L.2.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
   { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.2.2', standardDesc: 'Capitalization, punctuation, spelling', kind: 'ladder' },
 ]
 

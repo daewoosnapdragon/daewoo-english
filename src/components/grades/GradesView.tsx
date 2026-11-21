@@ -35,7 +35,7 @@ const ASSESSMENT_CATEGORIES = [
   // === WEIGHTED CATEGORIES (these determine final grades) ===
   { value: 'formative', label: 'Formative', labelKo: '형성평가', weighted: true, desc: 'Ongoing checks: quizzes, exit tickets, classwork, homework, participation' },
   { value: 'summative', label: 'Summative', labelKo: '총괄평가', weighted: true, desc: 'End-of-unit tests, midterms, finals, chapter tests' },
-  { value: 'performance_task', label: 'Performance Task', labelKo: '수행과제', weighted: true, desc: 'Projects, presentations, portfolios, writing tasks' },
+  { value: 'performance_task', label: 'Performance task', labelKo: '수행과제', weighted: true, desc: 'Projects, presentations, portfolios, writing tasks' },
 ] as const
 
 interface Assessment {
@@ -568,7 +568,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
           <div className="flex items-center gap-3">
             <span className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">{assessment.name}</span>
             <span className="text-[length:calc(11.5px*var(--ts))] bg-navy/10 text-navy px-2 py-0.5 rounded-full font-medium">{catLabel(assessment.type)}</span>
-            <span className="text-[length:calc(11.5px*var(--ts))] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{sections.length} sections</span>
+            <span className="text-[length:calc(11.5px*var(--ts))] bg-paper-2 text-ink-2 px-2 py-0.5 rounded-full font-medium">{sections.length} sections</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-[length:calc(12px*var(--ts))] text-text-secondary">{students.filter(s => hasAnyScore(s.id)).length}/{students.length} entered</span>
@@ -583,7 +583,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
               <th key={si} className="text-center px-2 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold min-w-[70px]">
                 <div className="font-bold">{sec.label}</div>
                 <div className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary font-normal">/{sec.max_points}</div>
-                {sec.standard && <div className="text-[length:calc(11.5px*var(--ts))] text-purple-600 font-medium mt-0.5">{sec.standard}</div>}
+                {sec.standard && <div className="text-[length:calc(11.5px*var(--ts))] text-ink-3 font-medium mt-0.5">{sec.standard}</div>}
               </th>
             ))}
             <th className="text-center px-3 py-2.5 text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold w-16">Total /{assessment.max_score}</th>
@@ -621,13 +621,13 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
                               next?.focus()
                             }
                           }}
-                          className={`w-14 px-1.5 py-1.5 border rounded-lg text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${val != null && sec.max_points > 0 && (Number(val) / sec.max_points) < 0.6 ? 'border-red-300 bg-red-50' : 'border-border'}`}
+                          className={`w-14 px-1.5 py-1.5 border rounded-lg text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${val != null && sec.max_points > 0 && (Number(val) / sec.max_points) < 0.6 ? 'border-bad/40 bg-bad-soft' : 'border-border'}`}
                         />
                       </td>
                     )
                   })}
                   <td className="px-3 py-2 text-center font-bold text-navy text-[length:calc(13px*var(--ts))]">{has ? total : ''}</td>
-                  <td className={`px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-semibold ${pct != null ? (pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>
+                  <td className={`px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-semibold ${pct != null ? (pct >= 80 ? 'text-good' : pct >= 60 ? 'text-warn' : 'text-bad') : 'text-text-tertiary'}`}>
                     {pct != null ? `${pct.toFixed(0)}%` : ''}
                   </td>
                 </tr>
@@ -636,13 +636,13 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-navy/20 bg-surface-alt/50">
-              <td className="px-3 py-2 sticky left-0 bg-surface-alt/50 font-bold text-[length:calc(11.5px*var(--ts))] text-navy z-10">Class Average</td>
+              <td className="px-3 py-2 sticky left-0 bg-surface-alt/50 font-bold text-[length:calc(11.5px*var(--ts))] text-navy z-10">Class average</td>
               {sections.map((sec, si) => {
                 const vals = students.map(s => sectionScores[s.id]?.[String(si)]).filter((v): v is number => v != null)
                 const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
                 const pct = sec.max_points > 0 ? (avg / sec.max_points) * 100 : 0
                 return (
-                  <td key={si} className={`px-1 py-2 text-center text-[length:calc(12px*var(--ts))] font-bold ${vals.length === 0 ? 'text-text-tertiary' : pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <td key={si} className={`px-1 py-2 text-center text-[length:calc(12px*var(--ts))] font-bold ${vals.length === 0 ? 'text-text-tertiary' : pct >= 80 ? 'text-good' : pct >= 60 ? 'text-warn' : 'text-bad'}`}>
                     {vals.length > 0 ? `${avg.toFixed(1)}` : ''}
                   </td>
                 )
@@ -654,7 +654,7 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
                 return (
                   <>
                     <td className="px-3 py-2 text-center font-bold text-navy text-[length:calc(13px*var(--ts))]">{allTotals.length > 0 ? totalAvg.toFixed(1) : ''}</td>
-                    <td className={`px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-bold ${totalPct >= 80 ? 'text-green-600' : totalPct >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                    <td className={`px-3 py-2 text-center text-[length:calc(11.5px*var(--ts))] font-bold ${totalPct >= 80 ? 'text-good' : totalPct >= 60 ? 'text-warn' : 'text-bad'}`}>
                       {allTotals.length > 0 ? `${totalPct.toFixed(0)}%` : ''}
                     </td>
                   </>
@@ -673,17 +673,17 @@ function SectionScoreEntry({ assessment, students, lang, selectedClass, selected
           return (
             <span key={si} className="inline-flex items-center gap-1">
               <span className="font-semibold text-navy">{sec.label}:</span>
-              <span className={pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600'}>{avg.toFixed(1)}/{sec.max_points} ({pct.toFixed(0)}%)</span>
-              {sec.standard && <span className="text-[length:calc(11.5px*var(--ts))] text-purple-600">{sec.standard}</span>}
+              <span className={pct >= 80 ? 'text-good' : pct >= 60 ? 'text-warn' : 'text-bad'}>{avg.toFixed(1)}/{sec.max_points} ({pct.toFixed(0)}%)</span>
+              {sec.standard && <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{sec.standard}</span>}
             </span>
           )
         })}
       </div>
       {hasChanges && (
         <div className="px-5 py-3 bg-warm-light border-t border-gold/20 flex items-center justify-between">
-          <p className="text-[length:calc(12px*var(--ts))] text-amber-700">Unsaved changes</p>
+          <p className="text-[length:calc(12px*var(--ts))] text-warn">Unsaved changes</p>
           <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-gold text-navy-dark hover:bg-gold-light">
-            {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Section Scores
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save section scores
           </button>
         </div>
       )}
@@ -828,9 +828,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
         <div className="p-12 text-center text-text-tertiary">No assessments in {DOMAIN_LABELS[selectedDomain][lang]}</div>
       ) : (
         <div>
-        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4">
-          <p className="text-[length:calc(12px*var(--ts))] text-blue-800 leading-relaxed">
-            <strong>Batch Grid</strong> lets you view and edit scores for all students across all assessments. {domainAssessments.some(a => Array.isArray(a.sections) && a.sections.length > 0) ? 'Click an assessment header to expand/collapse its sections.' : ''} Changes are saved when you click "Save All."
+        <div className="bg-info-soft border border-info/30 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[length:calc(12px*var(--ts))] text-info leading-relaxed">
+            <strong>Batch grid</strong> lets you view and edit scores for all students across all assessments. {domainAssessments.some(a => Array.isArray(a.sections) && a.sections.length > 0) ? 'Click an assessment header to expand/collapse its sections.' : ''} Changes are saved when you click "Save all."
           </p>
         </div>
         <div className="bg-surface border border-border rounded-xl overflow-hidden">
@@ -841,9 +841,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                 {columns.map((col, ci) => {
                   if (col.type === 'section') {
                     return (
-                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[length:calc(12px*var(--ts))] text-purple-600 font-semibold min-w-[100px] bg-purple-50/50">
+                      <th key={`sec-${col.assessment.id}-${col.sectionIdx}`} className="text-center px-1 py-2.5 text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold min-w-[100px] bg-paper-2">
                         <div className="whitespace-nowrap">{col.sectionLabel}</div>
-                        <div className="text-[length:calc(11.5px*var(--ts))] text-purple-400 font-normal">/{col.assessment.sections[col.sectionIdx!].max_points || col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
+                        <div className="text-[length:calc(11.5px*var(--ts))] text-ink-3 font-normal">/{col.assessment.sections[col.sectionIdx!].max_points || col.assessment.sections[col.sectionIdx!].max_score || '?'}</div>
                       </th>
                     )
                   }
@@ -880,9 +880,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                         if (col.type === 'section') {
                           const secVal = sectionScores[s.id]?.[col.assessment.id]?.[String(col.sectionIdx)] ?? ''
                           return (
-                            <td key={`sec-${col.assessment.id}-${col.sectionIdx}-${s.id}`} className="px-1 py-1.5 text-center bg-purple-50/20">
+                            <td key={`sec-${col.assessment.id}-${col.sectionIdx}-${s.id}`} className="px-1 py-1.5 text-center bg-paper-2/50">
                               <input type="number" step="0.5" value={secVal ?? ''} onChange={e => handleSectionChange(s.id, col.assessment.id, col.sectionIdx!, e.target.value, col.assessment.sections)}
-                                className="batch-input w-14 px-1 py-1.5 border rounded-lg text-center text-[length:calc(11.5px*var(--ts))] outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-200 border-purple-200" />
+                                className="batch-input w-14 px-1 py-1.5 border rounded-lg text-center text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 border-rule-2" />
                             </td>
                           )
                         }
@@ -894,11 +894,11 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
                           <td key={`total-${a.id}-${s.id}`} className="px-1 py-1.5 text-center">
                             <input type="number" step="0.5" value={sc ?? ''} onChange={e => handleChange(s.id, a.id, e.target.value)}
                               max={a.max_score} readOnly={hasSections}
-                              className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${hasSections ? 'bg-gray-50 text-text-tertiary' : ''} ${pct != null && pct < 60 ? 'border-red-300 bg-red-50' : 'border-border'}`} />
+                              className={`batch-input w-16 px-2 py-1.5 border rounded-lg text-center text-[length:calc(12px*var(--ts))] outline-none focus:border-navy focus:ring-1 focus:ring-navy/20 ${hasSections ? 'bg-paper-2 text-text-tertiary' : ''} ${pct != null && pct < 60 ? 'border-bad/40 bg-bad-soft' : 'border-border'}`} />
                           </td>
                         )
                       })}
-                      <td className={`px-3 py-2 text-center font-bold text-[length:calc(12px*var(--ts))] ${avg != null ? (avg >= 80 ? 'text-green-600' : avg >= 60 ? 'text-amber-600' : 'text-red-600') : 'text-text-tertiary'}`}>{avg != null ? avg.toFixed(0) + '%' : '\u2014'}</td>
+                      <td className={`px-3 py-2 text-center font-bold text-[length:calc(12px*var(--ts))] ${avg != null ? (avg >= 80 ? 'text-good' : avg >= 60 ? 'text-warn' : 'text-bad') : 'text-text-tertiary'}`}>{avg != null ? avg.toFixed(0) + '%' : '\u2014'}</td>
                     </tr>
                   )
                 })}
@@ -907,9 +907,9 @@ function BatchGridView({ selectedDomain, setSelectedDomain, allAssessments, stud
           </div>
           {hasChanges && (
             <div className="px-5 py-3 bg-warm-light border-t border-gold/20 flex items-center justify-between">
-              <p className="text-[length:calc(12px*var(--ts))] text-amber-700">{lang === 'ko' ? '\uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBCC0\uACBD\uC0AC\uD56D' : 'Unsaved changes'}</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-warn">{lang === 'ko' ? '\uC800\uC7A5\uB418\uC9C0 \uC54A\uC740 \uBCC0\uACBD\uC0AC\uD56D' : 'Unsaved changes'}</p>
               <button onClick={handleSaveAll} disabled={saving} className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-gold text-navy-dark hover:bg-gold-light">
-                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} {lang === 'ko' ? '\uC804\uCCB4 \uC800\uC7A5' : 'Save All'}
+                {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} {lang === 'ko' ? '\uC804\uCCB4 \uC800\uC7A5' : 'Save all'}
               </button>
             </div>
           )}
@@ -994,7 +994,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
         <div className="bg-surface border border-border rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '도메인 개요' : 'Domain Overview'}</h3>
+              <h3 className="font-display text-lg font-semibold text-navy">{lang === 'ko' ? '도메인 개요' : 'Domain overview'}</h3>
               <p className="text-[length:calc(12px*var(--ts))] text-text-tertiary">Grade {selectedGrade} · {selectedClass} · {allAssessments.length} {lang === 'ko' ? '개 평가' : 'assessments total'}</p>
             </div>
             <div className="flex items-center gap-3">
@@ -1050,7 +1050,7 @@ function DomainOverview({ allAssessments, selectedGrade, selectedClass, lang }: 
 
       {allAssessments.length === 0 && (
         <div className="bg-surface border border-border rounded-xl p-12 text-center">
-          <p className="text-text-tertiary text-sm">{lang === 'ko' ? '아직 평가가 없습니다.' : 'No assessments yet. Create your first assessment in Score Entry.'}</p>
+          <p className="text-text-tertiary text-sm">{lang === 'ko' ? '아직 평가가 없습니다.' : 'No assessments yet. Create your first assessment in Score entry.'}</p>
         </div>
       )}
     </div>
@@ -1100,7 +1100,7 @@ function CrossClassCompare({ assessmentName, domain, maxScore, currentClass, gra
             <div key={d.cls} className="flex items-center justify-between">
               <span className="text-[length:calc(11.5px*var(--ts))] font-medium" style={{ color: classToTextColor(d.cls as EnglishClass) }}>{d.cls}</span>
               <div className="flex items-center gap-2">
-                <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(d.avg, 100)}%`, backgroundColor: classDot(d.cls as EnglishClass) }} /></div>
+                <div className="w-16 h-1.5 bg-paper-3 rounded-full overflow-hidden"><div className="h-full rounded-full" style={{ width: `${Math.min(d.avg, 100)}%`, backgroundColor: classDot(d.cls as EnglishClass) }} /></div>
                 <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">{d.avg.toFixed(1)}%</span>
                 <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">n={d.count}</span>
               </div>
@@ -1224,7 +1224,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
     <div className="px-10 py-6 space-y-4">
       {/* Domain distribution bar */}
       <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-3">Assessment Distribution by Domain</h3>
+        <h3 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy mb-3">Assessment distribution by domain</h3>
         <div className="flex h-6 rounded-full overflow-hidden mb-2">
           {DOMAINS.map(d => {
             const pct = (domainCounts[d] / totalAssessments) * 100
@@ -1243,7 +1243,7 @@ function AssessmentCalendarView({ allAssessments, lang }: { allAssessments: Asse
 
       {/* Coverage gaps */}
       {gaps.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-[length:calc(11.5px*var(--ts))] text-amber-800">
+        <div className="bg-warn-soft border border-warn/30 rounded-xl px-4 py-3 text-[length:calc(11.5px*var(--ts))] text-warn">
           <span className="font-bold">Coverage gap: </span>
           {gaps.map(d => DOMAIN_LABELS[d]).join(', ')} {gaps.length === 1 ? 'has' : 'have'} not been assessed in over 6 weeks.
         </div>

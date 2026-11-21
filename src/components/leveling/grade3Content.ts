@@ -395,9 +395,9 @@ const F26_QUESTIONS: G3QuestionDef[] = [
 // ─── Item 31: Writing ────────────────────────────────────────────────
 
 const F26_WRITING_CATEGORIES: G3WritingCategory[] = [
-  { key: 'story_structure', label: 'Story Structure', max: 4, standard: 'W.3.3', standardDesc: 'Write narratives with a clear sequence of events', kind: 'ladder' },
+  { key: 'story_structure', label: 'Story structure', max: 4, standard: 'W.3.3', standardDesc: 'Write narratives with a clear sequence of events', kind: 'ladder' },
   {
-    key: 'content', label: 'Content and Detail', max: 4, standard: 'W.3.3', standardDesc: 'What the memory actually contains',
+    key: 'content', label: 'Content and detail', max: 4, standard: 'W.3.3', standardDesc: 'What the memory actually contains',
     kind: 'checklist',
     checklist: [
       { key: 'people', label: 'People', desc: 'Says who was there — a name or a relationship (my grandma, my friend Jisu), not just "someone."' },
@@ -406,8 +406,8 @@ const F26_WRITING_CATEGORIES: G3WritingCategory[] = [
       { key: 'feelings', label: 'Feelings or significance', desc: 'Says how it felt or why it is special — a feeling word or a real reason.' },
     ],
   },
-  { key: 'vocabulary', label: 'Vocabulary and Word Choice', max: 4, standard: 'L.3.3', standardDesc: 'Word choice for effect', kind: 'ladder' },
-  { key: 'language_grammar', label: 'Language and Grammar', max: 4, standard: 'L.3.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
+  { key: 'vocabulary', label: 'Vocabulary and word choice', max: 4, standard: 'L.3.3', standardDesc: 'Word choice for effect', kind: 'ladder' },
+  { key: 'language_grammar', label: 'Language and grammar', max: 4, standard: 'L.3.1', standardDesc: 'Sentence variety and agreement', kind: 'ladder' },
   { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.3.2', standardDesc: 'Capitalization, punctuation, spelling', kind: 'ladder' },
 ]
 

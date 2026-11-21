@@ -227,7 +227,7 @@ function TeacherSection() {
       <div className="flex items-center gap-2 mb-4">
         <UserCog size={18} className="text-ink-3" />
         <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
-          {language === 'ko' ? '교사 관리' : 'Teacher Management'}
+          {language === 'ko' ? '교사 관리' : 'Teacher management'}
         </h3>
       </div>
       <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mb-4">
@@ -292,7 +292,7 @@ function TeacherSection() {
                       )}
                       {!edited && !isCore(teacher) && teacher.id !== currentTeacher?.id && (
                         <button onClick={() => startDelete(teacher)}
-                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-red-500 hover:bg-red-50 transition-colors">
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-bad hover:bg-bad-soft transition-colors">
                           <Trash2 size={12} /> {language === 'ko' ? '삭제' : 'Remove'}
                         </button>
                       )}
@@ -310,9 +310,9 @@ function TeacherSection() {
         <Overlay><div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => { setDeleteConfirm(null); setDeleteStats(null) }}>
           <div className="bg-surface rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
-              <AlertTriangle size={20} className="text-amber-500" />
+              <AlertTriangle size={20} className="text-warn" />
               <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
-                {language === 'ko' ? '교사 비활성화' : 'Deactivate Teacher'}
+                {language === 'ko' ? '교사 비활성화' : 'Deactivate teacher'}
               </h3>
             </div>
             <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mb-3">
@@ -321,20 +321,20 @@ function TeacherSection() {
                 : `Deactivate ${deleteConfirm.name}? This removes them from login but preserves all historical data.`}
             </p>
             {deleteStats && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-[length:calc(12px*var(--ts))]">
-                <p className="font-semibold text-amber-800 mb-1">Associated data:</p>
-                <p className="text-amber-700">{deleteStats.students} active students (will be unassigned)</p>
-                <p className="text-amber-700">{deleteStats.logs} behavior logs</p>
-                <p className="text-amber-700">{deleteStats.grades} grade entries</p>
+              <div className="bg-warn-soft border border-warn/30 rounded-lg p-3 mb-4 text-[length:calc(12px*var(--ts))]">
+                <p className="font-semibold text-warn mb-1">Associated data:</p>
+                <p className="text-warn">{deleteStats.students} active students (will be unassigned)</p>
+                <p className="text-warn">{deleteStats.logs} behavior logs</p>
+                <p className="text-warn">{deleteStats.grades} grade entries</p>
               </div>
             )}
             <div className="flex gap-2">
               <button onClick={() => handleExportTeacherData(deleteConfirm)}
                 className="flex-1 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-border text-text-secondary hover:bg-surface-alt transition-colors">
-                {language === 'ko' ? '데이터 다운로드' : 'Download Data First'}
+                {language === 'ko' ? '데이터 다운로드' : 'Download data first'}
               </button>
               <button onClick={handleDelete} disabled={saving === deleteConfirm.id}
-                className="flex-1 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-red-500 text-white hover:bg-red-600 transition-colors">
+                className="flex-1 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-bad text-white hover:opacity-90 transition-colors">
                 {saving === deleteConfirm.id ? <Loader2 size={14} className="animate-spin mx-auto" /> : (language === 'ko' ? '비활성화' : 'Deactivate')}
               </button>
             </div>
@@ -497,7 +497,7 @@ function SemesterSection() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CalendarDays size={18} className="text-ink-3" />
-          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '학기 관리' : 'Semesters & Cutoff Dates'}</h3>
+          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{lang === 'ko' ? '학기 관리' : 'Semesters & cutoff dates'}</h3>
         </div>
         <div className="flex items-center gap-2">
           {canManage && archivedCount > 0 && (
@@ -509,7 +509,7 @@ function SemesterSection() {
           {canManage && (
             <button onClick={() => setAdding(!adding)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
-              <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add Semester'}
+              <Plus size={13} /> {lang === 'ko' ? '학기 추가' : 'Add semester'}
             </button>
           )}
         </div>
@@ -524,11 +524,11 @@ function SemesterSection() {
       )}
 
       {canManage && activeCount > 1 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 mb-4">
-          <p className="text-[length:calc(12px*var(--ts))] text-red-800 leading-relaxed">
+        <div className="bg-bad-soft border border-bad/30 rounded-xl px-4 py-3 mb-4">
+          <p className="text-[length:calc(12px*var(--ts))] text-bad leading-relaxed">
             <strong>{activeCount} semesters are marked active.</strong> Different screens can then disagree about
             which one they are showing, so grades from the wrong semester may appear. Click
-            <strong> Keep Only This Active</strong> on the semester you actually want to fix it.
+            <strong> Keep only this active</strong> on the semester you actually want to fix it.
           </p>
         </div>
       )}
@@ -547,10 +547,10 @@ function SemesterSection() {
                 className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy">
                 <option value="spring">Spring</option>
                 <option value="fall">Fall</option>
-                <option value="spring_mid">Spring Midterm</option>
-                <option value="spring_final">Spring Final</option>
-                <option value="fall_mid">Fall Midterm</option>
-                <option value="fall_final">Fall Final</option>
+                <option value="spring_mid">Spring midterm</option>
+                <option value="spring_final">Spring final</option>
+                <option value="fall_mid">Fall midterm</option>
+                <option value="fall_final">Fall final</option>
               </select></div>
           </div>
           <div className="grid grid-cols-4 gap-3">
@@ -582,21 +582,21 @@ function SemesterSection() {
         ) : (
           <div className="divide-y divide-border">
             {visibleSemesters.map((sem: any) => (
-              <div key={sem.id} className={`p-4 ${sem.is_archived ? 'opacity-60' : sem.is_active ? 'bg-green-50/50' : ''}`}>
+              <div key={sem.id} className={`p-4 ${sem.is_archived ? 'opacity-60' : sem.is_active ? 'bg-good-soft/50' : ''}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <span className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{sem.name}</span>
                     {sem.name_ko && <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{sem.name_ko}</span>}
-                    {sem.is_active && <span className="text-[length:calc(11.5px*var(--ts))] bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-bold">Active</span>}
-                    {sem.is_archived && <span className="text-[length:calc(11.5px*var(--ts))] bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full font-bold">Archived</span>}
+                    {sem.is_active && <span className="text-[length:calc(11.5px*var(--ts))] bg-good-soft text-good px-2 py-0.5 rounded-full font-bold">Active</span>}
+                    {sem.is_archived && <span className="text-[length:calc(11.5px*var(--ts))] bg-paper-3 text-ink-2 px-2 py-0.5 rounded-full font-bold">Archived</span>}
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-2">
                       {!sem.is_archived && (!sem.is_active || activeCount > 1) && (
                         <button onClick={() => handleSetActive(sem.id)} disabled={saving === sem.id}
                           title={sem.is_active ? 'Make this the only active semester' : 'Make this the active semester for every account'}
-                          className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium disabled:opacity-50">
-                          {sem.is_active ? 'Keep Only This Active' : 'Set Active'}
+                          className="text-[length:calc(11.5px*var(--ts))] px-2 py-1 rounded-lg border border-rule-2 text-ink-2 hover:text-ink hover:border-ink-3 font-medium disabled:opacity-50">
+                          {sem.is_active ? 'Keep only this active' : 'Set active'}
                         </button>
                       )}
                       <button onClick={() => handleToggleArchive(sem)}
@@ -608,7 +608,7 @@ function SemesterSection() {
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
                         {saving === sem.id ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
                       </button>
-                      <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500"><Trash2 size={13} /></button>
+                      <button onClick={() => handleDelete(sem.id)} className="p-1 rounded hover:bg-bad-soft text-text-tertiary hover:text-bad"><Trash2 size={13} /></button>
                     </div>
                   )}
                 </div>
@@ -623,14 +623,14 @@ function SemesterSection() {
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
                     <label className="text-[length:calc(12px*var(--ts))] font-semibold block mb-1" style={{ color: isPast(sem.midterm_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Midterm cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Locked</span>}
+                      Midterm cutoff {isPast(sem.midterm_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-bad-soft text-bad px-1.5 py-0.5 rounded-full ml-1">Locked</span>}
                     </label>
                     <input type="date" value={sem.midterm_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'midterm_cutoff_date', e.target.value)}
                       disabled={!canManage}
                       className="w-full px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy disabled:bg-surface-alt disabled:text-text-secondary" /></div>
                   <div>
                     <label className="text-[length:calc(12px*var(--ts))] font-semibold block mb-1" style={{ color: isPast(sem.report_card_cutoff_date) ? '#dc2626' : '#94a3b8' }}>
-                      Report card cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full ml-1">Locked</span>}
+                      Report card cutoff {isPast(sem.report_card_cutoff_date) && <span className="text-[length:calc(11.5px*var(--ts))] bg-bad-soft text-bad px-1.5 py-0.5 rounded-full ml-1">Locked</span>}
                     </label>
                     <input type="date" value={sem.report_card_cutoff_date || ''} onChange={(e: any) => updateField(sem.id, 'report_card_cutoff_date', e.target.value)}
                       disabled={!canManage}
@@ -768,14 +768,14 @@ function ProgramBenchmarksSection() {
         <div className="flex items-center gap-2">
           <Target size={18} className="text-ink-3" />
           <div>
-            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Program Benchmarks</h3>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Program benchmarks</h3>
             <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">CWPM and Lexile targets per grade and class. Visible to all teachers.</p>
           </div>
         </div>
         {(isAdmin || teacherClass) && (
           <button onClick={handleSave} disabled={saving}
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save Benchmarks
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save benchmarks
           </button>
         )}
       </div>
@@ -908,7 +908,7 @@ function ClassManagementSection() {
       <div className="flex items-center gap-2 mb-4">
         <AlertTriangle size={18} className="text-warn" />
         <div>
-          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Class Management</h3>
+          <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Class management</h3>
           <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">Delete non-core classes. Core classes (Lily-Snapdragon) cannot be deleted.</p>
         </div>
       </div>
@@ -936,7 +936,7 @@ function ClassManagementSection() {
                   <td className="text-right px-4 py-2.5">
                     {!isCore ? (
                       <button onClick={() => handleDeleteClass(cls.english_class)} disabled={deleting === cls.english_class}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-red-600 hover:bg-red-50 disabled:opacity-40">
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-bad hover:bg-bad-soft disabled:opacity-40">
                         {deleting === cls.english_class ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
                       </button>
                     ) : <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Protected</span>}
@@ -1000,7 +1000,7 @@ function AssessmentWeightsSection() {
   const typeLabels: Record<AssessmentType, string> = {
     formative: 'Formative',
     summative: 'Summative',
-    performance_task: 'Performance Task',
+    performance_task: 'Performance task',
   }
   const typeDescs: Record<AssessmentType, string> = {
     formative: 'Quizzes, exit tickets, classwork, homework, participation',
@@ -1016,7 +1016,7 @@ function AssessmentWeightsSection() {
         <div className="flex items-center gap-3 mb-2">
           <Scale size={18} className="text-ink-3" />
           <div className="flex-1">
-            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Assessment Weights</h3>
+            <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">Assessment weights</h3>
             <p className="text-[length:calc(12px*var(--ts))] text-text-secondary">How formative, summative, and performance task grades are weighted. Weights must sum to 100%.</p>
           </div>
         </div>
@@ -1040,7 +1040,7 @@ function AssessmentWeightsSection() {
             const total = w.formative + w.summative + w.performance_task
             const isValid = total === 100
             return (
-              <div key={grade} className={`flex items-center gap-4 px-4 py-2.5 rounded-lg border ${isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
+              <div key={grade} className={`flex items-center gap-4 px-4 py-2.5 rounded-lg border ${isValid ? 'border-border bg-surface-alt/30' : 'border-bad/40 bg-bad-soft/30'}`}>
                 <span className="text-[length:calc(13px*var(--ts))] font-bold text-navy w-16">Grade {grade}</span>
                 {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                   <div key={type} className="flex items-center gap-1.5">
@@ -1054,7 +1054,7 @@ function AssessmentWeightsSection() {
                     )}
                   </div>
                 ))}
-                <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ml-auto ${isValid ? 'text-good' : 'text-bad'}`}>
                   {total}%{!isValid && ' (must be 100)'}
                 </span>
               </div>
@@ -1076,7 +1076,7 @@ function AssessmentWeightsSection() {
           <div className="mt-3 space-y-4">
             {[1, 2, 3, 4, 5].map(grade => (
               <div key={grade}>
-                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy mb-1.5">Grade {grade} — Class Overrides</p>
+                <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy mb-1.5">Grade {grade} — Class overrides</p>
                 <div className="space-y-1.5">
                   {classes.map(cls => {
                     const key = `${grade}-${cls}`
@@ -1085,7 +1085,7 @@ function AssessmentWeightsSection() {
                     const total = w.formative + w.summative + w.performance_task
                     const isValid = total === 100
                     return (
-                      <div key={cls} className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${!hasOverride ? 'border-border/50 bg-surface-alt/20 opacity-60' : isValid ? 'border-border bg-surface-alt/30' : 'border-red-300 bg-red-50/30'}`}>
+                      <div key={cls} className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${!hasOverride ? 'border-border/50 bg-surface-alt/20 opacity-60' : isValid ? 'border-border bg-surface-alt/30' : 'border-bad/40 bg-bad-soft/30'}`}>
                         <span className="text-[length:calc(11.5px*var(--ts))] font-medium w-24" style={{ color: classToTextColor(cls as EnglishClass) }}>{cls}</span>
                         {(['formative', 'summative', 'performance_task'] as AssessmentType[]).map(type => (
                           <div key={type} className="flex items-center gap-1">
@@ -1115,7 +1115,7 @@ function AssessmentWeightsSection() {
                             )}
                           </div>
                         ))}
-                        {hasOverride && <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ml-auto ${isValid ? 'text-green-600' : 'text-red-600'}`}>{total}%</span>}
+                        {hasOverride && <span className={`text-[length:calc(11.5px*var(--ts))] font-medium ml-auto ${isValid ? 'text-good' : 'text-bad'}`}>{total}%</span>}
                         {!hasOverride && <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto italic">using default</span>}
                       </div>
                     )
@@ -1130,7 +1130,7 @@ function AssessmentWeightsSection() {
           <div className="flex justify-end mt-4">
             <button onClick={handleSave} disabled={saving}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
-              {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save Weights
+              {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Save weights
             </button>
           </div>
         )}
@@ -1181,7 +1181,7 @@ function SchoolInfoSection() {
       <div className="flex items-center gap-2 mb-4">
         <School size={18} className="text-ink-3" />
         <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">
-          {language === 'ko' ? '학교 정보' : 'School Information'}
+          {language === 'ko' ? '학교 정보' : 'School information'}
         </h3>
       </div>
 
@@ -1226,7 +1226,7 @@ function SchoolInfoSection() {
         <button onClick={handleSave} disabled={saving}
           className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
           {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-          {language === 'ko' ? '저장' : 'Save Changes'}
+          {language === 'ko' ? '저장' : 'Save changes'}
         </button>
       </div>
     </div>

@@ -79,11 +79,12 @@ h1, h2 { font-weight: 500; text-wrap: balance; }
 ::selection { background: rgb(var(--accent) / 0.18); }
 
 /* ═══════════════════════════════════════════════════
-   DARK MODE — raw palette remaps
-   Semantic tokens (bg-surface, text-navy, border-border …) switch through the
-   variables above and need nothing here. This block only re-tints the raw
-   Tailwind hues (bg-blue-50, text-green-700 …) that older screens still use;
-   it shrinks as each screen is rebuilt on tokens.
+   DARK MODE — the few things the tokens don't reach
+   Every colour utility switches through the variables above, so dark mode
+   needs nothing per class. What is left here: native form controls, the
+   raised shadows, the row hover, and two translucent fills. The old remaps
+   for raw Tailwind hues (bg-blue-50, text-green-700 …) are gone with the
+   last screen that used them; colour new work with the tokens.
    ═══════════════════════════════════════════════════ */
 html.dark input, html.dark textarea, html.dark select {
   background-color: rgb(var(--white)); color: rgb(var(--ink)); border-color: rgb(var(--rule-2));
@@ -96,118 +97,9 @@ html.dark option { background-color: rgb(var(--white)); color: rgb(var(--ink)); 
 html.dark .shadow-lg, html.dark .shadow-xl, html.dark .shadow-2xl { box-shadow: 0 0 0 1px rgb(var(--rule-2)), 0 8px 24px rgba(0,0,0,0.5) !important; }
 html.dark .table-row-hover:hover td { background-color: rgb(var(--ink) / 0.04) !important; }
 
-/* Dark mode -- accent/status backgrounds */
-html.dark .bg-blue-50 { background-color: #172336 !important; }
-html.dark .bg-green-50 { background-color: #14261a !important; }
-html.dark .bg-red-50 { background-color: #2a1619 !important; }
-html.dark .bg-amber-50, html.dark .bg-yellow-50 { background-color: #2a2414 !important; }
-html.dark .bg-purple-50 { background-color: #221a30 !important; }
-html.dark .bg-gray-50 { background-color: #2A261D !important; }
-html.dark .bg-gray-100 { background-color: #2A261D !important; }
-
-/* Dark mode -- status text colors */
-html.dark .text-blue-700, html.dark .text-blue-800 { color: #60a5fa !important; }
-html.dark .text-blue-600 { color: #7cb8f0 !important; }
-html.dark .text-green-700, html.dark .text-green-800 { color: #4ade80 !important; }
-html.dark .text-green-600 { color: #6ee7a0 !important; }
-html.dark .text-red-700, html.dark .text-red-800 { color: #f87171 !important; }
-html.dark .text-red-600 { color: #fca5a5 !important; }
-html.dark .text-amber-700, html.dark .text-amber-800 { color: #fbbf24 !important; }
-html.dark .text-amber-600 { color: #fcd34d !important; }
-html.dark .text-purple-700 { color: #c084fc !important; }
-
-/* Dark mode -- status borders */
-html.dark .border-blue-200 { border-color: #1e3a5f !important; }
-html.dark .border-green-200 { border-color: #1a3d28 !important; }
-html.dark .border-red-200, html.dark .border-red-300 { border-color: #3d1a1a !important; }
-html.dark .border-amber-200, html.dark .border-yellow-200 { border-color: #3d3214 !important; }
-
-/* Dark mode -- status background badges */
-html.dark .bg-green-100 { background-color: #14291a !important; }
-html.dark .bg-red-100 { background-color: #2a1419 !important; }
-html.dark .bg-amber-100 { background-color: #2a2414 !important; }
-html.dark .bg-blue-100 { background-color: #17233a !important; }
-html.dark .bg-purple-100 { background-color: #221a30 !important; }
-
-/* Dark mode -- misc */
+/* Translucent fills */
 html.dark .bg-surface-alt\/50 { background-color: rgba(42,38,29,0.5) !important; }
 html.dark .bg-black\/40 { background-color: rgba(0,0,0,0.6) !important; }
-
-/* ───────────────────────────────────────────────────
-   Dark mode -- gap fill
-   The rules above cover only the color utilities that happened to be styled
-   first; anything else kept its light-mode value and glared in dark mode.
-   Below covers every remaining palette class actually used in src/, grouped
-   the same way: dark text -> light, light tints -> dark, pale borders -> dark.
-   If you introduce a new color utility, add it here too.
-   ─────────────────────────────────────────────────── */
-
-/* Dark text -> light (neutrals) */
-html.dark .text-gray-900, html.dark .text-gray-800 { color: #EDE6D6 !important; }
-html.dark .text-gray-700 { color: #D9D1BE !important; }
-html.dark .text-gray-600, html.dark .text-slate-600 { color: #C2B9A5 !important; }
-
-/* Dark text -> light (hues) */
-html.dark .text-blue-900 { color: #60a5fa !important; }
-html.dark .text-amber-900 { color: #fbbf24 !important; }
-html.dark .text-purple-600, html.dark .text-purple-800 { color: #c084fc !important; }
-html.dark .text-emerald-600, html.dark .text-emerald-700 { color: #34d399 !important; }
-html.dark .text-indigo-600 { color: #a5b4fc !important; }
-html.dark .text-orange-600, html.dark .text-orange-700,
-html.dark .text-orange-800, html.dark .text-orange-900 { color: #fb923c !important; }
-
-/* Light tint backgrounds -> dark */
-html.dark .bg-gray-200, html.dark .bg-slate-100 { background-color: #2A261D !important; }
-html.dark .bg-blue-200 { background-color: #1b2a45 !important; }
-html.dark .bg-green-200 { background-color: #17331f !important; }
-html.dark .bg-red-200 { background-color: #331a1e !important; }
-html.dark .bg-amber-200 { background-color: #332c18 !important; }
-html.dark .bg-emerald-50 { background-color: #12241f !important; }
-html.dark .bg-indigo-50 { background-color: #1e1b33 !important; }
-html.dark .bg-orange-50 { background-color: #2a1e14 !important; }
-
-/* Pale borders -> dark */
-html.dark .border-gray-200, html.dark .border-gray-300 { border-color: #3A3427 !important; }
-html.dark .border-blue-100, html.dark .border-blue-300 { border-color: #1e3a5f !important; }
-html.dark .border-green-300, html.dark .border-emerald-200 { border-color: #1a3d28 !important; }
-html.dark .border-red-400 { border-color: #3d1a1a !important; }
-html.dark .border-amber-100, html.dark .border-amber-300, html.dark .border-amber-400 { border-color: #3d3214 !important; }
-html.dark .border-purple-200, html.dark .border-indigo-200 { border-color: #2e2545 !important; }
-html.dark .border-orange-200 { border-color: #3d2a14 !important; }
-
-/* Focus rings + dividers -> dark */
-html.dark .ring-blue-300 { --tw-ring-color: #1e3a5f !important; }
-html.dark .ring-green-200, html.dark .ring-green-300 { --tw-ring-color: #1a3d28 !important; }
-html.dark .ring-red-300 { --tw-ring-color: #3d1a1a !important; }
-html.dark .ring-amber-300 { --tw-ring-color: #3d3214 !important; }
-html.dark .ring-purple-200 { --tw-ring-color: #2e2545 !important; }
-
-/* Opacity-modified utilities.
-   Tailwind emits `bg-blue-50/50` as its own class (.bg-blue-50\/50), so the
-   plain `.bg-blue-50` rule above does NOT apply to it. These translucent
-   tints were the most visible dark-mode offenders. Alpha is preserved so the
-   intended layering over the parent still reads. */
-html.dark .bg-blue-50\/30 { background-color: rgba(23,35,54,0.3) !important; }
-html.dark .bg-blue-50\/40 { background-color: rgba(23,35,54,0.4) !important; }
-html.dark .bg-blue-50\/50 { background-color: rgba(23,35,54,0.5) !important; }
-html.dark .bg-blue-50\/60 { background-color: rgba(23,35,54,0.6) !important; }
-html.dark .bg-amber-50\/30 { background-color: rgba(42,36,20,0.3) !important; }
-html.dark .bg-amber-50\/40 { background-color: rgba(42,36,20,0.4) !important; }
-html.dark .bg-amber-50\/50 { background-color: rgba(42,36,20,0.5) !important; }
-html.dark .bg-amber-100\/50 { background-color: rgba(42,36,20,0.5) !important; }
-html.dark .bg-amber-100\/80 { background-color: rgba(42,36,20,0.8) !important; }
-html.dark .bg-gray-50\/30 { background-color: rgba(42,38,29,0.3) !important; }
-html.dark .bg-gray-50\/50 { background-color: rgba(42,38,29,0.5) !important; }
-html.dark .bg-green-50\/30 { background-color: rgba(20,38,26,0.3) !important; }
-html.dark .bg-green-50\/50 { background-color: rgba(20,38,26,0.5) !important; }
-html.dark .bg-red-50\/30 { background-color: rgba(42,22,25,0.3) !important; }
-html.dark .bg-red-50\/40 { background-color: rgba(42,22,25,0.4) !important; }
-html.dark .bg-red-50\/50 { background-color: rgba(42,22,25,0.5) !important; }
-html.dark .bg-purple-50\/20 { background-color: rgba(34,26,48,0.2) !important; }
-html.dark .bg-purple-50\/50 { background-color: rgba(34,26,48,0.5) !important; }
-html.dark .bg-emerald-50\/40 { background-color: rgba(18,36,31,0.4) !important; }
-
-/* Gradients -> dark (the app uses the /80 opacity variants) */
 
 /* ═══════════════════════════════════════════════════
    SCROLLBARS
@@ -662,3 +554,9 @@ html[data-font] h1, html[data-font] h2, html[data-font] .font-display { letter-s
   .sticky-save-bar { padding: 10px 16px; }
 }
 
+
+/* ─── iPhone notch ───
+   The viewport covers the whole screen (layout.tsx: viewportFit cover), so in
+   landscape the page itself keeps clear of the notch and rounded corners.
+   Zero everywhere else. */
+#main { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }

@@ -35,9 +35,9 @@ function anchorText(codes: string[]): string | null {
 // stable (Grade 2 scores each out of 5, grades 3-5 out of 4), so these are
 // shown as a proportion with the denominator alongside.
 const WRITING_CATEGORY_LABELS: Record<string, string> = {
-  story_structure: 'Story Structure', content: 'Content and Detail',
-  language_grammar: 'Language and Grammar', mechanics: 'Mechanics',
-  word_choice: 'Word Choice and Voice', vocabulary: 'Vocabulary and Word Choice',
+  story_structure: 'Story structure', content: 'Content and detail',
+  language_grammar: 'Language and grammar', mechanics: 'Mechanics',
+  word_choice: 'Word choice and voice', vocabulary: 'Vocabulary and word choice',
   completeness: 'Completeness',
 }
 const WRITING_CATEGORY_ORDER = ['story_structure', 'completeness', 'content', 'vocabulary', 'word_choice', 'language_grammar', 'mechanics']

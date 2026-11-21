@@ -244,11 +244,11 @@ export default function StudentLevelingCard({
           <div className="space-y-0.5">
             {isG1 ? (
               <>
-                <ScoreLine label="Letter Names" value={raw.o_alpha_names} max={16} />
-                <ScoreLine label="Letter Sounds" value={raw.o_alpha_sounds} max={16} />
-                <ScoreLine label="Words Given" value={raw.o_alpha_words} max={5} />
+                <ScoreLine label="Letter names" value={raw.o_alpha_names} max={16} />
+                <ScoreLine label="Letter sounds" value={raw.o_alpha_sounds} max={16} />
+                <ScoreLine label="Words given" value={raw.o_alpha_words} max={5} />
                 <ScoreLine label="Phoneme" value={raw.o_phoneme} max={20} />
-                <ScoreLine label="Open Response" value={raw.o_open_response} max={5} />
+                <ScoreLine label="Open response" value={raw.o_open_response} max={5} />
               </>
             ) : (
               <>
@@ -259,7 +259,7 @@ export default function StudentLevelingCard({
                   </>
                 )}
                 {raw.word_reading_correct != null && (
-                  <ScoreLine label="Word Reading" value={raw.word_reading_correct} max={raw.word_reading_attempted || 20} />
+                  <ScoreLine label="Word reading" value={raw.word_reading_correct} max={raw.word_reading_attempted || 20} />
                 )}
               </>
             )}
@@ -336,8 +336,8 @@ export default function StudentLevelingCard({
               <div className="text-[length:calc(12px*var(--ts))] font-bold text-gold mb-2">Written test</div>
               <div className="space-y-0.5 mb-3">
                 {/* Only when the rubric has actually been marked -- see writingTotalFrom. */}
-                {writingTotalFrom(raw, calc) != null && <ScoreLine label="Writing Rubric" value={writingTotalFrom(raw, calc)!} max={20} />}
-                {raw.written_mc != null && <ScoreLine label="Multiple Choice" value={raw.written_mc} max={numGrade === 2 ? 30 : numGrade === 3 ? 35 : numGrade === 4 ? 40 : 45} />}
+                {writingTotalFrom(raw, calc) != null && <ScoreLine label="Writing rubric" value={writingTotalFrom(raw, calc)!} max={20} />}
+                {raw.written_mc != null && <ScoreLine label="Multiple choice" value={raw.written_mc} max={numGrade === 2 ? 30 : numGrade === 3 ? 35 : numGrade === 4 ? 40 : 45} />}
               </div>
             </>
           )}
@@ -503,7 +503,7 @@ export function PrintDossier({ students, scores, anecdotals, semGrades, autoPlac
     <div className="bg-surface min-h-screen">
       {/* Header */}
       <div className="bg-navy text-white px-8 py-5 print:px-6 print:py-4" style={{ borderBottom: '3px solid rgb(var(--accent))' }}>
-        <h1 className="font-display text-[length:calc(22px*var(--ts))] font-bold">Student Leveling Dossier</h1>
+        <h1 className="font-display text-[length:calc(22px*var(--ts))] font-bold">Student leveling dossier</h1>
         <div className="text-[length:calc(12px*var(--ts))] opacity-50 italic mt-0.5">
           Daewoo Elementary English Program -- {levelTestName || `Grade ${grade}`} -- {sorted.length} students -- sorted by composite
         </div>

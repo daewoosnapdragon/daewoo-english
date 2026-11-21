@@ -187,7 +187,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
         <div className="px-5 py-4 border-b border-border bg-accent-light shrink-0">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-display text-[length:calc(15px*var(--ts))] font-semibold text-navy flex items-center gap-2">
-              <BookOpen size={18} /> Passage Library
+              <BookOpen size={18} /> Passage library
             </h3>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={18} /></button>
           </div>
@@ -218,7 +218,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
             </div>
             {(searchText || lexileMin > -9999 || lexileMax < 9999) && (
               <button onClick={() => { setSearchText(''); setLexileMin(-9999); setLexileMax(9999) }}
-                className="text-[length:calc(11.5px*var(--ts))] text-blue-600 hover:text-blue-800 underline">Clear All Filters</button>
+                className="text-[length:calc(11.5px*var(--ts))] text-accent hover:text-accent-hover underline underline-offset-2">Clear all filters</button>
             )}
           </div>
 
@@ -243,18 +243,18 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                 const isExpanded = expandedPassage === p.id
 
                 return (
-                  <div key={p.id} className={`${alreadyRead ? 'bg-amber-50/40' : ''}`}>
+                  <div key={p.id} className={`${alreadyRead ? 'bg-warn-soft/40' : ''}`}>
                     {/* Main row */}
                     <div className="px-5 py-3 flex items-start gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-[length:calc(12px*var(--ts))] font-semibold text-navy truncate">{p.title}</span>
                           {p.level && (
-                            <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 shrink-0">{p.level}</span>
+                            <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded-full bg-surface text-ink border border-rule-2 shrink-0">{p.level}</span>
                           )}
                           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary shrink-0">{p.word_count}w</span>
                           {alreadyRead && (
-                            <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 shrink-0 flex items-center gap-0.5">
+                            <span className="text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded-full bg-warn-soft text-warn border border-warn/40 shrink-0 flex items-center gap-0.5">
                               <AlertTriangle size={9} /> Already read
                             </span>
                           )}
@@ -307,7 +307,7 @@ export default function PassagePickerPanel({ open, onClose, onSelect, passages, 
                                   <td className="px-2 py-1.5 text-center text-text-tertiary">{u.date}</td>
                                   <td className="px-2 py-1.5 text-center font-bold text-navy">{u.cwpm ?? '—'}</td>
                                   <td className={`px-2 py-1.5 text-center font-medium ${
-                                    (u.accuracy_rate ?? 0) >= 95 ? 'text-green-600' : (u.accuracy_rate ?? 0) >= 90 ? 'text-amber-600' : 'text-red-600'
+                                    (u.accuracy_rate ?? 0) >= 95 ? 'text-good' : (u.accuracy_rate ?? 0) >= 90 ? 'text-warn' : 'text-bad'
                                   }`}>{u.accuracy_rate != null ? `${u.accuracy_rate}%` : '—'}</td>
                                 </tr>
                               ))}

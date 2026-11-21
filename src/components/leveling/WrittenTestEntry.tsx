@@ -377,8 +377,8 @@ const GRADE_2_QUESTIONS: QuestionDef[] = [
 
 const GRADE_2_WRITING: WritingCategory[] = [
   { key: 'completeness', label: 'Completeness', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts - name topic' },
-  { key: 'content', label: 'Content & Detail', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts with detail' },
-  { key: 'language', label: 'Language & Grammar', max: 5, standard: 'L.2.1', standardDesc: 'Standard English grammar' },
+  { key: 'content', label: 'Content & detail', max: 5, standard: 'W.2.2', standardDesc: 'Informative texts with detail' },
+  { key: 'language', label: 'Language & grammar', max: 5, standard: 'L.2.1', standardDesc: 'Standard English grammar' },
   { key: 'mechanics', label: 'Mechanics', max: 5, standard: 'L.2.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
@@ -416,9 +416,9 @@ const GRADE_3_QUESTIONS: QuestionDef[] = [
 
 const GRADE_3_WRITING: WritingCategory[] = [
   { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.3.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.3.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.3.3b', standardDesc: 'Narrative techniques' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.3.1', standardDesc: 'Standard English grammar' },
+  { key: 'structure', label: 'Story structure', max: 4, standard: 'W.3.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & detail', max: 4, standard: 'W.3.3b', standardDesc: 'Narrative techniques' },
+  { key: 'language', label: 'Language & grammar', max: 4, standard: 'L.3.1', standardDesc: 'Standard English grammar' },
   { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.3.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
@@ -464,9 +464,9 @@ const GRADE_4_QUESTIONS: QuestionDef[] = [
 
 const GRADE_4_WRITING: WritingCategory[] = [
   { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.4.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.4.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.4.3b', standardDesc: 'Dialogue and description' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.4.1', standardDesc: 'Standard English grammar' },
+  { key: 'structure', label: 'Story structure', max: 4, standard: 'W.4.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & detail', max: 4, standard: 'W.4.3b', standardDesc: 'Dialogue and description' },
+  { key: 'language', label: 'Language & grammar', max: 4, standard: 'L.4.1', standardDesc: 'Standard English grammar' },
   { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.4.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
@@ -509,9 +509,9 @@ const GRADE_5_QUESTIONS: QuestionDef[] = [
 
 const GRADE_5_WRITING: WritingCategory[] = [
   { key: 'brainstorm', label: 'Brainstorm / Planning', max: 4, standard: 'W.5.5', standardDesc: 'Planning/prewriting' },
-  { key: 'structure', label: 'Story Structure', max: 4, standard: 'W.5.3a', standardDesc: 'Orient reader, organize events' },
-  { key: 'content', label: 'Content & Detail', max: 4, standard: 'W.5.3b', standardDesc: 'Narrative techniques' },
-  { key: 'language', label: 'Language & Grammar', max: 4, standard: 'L.5.1', standardDesc: 'Standard English grammar' },
+  { key: 'structure', label: 'Story structure', max: 4, standard: 'W.5.3a', standardDesc: 'Orient reader, organize events' },
+  { key: 'content', label: 'Content & detail', max: 4, standard: 'W.5.3b', standardDesc: 'Narrative techniques' },
+  { key: 'language', label: 'Language & grammar', max: 4, standard: 'L.5.1', standardDesc: 'Standard English grammar' },
   { key: 'mechanics', label: 'Mechanics', max: 4, standard: 'L.5.2', standardDesc: 'Capitalization/punctuation/spelling' },
 ]
 
@@ -1279,7 +1279,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
             {student.english_name || student.korean_name}
           </h3>
           <div className="text-[length:calc(12px*var(--ts))] text-text-tertiary mt-0.5">
-            {student.english_class} -- Grade {config.grade} Written Test
+            {student.english_class} -- Grade {config.grade} written test
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -1448,7 +1448,7 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
                   which is not where anybody marking item 25 is looking. */}
               <button onClick={() => setShowRubricGuide(!showRubricGuide)}
                 className={`text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
-                <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
+                <Eye size={10} /> {showRubricGuide ? 'Hide guide' : 'Show guide'}
               </button>
             </div>
             <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
@@ -1570,10 +1570,10 @@ function EntryView({ student, config, sc, sections, sectionKeys, mcCorrect, writ
         )}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">Writing Rubric</h4>
+            <h4 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy">Writing rubric</h4>
             <button onClick={() => setShowRubricGuide(!showRubricGuide)}
               className={`text-[length:calc(11.5px*var(--ts))] px-2 py-0.5 rounded-full transition-all flex items-center gap-1 ${showRubricGuide ? 'bg-navy text-white' : 'bg-surface-alt text-text-tertiary hover:bg-border'}`}>
-              <Eye size={10} /> {showRubricGuide ? 'Hide Guide' : 'Show Guide'}
+              <Eye size={10} /> {showRubricGuide ? 'Hide guide' : 'Show guide'}
             </button>
           </div>
           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
@@ -1813,7 +1813,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
   return (
     <div className="p-6 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-[length:calc(18px*var(--ts))] font-display font-semibold text-navy">Written Test Analytics</h3>
+        <h3 className="text-[length:calc(18px*var(--ts))] font-display font-semibold text-navy">Written test analytics</h3>
         <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{studentCount} students with data</span>
       </div>
 
@@ -1837,12 +1837,12 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
 
       {/* Test Quality Section with Info Card */}
       <div className="flex items-center gap-2 mb-3">
-        <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Test Quality</h4>
+        <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Test quality</h4>
         <div className="relative">
           <button onClick={() => setShowInfoCard(!showInfoCard)} className="w-5 h-5 rounded-full bg-info-soft text-info text-[length:calc(11.5px*var(--ts))] font-bold flex items-center justify-center hover:bg-info-soft transition-colors">?</button>
           {showInfoCard && (
             <div className="absolute left-0 top-7 w-96 bg-white border border-border rounded-xl shadow-xl p-4 z-50 text-[length:calc(11.5px*var(--ts))] text-text-secondary leading-relaxed">
-              <p className="font-semibold text-navy mb-2">How Question Discrimination Works</p>
+              <p className="font-semibold text-navy mb-2">How question discrimination works</p>
               <p>Some questions don't help us make good placement decisions. A well-written question is one where students who scored well overall also got this question right. When that pattern breaks down -- when strong students miss it and weak students get it right -- the question adds noise instead of signal to our data.</p>
               <p className="mt-2">Excluding these questions doesn't change anyone's answers. It recalculates the MC component of the composite score using only the questions that reliably measure student ability. This gives us more accurate placements, especially for borderline students.</p>
               <button onClick={() => setShowInfoCard(false)} className="mt-2 text-[length:calc(11.5px*var(--ts))] text-navy font-semibold hover:underline">Got it</button>
@@ -1866,7 +1866,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
       )}
 
       {/* Item Analysis Table with Discrimination */}
-      <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Item Analysis</h4>
+      <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Item analysis</h4>
       <div className="border border-border rounded-lg mb-6">
         <div className="grid grid-cols-[32px_40px_1fr_60px_80px_60px_60px_60px_60px_40px_90px] bg-paper-2 px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary border-b border-border">
           {canToggleExclude && <span className="text-center">Excl</span>}
@@ -1936,8 +1936,8 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
                 <div className="px-6 py-3 bg-paper-2 border-b border-border text-[length:calc(11.5px*var(--ts))]">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-1">
                     <div><span className="text-text-tertiary">Standard:</span> <span className="font-medium">{q.standard} -- {q.standardDesc}</span></div>
-                    <div><span className="text-text-tertiary">DOK Level:</span> <span className="font-medium">{q.dok} ({qWeight(config, q)}pt)</span></div>
-                    <div><span className="text-text-tertiary">{hasMultipleKeys(q) ? 'Accepted answers:' : 'Correct Answer:'}</span> <span className="font-bold text-good">{q.acceptAny ? 'any answer' : acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}</span></div>
+                    <div><span className="text-text-tertiary">DOK level:</span> <span className="font-medium">{q.dok} ({qWeight(config, q)}pt)</span></div>
+                    <div><span className="text-text-tertiary">{hasMultipleKeys(q) ? 'Accepted answers:' : 'Correct answer:'}</span> <span className="font-bold text-good">{q.acceptAny ? 'any answer' : acceptedLetters(q, ['a', 'b', 'c', 'd']).map(l => l.toUpperCase()).join(' or ')}</span></div>
                     <div><span className="text-text-tertiary">Students answered:</span> <span className="font-medium">{item.total}</span></div>
                     {disc && <div><span className="text-text-tertiary">Discrimination (r_pb):</span> <span className={`font-bold ${disc.rpb < 0 ? 'text-bad' : disc.rpb > 0.2 ? 'text-good' : 'text-warn'}`}>{disc.rpb.toFixed(3)}</span></div>}
                     <div><span className="text-text-tertiary">Status:</span> <span className="font-medium">{isExcluded ? 'EXCLUDED from MC scoring' : 'Included'}</span></div>
@@ -1964,7 +1964,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
       </div>
 
       {/* Most Missed Questions */}
-      <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Instructional Priorities (Most Missed)</h4>
+      <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Instructional priorities (most missed)</h4>
       <div className="border border-border rounded-lg mb-6">
         {config.questions
           .filter(q => {
@@ -2007,7 +2007,7 @@ function AnalyticsView({ config, analytics, scores, students, excludedQuestions,
       </div>
 
       {/* Writing Summary */}
-      <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Writing Scores Summary</h4>
+      <h4 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy mb-3">Writing scores summary</h4>
       <div className="border border-border rounded-lg overflow-hidden">
         <div className="grid grid-cols-[1fr_repeat(6,60px)] bg-paper-2 px-3 py-1.5 text-[length:calc(11.5px*var(--ts))] font-semibold text-text-tertiary border-b border-border">
           <span>Category</span>
@@ -2682,7 +2682,7 @@ export default function WrittenTestEntry({ levelTest, isAdmin, teacherClass }: {
           <button onClick={handleSave} disabled={saving}
             className={`w-full py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium flex items-center justify-center gap-2 disabled:opacity-50 ${hasDirtyData ? 'bg-accent text-white hover:bg-accent-hover animate-pulse' : 'border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2'}`}>
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Save All
+            Save all
           </button>
         </div>
       </div>

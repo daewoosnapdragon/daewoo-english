@@ -111,17 +111,17 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
                 {data.reading ? <span className="font-bold text-navy">{Math.round(data.reading.cwpm)}</span> : <span className="text-text-tertiary">--</span>}
               </div>
               <div className="flex items-center justify-between text-[length:calc(11.5px*var(--ts))]">
-                <span className="flex items-center gap-1.5 text-text-secondary"><BarChart3 size={12} /> Grade Avg</span>
-                {data.gradeAvg != null ? <span className={`font-bold ${data.gradeAvg >= 80 ? 'text-green-600' : data.gradeAvg >= 60 ? 'text-amber-600' : 'text-red-600'}`}>{data.gradeAvg}%</span> : <span className="text-text-tertiary">--</span>}
+                <span className="flex items-center gap-1.5 text-text-secondary"><BarChart3 size={12} /> Grade avg</span>
+                {data.gradeAvg != null ? <span className={`font-bold ${data.gradeAvg >= 80 ? 'text-good' : data.gradeAvg >= 60 ? 'text-warn' : 'text-bad'}`}>{data.gradeAvg}%</span> : <span className="text-text-tertiary">--</span>}
               </div>
               <div className="flex items-center justify-between text-[length:calc(11.5px*var(--ts))]">
-                <span className="flex items-center gap-1.5 text-text-secondary"><AlertTriangle size={12} /> Behavior Logs</span>
+                <span className="flex items-center gap-1.5 text-text-secondary"><AlertTriangle size={12} /> Behavior logs</span>
                 <span className="font-bold text-navy">{data.behaviorCount}</span>
               </div>
               {data.attendanceRate != null && (
                 <div className="flex items-center justify-between text-[length:calc(11.5px*var(--ts))]">
                   <span className="text-text-secondary">Attendance</span>
-                  <span className={`font-bold ${data.attendanceRate >= 95 ? 'text-green-600' : data.attendanceRate >= 85 ? 'text-amber-600' : 'text-red-600'}`}>{data.attendanceRate}%</span>
+                  <span className={`font-bold ${data.attendanceRate >= 95 ? 'text-good' : data.attendanceRate >= 85 ? 'text-warn' : 'text-bad'}`}>{data.attendanceRate}%</span>
                 </div>
               )}
               {/* Quick note */}
@@ -130,7 +130,7 @@ export default function StudentPopover({ studentId, name, koreanName, trigger }:
                 <div className="flex gap-1.5">
                   <input value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Quick note..." onKeyDown={e => { if (e.key === 'Enter') saveNote() }}
                     className="flex-1 px-2 py-1 border border-border rounded text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy" />
-                  <button onClick={saveNote} disabled={savingNote || !noteText.trim()} className="px-2 py-1 rounded bg-navy text-white text-[length:calc(11.5px*var(--ts))] font-medium disabled:opacity-40">
+                  <button onClick={saveNote} disabled={savingNote || !noteText.trim()} className="px-2 py-1 rounded bg-accent text-white hover:bg-accent-hover text-[length:calc(11.5px*var(--ts))] font-medium disabled:opacity-40">
                     {savingNote ? '...' : 'Save'}
                   </button>
                 </div>
