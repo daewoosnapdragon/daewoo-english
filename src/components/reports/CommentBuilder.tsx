@@ -190,10 +190,10 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
         <div className="flex items-center justify-between gap-4 px-5 py-3 bg-white" style={{ borderBottom: `1px solid ${RULE}` }}>
           <div>
             <h2 className="m-0 font-display text-[length:calc(20px*var(--ts))] leading-tight">Build a comment for {student.name}</h2>
-            <p className="m-0 text-[length:calc(11.5px*var(--ts))]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-amber-800 font-semibold"> Pick a pronoun first, so the sentences fill in.</span>}</p>
+            <p className="m-0 text-[length:calc(11.5px*var(--ts))]" style={{ color: MUTED }}>Tick what applies. The draft at the bottom is yours to edit in the box afterwards.{sources && !knowsAnything && <span> Nothing is marked as taught for this class yet, so every sentence shows; tick skills under an area to narrow it.</span>}{!student.pronoun && <span className="text-warn font-semibold"> Pick a pronoun first, so the sentences fill in.</span>}</p>
           </div>
           <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
-            <div className={`inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] ${student.pronoun ? '' : 'rounded-md px-1.5 py-0.5 bg-amber-50 border border-amber-200'}`} role="group" aria-label="Pronoun">
+            <div className={`inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] ${student.pronoun ? '' : 'rounded-md px-1.5 py-0.5 bg-warn-soft border border-warn/30'}`} role="group" aria-label="Pronoun">
               <span style={{ color: student.pronoun ? MUTED : '#92400e' }}>Pronoun</span>
               {PRONOUNS.map(p => <button key={p} type="button" onClick={() => onSetPronoun(p)} aria-pressed={student.pronoun === p} className={`px-1.5 py-0.5 rounded ${student.pronoun === p ? 'bg-ink text-paper font-semibold' : 'hover:bg-[#f1f5f9]'}`} style={student.pronoun === p ? undefined : { color: MUTED }}>{p}</button>)}
             </div>

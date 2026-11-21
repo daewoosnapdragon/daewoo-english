@@ -11,8 +11,8 @@ import { useViewLog } from '@/lib/useViewLog'
 import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, ALL_ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
-import { getKSTDateString, classToTextColor, levelTestToReadingRecord, classDot } from '@/lib/utils'
-import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload, FileText } from 'lucide-react'
+import { getKSTDateString, classToTextColor, classTint, levelTestToReadingRecord, classDot } from '@/lib/utils'
+import { Plus, X, Loader2, ChevronDown, BookOpen, TrendingUp, User, Users, Pencil, Trash2, Download, Printer, BarChart3, Upload, FileText, Play, Check } from 'lucide-react'
 import { exportToCSV } from '@/lib/export'
 import { LineChart } from '@/components/charts'
 import WIDABadge from '@/components/shared/WIDABadge'
@@ -47,9 +47,9 @@ export const CWPM_BENCHMARKS: Record<number, { below: number; approaching: numbe
 // Passage difficulty feedback options (for teacher to note if passage was appropriate)
 const DIFFICULTY_OPTIONS = [
   { id: '', label: '— Not rated —' },
-  { id: 'too_easy', label: 'Too Easy' },
-  { id: 'just_right', label: 'Just Right' },
-  { id: 'too_hard', label: 'Too Difficult' },
+  { id: 'too_easy', label: 'Too easy' },
+  { id: 'just_right', label: 'Just right' },
+  { id: 'too_hard', label: 'Too difficult' },
 ]
 
 // Load class benchmarks from DB for the selected class
@@ -523,13 +523,13 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
 
               {/* NAEP Oral Reading Fluency Scale Reference */}
               <details className="mb-6 group">
-                <summary className="eyebrow cursor-pointer list-none hover:text-ink">{lang === 'ko' ? 'NAEP 구술 읽기 유창성 척도 · 참고' : 'NAEP oral reading fluency scale · reference'} <span className="text-ink-3 group-open:hidden">▸</span><span className="text-ink-3 hidden group-open:inline">▾</span></summary>
+                <summary className="eyebrow cursor-pointer list-none hover:text-ink">{lang === 'ko' ? 'NAEP 구술 읽기 유창성 척도 · 참고' : 'NAEP oral reading fluency scale · reference'} <ChevronDown size={13} aria-hidden className="inline -mt-0.5 text-ink-3 transition-transform -rotate-90 group-open:rotate-0" /></summary>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
                   {[
-                    { level: 1, label: 'Level 1', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-800', desc: 'Word-by-word reading. No phrasing or expression. Frequent pauses, false starts, and sound-outs. Text is not read as connected thought.' },
-                    { level: 2, label: 'Level 2', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-800', desc: 'Reads in two-word phrases with some three- or four-word groupings. Some word-by-word reading persists. Little expression or intonation.' },
-                    { level: 3, label: 'Level 3', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', desc: 'Reads in three- or four-word phrase groups. Mostly appropriate phrasing and expression. Some breaks in rhythm, but self-corrects.' },
-                    { level: 4, label: 'Level 4', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', desc: 'Reads in meaningful phrases with expression and conversational pace. Smooth, expressive, and well-paced throughout. Sounds like natural speech.' },
+                    { level: 1, label: 'Level 1', desc: 'Word-by-word reading. No phrasing or expression. Frequent pauses, false starts, and sound-outs. Text is not read as connected thought.' },
+                    { level: 2, label: 'Level 2', desc: 'Reads in two-word phrases with some three- or four-word groupings. Some word-by-word reading persists. Little expression or intonation.' },
+                    { level: 3, label: 'Level 3', desc: 'Reads in three- or four-word phrase groups. Mostly appropriate phrasing and expression. Some breaks in rhythm, but self-corrects.' },
+                    { level: 4, label: 'Level 4', desc: 'Reads in meaningful phrases with expression and conversational pace. Smooth, expressive, and well-paced throughout. Sounds like natural speech.' },
                   ].map(n => (
                     <div key={n.level} className="rounded border border-rule-2 p-2.5">
                       <span className="text-[length:calc(12px*var(--ts))] font-semibold text-ink">{n.label}</span>
@@ -581,7 +581,7 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           {!r.is_level_test && <>
                           <button onClick={(e) => { e.stopPropagation(); setEditRecord(r) }} className="p-1 rounded hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={12} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id) }} className="p-1 rounded hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete"><Trash2 size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); handleDeleteRecord(r.id) }} className="p-1 rounded hover:bg-bad-soft text-text-tertiary hover:text-bad" title="Delete"><Trash2 size={12} /></button>
                           </>}
                         </div>
                       </td>
@@ -615,8 +615,8 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
               <div className="grid grid-cols-2 gap-4 text-[length:calc(13px*var(--ts))]">
                 <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-0.5">Date</span><span className="font-medium">{new Date(detailRecord.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span></div>
                 <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-0.5">Passage</span><span className="font-medium">{detailRecord.passage_title || '—'}</span></div>
-                <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-0.5">Lexile</span><span className="font-medium text-purple-600">{detailRecord.reading_level || '—'}</span></div>
-                <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-0.5">Word Count</span><span className="font-medium">{detailRecord.word_count || '—'}</span></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-0.5">Lexile</span><span className="font-medium text-ink">{detailRecord.reading_level || '—'}</span></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-0.5">Word count</span><span className="font-medium">{detailRecord.word_count || '—'}</span></div>
               </div>
               <div className="border-t border-b border-rule-2 py-3">
                 <div className="grid grid-cols-4 gap-4 text-center">
@@ -647,13 +647,13 @@ function StudentReadingView({ students, selectedStudentId, setSelectedStudentId,
                 <div className="text-[length:calc(13px*var(--ts))]"><span className="text-text-tertiary">NAEP Fluency:</span> <span className="font-medium">Level {detailRecord.naep_fluency}</span></div>
               )}
               {detailRecord.notes && (
-                <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-1">Notes</span><p className="text-[length:calc(13px*var(--ts))] text-ink-2 border-l-2 border-rule-2 pl-3">{detailRecord.notes}</p></div>
+                <div><span className="text-text-tertiary block text-[length:calc(11.5px*var(--ts))] mb-1">Notes</span><p className="text-[length:calc(13px*var(--ts))] text-ink-2 bg-paper-2 rounded px-3 py-2">{detailRecord.notes}</p></div>
               )}
               {!detailRecord.is_level_test && (
                 <div className="flex gap-2 pt-2">
                   <button onClick={() => { setDetailRecord(null); setEditRecord(detailRecord) }}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-border hover:bg-surface-alt">
-                    <Pencil size={13} /> Edit Record
+                    <Pencil size={13} /> Edit record
                   </button>
                 </div>
               )}
@@ -691,7 +691,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
     <Overlay><div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center p-6">
       <div className="bg-surface rounded-xl shadow-lg w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-[length:calc(15px*var(--ts))] font-semibold text-navy">Edit Reading Record</h3>
+          <h3 className="font-display text-[length:calc(15px*var(--ts))] font-semibold text-navy">Edit reading record</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-surface-alt"><X size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
@@ -708,13 +708,13 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
               <input type="number" value={form.time_seconds} onChange={e => set('time_seconds', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
             <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Errors</label>
               <input type="number" value={form.errors} onChange={e => set('errors', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Self-Corr</label>
+            <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Self-corr.</label>
               <input type="number" value={form.self_corrections} onChange={e => set('self_corrections', e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
           </div>
           {(previewCwpm != null || previewAcc != null) && (
             <div className="flex gap-4 p-3 bg-accent-light rounded-lg text-[length:calc(12px*var(--ts))]">
               {previewCwpm != null && <span>CWPM: <b className="text-navy">{Math.round(previewCwpm)}</b></span>}
-              {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 96 ? 'text-green-600' : previewAcc >= 90 ? 'text-amber-600' : 'text-red-600'}>{previewAcc.toFixed(1)}%</b></span>}
+              {previewAcc != null && <span>Accuracy: <b className={previewAcc >= 96 ? 'text-good' : previewAcc >= 90 ? 'text-warn' : 'text-bad'}>{previewAcc.toFixed(1)}%</b></span>}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
@@ -734,7 +734,7 @@ function EditReadingModal({ record, onClose, onSave }: { record: any; onClose: (
         </div>
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
           <button onClick={onClose} className="px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium hover:bg-surface-alt">Cancel</button>
-          <button onClick={() => onSave({ id: record.id, ...form })} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">Save Changes</button>
+          <button onClick={() => onSave({ id: record.id, ...form })} className="px-4 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">Save changes</button>
         </div>
       </div>
     </div></Overlay>
@@ -850,11 +850,11 @@ function FluencyGroups({ students, loading, lang, grade }: {
   })
 
   const groupConfig = [
-    { key: 'advanced', label: 'Advanced', desc: `${bench.advanced}+ CWPM`, color: 'border-blue-300 bg-blue-50', badge: 'bg-blue-200 text-blue-800' },
-    { key: 'proficient', label: 'Proficient', desc: `${bench.proficient}-${bench.advanced - 1} CWPM`, color: 'border-green-300 bg-green-50', badge: 'bg-green-200 text-green-800' },
-    { key: 'approaching', label: 'Approaching', desc: `${bench.approaching}-${bench.proficient - 1} CWPM`, color: 'border-amber-300 bg-amber-50', badge: 'bg-amber-200 text-amber-800' },
-    { key: 'below', label: 'Below Grade Level', desc: `<${bench.approaching} CWPM`, color: 'border-red-300 bg-red-50', badge: 'bg-red-200 text-red-800' },
-    { key: 'unassessed', label: 'Not Yet Assessed', desc: 'No reading data', color: 'border-gray-300 bg-gray-50', badge: 'bg-gray-200 text-gray-700' },
+    { key: 'advanced', label: 'Advanced', desc: `${bench.advanced}+ CWPM`, badge: 'bg-info-soft text-info' },
+    { key: 'proficient', label: 'Proficient', desc: `${bench.proficient}-${bench.advanced - 1} CWPM`, badge: 'bg-good-soft text-good' },
+    { key: 'approaching', label: 'Approaching', desc: `${bench.approaching}-${bench.proficient - 1} CWPM`, badge: 'bg-warn-soft text-warn' },
+    { key: 'below', label: 'Below grade level', desc: `<${bench.approaching} CWPM`, badge: 'bg-bad-soft text-bad' },
+    { key: 'unassessed', label: 'Not yet assessed', desc: 'No reading data', badge: 'bg-paper-2 text-ink-2' },
   ]
 
   return (
@@ -864,7 +864,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
         const bandStudents = groups[g.key] || []
         const bandSubgroups = subgroups.filter(sg => sg.band === g.key)
         return (
-          <div key={g.key} className={`border rounded-xl overflow-hidden ${g.color}`}>
+          <div key={g.key} className="border border-rule-2 bg-surface rounded-xl overflow-hidden">
             <div className="px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className={`px-2.5 py-1 rounded-lg text-[length:calc(12px*var(--ts))] font-bold ${g.badge}`}>{g.label}</span>
@@ -892,7 +892,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
                     {bandSubgroups.map(sg => {
                       const sgStudents = bandStudents.filter(item => members[item.student.id] === sg.id)
                       return (
-                        <div key={sg.id} className="bg-white/60 rounded-lg border border-border/40 p-3">
+                        <div key={sg.id} className="bg-paper-2 rounded-lg border border-rule p-3">
                           <div className="flex items-center justify-between mb-2">
                             {editingGroup === sg.id ? (
                               <input value={editName} onChange={e => setEditName(e.target.value)} className="px-2 py-0.5 text-[length:calc(12px*var(--ts))] border border-navy rounded font-semibold" autoFocus
@@ -902,7 +902,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
                             )}
                             <div className="flex items-center gap-1">
                               <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{sgStudents.length}</span>
-                              <button onClick={() => deleteSubgroup(sg.id)} className="p-0.5 text-text-tertiary hover:text-red-500"><Trash2 size={11} /></button>
+                              <button onClick={() => deleteSubgroup(sg.id)} className="p-0.5 text-text-tertiary hover:text-bad"><Trash2 size={11} /></button>
                             </div>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5">
@@ -912,7 +912,7 @@ function FluencyGroups({ students, loading, lang, grade }: {
                                   <p className="text-[length:calc(11.5px*var(--ts))] font-medium truncate">{item.student.english_name}</p>
                                   {item.rec && <p className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">{Math.round(item.rec.cwpm)} CWPM</p>}
                                 </div>
-                                <button onClick={() => assignStudent(item.student.id, null)} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:text-red-500" title="Remove from group">x</button>
+                                <button onClick={() => assignStudent(item.student.id, null)} className="text-text-tertiary hover:text-bad" title="Remove from group" aria-label="Remove from group"><X size={12} /></button>
                               </div>
                             ))}
                           </div>
@@ -1191,7 +1191,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
     <Overlay><div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-center justify-center">
       <div className={`bg-surface rounded-xl shadow-lg w-full ${mode === 'batch' ? 'max-w-4xl max-h-[85vh] overflow-hidden flex flex-col' : 'max-w-3xl max-h-[85vh] overflow-y-auto'}`} onClick={(e: any) => e.stopPropagation()}>
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold text-navy">Add ORF Record</h3>
+          <h3 className="font-display text-lg font-semibold text-navy">Add ORF record</h3>
           <div className="flex items-center gap-2">
             <div className={segGroup}>
               <button onClick={() => setMode('single')} aria-pressed={mode === 'single'} className={seg(mode === 'single')}>{lang === 'ko' ? '한 명' : 'Single'}</button>
@@ -1206,20 +1206,20 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
           {/* Digital Running Record option */}
           <div className="flex items-center gap-2 flex-wrap">
             <button onClick={() => setShowPassagePicker(!showPassagePicker)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
-              <BookOpen size={13} /> {selectedPassage ? `${selectedPassage.title}` : 'Use Saved Passage'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink hover:bg-paper-2">
+              <BookOpen size={13} /> {selectedPassage ? `${selectedPassage.title}` : 'Use saved passage'}
             </button>
             <button onClick={() => setShowPassageUploader(true)}
               className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt border border-border">
-              <Upload size={12} /> New Passage
+              <Upload size={12} /> New passage
             </button>
             {selectedPassage && mode === 'single' && (
               <button onClick={() => { if (!selStudent) { showToast('Select a student first'); return } setShowRunningRecord(true) }}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-green-600 text-white hover:bg-green-700">
-                ▶ Open Digital Running Record
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover">
+                <Play size={12} aria-hidden /> Open digital running record
               </button>
             )}
-            {selectedPassage && <button onClick={() => { setSelectedPassage(null); setPassageTitle('') }} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700">Clear</button>}
+            {selectedPassage && <button onClick={() => { setSelectedPassage(null); setPassageTitle('') }} className="text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink underline underline-offset-2">Clear</button>}
           </div>
 
           {/* Passage picker dropdown */}
@@ -1269,7 +1269,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 )}</div>
               <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Errors</label>
                 <input type="number" min={0} value={errors} onChange={(e: any) => setErrors(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
-              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Self-Corr</label>
+              <div><label className="text-[length:calc(12px*var(--ts))] text-text-secondary font-semibold block mb-1">Self-corr.</label>
                 <input type="number" min={0} value={selfCorrections} onChange={(e: any) => setSelfCorrections(e.target.value ? parseInt(e.target.value) : '')} className="w-full px-3 py-2 border border-border rounded-lg text-[length:calc(13px*var(--ts))] outline-none focus:border-navy" /></div>
             </div>
             {wc > 0 && ts > 0 && (
@@ -1277,7 +1277,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">CWPM</span>
                   <p className="text-2xl font-display font-bold text-navy">{Math.round(cwpm)}</p></div>
                 <div><span className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold">Accuracy</span>
-                  <p className={`text-2xl font-display font-bold ${accuracy >= 96 ? 'text-green-600' : accuracy >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{accuracy.toFixed(1)}%</p>
+                  <p className={`text-2xl font-display font-bold ${accuracy >= 96 ? 'text-good' : accuracy >= 90 ? 'text-warn' : 'text-bad'}`}>{accuracy.toFixed(1)}%</p>
                   <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{accuracy >= 96 ? 'Independent' : accuracy >= 90 ? 'Instructional' : 'Frustration'}</p></div>
               </div>
             )}
@@ -1319,18 +1319,18 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                   const filled = b.wc && b.ts
                   const alreadySaved = savedBatchIds.has(s.id)
                   return (
-                    <tr key={s.id} className={`border-b border-border/50 ${alreadySaved ? 'bg-blue-50/50' : filled ? 'bg-green-50/50' : ''}`}>
+                    <tr key={s.id} className={`border-b border-border/50 ${alreadySaved ? 'bg-info-soft/50' : filled ? 'bg-good-soft/50' : ''}`}>
                       <td className="py-1.5 px-2 text-[length:calc(12px*var(--ts))] font-medium">
                         {s.english_name}
-                        {alreadySaved && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] text-blue-500 font-bold">Saved</span>}
+                        {alreadySaved && <span className="ml-1 text-[length:calc(11.5px*var(--ts))] text-info font-bold">Saved</span>}
                       </td>
                       <td className="py-1.5 px-1 text-center">
                         {selectedPassage ? (
                           <button onClick={() => { setBatchRunningStudentId(s.id); setShowRunningRecord(true) }}
                             className={`w-8 h-8 rounded-full flex items-center justify-center text-[length:calc(13px*var(--ts))] font-bold transition-all shadow-sm ${
-                              filled ? 'bg-green-500 text-white hover:bg-green-600 ring-2 ring-green-200' : 'bg-green-100 text-green-700 hover:bg-green-200 border-2 border-green-300'
+                              filled ? 'bg-good text-white hover:opacity-90' : 'border border-rule-2 bg-surface text-ink-2 hover:text-ink hover:border-ink-3'
                             }`} title={`Open running record for ${s.english_name}`}>
-                            {filled ? '✓' : '▶'}
+                            {filled ? <Check size={14} aria-hidden /> : <Play size={12} aria-hidden />}
                           </button>
                         ) : (
                           <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">—</span>
@@ -1346,7 +1346,7 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.err} onChange={e => setBatchField(s.id, 'err', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1"><input type="number" min={0} value={b.sc} onChange={e => setBatchField(s.id, 'sc', e.target.value)} className="w-full text-center px-1 py-1 border border-border rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" /></td>
                       <td className="py-1.5 px-1 text-center text-[length:calc(12px*var(--ts))] font-bold text-navy">{filled ? bCwpm : ''}</td>
-                      <td className={`py-1.5 px-1 text-center text-[length:calc(12px*var(--ts))] font-bold ${bAcc >= 96 ? 'text-green-600' : bAcc >= 90 ? 'text-amber-600' : filled ? 'text-red-600' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
+                      <td className={`py-1.5 px-1 text-center text-[length:calc(12px*var(--ts))] font-bold ${bAcc >= 96 ? 'text-good' : bAcc >= 90 ? 'text-warn' : filled ? 'text-bad' : ''}`}>{filled ? `${bAcc}%` : ''}</td>
                       <td className="py-1.5 px-1"><select value={b.naep || ''} onChange={e => setBatchField(s.id, 'naep', e.target.value)} className="w-full text-center px-0.5 py-1 border border-border rounded text-[length:calc(11.5px*var(--ts))] outline-none focus:border-navy bg-surface">
                         <option value="">--</option>
                         <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
@@ -1383,12 +1383,12 @@ function AddReadingModal({ studentId, students, lang, onClose, onSaved }: {
                 setPassageTitle(''); setPassageDifficulty(''); setWordCount(''); setTimeSeconds(''); setTimeMin(''); setTimeSec(''); setErrors(0); setSelfCorrections(0); setNotes('')
               }} disabled={saving || !selStudent || !wordCount || !timeSeconds}
                 className="px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-gold text-navy-dark hover:bg-gold-light disabled:opacity-40 flex items-center gap-1.5">
-                {saving && <Loader2 size={14} className="animate-spin" />} Save & Add Another
+                {saving && <Loader2 size={14} className="animate-spin" />} Save & add another
               </button>
             )}
             <button onClick={handleSave} disabled={saving || (mode === 'single' ? (!selStudent || !wordCount || !timeSeconds) : batchFilled === 0)}
-              className="px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-1.5">
-              {saving && <Loader2 size={14} className="animate-spin" />} {mode === 'batch' ? `Save ${batchFilled} Records` : 'Save & Close'}
+              className="px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40 flex items-center gap-1.5">
+              {saving && <Loader2 size={14} className="animate-spin" />} {mode === 'batch' ? `Save ${batchFilled} records` : 'Save & close'}
             </button>
           </div>
         </div>
@@ -1472,7 +1472,7 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
     <div className="py-12 text-center text-text-tertiary text-[length:calc(13px*var(--ts))]">
       <FileText size={32} className="mx-auto mb-2 opacity-30" />
       <p>No reading assessments yet for {englishClass}.</p>
-      <p className="text-[length:calc(11.5px*var(--ts))] mt-1">Use the "Add ORF Record" button to start assessing students.</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] mt-1">Use the "Add ORF record" button to start assessing students.</p>
     </div>
   )
 
@@ -1502,11 +1502,11 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                 </div>
                 <div className="flex items-center gap-5 shrink-0 text-[length:calc(11.5px*var(--ts))]">
                   <div className="text-center"><span className="text-[length:calc(16px*var(--ts))] font-bold text-navy block">{item.avgCwpm}</span><span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">avg CWPM</span></div>
-                  <div className="text-center"><span className={`text-[length:calc(16px*var(--ts))] font-bold block ${item.avgAcc >= 96 ? 'text-green-600' : item.avgAcc >= 90 ? 'text-amber-600' : 'text-red-600'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">avg Acc</span></div>
+                  <div className="text-center"><span className={`text-[length:calc(16px*var(--ts))] font-bold block ${item.avgAcc >= 96 ? 'text-good' : item.avgAcc >= 90 ? 'text-warn' : 'text-bad'}`}>{item.avgAcc}%</span><span className="text-text-tertiary text-[length:calc(11.5px*var(--ts))]">avg Acc</span></div>
                   {/* Progress bar */}
                   <div className="w-20">
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-green-500 rounded-full transition-all" style={{ width: `${(item.studentCount / students.length) * 100}%` }} />
+                    <div className="h-2 bg-paper-2 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${(item.studentCount / students.length) * 100}%`, backgroundColor: 'var(--c-1)' }} />
                     </div>
                     <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary text-center mt-0.5">{item.studentCount}/{students.length}</p>
                   </div>
@@ -1538,9 +1538,9 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                             <td className="px-2 py-2 text-center text-text-secondary">{r.date}</td>
                             <td className="px-2 py-2 text-center text-text-secondary">{r.word_count || '—'}</td>
                             <td className="px-2 py-2 text-center text-text-secondary">{r.time_seconds ? `${Math.floor(r.time_seconds / 60)}:${String(r.time_seconds % 60).padStart(2, '0')}` : '—'}</td>
-                            <td className="px-2 py-2 text-center text-red-600 font-medium">{r.errors ?? '—'}</td>
+                            <td className="px-2 py-2 text-center text-bad font-medium">{r.errors ?? '—'}</td>
                             <td className="px-2 py-2 text-center font-bold text-navy">{r.cwpm ?? '—'}</td>
-                            <td className={`px-2 py-2 text-center font-medium ${(r.accuracy_rate || 0) >= 96 ? 'text-green-600' : (r.accuracy_rate || 0) >= 90 ? 'text-amber-600' : 'text-red-600'}`}>
+                            <td className={`px-2 py-2 text-center font-medium ${(r.accuracy_rate || 0) >= 96 ? 'text-good' : (r.accuracy_rate || 0) >= 90 ? 'text-warn' : 'text-bad'}`}>
                               {r.accuracy_rate != null ? `${r.accuracy_rate}%` : '—'}
                             </td>
                             <td className="px-2 py-2 text-center text-text-secondary">{r.naep_fluency || '—'}</td>
@@ -1551,9 +1551,9 @@ function ByPassageView({ students, lang, grade, englishClass, onStartBatch }: {
                   </table>
                   {/* Not yet assessed */}
                   {notAssessed.length > 0 && (
-                    <div className="px-5 py-3 bg-amber-50/50 border-t border-border">
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-amber-700 font-medium mb-1">Not yet assessed ({notAssessed.length}):</p>
-                      <p className="text-[length:calc(11.5px*var(--ts))] text-amber-600">{notAssessed.map((s: any) => s.english_name).join(', ')}</p>
+                    <div className="px-5 py-3 bg-warn-soft/50 border-t border-border">
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-warn font-medium mb-1">Not yet assessed ({notAssessed.length}):</p>
+                      <p className="text-[length:calc(11.5px*var(--ts))] text-warn">{notAssessed.map((s: any) => s.english_name).join(', ')}</p>
                     </div>
                   )}
                 </div>
@@ -1686,8 +1686,8 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
   if (loading) return <Loading rows={5} />
 
   const levelColor = (level: string | null) => {
-    if (!level) return 'bg-gray-100 text-gray-500'
-    return 'bg-indigo-50 text-indigo-600 border border-indigo-200'
+    if (!level) return 'bg-paper-2 text-ink-3'
+    return 'bg-surface text-ink border border-rule-2'
   }
 
   return (
@@ -1697,8 +1697,8 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
           <p className="text-[length:calc(13px*var(--ts))] text-text-secondary">{filteredPassages.length}{filteredPassages.length !== passages.length ? ` of ${passages.length}` : ''} passages saved. Click to expand and view the full text.</p>
         </div>
         <button onClick={() => setShowAdd(!showAdd)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">
-          <Plus size={14} /> Add Passage
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
+          <Plus size={14} /> Add passage
         </button>
       </div>
 
@@ -1727,38 +1727,38 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
         </div>
         {(searchText || lexMinFilter > -9999 || lexMaxFilter < 9999) && (
           <button onClick={() => { setSearchText(''); setLexMinFilter(-9999); setLexMaxFilter(9999) }}
-            className="text-[length:calc(11.5px*var(--ts))] text-blue-600 hover:text-blue-800 underline">Clear Filters</button>
+            className="text-[length:calc(11.5px*var(--ts))] text-accent hover:text-accent-hover underline underline-offset-2">Clear filters</button>
         )}
       </div>
 
       {/* Add new passage form */}
       {showAdd && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
-          <p className="text-[length:calc(12px*var(--ts))] font-semibold text-blue-800">New Passage</p>
+        <div className="bg-paper-2 border border-rule rounded-xl p-5 space-y-3">
+          <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink">New passage</p>
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-2">
               <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Title *</label>
-              <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+              <input value={newForm.title} onChange={e => setNewForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. The Big Storm" className="w-full px-3 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div>
               <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Lexile</label>
-              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+              <input value={newForm.level} onChange={e => setNewForm(f => ({ ...f, level: e.target.value }))} placeholder="e.g. 450L" className="w-full px-3 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
             <div>
               <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Grade range</label>
-              <input value={newForm.grade_range} onChange={e => setNewForm(f => ({ ...f, grade_range: e.target.value }))} placeholder="e.g. 1-2" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+              <input value={newForm.grade_range} onChange={e => setNewForm(f => ({ ...f, grade_range: e.target.value }))} placeholder="e.g. 1-2" className="w-full px-3 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
             </div>
           </div>
           <div>
             <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Source</label>
-            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Reading A-Z" className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+            <input value={newForm.source} onChange={e => setNewForm(f => ({ ...f, source: e.target.value }))} placeholder="e.g. DIBELS, teacher-created, Reading A-Z" className="w-full px-3 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
           </div>
           <div>
             <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Passage text * <span className="text-text-tertiary">({newForm.text.trim() ? newForm.text.trim().split(/\s+/).length : 0} words)</span></label>
-            <textarea value={newForm.text} onChange={e => setNewForm(f => ({ ...f, text: e.target.value }))} rows={6} placeholder="Paste or type the full passage text here..." className="w-full px-3 py-2 border border-blue-200 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
+            <textarea value={newForm.text} onChange={e => setNewForm(f => ({ ...f, text: e.target.value }))} rows={6} placeholder="Paste or type the full passage text here..." className="w-full px-3 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={saving} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Passage'}</button>
+            <button onClick={handleAdd} disabled={saving} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-50">{saving ? 'Saving...' : 'Save passage'}</button>
             <button onClick={() => setShowAdd(false)} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
           </div>
         </div>
@@ -1784,31 +1784,31 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
 
             if (isEditing) {
               return (
-                <div key={p.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                <div key={p.id} className="bg-paper-2 border border-rule-2 rounded-xl p-4 space-y-3">
                   <div className="grid grid-cols-4 gap-3">
                     <div className="col-span-2">
                       <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Title</label>
-                      <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+                      <input value={editForm.title} onChange={e => setEditForm((f: any) => ({ ...f, title: e.target.value }))} className="w-full px-3 py-1.5 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
                       <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Lexile</label>
-                      <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+                      <input value={editForm.level} onChange={e => setEditForm((f: any) => ({ ...f, level: e.target.value }))} className="w-full px-3 py-1.5 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                     <div>
                       <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Grade range</label>
-                      <input value={editForm.grade_range} onChange={e => setEditForm((f: any) => ({ ...f, grade_range: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+                      <input value={editForm.grade_range} onChange={e => setEditForm((f: any) => ({ ...f, grade_range: e.target.value }))} className="w-full px-3 py-1.5 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                     </div>
                   </div>
                   <div>
                     <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Source</label>
-                    <input value={editForm.source} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))} className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
+                    <input value={editForm.source} onChange={e => setEditForm((f: any) => ({ ...f, source: e.target.value }))} className="w-full px-3 py-1.5 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white" />
                   </div>
                   <div>
-                    <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Passage Text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
-                    <textarea value={editForm.text} onChange={e => setEditForm((f: any) => ({ ...f, text: e.target.value }))} rows={8} className="w-full px-3 py-2 border border-amber-300 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
+                    <label className="text-[length:calc(12px*var(--ts))] text-ink-2 font-semibold block mb-1">Passage text ({editForm.text?.trim() ? editForm.text.trim().split(/\s+/).length : 0} words)</label>
+                    <textarea value={editForm.text} onChange={e => setEditForm((f: any) => ({ ...f, text: e.target.value }))} rows={8} className="w-full px-3 py-2 border border-rule-2 rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white resize-y leading-relaxed font-serif" />
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>
+                    <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-50">{saving ? 'Saving...' : 'Save changes'}</button>
                     <button onClick={() => setEditingId(null)} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
                   </div>
                 </div>
@@ -1834,7 +1834,7 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                     {passageUsage[p.id]?.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {passageUsage[p.id].map((u: any, ui: number) => (
-                          <span key={ui} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-medium bg-green-50 text-green-700 border border-green-200">
+                          <span key={ui} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-medium" style={{ backgroundColor: classTint(u.english_class, 45), color: classToTextColor(u.english_class) }}>
                             {u.english_class} G{u.grade} {u.academic_year}
                             {u.median_cwpm != null && <span className="font-bold">· {Math.round(u.median_cwpm)} CWPM</span>}
                             <span className="opacity-60">({u.assessment_count}×)</span>
@@ -1845,13 +1845,13 @@ function PassageLibrary({ lang }: { lang: LangKey }) {
                   </div>
                   <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                     <button onClick={() => startEdit(p)} className="p-1.5 rounded-lg hover:bg-surface-alt text-text-tertiary hover:text-navy" title="Edit"><Pencil size={13} /></button>
-                    <button onClick={() => handleDelete(p.id, p.title)} className="p-1.5 rounded-lg hover:bg-red-50 text-text-tertiary hover:text-red-500" title="Delete"><Trash2 size={13} /></button>
+                    <button onClick={() => handleDelete(p.id, p.title)} className="p-1.5 rounded-lg hover:bg-bad-soft text-text-tertiary hover:text-bad" title="Delete"><Trash2 size={13} /></button>
                   </div>
                 </div>
                 {isExpanded && p.text && (
                   <div className="px-5 pb-4 pt-1 border-t border-border/50">
-                    <div className="bg-amber-50/50 rounded-lg p-4 border border-amber-100">
-                      <p className="text-[length:calc(12px*var(--ts))] leading-[1.8] font-serif text-gray-800 whitespace-pre-wrap">{p.text}</p>
+                    <div className="bg-paper-2 rounded-lg p-4 border border-rule">
+                      <p className="text-[length:calc(12px*var(--ts))] leading-[1.8] font-serif text-ink whitespace-pre-wrap">{p.text}</p>
                     </div>
                     <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-2 text-right">{p.text.trim().split(/\s+/).length} words</p>
                   </div>
@@ -1935,12 +1935,12 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
       <div className="bg-surface border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Reading Fluency vs Grade Average</h3>
+            <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">Reading fluency vs grade average</h3>
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">Each dot is a student. Trend line shows correlation strength.</p>
           </div>
           <div className="text-right">
             <span className="text-[length:calc(11.5px*var(--ts))] text-text-secondary">Correlation: </span>
-            <span className={`text-[length:calc(14px*var(--ts))] font-bold ${Math.abs(r) > 0.6 ? 'text-green-600' : Math.abs(r) > 0.3 ? 'text-amber-600' : 'text-text-tertiary'}`}>
+            <span className={`text-[length:calc(14px*var(--ts))] font-bold ${Math.abs(r) > 0.6 ? 'text-good' : Math.abs(r) > 0.3 ? 'text-warn' : 'text-text-tertiary'}`}>
               r = {r.toFixed(2)}
             </span>
             <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary block">
@@ -1962,7 +1962,7 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
           ))}
           {/* Axis labels */}
           <text x={W / 2} y={H - 5} textAnchor="middle" fontSize={12} fill="var(--c-text)" fontWeight={600}>CWPM</text>
-          <text x={12} y={H / 2} textAnchor="middle" fontSize={12} fill="var(--c-text)" fontWeight={600} transform={`rotate(-90, 12, ${H / 2})`}>Grade Avg %</text>
+          <text x={12} y={H / 2} textAnchor="middle" fontSize={12} fill="var(--c-text)" fontWeight={600} transform={`rotate(-90, 12, ${H / 2})`}>Grade avg %</text>
           {/* Trend line */}
           <line x1={scaleX(lineX1)} y1={scaleY(lineY1)} x2={scaleX(lineX2)} y2={scaleY(lineY2)} stroke="#647FBC" strokeWidth={1.5} strokeDasharray="6,4" opacity={0.5} />
           {/* Points */}
@@ -1987,7 +1987,7 @@ function CorrelationView({ students, loading, lang, grade, englishClass }: {
           })}
         </div>
         {/* Insight */}
-        <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-blue-800">
+        <div className="mt-3 bg-info-soft border border-info/30 rounded-lg px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-info">
           {Math.abs(r) > 0.5
             ? `Strong positive relationship: students who read more fluently tend to score higher across all domains. This suggests reading fluency is a good predictor of overall academic performance.`
             : Math.abs(r) > 0.25
@@ -2065,14 +2065,14 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
   return (
     <div className="px-10 py-6 space-y-4">
       <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">Generate Student Groups</h3>
+        <h3 className="text-[length:calc(13px*var(--ts))] font-semibold text-navy mb-3">Generate student groups</h3>
         <div className="flex items-end gap-4">
           <div>
             <label className="text-[length:calc(12px*var(--ts))] font-semibold text-text-secondary block mb-1">Grouping strategy</label>
             <div className="flex gap-1">
               {[
-                { id: 'homogeneous', label: 'Same Level', desc: 'Students with similar CWPM together' },
-                { id: 'heterogeneous', label: 'Mixed Level', desc: 'Each group has high/mid/low readers' },
+                { id: 'homogeneous', label: 'Same level', desc: 'Students with similar CWPM together' },
+                { id: 'heterogeneous', label: 'Mixed level', desc: 'Each group has high/mid/low readers' },
                 { id: 'random', label: 'Random', desc: 'Random assignment' },
               ].map(m => (
                 <button key={m.id} onClick={() => setMode(m.id as any)}
@@ -2090,8 +2090,8 @@ function FlexGroupingView({ students, loading, lang }: { students: any[]; loadin
               {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} students</option>)}
             </select>
           </div>
-          <button onClick={generateGroups} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">
-            Generate Groups
+          <button onClick={generateGroups} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover">
+            Generate groups
           </button>
         </div>
       </div>

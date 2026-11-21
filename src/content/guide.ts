@@ -73,8 +73,8 @@ export const WALKTHROUGHS: Walkthrough[] = [
         text: ['Next saves and opens the next student in the class without a comment, so a sitting is one student after another with nothing to find. The header count ticks up as you go.'] },
       { title: 'Check the class', image: '/guide/report-cards/13-comments-tab.jpg', alt: 'The Comments tab: every student\u2019s comment box on one page, with the Progress report / Report card switch at the top.',
         text: ['Class summary ranks the class by overall grade and is the quick way to see a letter that looks wrong. Comments puts every comment on one page: check that the switch at the top says Report card, then read down the page for comments that sound the same.', 'Two things cannot be told from here: whether a concern was already raised with the parents, and whether the comment is true. Those are yours.'] },
-      { title: 'Review & approve, then Victoria prints', image: '/guide/report-cards/14-review-approve.jpg', alt: 'The Review & approve tab: a count of admin-approved comments, Approve all as admin, Download All Comments, and a row per student with an Approve button and Pending status.',
-        text: ['Victoria reads and approves every comment under Review & approve. If she leaves a note on a student, it appears above that student\u2019s box with Mark as reviewed; fix the comment, then mark it.', 'Victoria prints the report cards once they are approved. You do not print anything; the Print Report Card button on a single card is there for checking how one looks.'] },
+      { title: 'Review & approve, then Victoria prints', image: '/guide/report-cards/14-review-approve.jpg', alt: 'The Review & approve tab: a count of admin-approved comments, Approve all as admin, Download all comments, and a row per student with an Approve button and Pending status.',
+        text: ['Victoria reads and approves every comment under Review & approve. If she leaves a note on a student, it appears above that student\u2019s box with Mark as reviewed; fix the comment, then mark it.', 'Victoria prints the report cards once they are approved. You do not print anything; the Print report card button on a single card is there for checking how one looks.'] },
     ],
   },
 ]
@@ -186,7 +186,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
       { title: 'Log a behavior note', steps: ['Open the student. Behavior is the first section.', 'Add a note and pick its type (positive, concern, parent contact, and so on).', 'Flag a note to open a case for admin at once.'] },
       { title: 'Behavior ladder', steps: ['When a student reaches a step’s number of concern or negative notes (three by default), a case opens on its own: admin and you get an urgent notice, and it shows on your dashboard.', 'Add one line about what you need from admin, then or later from Open the notes.', 'Your dashboard and the student page say whether admin has read it and how many school days it has waited. When admin records the step’s action (such as Parents contacted), the case closes and the count starts again.'] },
       { title: 'Edit details or export the page', steps: ['Edit details changes names, pronoun, the name used in comments, grade, class and number.', 'Export portfolio makes a PDF of the student’s page.'] },
-      { title: 'Add students or upload the roster', steps: ['Students → Manage Students.', 'Upload the roster file, or add one student.'] },
+      { title: 'Add students or upload the roster', steps: ['Students → Manage students.', 'Upload the roster file, or add one student.'] },
     ],
     screen: [
       'Students is the roster with search, grade and class filters, and sorting. A student’s page has their facts at the top (grade, teacher, overall grade, attendance, reading, level test, behavior in 30 days), then the sections. Its address can be shared.',
@@ -205,10 +205,10 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     purpose: 'The month for one class, a card per day, printed for parents.',
     tasks: [
       { title: 'Plan a week fast', steps: ['Click Copy last week on the new week.', 'Change the days that differ.'], tour: { path: '/lesson-plans', steps: [{ anchor: 'lessons.copy', text: 'Copies the week above into this one. Then edit only what changes.' }] } },
-      { title: 'Plan a day', steps: ['Click the day. Pick a subject, or start typing a unit.', 'Say what students are doing, and fill the “Students will” line.', 'It saves as you type. Save Month writes the whole month at once.'] },
+      { title: 'Plan a day', steps: ['Click the day. Pick a subject, or start typing a unit.', 'Say what students are doing, and fill the “Students will” line.', 'It saves as you type. Save month writes the whole month at once.'] },
       { title: 'Add a second subject to a day', steps: ['Click the day.', 'Click + Another subject under the first, choose the label, and write the plan.'] },
       { title: 'Push the plans back a day', steps: ['When a day is lost, click Move a day later on it.', 'That day’s plan and every later one move a class day on.'] },
-      { title: 'Print for parents', steps: ['Print Month prints the month for the grade on screen.', 'Or open Print Selected Weeks, tick the weeks, and print; it can also print every grade of your class.'] },
+      { title: 'Print for parents', steps: ['Print month prints the month for the grade on screen.', 'Or open Print selected Weeks, tick the weeks, and print; it can also print every grade of your class.'] },
     ],
     screen: ['Grade and class chips and the month. Each week starts with a Weekly HW line and Copy last week. Days off and field trips from the school calendar are hatched and cannot be planned.'],
     rules: [
@@ -243,9 +243,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     purpose: 'Common Core mastery from every scored question, and a checklist of what has been taught.',
     tasks: [
       { title: 'Find who needs reteaching on a standard', steps: ['Mastery, then find the standard’s column.', 'Red and amber cells are below and approaching. Hover a cell for the assessments behind it.', 'For one assessment, Analysis on the Grades page lists names by band.'] },
-      { title: 'Record what has been taught', steps: ['Standards Checklist lists the grade’s standards by cluster.', 'Set a status and, where needed, an intervention note per standard.'] },
+      { title: 'Record what has been taught', steps: ['Standards checklist lists the grade’s standards by cluster.', 'Set a status and, where needed, an intervention note per standard.'] },
     ],
-    screen: ['Tabs: Mastery (students down, standards across, coloured by band), Standards Checklist, About CCSS. Standards with no evidence yet are not shown.'],
+    screen: ['Tabs: Mastery (students down, standards across, coloured by band), Standards checklist, About CCSS. Standards with no evidence yet are not shown.'],
     rules: ['Bands come from each class’s mastery thresholds (Thresholds, on the Mastery tab): above, on, approaching, below.', 'Evidence is every scored question and rubric criterion tagged with the standard, in the active semester.'],
     watchOut: ['Untagged questions never reach the heat map. Tag sections when you build the key.'],
   },
@@ -397,7 +397,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
 ]
 
 export const WORKFLOWS: Workflow[] = [
-  { id: 'wf-start', title: 'Start of semester', when: 'The week before classes', steps: ['Admin: check the semester dates in Settings (midterm cutoff, report card grades due).', 'Admin: check the roster and classes under Students → Manage Students.', 'Everyone: read the calendar on the dashboard; days off and field trips already block lesson plans.', 'Everyone: Assess the class on WIDA if levels are out of date, and Save snapshot.', 'Everyone: plan the first two weeks under Lesson plans.'] },
+  { id: 'wf-start', title: 'Start of semester', when: 'The week before classes', steps: ['Admin: check the semester dates in Settings (midterm cutoff, report card grades due).', 'Admin: check the roster and classes under Students → Manage students.', 'Everyone: read the calendar on the dashboard; days off and field trips already block lesson plans.', 'Everyone: Assess the class on WIDA if levels are out of date, and Save snapshot.', 'Everyone: plan the first two weeks under Lesson plans.'] },
   { id: 'wf-test', title: 'From a test to the gradebook', when: 'The day of a quiz or unit test', steps: ['Grades → New assessment. Build the key as sections and tag standards.', 'Score on the answer sheet with the keyboard; mark absentees with X.', 'Open Analysis; note the standards below target and who is in that band.', 'Reteach; the Mastery heat map on Standards updates as later work is scored.'] },
   { id: 'wf-reports', title: 'Report card week', when: 'The two weeks before grades are due', steps: ['Dashboard: the Ungraded stat must reach zero. Clear the queue.', 'Reports → Report card: write comments student by student. Class summary shows who is missing one.', 'Admin: Review & approve, then print.'] },
   { id: 'wf-wida', title: 'Leveling the class in WIDA', when: 'Twice a year, or when a student changes fast', steps: ['WIDA → Levels → Assess the class.', 'Keys 1–6 to skip ahead, tick the next level, Enter.', 'Save snapshot when done; Progress shows change over the year.'] },

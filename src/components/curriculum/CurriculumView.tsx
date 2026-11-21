@@ -11,7 +11,7 @@ import { useStudents } from '@/hooks/useData'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
-import { BookOpen, Users2, Loader2, Info, Save, Globe2, Trash2, Grid3x3 } from 'lucide-react'
+import { BookOpen, Users2, Loader2, Info, Save, Globe2, Trash2, Grid3x3, SlidersHorizontal } from 'lucide-react'
 import { CCSS_STANDARDS, CCSS_DOMAINS, type CCSSDomain } from './ccss-standards'
 import { CCSSOverview } from './WIDAGuide'
 
@@ -32,10 +32,10 @@ type StdStatus = 'below' | 'approaching' | 'on' | 'above'
 type InterventionStatus = 'none' | 'not_yet_taught' | 'taught_needs_reteach' | 'reteaching' | 'reassessing'
 const INTERVENTION_OPTIONS: { value: InterventionStatus; label: string; color: string }[] = [
   { value: 'none', label: '--', color: '' },
-  { value: 'not_yet_taught', label: 'Not yet taught', color: 'text-gray-500 bg-gray-100' },
-  { value: 'taught_needs_reteach', label: 'Needs reteach', color: 'text-red-700 bg-red-100' },
-  { value: 'reteaching', label: 'Reteaching', color: 'text-amber-700 bg-amber-100' },
-  { value: 'reassessing', label: 'Reassessing', color: 'text-blue-700 bg-blue-100' },
+  { value: 'not_yet_taught', label: 'Not yet taught', color: 'text-ink-3 bg-paper-2' },
+  { value: 'taught_needs_reteach', label: 'Needs reteach', color: 'text-bad bg-bad-soft' },
+  { value: 'reteaching', label: 'Reteaching', color: 'text-warn bg-warn-soft' },
+  { value: 'reassessing', label: 'Reassessing', color: 'text-info bg-info-soft' },
 ]
 
 // Build cluster groups from standards
@@ -64,7 +64,7 @@ export default function CurriculumView() {
         <h2 className="font-display text-2xl font-bold text-navy">{language === 'ko' ? '표준' : 'Standards'}</h2>
         <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1">CCSS mastery, the standards checklist, and a reference to the standards themselves. WIDA has its own page.</p>
         <div className="flex gap-1 mt-4">
-          {([['mastery', 'Mastery', Grid3x3], ['standards', 'Standards Checklist', BookOpen], ['guide', 'About CCSS', Globe2]] as const).map(([id, label, Icon]) => (
+          {([['mastery', 'Mastery', Grid3x3], ['standards', 'Standards checklist', BookOpen], ['guide', 'About CCSS', Globe2]] as const).map(([id, label, Icon]) => (
             <button key={id} onClick={() => setView(id as any)}
               className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-[length:calc(12.5px*var(--ts))] font-medium transition-all ${view === id ? 'bg-navy text-white' : 'text-text-secondary hover:bg-surface-alt'}`}>
               <Icon size={15} /> {label}
@@ -373,11 +373,11 @@ function ClusterTracker() {
   }, [displayed])
 
   const STATUS_DISPLAY: Record<string, { dot: string; bg: string; label: string; ring: string }> = {
-    not_started: { dot: '', bg: '', label: 'Not Started', ring: '' },
-    below: { dot: 'bg-red-500', bg: 'bg-red-50/50', label: 'Below', ring: '' },
-    approaching: { dot: 'bg-amber-400', bg: 'bg-amber-50/50', label: 'Approaching', ring: '' },
-    on: { dot: 'bg-green-500', bg: 'bg-green-50/50', label: 'On Standard', ring: '' },
-    above: { dot: 'bg-blue-500', bg: 'bg-blue-50/50', label: 'Above', ring: '' },
+    not_started: { dot: '', bg: '', label: 'Not started', ring: '' },
+    below: { dot: 'bg-bad', bg: 'bg-bad-soft/50', label: 'Below', ring: '' },
+    approaching: { dot: 'bg-warn', bg: 'bg-warn-soft/50', label: 'Approaching', ring: '' },
+    on: { dot: 'bg-good', bg: 'bg-good-soft/50', label: 'On standard', ring: '' },
+    above: { dot: 'bg-info', bg: 'bg-info-soft/50', label: 'Above', ring: '' },
   }
 
   // QC mini bar
@@ -389,9 +389,9 @@ function ClusterTracker() {
     const aPct = (p.almost / total) * 100
     return (
       <div className="flex items-center gap-1.5" title={`Quick Check: ${p.got_it} got it, ${p.almost} almost, ${p.not_yet} not yet (${total} total)`}>
-        <div className="w-14 h-1.5 rounded-full bg-gray-200 overflow-hidden flex">
-          {gPct > 0 && <div className="h-full bg-green-500" style={{ width: `${gPct}%` }} />}
-          {aPct > 0 && <div className="h-full bg-amber-400" style={{ width: `${aPct}%` }} />}
+        <div className="w-14 h-1.5 rounded-full bg-paper-3 overflow-hidden flex">
+          {gPct > 0 && <div className="h-full bg-good" style={{ width: `${gPct}%` }} />}
+          {aPct > 0 && <div className="h-full bg-warn" style={{ width: `${aPct}%` }} />}
         </div>
         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary whitespace-nowrap">{p.got_it}/{total}</span>
       </div>
@@ -418,20 +418,20 @@ function ClusterTracker() {
       </div>
 
       {/* Info banner */}
-      <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5 mb-4">
+      <div className="flex items-center justify-between bg-info-soft border border-info/30 rounded-lg px-4 py-2.5 mb-4">
         <div className="flex items-center gap-2">
-          <Info size={15} className="text-blue-500" />
-          <p className="text-[length:calc(12px*var(--ts))] text-blue-700"><span className="font-semibold">{cls}</span> Grade {gr} → <span className="font-semibold">{gradeLabel(adj)} CCSS</span> ({tier})</p>
+          <Info size={15} className="text-info" />
+          <p className="text-[length:calc(12px*var(--ts))] text-info"><span className="font-semibold">{cls}</span> Grade {gr} → <span className="font-semibold">{gradeLabel(adj)} CCSS</span> ({tier})</p>
         </div>
-        <button onClick={() => setShowThresholdEdit(!showThresholdEdit)} className="px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-white/70 text-blue-600 hover:bg-white border border-blue-200">
-          ⚙ Thresholds
+        <button onClick={() => setShowThresholdEdit(!showThresholdEdit)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-surface text-ink-2 hover:text-ink border border-rule-2">
+          <SlidersHorizontal size={12} aria-hidden /> Thresholds
         </button>
       </div>
 
       {/* Threshold Editor */}
       {showThresholdEdit && (
         <div className="bg-surface border border-border rounded-xl p-4 mb-4">
-          <p className="text-[length:calc(13px*var(--ts))] font-bold text-navy mb-1">Standards Mastery Thresholds</p>
+          <p className="text-[length:calc(13px*var(--ts))] font-bold text-navy mb-1">Standards mastery thresholds</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-4">Set the percentage cutoffs for each class. These determine how student scores map to mastery levels.</p>
           <div className="space-y-3">
             {ENGLISH_CLASSES.map(c => {
@@ -443,25 +443,25 @@ function ClusterTracker() {
                   <span className="text-[length:calc(11.5px*var(--ts))] font-bold w-20 shrink-0" style={{ color: classToTextColor(c) }}>{c}</span>
                   <div className="flex items-center gap-1.5 flex-1 flex-wrap">
                     <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))]">
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />Above:
+                      <span className="w-2 h-2 rounded-full bg-info" />Above:
                       <input type="number" min={0} max={100} value={th.above}
                         onChange={e => updateTh('above', Number(e.target.value))}
                         className="w-10 px-1 py-0.5 border border-border rounded text-[length:calc(11.5px*var(--ts))] text-center bg-white" />%+
                     </span>
                     <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))]">
-                      <span className="w-2 h-2 rounded-full bg-green-500" />On:
+                      <span className="w-2 h-2 rounded-full bg-good" />On:
                       <input type="number" min={0} max={100} value={th.on}
                         onChange={e => updateTh('on', Number(e.target.value))}
                         className="w-10 px-1 py-0.5 border border-border rounded text-[length:calc(11.5px*var(--ts))] text-center bg-white" />–{th.above - 1}%
                     </span>
                     <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))]">
-                      <span className="w-2 h-2 rounded-full bg-amber-400" />Approaching:
+                      <span className="w-2 h-2 rounded-full bg-warn" />Approaching:
                       <input type="number" min={0} max={100} value={th.approaching}
                         onChange={e => updateTh('approaching', Number(e.target.value))}
                         className="w-10 px-1 py-0.5 border border-border rounded text-[length:calc(11.5px*var(--ts))] text-center bg-white" />–{th.on - 1}%
                     </span>
                     <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-text-tertiary">
-                      <span className="w-2 h-2 rounded-full bg-red-500" />Below: 0–{th.approaching - 1}%
+                      <span className="w-2 h-2 rounded-full bg-bad" />Below: 0–{th.approaching - 1}%
                     </span>
                   </div>
                 </div>
@@ -470,7 +470,7 @@ function ClusterTracker() {
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button onClick={() => setShowThresholdEdit(false)} className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] text-text-secondary hover:bg-surface-alt">Cancel</button>
-            <button onClick={saveThresholds} className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-navy text-white hover:opacity-90">Save Thresholds</button>
+            <button onClick={saveThresholds} className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold bg-navy text-white hover:opacity-90">Save thresholds</button>
           </div>
         </div>
       )}
@@ -478,7 +478,7 @@ function ClusterTracker() {
       {/* Summary strip + filters */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <div className="flex items-center gap-1.5 bg-surface border border-border rounded-lg px-3 py-2">
-          {([['not_started', 'Not Started', 'bg-gray-200'], ['below', 'Below', 'bg-red-500'], ['approaching', 'Approaching', 'bg-amber-400'], ['on', 'On', 'bg-green-500'], ['above', 'Above', 'bg-blue-500']] as const).map(([key, label, dot]) => (
+          {([['not_started', 'Not started', 'bg-paper-3'], ['below', 'Below', 'bg-bad'], ['approaching', 'Approaching', 'bg-warn'], ['on', 'On', 'bg-good'], ['above', 'Above', 'bg-info']] as const).map(([key, label, dot]) => (
             <button key={key} onClick={() => setStatusFilter(statusFilter === key ? 'all' : key)}
               className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-medium transition-all ${statusFilter === key ? 'bg-navy/10 text-navy ring-1 ring-navy/20' : 'text-text-secondary hover:bg-surface-alt'}`}>
               <span className={`w-2 h-2 rounded-full ${dot}`} />
@@ -488,7 +488,7 @@ function ClusterTracker() {
         </div>
         <select value={domainFilter} onChange={e => setDomainFilter(e.target.value)}
           className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none bg-surface">
-          <option value="all">All Domains</option>
+          <option value="all">All domains</option>
           {CCSS_DOMAINS.map(d => <option key={d.key} value={d.key}>{d.label}</option>)}
         </select>
         <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary ml-auto">Click dot to cycle: — → Below → Approaching → On → Above → —</span>
@@ -497,7 +497,7 @@ function ClusterTracker() {
       {/* Legend */}
       <div className="flex items-center gap-4 text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">
         <span>Thresholds: Above ≥{t.above}% | On ≥{t.on}% | Approaching ≥{t.approaching}%</span>
-        <span className="flex items-center gap-1"><span className="w-8 h-1.5 rounded-full overflow-hidden flex"><span className="h-full bg-green-500 w-3" /><span className="h-full bg-amber-400 w-3" /><span className="h-full bg-gray-200 w-2" /></span> = Quick Check pulse</span>
+        <span className="flex items-center gap-1"><span className="w-8 h-1.5 rounded-full overflow-hidden flex"><span className="h-full bg-good w-3" /><span className="h-full bg-warn w-3" /><span className="h-full bg-paper-3 w-2" /></span> = Quick Check pulse</span>
       </div>
 
       {/* Main table */}
@@ -532,7 +532,7 @@ function ClusterTracker() {
                           {/* Status dot */}
                           <button onClick={() => cycleStatus(std.code)} className="mt-1 flex-shrink-0" title={`${d.label} — click to cycle`}>
                             {es === 'not_started'
-                              ? <span className="block w-3.5 h-3.5 rounded-full border-2 border-dashed border-gray-300" />
+                              ? <span className="block w-3.5 h-3.5 rounded-full border-2 border-dashed border-rule-2" />
                               : <span className={`block w-3.5 h-3.5 rounded-full ${d.dot}`} />
                             }
                           </button>
@@ -542,7 +542,7 @@ function ClusterTracker() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-navy">{std.code}</span>
                               {avg != null && (
-                                <span className={`text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded-full ${avg >= t.above ? 'bg-blue-100 text-blue-700' : avg >= t.on ? 'bg-green-100 text-green-700' : avg >= t.approaching ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                <span className={`text-[length:calc(11.5px*var(--ts))] font-bold px-1.5 py-0.5 rounded-full ${avg >= t.above ? 'bg-info-soft text-info' : avg >= t.on ? 'bg-good-soft text-good' : avg >= t.approaching ? 'bg-warn-soft text-warn' : 'bg-bad-soft text-bad'}`}>
                                   {Math.round(avg)}%
                                 </span>
                               )}
@@ -561,7 +561,7 @@ function ClusterTracker() {
                                     logActivity('edited', `Standard ${std.code}: intervention ${val} · ${cls} · Grade ${gr}`, { key: `int:${cls}:${gr}:${std.code}` })
                                   }}
                                   className={`text-[length:calc(11.5px*var(--ts))] font-medium px-1.5 py-0.5 rounded border-0 outline-none cursor-pointer ${
-                                    INTERVENTION_OPTIONS.find(o => o.value === (iv || 'none'))?.color || 'text-gray-400 bg-transparent'
+                                    INTERVENTION_OPTIONS.find(o => o.value === (iv || 'none'))?.color || 'text-ink-3 bg-transparent'
                                   }`}
                                 >
                                   {INTERVENTION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -569,12 +569,12 @@ function ClusterTracker() {
                               )}
                               {tip && (
                                 <button onClick={() => setExpandedTip(expandedTip === std.code ? null : std.code)}
-                                  className="text-[length:calc(11.5px*var(--ts))] text-indigo-600 hover:underline">tip</button>
+                                  className="text-[length:calc(11.5px*var(--ts))] text-info hover:underline">tip</button>
                               )}
                             </div>
                             <p className="text-[length:calc(11.5px*var(--ts))] text-text-primary leading-snug mt-0.5">{std.text}</p>
                             {expandedTip === std.code && tip && (
-                              <div className="mt-1 text-[length:calc(11.5px*var(--ts))] text-indigo-800 bg-indigo-50 rounded px-2 py-1.5 leading-relaxed">{tip}</div>
+                              <div className="mt-1 text-[length:calc(11.5px*var(--ts))] text-info bg-info-soft rounded px-2 py-1.5 leading-relaxed">{tip}</div>
                             )}
                           </div>
                         </div>

@@ -134,7 +134,7 @@ export default function StudentsView() {
           {/* Manage button - opens panel for Upload Roster / Add Student */}
           <button onClick={() => setShowManage(!showManage)}
             className={`inline-flex items-center gap-1.5 px-4 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(13px*var(--ts))] font-medium transition-all ${showManage ? 'bg-navy text-white' : 'bg-surface border border-border text-text-primary hover:bg-surface-alt'}`}>
-            <Settings2 size={15} /> {language === 'ko' ? '학생 관리' : 'Manage Students'}
+            <Settings2 size={15} /> {language === 'ko' ? '학생 관리' : 'Manage students'}
           </button>
         </div>
       </div>
@@ -142,9 +142,9 @@ export default function StudentsView() {
       <div className="px-4 sm:px-10 py-6">
         {/* Manage Panel - slides open */}
         {showManage && (
-          <div className="mb-5 p-5 bg-accent-light border border-border rounded-xl animate-fade-in">
+          <div className="mb-5 p-5 bg-paper-2 border border-rule rounded-xl animate-fade-in">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{language === 'ko' ? '학생 관리' : 'Manage Students'}</h3>
+              <h3 className="text-[length:calc(14px*var(--ts))] font-semibold text-navy">{language === 'ko' ? '학생 관리' : 'Manage students'}</h3>
               <button onClick={() => setShowManage(false)} className="p-1 rounded hover:bg-surface-alt"><X size={14} /></button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -157,11 +157,11 @@ export default function StudentsView() {
         )}
 
         {duplicates.length > 0 && (
-          <div className="mb-4 px-4 py-3 bg-yellow-50 border border-yellow-200 rounded-xl flex items-start gap-3">
-            <AlertTriangle size={18} className="text-gray-900 mt-0.5 flex-shrink-0" />
+          <div className="mb-4 px-4 py-3 bg-warn-soft border border-warn/30 rounded-xl flex items-start gap-3">
+            <AlertTriangle size={18} className="text-warn mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-[length:calc(13px*var(--ts))] font-medium text-gray-900">{t.students.duplicateWarning}</p>
-              <p className="text-[length:calc(12px*var(--ts))] text-gray-800 mt-0.5">{duplicates.length} duplicate(s) found.</p>
+              <p className="text-[length:calc(13px*var(--ts))] font-medium text-ink">{t.students.duplicateWarning}</p>
+              <p className="text-[length:calc(12px*var(--ts))] text-ink mt-0.5">{duplicates.length} duplicate(s) found.</p>
             </div>
           </div>
         )}
@@ -175,24 +175,24 @@ export default function StudentsView() {
           </div>
           <select value={filterGrade || ''} onChange={e => setFilterGrade(e.target.value ? Number(e.target.value) as Grade : null)}
             className="px-3 py-2 max-sm:h-11 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none">
-            <option value="">{t.common.all} Grades</option>
+            <option value="">{language === 'ko' ? '전체 학년' : 'All grades'}</option>
             {GRADES.map(g => <option key={g} value={g}>Grade {g}</option>)}
           </select>
           {!teacherClass && (
             <select value={filterClass || ''} onChange={e => setFilterClass((e.target.value || null) as EnglishClass | null)}
               className="px-3 py-2 max-sm:h-11 border border-border rounded-lg text-[length:calc(13px*var(--ts))] bg-surface outline-none">
-              <option value="">{t.common.all} Classes</option>
+              <option value="">{language === 'ko' ? '전체 반' : 'All classes'}</option>
               {ALL_ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           )}
           {students.some(s => s.needs_review) && (
             <button onClick={() => setFilterReview(!filterReview)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${filterReview ? 'bg-amber-500 text-white' : 'bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100'}`}>
+              className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${filterReview ? 'bg-warn text-white' : 'bg-warn-soft border border-warn/30 text-warn hover:border-warn/60'}`}>
               <AlertTriangle size={13} /> {students.filter(s => s.needs_review).length} {language === 'ko' ? '확인 필요' : 'need review'}
             </button>
           )}
           <button onClick={() => { setSortKey('korean_class'); setSortDir('asc'); showToast('Sorted for printing — Korean class → student number') }}
-            className="sm:ml-auto inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-warm text-white hover:opacity-90 transition-all">
+            className="sm:ml-auto inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-rule-2 bg-surface text-ink-2 hover:text-ink hover:border-ink-3 transition-all">
             <Printer size={14} /> {t.students.sortForPrinting}
           </button>
           <button onClick={() => {
@@ -221,12 +221,12 @@ export default function StudentsView() {
               setBulkEdits({})
             }
           }}
-            className={`inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${bulkEdit ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-surface-alt text-text-secondary hover:bg-border'}`}>
-            <Pencil size={14} /> {bulkEdit ? `Save (${Object.keys(bulkEdits).length})` : 'Bulk Edit'}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium transition-all ${bulkEdit ? 'bg-accent text-white hover:bg-accent-hover' : 'border border-rule-2 bg-surface text-ink-2 hover:text-ink hover:border-ink-3 transition-all'}`}>
+            <Pencil size={14} /> {bulkEdit ? `Save (${Object.keys(bulkEdits).length})` : 'Bulk edit'}
           </button>
           {bulkEdit && (
             <button onClick={() => { setBulkEdit(false); setBulkEdits({}) }}
-              className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
+              className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-rule-2 bg-surface text-ink-2 hover:text-ink hover:border-ink-3 transition-all">
               Cancel
             </button>
           )}
@@ -234,7 +234,7 @@ export default function StudentsView() {
             exportToCSV('students-full', ['UUID', 'Name', 'Korean Name', 'Grade', 'English Class', 'Korean Class', 'Class Number', 'Active'],
               sorted.map(s => [s.id, s.english_name, s.korean_name, s.grade, s.english_class, s.korean_class, s.class_number, s.is_active ? 'Yes' : 'No']))
             showToast('Exported to CSV with UUIDs')
-          }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border transition-all">
+          }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-rule-2 bg-surface text-ink-2 hover:text-ink hover:border-ink-3 transition-all">
             <Download size={14} /> CSV
           </button>
           <button onClick={async () => {
@@ -274,10 +274,10 @@ export default function StudentsView() {
               return `<div style="border:2px solid ${tc};border-radius:10px;padding:10px;page-break-inside:avoid;display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;align-items:center"><div><span style="font-size:12px;font-weight:700;color:#1e293b">${s.english_name}</span> <span style="font-size:10px;color:#94a3b8">${s.korean_name}</span></div><span style="font-size:9px;padding:1px 6px;border-radius:6px;font-weight:700;background:${clBg[s.english_class] || '#f1f5f9'};color:${clTx[s.english_class] || '#475569'}">${s.english_class}</span></div><div style="display:flex;gap:8px;align-items:center;font-size:10px">${rd ? `<span style="font-weight:700;color:#647FBC">${Math.round(rd.cwpm)} CWPM</span><span style="color:${arC};font-size:9px">${arrow}</span>` : '<span style="color:#94a3b8">No ORF</span>'}${(s as any).wida_level ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:#eef2ff;color:#4338ca;font-weight:700">WIDA L${(s as any).wida_level}</span>` : ''}${bN > 0 ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:#fef2f2;color:#dc2626;font-weight:600">${bN} incidents</span>` : ''}</div><div style="margin:2px 0">${bars}</div>${goals.length > 0 ? `<div style="border-top:1px solid #f1f5f9;padding-top:3px;margin-top:1px">${goals.map(g => `<p style="font-size:8px;color:#475569;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">&#8226; ${g}</p>`).join('')}</div>` : ''}</div>`
             }).join('')
             const pw = window.open('', '_blank'); if (!pw) return
-            pw.document.write(`<!DOCTYPE html><html><head><title>Data Cards</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;padding:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media print{body{padding:6px}.grid{gap:6px}}@page{size:landscape;margin:10mm}</style></head><body><div style="text-align:center;margin-bottom:10px"><h2 style="font-size:14px;color:#647FBC;margin:0">Student Data Cards</h2><p style="font-size:10px;color:#999">${filterClass || teacherClass || 'All Classes'} | ${new Date().toLocaleDateString()} | ${sorted.length} students</p></div><div class="grid">${cards}</div><script>window.print()<\/script></body></html>`)
+            pw.document.write(`<!DOCTYPE html><html><head><title>Data cards</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;padding:12px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}@media print{body{padding:6px}.grid{gap:6px}}@page{size:landscape;margin:10mm}</style></head><body><div style="text-align:center;margin-bottom:10px"><h2 style="font-size:14px;color:#647FBC;margin:0">Student data cards</h2><p style="font-size:10px;color:#999">${filterClass || teacherClass || 'All Classes'} | ${new Date().toLocaleDateString()} | ${sorted.length} students</p></div><div class="grid">${cards}</div><script>window.print()<\/script></body></html>`)
             pw.document.close()
-          }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy/10 text-navy hover:bg-navy/20 transition-all">
-            <FileSpreadsheet size={14} /> Data Cards
+          }} className="inline-flex items-center gap-1.5 px-3 py-2 max-sm:min-h-11 whitespace-nowrap rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-rule-2 bg-surface text-ink-2 hover:text-ink hover:border-ink-3 transition-all">
+            <FileSpreadsheet size={14} /> Data cards
           </button>
         </div>
 
@@ -349,7 +349,7 @@ export default function StudentsView() {
                         </div>
                       ) : (
                         <p className="text-[length:calc(15px*var(--ts))] font-medium text-text-primary leading-tight truncate">
-                          {s.needs_review && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                          {s.needs_review && <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))] font-bold mr-1.5 align-middle"><AlertTriangle size={10} aria-hidden className="mr-0.5" />Review</span>}
                           {s.english_name}
                         </p>
                       )}
@@ -406,7 +406,7 @@ export default function StudentsView() {
                         />
                       ) : (
                         <>
-                          {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[length:calc(11.5px*var(--ts))] font-bold mr-1.5 align-middle">⚠ REVIEW</span>}
+                          {s.needs_review && <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-warn-soft text-warn text-[length:calc(11.5px*var(--ts))] font-bold mr-1.5 align-middle"><AlertTriangle size={10} aria-hidden className="mr-0.5" />Review</span>}
                           {s.english_name}
                         </>
                       )}
@@ -482,7 +482,7 @@ function ManageUploadCard({ onComplete }: { onComplete: () => void }) {
       <div className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors border-border hover:border-navy/40 bg-surface"
         onClick={openUpload}>
         <FileSpreadsheet size={28} className="mx-auto text-text-tertiary mb-2" />
-        <p className="text-[length:calc(13px*var(--ts))] font-medium">{language === 'ko' ? '명단 업로드' : 'Upload Roster'}</p>
+        <p className="text-[length:calc(13px*var(--ts))] font-medium">{language === 'ko' ? '명단 업로드' : 'Upload roster'}</p>
         <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">.xlsx, .xls, or .csv</p>
       </div>
       {showModal && (
@@ -524,7 +524,7 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       <div className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors border-border hover:border-navy/40 bg-surface"
         onClick={() => setShow(true)}>
         <Plus size={28} className="mx-auto text-text-tertiary mb-2" />
-        <p className="text-[length:calc(13px*var(--ts))] font-medium">{language === 'ko' ? '학생 추가' : 'Add Student'}</p>
+        <p className="text-[length:calc(13px*var(--ts))] font-medium">{language === 'ko' ? '학생 추가' : 'Add student'}</p>
         <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">{language === 'ko' ? '개별 학생 추가' : 'Add individual student'}</p>
       </div>
     )
@@ -532,10 +532,10 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div className="border border-border rounded-xl p-4 bg-surface space-y-3">
-      <div className="flex items-center justify-between"><h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Add Student</h4><button onClick={() => setShow(false)} className="p-1 rounded hover:bg-surface-alt"><X size={12} /></button></div>
+      <div className="flex items-center justify-between"><h4 className="text-[length:calc(12px*var(--ts))] font-semibold text-navy">Add student</h4><button onClick={() => setShow(false)} className="p-1 rounded hover:bg-surface-alt"><X size={12} /></button></div>
       <div className="grid grid-cols-2 gap-2">
-        <input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} placeholder="Korean Name" className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
-        <input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} placeholder="English Name" className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
+        <input value={form.korean_name} onChange={e => setForm({ ...form, korean_name: e.target.value })} placeholder="Korean name" className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
+        <input value={form.english_name} onChange={e => setForm({ ...form, english_name: e.target.value })} placeholder="English name" className="px-2.5 py-1.5 border border-border rounded-lg text-[length:calc(12px*var(--ts))] outline-none focus:border-navy" />
         <select value={form.pronoun} onChange={e => setForm({ ...form, pronoun: e.target.value as any })} className="px-2 py-1.5 border border-border rounded-lg text-[length:calc(11.5px*var(--ts))] outline-none col-span-2" aria-label="Pronoun">
           <option value="">Pronoun: not set (he / she / they)</option><option value="he">he / his</option><option value="she">she / her</option><option value="they">they / their</option></select>
       </div>
@@ -551,11 +551,11 @@ function ManageAddCard({ onComplete }: { onComplete: () => void }) {
       <div className="flex gap-2">
         <button onClick={async () => { await handleSave(); setShow(false) }} disabled={saving || !form.korean_name || !form.english_name}
           className="flex-1 px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border disabled:opacity-40 flex items-center justify-center gap-1.5">
-          {saving && <Loader2 size={12} className="animate-spin" />} Add & Close
+          {saving && <Loader2 size={12} className="animate-spin" />} Add & close
         </button>
         <button onClick={handleSave} disabled={saving || !form.korean_name || !form.english_name}
-          className="flex-1 px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center justify-center gap-1.5">
-          {saving && <Loader2 size={12} className="animate-spin" />} Save & Add Another
+          className="flex-1 px-3 py-1.5 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40 flex items-center justify-center gap-1.5">
+          {saving && <Loader2 size={12} className="animate-spin" />} Save & add another
         </button>
       </div>
     </div>
@@ -607,30 +607,30 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
   }
 
   return (
-    <div className="mt-4 border border-amber-300 bg-amber-50 rounded-xl overflow-hidden">
-      <div className="px-4 py-3 flex items-center justify-between border-b border-amber-200">
+    <div className="mt-4 border border-warn/40 bg-warn-soft rounded-xl overflow-hidden">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-warn/30">
         <div className="flex items-center gap-2">
-          <span className="text-[length:calc(15px*var(--ts))]">⚠</span>
-          <h4 className="text-[length:calc(13px*var(--ts))] font-bold text-gray-900">{flagged.length} Student{flagged.length !== 1 ? 's' : ''} Need Review</h4>
-          <span className="text-[length:calc(11.5px*var(--ts))] text-gray-600">Verify info, edit inline, then clear flag</span>
+          <AlertTriangle size={15} aria-hidden className="text-warn" />
+          <h4 className="text-[length:calc(13px*var(--ts))] font-bold text-ink">{flagged.length} student{flagged.length !== 1 ? 's' : ''} need{flagged.length !== 1 ? '' : 's'} review</h4>
+          <span className="text-[length:calc(11.5px*var(--ts))] text-ink-2">Verify info, edit inline, then clear flag</span>
         </div>
         <button onClick={clearAllFlags} disabled={clearingAll}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-white border border-amber-300 text-gray-700 hover:bg-amber-100 disabled:opacity-40 transition-all">
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface border border-warn/40 text-ink-2 hover:text-ink hover:border-warn disabled:opacity-40 transition-all">
           {clearingAll ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
-          Clear All Flags
+          Clear all flags
         </button>
       </div>
       <div className="max-h-[400px] overflow-y-auto">
         <table className="w-full text-[length:calc(12px*var(--ts))]">
-          <thead className="sticky top-0 bg-amber-100/80 backdrop-blur-sm">
+          <thead className="sticky top-0 bg-warn-soft">
             <tr>
-              <th className="text-left px-3 py-2 font-semibold text-gray-700">Korean name</th>
-              <th className="text-left px-3 py-2 font-semibold text-gray-700">English name</th>
-              <th className="text-center px-3 py-2 font-semibold text-gray-700">Grade</th>
-              <th className="text-center px-3 py-2 font-semibold text-gray-700">반</th>
-              <th className="text-center px-3 py-2 font-semibold text-gray-700">#</th>
-              <th className="text-center px-3 py-2 font-semibold text-gray-700">English class</th>
-              <th className="text-left px-3 py-2 font-semibold text-gray-700">Reason</th>
+              <th className="text-left px-3 py-2 font-semibold text-ink-2">Korean name</th>
+              <th className="text-left px-3 py-2 font-semibold text-ink-2">English name</th>
+              <th className="text-center px-3 py-2 font-semibold text-ink-2">Grade</th>
+              <th className="text-center px-3 py-2 font-semibold text-ink-2">반</th>
+              <th className="text-center px-3 py-2 font-semibold text-ink-2">#</th>
+              <th className="text-center px-3 py-2 font-semibold text-ink-2">English class</th>
+              <th className="text-left px-3 py-2 font-semibold text-ink-2">Reason</th>
               <th className="px-3 py-2"></th>
             </tr>
           </thead>
@@ -641,24 +641,24 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
               const reasonMatch = (s.notes || '').match(/⚠️ Needs review[^:]*:\s*(.+?)$/m)
               const reason = reasonMatch ? reasonMatch[1] : ''
               return (
-                <tr key={s.id} className="border-t border-amber-200 hover:bg-amber-100/50">
-                  <td className="px-3 py-2 font-medium text-gray-900">{s.korean_name}</td>
+                <tr key={s.id} className="border-t border-warn/30 hover:bg-warn-soft/50">
+                  <td className="px-3 py-2 font-medium text-ink">{s.korean_name}</td>
                   <td className="px-3 py-1.5">
                     <input
                       value={edit.english_name ?? s.english_name}
                       onChange={e => setEdit(s.id, { english_name: e.target.value })}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white"
+                      className="w-full px-2 py-1 border border-rule-2 rounded text-[length:calc(12px*var(--ts))] outline-none focus:border-navy bg-white"
                     />
                   </td>
                   <td className="px-3 py-1.5 text-center">
                     <select value={edit.grade ?? s.grade} onChange={e => setEdit(s.id, { grade: Number(e.target.value) as Grade })}
-                      className="px-1 py-1 border border-gray-300 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center">
+                      className="px-1 py-1 border border-rule-2 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center">
                       {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
                     </select>
                   </td>
                   <td className="px-3 py-1.5 text-center">
                     <select value={edit.korean_class ?? s.korean_class} onChange={e => setEdit(s.id, { korean_class: e.target.value as KoreanClass })}
-                      className="px-1 py-1 border border-gray-300 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center">
+                      className="px-1 py-1 border border-rule-2 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center">
                       {KOREAN_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
@@ -666,21 +666,21 @@ function ReviewQueue({ students, onComplete }: { students: Student[]; onComplete
                     <input type="number" min={1} max={35}
                       value={edit.class_number ?? s.class_number}
                       onChange={e => setEdit(s.id, { class_number: parseInt(e.target.value) || 1 })}
-                      className="w-12 px-1 py-1 border border-gray-300 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center"
+                      className="w-12 px-1 py-1 border border-rule-2 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center"
                     />
                   </td>
                   <td className="px-3 py-1.5 text-center">
                     <select value={edit.english_class ?? s.english_class} onChange={e => setEdit(s.id, { english_class: e.target.value as EnglishClass })}
-                      className="px-1 py-1 border border-gray-300 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center">
+                      className="px-1 py-1 border border-rule-2 rounded text-[length:calc(12px*var(--ts))] outline-none bg-white text-center">
                       {ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </td>
-                  <td className="px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-gray-600 max-w-[180px] truncate" title={reason}>{reason}</td>
+                  <td className="px-3 py-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 max-w-[180px] truncate" title={reason}>{reason}</td>
                   <td className="px-3 py-1.5 text-right">
                     <button onClick={() => saveAndClear(s)} disabled={saving === s.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40 transition-all whitespace-nowrap">
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40 transition-all whitespace-nowrap">
                       {saving === s.id ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
-                      Save & Clear
+                      Save & clear
                     </button>
                   </td>
                 </tr>
@@ -874,7 +874,7 @@ export function AboutTab({ studentId, lang, onCount, addSignal }: { studentId: s
       <div>
         <div className="flex items-center justify-between mb-2">
           <label htmlFor={`about-${studentId}`} className="eyebrow">
-            {lang === 'ko' ? '학생 정보 / 메모' : 'About This Student'}
+            {lang === 'ko' ? '학생 정보 / 메모' : 'About this student'}
           </label>
           {dirty && (
             <button onClick={handleSave} disabled={saving}
@@ -1172,7 +1172,7 @@ export function AcademicHistoryTab({ studentId, lang, onCount }: { studentId: st
             </div>
             <div className="px-4 py-1.5 border-t border-rule flex items-center gap-4 text-[length:calc(11.5px*var(--ts))] text-ink-3">
               <span className="flex items-center gap-1"><span className="w-3 h-2 rounded-sm" style={{ backgroundColor: 'var(--c-1)' }} /> Student</span>
-              <span className="flex items-center gap-1"><span className="w-px h-3 bg-ink inline-block" /><span className="w-1.5 h-1.5 rounded-full bg-ink" /> Class Average</span>
+              <span className="flex items-center gap-1"><span className="w-px h-3 bg-ink inline-block" /><span className="w-1.5 h-1.5 rounded-full bg-ink" /> Class average</span>
             </div>
           </div>
         )
@@ -1342,16 +1342,16 @@ export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSi
       {!showRunningRecord && !showManualEntry ? (
         <div className="flex gap-2">
           <button onClick={() => setShowRunningRecord(true)} className={primaryBtn}>
-            <BookOpen size={14} /> New Running Record
+            <BookOpen size={14} /> New running record
           </button>
           <button onClick={() => setShowManualEntry(true)} className={secondaryBtn}>
-            <Pencil size={14} /> Enter Manually
+            <Pencil size={14} /> Enter manually
           </button>
         </div>
       ) : showManualEntry ? (
         <div className="bg-paper-2 border border-rule-2 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">Manual ORF Entry</span>
+            <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">Manual ORF entry</span>
             <button onClick={() => setShowManualEntry(false)} className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">Cancel</button>
           </div>
           <div className="grid grid-cols-4 gap-2">
@@ -1368,7 +1368,7 @@ export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSi
               <input type="number" value={manualForm.errors} onChange={e => setManualForm(f => ({ ...f, errors: e.target.value }))} placeholder="0" className={field} />
             </div>
             <div>
-              <label className={fieldLabel}>Self-Corr</label>
+              <label className={fieldLabel}>Self-corr.</label>
               <input type="number" value={manualForm.self_corrections} onChange={e => setManualForm(f => ({ ...f, self_corrections: e.target.value }))} placeholder="0" className={field} />
             </div>
             <div>
@@ -1376,11 +1376,11 @@ export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSi
               <input type="number" value={manualForm.time_seconds} onChange={e => setManualForm(f => ({ ...f, time_seconds: e.target.value }))} className={field} />
             </div>
             <div>
-              <label className={fieldLabel}>Word Count</label>
+              <label className={fieldLabel}>Word count</label>
               <input type="number" value={manualForm.word_count} onChange={e => setManualForm(f => ({ ...f, word_count: e.target.value }))} placeholder="e.g. 120" className={field} />
             </div>
             <div>
-              <label className={fieldLabel}>Passage Title</label>
+              <label className={fieldLabel}>Passage title</label>
               <input value={manualForm.passage_title} onChange={e => setManualForm(f => ({ ...f, passage_title: e.target.value }))} placeholder="Optional" className={field} />
             </div>
             <div>
@@ -1390,22 +1390,22 @@ export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSi
               </select>
             </div>
           </div>
-          <button onClick={handleManualSave} className={primaryBtn}>Save Record</button>
+          <button onClick={handleManualSave} className={primaryBtn}>Save record</button>
         </div>
       ) : (
         <div className="bg-paper-2 border border-rule-2 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">Select a Passage</span>
+            <span className="text-[length:calc(13px*var(--ts))] font-semibold text-ink">Select a passage</span>
             <button onClick={() => { setShowRunningRecord(false); setSelectedPassage(null); setPasteText('') }}
               className="text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">Cancel</button>
           </div>
           <div className="space-y-2">
             <div className="flex gap-2">
               <button onClick={() => setShowPassagePanel(true)} className={secondaryBtn}>
-                <BookOpen size={13} /> Browse Passages
+                <BookOpen size={13} /> Browse passages
               </button>
               <button onClick={() => setShowPassageUploader(true)} className={secondaryBtn}>
-                <Plus size={13} /> New Passage
+                <Plus size={13} /> New passage
               </button>
             </div>
             {selectedPassage && (
@@ -1430,7 +1430,7 @@ export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSi
                   setSelectedPassage({ title: pasteTitle || 'Untitled', text: pasteText.trim(), word_count: pasteText.trim().split(/\s+/).length })
                 }
               }} className={primaryBtn}>
-                {selectedPassage ? <><Play size={13} /> Start Reading: {selectedPassage.title}</> : `Use Pasted Text (${pasteText.trim().split(/\s+/).length}w)`}
+                {selectedPassage ? <><Play size={13} /> Start reading: {selectedPassage.title}</> : `Use pasted text (${pasteText.trim().split(/\s+/).length}w)`}
               </button>
             )}
           </div>
@@ -1525,7 +1525,7 @@ export function ReadingTabInModal({ studentId, studentName, lang, onCount, addSi
               }
               const fromLevelTest = !!r.is_level_test
               return (
-                <tr key={r.id} className={`border-t border-rule ${fromLevelTest ? 'bg-paper-2/50' : 'hover:bg-paper-2/60 cursor-pointer'}`} onClick={() => { if (!fromLevelTest) startEdit(r) }} title={fromLevelTest ? 'From the level test; edit it on the Level Tests screen' : undefined}>
+                <tr key={r.id} className={`border-t border-rule ${fromLevelTest ? 'bg-paper-2/50' : 'hover:bg-paper-2/60 cursor-pointer'}`} onClick={() => { if (!fromLevelTest) startEdit(r) }} title={fromLevelTest ? 'From the level test; edit it on the Level tests screen' : undefined}>
                   <td className="px-3 py-2 text-ink">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
                   <td className="px-2 py-2 font-medium text-ink truncate max-w-[140px]">{fromLevelTest ? <span className="inline-flex items-center gap-1.5"><span className="px-1.5 py-0.5 rounded bg-info-soft text-info text-[length:calc(12px*var(--ts))] font-bold">Level test</span><span className="truncate">{(r.passage_title || '').replace(/^Level test · /, '')}</span></span> : (r.passage_title || '—')}</td>
                   <td className="px-2 py-2 text-center font-semibold text-ink">{r.cwpm != null ? Math.round(r.cwpm) : '—'}</td>
@@ -1659,7 +1659,7 @@ export function AttendanceTabInModal({ studentId, studentName, lang, onCount }: 
               {(showAll ? records : records.slice(0, RECENT_ROWS)).map((r: any) => (
                 <tr key={r.id} className="border-t border-rule">
                   <td className="px-3 py-1.5 text-ink">{new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' })}</td>
-                  <td className={`px-3 py-1.5 text-center font-semibold capitalize ${statusTone[r.status] || 'text-ink-2'}`}>{r.status === 'field_trip' ? 'Field Trip' : r.status}</td>
+                  <td className={`px-3 py-1.5 text-center font-semibold capitalize ${statusTone[r.status] || 'text-ink-2'}`}>{r.status === 'field_trip' ? 'Field trip' : r.status}</td>
                   <td className="px-3 py-1.5 text-ink-3">{r.note || ''}</td>
                 </tr>
               ))}
@@ -1784,10 +1784,10 @@ export function StandardsMasteryTab({ studentId, lang, onCount }: { studentId: s
           ))
         })()}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[length:calc(11.5px*var(--ts))] text-ink-2">
-          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-info" /> 86%+ Above Standard</span>
-          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-good" /> 71-85% On Standard</span>
+          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-info" /> 86%+ Above standard</span>
+          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-good" /> 71-85% On standard</span>
           <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-warn" /> 61-70% Approaching</span>
-          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-bad" /> 0-60% Below Standard</span>
+          <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-bad" /> 0-60% Below standard</span>
         </div>
       </div>
       {/* Summary */}
@@ -1887,7 +1887,7 @@ export function buildStudentPDFHtml(student: Student, data: {
   <tr><th>Date</th><th>Type</th><th>Note</th>${behaviorLogs.some(b => b.antecedents?.length) ? '<th>ABC Details</th>' : ''}</tr>
   ${behaviorLogs.map((b: any) => {
     const typeColor = b.type === 'positive' ? '#16a34a' : b.type === 'concern' || b.type === 'negative' ? '#dc2626' : b.type === 'parent_contact' ? '#7c3aed' : b.type === 'intervention' ? '#2563eb' : '#64748b'
-    const typeLabel = b.type === 'parent_contact' ? 'Parent Contact' : b.type.charAt(0).toUpperCase() + b.type.slice(1)
+    const typeLabel = b.type === 'parent_contact' ? 'Parent contact' : b.type.charAt(0).toUpperCase() + b.type.slice(1)
     const abcDetail = b.antecedents?.length || b.behaviors?.length || b.consequences?.length
       ? `A: ${(b.antecedents || []).join(', ')} → B: ${(b.behaviors || []).join(', ')} → C: ${(b.consequences || []).join(', ')}${b.intensity ? ` (Intensity: ${b.intensity}/5)` : ''}`
       : ''
@@ -1924,39 +1924,39 @@ export function buildStudentPDFHtml(student: Student, data: {
   <p class="meta">Grade ${student.grade} | <span class="badge">${student.english_class}</span> | ${student.korean_class} ${student.class_number} | Exported: ${date}</p>
 </div>
 
-<h2>Semester Grades</h2>
+<h2>Semester grades</h2>
 ${semesterHTML}
 
-<h2>Teacher Comments</h2>
+<h2>Teacher comments</h2>
 ${commentsHTML}
 
-<h2>Standards Covered (${Object.keys(allStds).length})</h2>
+<h2>Standards covered (${Object.keys(allStds).length})</h2>
 ${standardsHTML}
 
-<h2>Reading Assessments (${readingRecords.length})</h2>
+<h2>Reading assessments (${readingRecords.length})</h2>
 ${readingRecords.length > 0 ? `<table>
   <tr><th>Date</th><th>CWPM</th><th>Accuracy</th><th>Lexile</th><th>NAEP</th><th>Errors</th></tr>
   ${readingRecords.map((r: any) => `<tr><td>${r.date}</td><td>${Math.round(r.cwpm || 0)}</td><td>${r.accuracy_rate != null ? r.accuracy_rate + '%' : '—'}</td><td>${r.reading_level || '—'}</td><td>${r.naep_fluency ? 'L' + r.naep_fluency : '—'}</td><td>${r.errors || '—'}</td></tr>`).join('')}
 </table>` : '<p class="empty">No reading assessments recorded.</p>'}
 
-${scaffolds.length > 0 ? `<h2>Active Scaffolds (${scaffolds.length})</h2>
-<div>${scaffolds.map((s: any) => `<div class="note"><strong style="text-transform:uppercase;font-size:9px;background:#EEF2FF;padding:1px 5px;border-radius:3px">${s.domain}</strong> ${s.scaffold_text}${s.effectiveness === 'working' ? ' <span style="color:#059669">✓ Working</span>' : s.effectiveness === 'not_working' ? ' <span style="color:#dc2626">✗ Not Working</span>' : ''}</div>`).join('')}
+${scaffolds.length > 0 ? `<h2>Active scaffolds (${scaffolds.length})</h2>
+<div>${scaffolds.map((s: any) => `<div class="note"><strong style="text-transform:uppercase;font-size:9px;background:#EEF2FF;padding:1px 5px;border-radius:3px">${s.domain}</strong> ${s.scaffold_text}${s.effectiveness === 'working' ? ' <span style="color:#059669">✓ Working</span>' : s.effectiveness === 'not_working' ? ' <span style="color:#dc2626">✗ Not working</span>' : ''}</div>`).join('')}
 </div>` : ''}
 
-${goals.length > 0 ? `<h2>Student Goals (${goals.length})</h2>
+${goals.length > 0 ? `<h2>Student goals (${goals.length})</h2>
 <div>${goals.map((g: any) => `<div class="note"><span style="${g.completed_at ? 'text-decoration:line-through;color:#94a3b8' : ''}">${g.goal_text}</span>${g.completed_at ? ` <span style="color:#059669;font-size:9px">Done ${new Date(g.completed_at).toLocaleDateString()}</span>` : ''}</div>`).join('')}
 </div>` : ''}
 
-<h2>Behavior Log (${behaviorLogs.length} entries)</h2>
+<h2>Behavior log (${behaviorLogs.length} entries)</h2>
 ${behaviorHTML}
 
-<h2>Attendance Summary</h2>
+<h2>Attendance summary</h2>
 ${attendanceRecords.length > 0 ? (() => {
     const counts: Record<string, number> = { present: 0, absent: 0, tardy: 0, excused: 0 }
     attendanceRecords.forEach((a: any) => { counts[a.status] = (counts[a.status] || 0) + 1 })
     const rate = attendanceRecords.length > 0 ? (((counts.present + counts.tardy) / attendanceRecords.length) * 100).toFixed(1) : '—'
-    return `<p style="font-size:12px;margin-bottom:8px"><strong>Attendance Rate: ${rate}%</strong></p>
-    <p>Present: ${counts.present} | Absent: ${counts.absent} | Tardy: ${counts.tardy} | Excused: ${counts.excused} | Total Days: ${attendanceRecords.length}</p>`
+    return `<p style="font-size:12px;margin-bottom:8px"><strong>Attendance rate: ${rate}%</strong></p>
+    <p>Present: ${counts.present} | Absent: ${counts.absent} | Tardy: ${counts.tardy} | Excused: ${counts.excused} | Total days: ${attendanceRecords.length}</p>`
   })() : '<p class="empty">No attendance records.</p>'}
 
 <p style="font-size:8px;color:#94a3b8;margin-top:32px;border-top:1px solid #e2e8f0;padding-top:8px">Daewoo Elementary English Program · Student Portfolio · Generated ${date}</p>
@@ -2095,7 +2095,7 @@ export function GoalsTab({ studentId, studentName, onCount, addSignal }: { stude
       <div className="flex items-center justify-between gap-3 mb-4">
         <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2">Set 2-3 measurable goals per semester for {studentName.split(' ')[0]}.</p>
         <button onClick={() => setAdding(!adding)} className={`shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 h-8 px-3 rounded text-[length:calc(12px*var(--ts))] font-semibold transition-colors ${adding ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>
-          {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add Goal</>}
+          {adding ? <><X size={12} /> Cancel</> : <><Plus size={12} /> Add goal</>}
         </button>
       </div>
 
@@ -2125,7 +2125,7 @@ export function GoalsTab({ studentId, studentName, onCount, addSignal }: { stude
           </div>
           <button onClick={addGoal} disabled={!newGoal.goal_text.trim()}
             className="inline-flex items-center gap-1.5 h-8 px-4 rounded text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
-            <Check size={12} /> Save Goal
+            <Check size={12} /> Save goal
           </button>
         </div>
       )}
@@ -2133,7 +2133,7 @@ export function GoalsTab({ studentId, studentName, onCount, addSignal }: { stude
       {goals.length === 0 ? (
         <div className="text-center py-8 text-ink-3">
           <Target size={24} className="mx-auto mb-2 text-ink-3" />
-          <p className="text-[length:calc(12.5px*var(--ts))]">No goals set yet. Click "Add Goal" to create one.</p>
+          <p className="text-[length:calc(12.5px*var(--ts))]">No goals set yet. Click "Add goal" to create one.</p>
         </div>
       ) : (
         <div className="space-y-2">

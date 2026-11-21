@@ -1,15 +1,16 @@
 'use client'
 
 import Loading from '@/components/brand/Loading'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useApp } from '@/lib/context'
 import { logActivity } from '@/lib/activity'
 import { supabase } from '@/lib/supabase'
 import { Student, Grade, GRADES, ENGLISH_CLASSES, KOREAN_CLASSES, EnglishClass } from '@/types'
 import { classToColor, classToTextColor } from '@/lib/utils'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 import {
   Upload, AlertTriangle, Check, X, Loader2,
-  ArrowRight, UserPlus, CheckCircle2
+  ArrowRight, UserPlus, CheckCircle2, Plus, ArrowLeft
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import Overlay from '@/components/ui/Overlay'
@@ -328,9 +329,9 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
     <Overlay><div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-navy/5 to-transparent">
+        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <div>
-            <h2 className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Upload Roster</h2>
+            <h2 className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Upload roster</h2>
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
               {step === 'upload' ? 'Drop files or click to browse' :
                step === 'review' ? `${fileNames.join(', ')} — ${comparison.length} students` :
@@ -352,8 +353,8 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                 <p className="text-[length:calc(14px*var(--ts))] font-medium text-navy">Drop files here or click to browse</p>
                 <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-1">.xlsx, .xls, or .csv — multiple files OK</p>
               </div>
-              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-[length:calc(11.5px*var(--ts))] text-gray-800 leading-relaxed">
+              <div className="mt-6 bg-info-soft border border-info/30 rounded-xl p-4">
+                <p className="text-[length:calc(11.5px*var(--ts))] text-ink leading-relaxed">
                   <strong>How it works:</strong> Upload the 반편성내역 files. Students are matched by Korean name (±1 grade) to keep their English name, class, and data.
                   You'll see a side-by-side comparison before anything changes.
                 </p>
@@ -367,24 +368,24 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
               {/* Filter cards */}
               <div className="grid grid-cols-5 gap-2 mb-4">
                 {([
-                  { key: 'all', label: 'All', count: stats.total, bg: 'bg-surface border-border' },
-                  { key: 'match', label: 'No Change', count: stats.match, bg: 'bg-green-50 border-green-200' },
-                  { key: 'changed', label: 'Updated', count: stats.changed, bg: 'bg-blue-50 border-blue-200' },
-                  { key: 'new', label: 'New', count: stats.new, bg: 'bg-emerald-50 border-emerald-200' },
-                  { key: 'ambiguous', label: 'Pick Match', count: stats.ambiguous, bg: 'bg-red-50 border-red-200' },
+                  { key: 'all', label: 'All', count: stats.total, dot: '' },
+                  { key: 'match', label: 'No change', count: stats.match, dot: 'bg-ink-3' },
+                  { key: 'changed', label: 'Updated', count: stats.changed, dot: 'bg-info' },
+                  { key: 'new', label: 'New', count: stats.new, dot: 'bg-good' },
+                  { key: 'ambiguous', label: 'Pick match', count: stats.ambiguous, dot: 'bg-bad' },
                 ] as const).map(f => (
                   <button key={f.key} onClick={() => setFilterStatus(f.key)}
-                    className={`rounded-xl p-3 text-center border transition-all ${f.bg} ${filterStatus === f.key ? 'ring-2 ring-navy' : ''}`}>
-                    <p className="text-[length:calc(18px*var(--ts))] font-bold text-gray-900">{f.count}</p>
-                    <p className="text-[length:calc(11.5px*var(--ts))] text-gray-700 font-medium">{f.label}</p>
+                    className={`rounded-xl p-3 text-center border bg-surface transition-all ${filterStatus === f.key ? 'border-ink ring-1 ring-ink' : 'border-rule-2 hover:border-ink-3'}`}>
+                    <p className="text-[length:calc(18px*var(--ts))] font-bold text-ink">{f.count}</p>
+                    <p className="inline-flex items-center gap-1.5 text-[length:calc(11.5px*var(--ts))] text-ink-2 font-medium">{f.dot && <span className={`w-1.5 h-1.5 rounded-full ${f.dot}`} aria-hidden />}{f.label}</p>
                   </button>
                 ))}
               </div>
 
               {hasUnresolved && (
-                <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
-                  <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
-                  <p className="text-[length:calc(12px*var(--ts))] text-gray-900"><strong>{stats.ambiguous}</strong> student{stats.ambiguous !== 1 ? 's' : ''} matched multiple records. Pick the correct match or "Add as New".</p>
+                <div className="mb-4 px-4 py-3 bg-bad-soft border border-bad/30 rounded-xl flex items-start gap-3">
+                  <AlertTriangle size={16} className="text-bad mt-0.5 shrink-0" />
+                  <p className="text-[length:calc(12px*var(--ts))] text-ink"><strong>{stats.ambiguous}</strong> student{stats.ambiguous !== 1 ? 's' : ''} matched multiple records. Pick the correct match or "Add as New".</p>
                 </div>
               )}
 
@@ -403,12 +404,12 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                     <tbody>
                       {filtered.map((row, fIdx) => {
                         const gIdx = comparison.indexOf(row)
-                        const bg = row.status === 'new' ? 'bg-emerald-50/40' : row.status === 'changed' ? 'bg-blue-50/40' : row.status === 'ambiguous' ? 'bg-red-50/40' : ''
+                        const bg = row.status === 'new' ? 'bg-good-soft/40' : row.status === 'changed' ? 'bg-info-soft/40' : row.status === 'ambiguous' ? 'bg-bad-soft/40' : ''
                         return (
                           <tr key={fIdx} className={`border-t border-border ${bg} ${!row.include ? 'opacity-30' : ''}`}>
                             <td className="px-2 py-2 text-center"><input type="checkbox" checked={row.include} onChange={() => setComparison(prev => prev.map((r, i) => i === gIdx ? { ...r, include: !r.include } : r))} /></td>
                             {/* File side */}
-                            <td className="px-3 py-2 font-medium text-gray-900">{row.parsed.korean_name}</td>
+                            <td className="px-3 py-2 font-medium text-ink">{row.parsed.korean_name}</td>
                             <td className="px-2 py-2 text-center">{row.parsed.korean_class}</td>
                             <td className="px-2 py-2 text-center">{row.parsed.class_number}</td>
                             {/* DB side */}
@@ -417,13 +418,13 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                                 <div className="space-y-1">
                                   {row.candidates?.map(c => (
                                     <button key={c.id} onClick={() => resolveAmbiguous(gIdx, c.id)}
-                                      className="block w-full text-left px-2 py-1.5 rounded border border-red-200 hover:bg-red-100 text-[length:calc(11.5px*var(--ts))]">
+                                      className="block w-full text-left px-2 py-1.5 rounded border border-bad/30 hover:bg-bad-soft text-[length:calc(11.5px*var(--ts))]">
                                       <span className="font-medium">{c.english_name}</span>
                                       <span className="text-text-tertiary ml-1">Gr{c.grade} {c.korean_class}#{c.class_number}</span>
                                       <span className="ml-1 px-1.5 py-0.5 rounded text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classToColor(c.english_class), color: classToTextColor(c.english_class) }}>{c.english_class}</span>
                                     </button>
                                   ))}
-                                  <button onClick={() => resolveAmbiguous(gIdx, 'new')} className="block w-full text-left px-2 py-1.5 rounded border border-emerald-200 hover:bg-emerald-50 text-[length:calc(11.5px*var(--ts))] text-emerald-700 font-medium">+ Add as new</button>
+                                  <button onClick={() => resolveAmbiguous(gIdx, 'new')} className="block w-full text-left px-2 py-1.5 rounded border border-good/30 hover:bg-good-soft text-[length:calc(11.5px*var(--ts))] text-good font-medium inline-flex items-center gap-1"><Plus size={11} aria-hidden /> Add as new</button>
                                 </div>
                               </td>
                             ) : row.existing ? (
@@ -432,18 +433,18 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                                   <span className="font-medium">{row.existing.english_name}</span>
                                   <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-bold" style={{ backgroundColor: classToColor(row.existing.english_class), color: classToTextColor(row.existing.english_class) }}>{row.existing.english_class}</span>
                                 </td>
-                                <td className={`px-2 py-2 text-center ${row.existing.korean_class !== row.parsed.korean_class ? 'font-bold text-blue-600' : ''}`}>{row.existing.korean_class}</td>
-                                <td className={`px-2 py-2 text-center ${row.existing.class_number !== row.parsed.class_number ? 'font-bold text-blue-600' : ''}`}>{row.existing.class_number}</td>
+                                <td className={`px-2 py-2 text-center ${row.existing.korean_class !== row.parsed.korean_class ? 'font-bold text-info' : ''}`}>{row.existing.korean_class}</td>
+                                <td className={`px-2 py-2 text-center ${row.existing.class_number !== row.parsed.class_number ? 'font-bold text-info' : ''}`}>{row.existing.class_number}</td>
                               </>
                             ) : (
                               <><td className="px-3 py-2 text-text-tertiary italic">New student</td><td></td><td></td></>
                             )}
                             {/* Status */}
                             <td className="px-3 py-2">
-                              {row.status === 'match' && <span className="text-[length:calc(11.5px*var(--ts))] text-green-600 font-medium">✓ OK</span>}
-                              {row.status === 'changed' && <span className="text-[length:calc(11.5px*var(--ts))] text-blue-600 font-medium">{row.changes.join(', ')}</span>}
-                              {row.status === 'new' && <span className="text-[length:calc(11.5px*var(--ts))] text-emerald-600 font-medium">+ New</span>}
-                              {row.status === 'ambiguous' && <span className="text-[length:calc(11.5px*var(--ts))] text-red-600 font-bold">← Pick</span>}
+                              {row.status === 'match' && <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-ink-3 font-medium"><Check size={11} aria-hidden /> OK</span>}
+                              {row.status === 'changed' && <span className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">{row.changes.join(', ')}</span>}
+                              {row.status === 'new' && <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-good font-medium"><Plus size={11} aria-hidden /> New</span>}
+                              {row.status === 'ambiguous' && <span className="inline-flex items-center gap-1 text-[length:calc(11.5px*var(--ts))] text-bad font-bold"><ArrowLeft size={11} aria-hidden /> Pick</span>}
                             </td>
                           </tr>
                         )
@@ -457,7 +458,7 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
               {missing.length > 0 && (
                 <div className="mt-4 border border-border rounded-xl overflow-hidden">
                   <div className="px-4 py-3 bg-surface-alt border-b border-border">
-                    <p className="text-[length:calc(12px*var(--ts))] font-semibold text-gray-900">{missing.length} in DB but not in files</p>
+                    <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink">{missing.length} in DB but not in files</p>
                     <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Check to deactivate. Unchecked = left alone.</p>
                   </div>
                   <div className="max-h-[200px] overflow-y-auto">
@@ -481,8 +482,8 @@ export default function RosterUploadModal({ existingStudents, onComplete, onClos
                 <div className="flex items-center gap-3">
                   <button onClick={onClose} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium hover:bg-surface-alt">Cancel</button>
                   <button onClick={applyChanges} disabled={hasUnresolved || processing}
-                    className="px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold bg-navy text-white hover:bg-navy-dark disabled:opacity-40 flex items-center gap-2">
-                    Apply Changes
+                    className="px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold bg-accent text-white hover:bg-accent-hover disabled:opacity-40 flex items-center gap-2">
+                    Apply changes
                   </button>
                 </div>
               </div>
@@ -525,32 +526,32 @@ function DoneStep({ comparison, missing, progress, onComplete }: {
     <div className="max-w-lg mx-auto py-6">
       <div className="text-center mb-5">
         {progress.errors.length === 0 ? (
-          <><CheckCircle2 size={44} className="mx-auto text-green-500 mb-3" /><p className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Roster Updated</p></>
+          <><CheckCircle2 size={44} className="mx-auto text-good mb-3" /><p className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Roster updated</p></>
         ) : (
-          <><AlertTriangle size={44} className="mx-auto text-gray-700 mb-3" /><p className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Done with {progress.errors.length} issue{progress.errors.length !== 1 ? 's' : ''}</p></>
+          <><AlertTriangle size={44} className="mx-auto text-ink-2 mb-3" /><p className="text-[length:calc(16px*var(--ts))] font-bold text-navy">Done with {progress.errors.length} issue{progress.errors.length !== 1 ? 's' : ''}</p></>
         )}
       </div>
       <div className="grid grid-cols-3 gap-2 mb-5">
-        <div className="rounded-xl p-3 text-center bg-blue-50 border border-blue-200"><p className="text-[length:calc(18px*var(--ts))] font-bold text-gray-900">{updated.length}</p><p className="text-[length:calc(11.5px*var(--ts))] text-gray-700 font-medium">Updated</p></div>
-        <div className="rounded-xl p-3 text-center bg-emerald-50 border border-emerald-200"><p className="text-[length:calc(18px*var(--ts))] font-bold text-gray-900">{newlyAdded.length}</p><p className="text-[length:calc(11.5px*var(--ts))] text-gray-700 font-medium">Added</p></div>
-        <div className="rounded-xl p-3 text-center bg-gray-50 border border-gray-200"><p className="text-[length:calc(18px*var(--ts))] font-bold text-gray-900">{deactivated.length}</p><p className="text-[length:calc(11.5px*var(--ts))] text-gray-700 font-medium">Deactivated</p></div>
+        <div className="rounded-xl p-3 text-center bg-info-soft border border-info/30"><p className="text-[length:calc(18px*var(--ts))] font-bold text-ink">{updated.length}</p><p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 font-medium">Updated</p></div>
+        <div className="rounded-xl p-3 text-center bg-good-soft border border-good/30"><p className="text-[length:calc(18px*var(--ts))] font-bold text-ink">{newlyAdded.length}</p><p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 font-medium">Added</p></div>
+        <div className="rounded-xl p-3 text-center bg-paper-2 border border-rule"><p className="text-[length:calc(18px*var(--ts))] font-bold text-ink">{deactivated.length}</p><p className="text-[length:calc(11.5px*var(--ts))] text-ink-2 font-medium">Deactivated</p></div>
       </div>
       {progress.errors.length > 0 && (
-        <div className="bg-red-50 border border-red-300 rounded-xl p-4 mb-4">
-          <p className="text-[length:calc(12px*var(--ts))] font-bold text-gray-900 mb-2">{progress.errors.length} issue{progress.errors.length !== 1 ? 's' : ''}</p>
+        <div className="bg-bad-soft border border-bad/40 rounded-xl p-4 mb-4">
+          <p className="text-[length:calc(12px*var(--ts))] font-bold text-ink mb-2">{progress.errors.length} issue{progress.errors.length !== 1 ? 's' : ''}</p>
           <div className="max-h-40 overflow-y-auto space-y-1">
-            {progress.errors.map((e, i) => <p key={i} className="text-[length:calc(11.5px*var(--ts))] text-red-800">{e.replace(/duplicate key value violates unique constraint "[^"]*"/, 'slot conflict')}</p>)}
+            {progress.errors.map((e, i) => <p key={i} className="text-[length:calc(11.5px*var(--ts))] text-bad">{e.replace(/duplicate key value violates unique constraint "[^"]*"/, 'slot conflict')}</p>)}
           </div>
         </div>
       )}
       <div className="flex flex-col gap-2 mt-5">
         {newlyAdded.length > 0 && (
-          <button onClick={() => setShowBatchAssign(true)} className="px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold bg-gold text-navy-dark hover:bg-gold-light">
-            Assign English Classes ({newlyAdded.length} new) →
+          <button onClick={() => setShowBatchAssign(true)} className="inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold bg-accent text-white hover:bg-accent-hover">
+            Assign English classes ({newlyAdded.length} new) <ArrowRight size={14} aria-hidden />
           </button>
         )}
-        <button onClick={onComplete} className={`px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold ${newlyAdded.length > 0 ? 'bg-surface-alt text-text-secondary hover:bg-border' : 'bg-navy text-white hover:bg-navy-dark'}`}>
-          {newlyAdded.length > 0 ? 'Skip — Close' : 'Done'}
+        <button onClick={onComplete} className={`px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold ${newlyAdded.length > 0 ? 'border border-rule-2 text-ink-2 hover:text-ink' : 'bg-accent text-white hover:bg-accent-hover'}`}>
+          {newlyAdded.length > 0 ? 'Skip and close' : 'Done'}
         </button>
       </div>
     </div>
@@ -560,7 +561,8 @@ function DoneStep({ comparison, missing, progress, onComplete }: {
 // ─── Batch Assign ───────────────────────────────────────────────────
 
 export function BatchAssignEnglishClass({ onDone }: { onDone: () => void }) {
-  const { showToast } = useApp()
+  const { showToast, language } = useApp()
+  const ko = language === 'ko'
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -588,47 +590,60 @@ export function BatchAssignEnglishClass({ onDone }: { onDone: () => void }) {
     const changed = students.filter(s => assignments[s.id] && assignments[s.id] !== s.english_class)
     if (!changed.length) { showToast('No changes'); return }
     setSaving(true)
-    let err = 0
-    for (const s of changed) { const { error } = await supabase.from('students').update({ english_class: assignments[s.id], updated_at: new Date().toISOString() }).eq('id', s.id); if (error) err++ }
+    const saved = new Set<string>()
+    const failed: Student[] = []
+    for (const s of changed) { const { error } = await supabase.from('students').update({ english_class: assignments[s.id], updated_at: new Date().toISOString() }).eq('id', s.id); if (error) failed.push(s); else saved.add(s.id) }
     setSaving(false)
-    showToast(err ? `Saved with ${err} error(s)` : `${changed.length} assigned`)
-    logActivity('saved', `English classes assigned · ${changed.map(s => `${s.korean_name || s.english_name} → ${assignments[s.id]}`).join(', ').slice(0, 160)}`)
+    const done = changed.filter(s => saved.has(s.id))
+    if (done.length) logActivity('saved', `English classes assigned · ${done.map(s => `${s.korean_name || s.english_name} → ${assignments[s.id]}`).join(', ').slice(0, 160)}`)
+    if (failed.length) {
+      // The ones that saved now hold their new class, so the count and the
+      // Save button cover only the students still to go; their picks stay.
+      setStudents(prev => prev.map(s => saved.has(s.id) ? { ...s, english_class: assignments[s.id] } : s))
+      showToast(notSavedMessage(failed.map(s => s.korean_name || s.english_name), ko, { en: 'English classes', ko: '영어 반' }), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { handleSaveRef.current() } } })
+      return
+    }
+    showToast(ko ? `${changed.length}명 배정 완료` : `${changed.length} assigned`)
     onDone()
   }
+  // Retry runs from a toast after the screen has re-rendered, so it reaches
+  // the latest handleSave (and its current list of students) through a ref.
+  const handleSaveRef = useRef(handleSave)
+  handleSaveRef.current = handleSave
 
   const cnt = students.filter(s => assignments[s.id] && assignments[s.id] !== s.english_class).length
   if (loading) return <Loading kind="quiet" rows={5} />
-  if (!students.length) return <div className="py-12 text-center"><CheckCircle2 size={32} className="mx-auto text-green-500 mb-3" /><p className="text-[length:calc(14px*var(--ts))] font-medium text-navy">All students have names</p><button onClick={onDone} className="mt-4 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white">Close</button></div>
+  if (!students.length) return <div className="py-12 text-center"><CheckCircle2 size={32} className="mx-auto text-good mb-3" /><p className="text-[length:calc(14px*var(--ts))] font-medium text-navy">All students have names</p><button onClick={onDone} className="mt-4 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink">Close</button></div>
 
   return (
     <div>
-      <h3 className="text-[length:calc(15px*var(--ts))] font-bold text-navy mb-1">Assign English Classes</h3>
+      <h3 className="text-[length:calc(15px*var(--ts))] font-bold text-navy mb-1">Assign English classes</h3>
       <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mb-3">{students.length} student{students.length !== 1 ? 's' : ''} need class assignment.</p>
       <div className="flex items-center gap-3 mb-3 p-3 bg-surface-alt rounded-xl flex-wrap">
         <button onClick={all} className="text-[length:calc(11.5px*var(--ts))] text-navy font-medium hover:underline">All ({students.length})</button>
         <button onClick={none} className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary hover:underline">None</button>
         <div className="h-5 w-px bg-border" />
         <select value={bulkClass} onChange={e => setBulkClass(e.target.value as EnglishClass)} className="px-2 py-1 border border-border rounded text-[length:calc(11.5px*var(--ts))]"><option value="">Class...</option>{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>
-        <button onClick={() => { if (!bulkClass) return; setAssignments(p => { const n = { ...p }; selected.forEach(id => { n[id] = bulkClass }); return n }); showToast(`Set ${selected.size} → ${bulkClass}`) }} disabled={!bulkClass || !selected.size} className="px-3 py-1 rounded text-[length:calc(11.5px*var(--ts))] font-bold bg-navy text-white disabled:opacity-30">Apply</button>
+        <button onClick={() => { if (!bulkClass) return; setAssignments(p => { const n = { ...p }; selected.forEach(id => { n[id] = bulkClass }); return n }); showToast(`Set ${selected.size} → ${bulkClass}`) }} disabled={!bulkClass || !selected.size} className="px-3 py-1 rounded text-[length:calc(11.5px*var(--ts))] font-bold border border-rule-2 bg-surface text-ink hover:border-ink-3 disabled:opacity-30">Apply</button>
       </div>
       <div className="border border-border rounded-xl overflow-hidden mb-4"><div className="max-h-[400px] overflow-y-auto">
         <table className="w-full text-[length:calc(11.5px*var(--ts))]"><thead className="bg-surface-alt sticky top-0 z-10"><tr>
           <th className="px-3 py-2 w-8"><input type="checkbox" checked={students.every(s => selected.has(s.id))} onChange={e => e.target.checked ? all() : none()} /></th>
-          <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Name</th><th className="px-3 py-2 text-center text-[length:calc(12px*var(--ts))] text-text-secondary">Gr</th><th className="px-3 py-2 text-center text-[length:calc(12px*var(--ts))] text-text-secondary">반/번</th><th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Current</th><th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">→ Assign</th>
+          <th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Name</th><th className="px-3 py-2 text-center text-[length:calc(12px*var(--ts))] text-text-secondary">Gr</th><th className="px-3 py-2 text-center text-[length:calc(12px*var(--ts))] text-text-secondary">반/번</th><th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Current</th><th className="px-3 py-2 text-left text-[length:calc(12px*var(--ts))] text-text-secondary">Assign</th>
         </tr></thead><tbody className="divide-y divide-border">
           {students.map(s => { const cur = assignments[s.id] || s.english_class; const ch = cur !== s.english_class; return (
-            <tr key={s.id} className={selected.has(s.id) ? 'bg-blue-50/50' : ''}>
+            <tr key={s.id} className={selected.has(s.id) ? 'bg-info-soft/50' : ''}>
               <td className="px-3 py-2 text-center"><input type="checkbox" checked={selected.has(s.id)} onChange={() => toggle(s.id)} /></td>
               <td className="px-3 py-2 font-medium">{s.korean_name}</td><td className="px-3 py-2 text-center">{s.grade}</td><td className="px-3 py-2 text-center">{s.korean_class} {s.class_number}</td>
               <td className="px-3 py-2"><span className="px-2 py-0.5 rounded-full text-[length:calc(11.5px*var(--ts))] font-semibold" style={{ backgroundColor: classToColor(s.english_class), color: classToTextColor(s.english_class) }}>{s.english_class}</span></td>
-              <td className="px-3 py-2"><select value={cur} onChange={e => setAssignments(p => ({ ...p, [s.id]: e.target.value as EnglishClass }))} className={`px-2 py-1 border rounded text-[length:calc(11.5px*var(--ts))] ${ch ? 'border-navy bg-navy/5 text-navy' : 'border-border text-text-secondary'}`}>{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>{ch && <span className="ml-1 text-navy font-bold">●</span>}</td>
+              <td className="px-3 py-2"><select value={cur} onChange={e => setAssignments(p => ({ ...p, [s.id]: e.target.value as EnglishClass }))} className={`px-2 py-1 border rounded text-[length:calc(11.5px*var(--ts))] ${ch ? 'border-navy bg-navy/5 text-navy' : 'border-border text-text-secondary'}`}>{ENGLISH_CLASSES.map(c => <option key={c} value={c}>{c}</option>)}</select>{ch && <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-accent align-middle" aria-label="Changed" />}</td>
             </tr>
           ) })}
         </tbody></table>
       </div></div>
       <div className="flex items-center justify-between">
         <button onClick={onDone} className="px-4 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-medium hover:bg-surface-alt">{cnt ? 'Skip' : 'Close'}</button>
-        <button onClick={handleSave} disabled={!cnt || saving} className="px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold bg-gold text-navy-dark disabled:opacity-40 flex items-center gap-2">{saving && <Loader2 size={14} className="animate-spin" />} Save ({cnt})</button>
+        <button onClick={handleSave} disabled={!cnt || saving} className="px-6 py-2.5 rounded-lg text-[length:calc(13px*var(--ts))] font-bold bg-accent text-white hover:bg-accent-hover disabled:opacity-40 flex items-center gap-2">{saving && <Loader2 size={14} className="animate-spin" />} Save ({cnt})</button>
       </div>
     </div>
   )

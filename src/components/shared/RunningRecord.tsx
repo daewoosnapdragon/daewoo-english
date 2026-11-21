@@ -141,7 +141,7 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
           <div>
             <h2 className="font-display text-lg font-semibold text-navy flex items-center gap-2">
               <BookOpen size={20} />
-              Running Record
+              Running record
             </h2>
             <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary mt-0.5">
               {passageTitle && <span className="font-medium text-text-secondary">{passageTitle}</span>}
@@ -153,20 +153,20 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
         </div>
 
         {/* Timer bar */}
-        <div className="flex items-center justify-between px-6 py-3 bg-navy-dark text-white shrink-0">
+        <div className="flex items-center justify-between px-6 py-3 bg-paper-2 border-b border-rule text-ink shrink-0">
           <div className="flex items-center gap-3">
             {!timing && !finished && (
-              <button onClick={handleStart} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-500 hover:bg-green-600 text-white text-[length:calc(13px*var(--ts))] font-semibold transition-all">
-                <Play size={16} /> Start Timer
+              <button onClick={handleStart} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-white text-[length:calc(13px*var(--ts))] font-semibold transition-all">
+                <Play size={16} /> Start timer
               </button>
             )}
             {timing && (
-              <button onClick={handleStop} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[length:calc(13px*var(--ts))] font-semibold transition-all animate-pulse">
+              <button onClick={handleStop} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-bad hover:opacity-90 text-white text-[length:calc(13px*var(--ts))] font-semibold transition-all animate-pulse">
                 <Square size={16} /> Stop
               </button>
             )}
             {finished && (
-              <button onClick={handleReset} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-[length:calc(12px*var(--ts))] font-medium">
+              <button onClick={handleReset} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rule-2 text-ink-2 hover:text-ink text-[length:calc(12px*var(--ts))] font-medium">
                 <RotateCcw size={14} /> Reset
               </button>
             )}
@@ -175,37 +175,37 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
           <div className="flex items-center gap-6 text-[length:calc(12px*var(--ts))]">
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{errors}</div>
-              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">Errors</div>
+              <div className="text-ink-3 text-[length:calc(12px*var(--ts))]">Errors</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{selfCorrections}</div>
-              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">Self-Corr</div>
+              <div className="text-ink-3 text-[length:calc(12px*var(--ts))]">Self-corr.</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold text-gold">{finished ? cwpm : '—'}</div>
-              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">CWPM</div>
+              <div className="text-ink-3 text-[length:calc(12px*var(--ts))]">CWPM</div>
             </div>
             <div className="text-center">
               <div className="text-[length:calc(20px*var(--ts))] font-bold">{finished ? `${accuracyRate}%` : '—'}</div>
-              <div className="text-white/60 text-[length:calc(12px*var(--ts))]">Accuracy</div>
+              <div className="text-ink-3 text-[length:calc(12px*var(--ts))]">Accuracy</div>
             </div>
           </div>
         </div>
 
         {/* Instructions */}
         <div className="px-6 py-2 bg-accent-light border-b border-border text-[length:calc(11.5px*var(--ts))] text-navy shrink-0">
-          <strong>Click cycle:</strong> 1× = <span className="text-red-600 font-bold">error</span> · 2× = <span className="text-amber-600 font-bold">self-correct</span> · 3× = <span className="text-blue-600 font-bold">last word read</span> · 4× = reset
+          <strong>Click cycle:</strong> 1× = <span className="text-bad font-bold">error</span> · 2× = <span className="text-warn font-bold">self-correct</span> · 3× = <span className="text-info font-bold">last word read</span> · 4× = reset
         </div>
 
         {/* Passage words */}
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {lastWordIdx !== null && (
-            <div className="mb-3 flex items-center justify-between bg-blue-50 rounded-lg px-4 py-2 border border-blue-200">
-              <span className="text-[length:calc(11.5px*var(--ts))] text-blue-800 font-medium">
+            <div className="mb-3 flex items-center justify-between bg-info-soft rounded-lg px-4 py-2 border border-info/30">
+              <span className="text-[length:calc(11.5px*var(--ts))] text-info font-medium">
                 Last word read: "{words[lastWordIdx]?.word}" — <span className="font-bold">{lastWordIdx + 1}/{totalWords} words</span>
-                {lastWordIdx + 1 < totalWords && <span className="text-blue-600 ml-1">(student didn't finish)</span>}
+                {lastWordIdx + 1 < totalWords && <span className="text-info ml-1">(student didn't finish)</span>}
               </span>
-              <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(11.5px*var(--ts))] text-red-500 hover:text-red-700">Clear marker</button>
+              <button onClick={() => setLastWordIdx(null)} className="text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink underline underline-offset-2">Clear marker</button>
             </div>
           )}
           <div className="leading-[2.8]">
@@ -223,13 +223,13 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
                       className={`
                         px-1.5 py-1 rounded-lg text-[length:calc(16px*var(--ts))] font-medium transition-all select-none
                         ${isPastLast
-                          ? 'text-gray-300 border-2 border-transparent cursor-default'
+                          ? 'text-ink-3 border-2 border-transparent cursor-default'
                           : isLastWord
-                            ? 'bg-red-500 text-white border-2 border-red-600 ring-2 ring-red-300 font-bold'
+                            ? 'bg-bad text-white border-2 border-bad ring-2 ring-bad/40 font-bold'
                             : w.mark === 'error' 
-                              ? 'bg-red-100 text-red-700 border-2 border-red-400 line-through decoration-2' 
+                              ? 'bg-bad-soft text-bad border-2 border-bad/40 line-through decoration-2' 
                               : w.mark === 'self_correct'
-                                ? 'bg-amber-100 text-amber-700 border-2 border-amber-400'
+                                ? 'bg-warn-soft text-warn border-2 border-warn/40'
                                 : 'hover:bg-surface-alt border-2 border-transparent text-text-primary'
                         }
                       `}
@@ -250,16 +250,16 @@ export default function RunningRecord({ passageText, passageTitle, studentName, 
           <div className="px-6 py-4 border-t border-border bg-surface-alt/30 flex items-center justify-between shrink-0">
             <div className="text-[length:calc(11.5px*var(--ts))] text-text-secondary space-x-4">
               <span>Words read: <strong>{wordsRead}/{totalWords}</strong></span>
-              <span>Errors: <strong className="text-red-600">{errors}</strong></span>
-              <span>Self-corrections: <strong className="text-amber-600">{selfCorrections}</strong></span>
+              <span>Errors: <strong className="text-bad">{errors}</strong></span>
+              <span>Self-corrections: <strong className="text-warn">{selfCorrections}</strong></span>
               <span>SC Ratio: <strong>{scRatio}</strong></span>
               <span>Time: <strong>{formatTime(elapsed)}</strong></span>
               <span>CWPM: <strong className="text-navy">{cwpm}</strong></span>
-              <span>Accuracy: <strong className={accuracyRate >= 96 ? 'text-green-600' : accuracyRate >= 90 ? 'text-amber-600' : 'text-red-600'}>{accuracyRate}%</strong></span>
+              <span>Accuracy: <strong className={accuracyRate >= 96 ? 'text-good' : accuracyRate >= 90 ? 'text-warn' : 'text-bad'}>{accuracyRate}%</strong></span>
             </div>
             <button onClick={handleComplete}
-              className="px-5 py-2.5 rounded-xl text-[length:calc(13px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark transition-all">
-              Save & Close
+              className="px-5 py-2.5 rounded-xl text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-all">
+              Save & close
             </button>
           </div>
         )}
@@ -282,7 +282,7 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
     <Overlay><div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-[600px] overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="font-display text-lg font-semibold text-navy flex items-center gap-2"><Upload size={18} /> Add Reading Passage</h2>
+          <h2 className="font-display text-lg font-semibold text-navy flex items-center gap-2"><Upload size={18} /> Add reading passage</h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-surface-alt text-text-tertiary"><X size={18} /></button>
         </div>
         <div className="p-6 space-y-4">
@@ -322,8 +322,8 @@ export function PassageUploader({ onSave, onClose }: { onSave: (passage: { title
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-medium text-text-secondary hover:bg-surface-alt">Cancel</button>
           <button onClick={() => { if (title && text.trim()) onSave({ title, text: text.trim(), level, grade_range: gradeRange, source }) }}
             disabled={!title || !text.trim()}
-            className="px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-            Save Passage ({wordCount} words)
+            className="px-5 py-2 rounded-lg text-[length:calc(13px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+            Save passage ({wordCount} words)
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 'use client'
 
 import { logActivity } from '@/lib/activity'
+import { chip } from '@/components/ui/Controls'
+import { notSavedMessage, retryLabel } from '@/lib/saveReport'
 import { useScheduleRules, WEEKDAY_LABELS } from '@/lib/scheduleRules'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
@@ -9,7 +11,7 @@ import { useViewLog } from '@/lib/useViewLog'
 import { supabase } from '@/lib/supabase'
 import { ENGLISH_CLASSES, GRADES, EnglishClass, Grade } from '@/types'
 import { classToColor, classToTextColor, getKSTDateString } from '@/lib/utils'
-import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Printer, X, Loader2, Save, Copy, Pencil } from 'lucide-react'
 import { classDays, isEmptyDay as isEmptyPlan, planMoves, pushPlan, type PlanDay, type PlanMove } from '@/lib/lessonSync'
 import { fetchFixedDays, fetchPlanDays, saveDays } from '@/lib/lessonSyncData'
 import { HALVES, academicYears, termDates } from '@/lib/curriculumPacing'
@@ -620,9 +622,12 @@ function ParentCalendarView() {
     setSaving(true)
     // Pending edits first, then every day of the month, skipping any changed elsewhere since load.
     await flushDirty()
-    const w = await writeDays(selectedClass, selectedGrade, monthDays.map(d => d.date).filter(d => dayData[d]).map(d => [d, dayData[d]] as [string, unknown]), currentTeacher?.id, stampsRef.current)
+    const entries = monthDays.map(d => d.date).filter(d => dayData[d]).map(d => [d, dayData[d]] as [string, unknown])
+    const w = await writeDays(selectedClass, selectedGrade, entries, currentTeacher?.id, stampsRef.current)
     w.saved.forEach(d => persistedDates.current.add(d))
-    let errors = w.errors
+    // Days neither saved nor left alone as changed elsewhere are the ones that failed.
+    const failedDays = entries.map(e => e[0]).filter(d => !w.saved.includes(d) && !w.conflicts.includes(d))
+    const failedHw: string[] = []
     // Save all weekly homework entries
     for (const [mon, hw] of Object.entries(weeklyHomework)) {
       const { error } = await supabase.from('parent_calendar').upsert({
@@ -630,13 +635,25 @@ function ParentCalendarView() {
         content: JSON.stringify({ homework: hw }),
         updated_by: currentTeacher?.id, updated_at: new Date().toISOString(),
       }, { onConflict: 'date,english_class,grade' })
-      if (error) errors++
+      if (error) failedHw.push(mon)
     }
     setSaving(false)
     if (w.conflicts.length) conflictToast(w.conflicts)
-    else showToast(errors > 0 ? `Saved with ${errors} error(s)` : 'Month saved')
+    else if (failedDays.length || failedHw.length) {
+      // Name the days (and homework weeks) that did not save; the plans stay
+      // on screen, and Retry runs the same save again.
+      const ko = lang === 'ko'
+      const day = (d: string) => { const [y, m, dd] = d.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }) }
+      const names = [...failedDays.map(day), ...failedHw.map(m => ko ? `${day(m)} 주 숙제` : `homework for the week of ${day(m)}`)]
+      showToast(notSavedMessage(names, ko, { en: 'lesson plans', ko: '수업 계획' }), { tone: 'error', action: { label: retryLabel(ko), onClick: () => { saveAllRef.current() } } })
+    }
+    else showToast(lang === 'ko' ? '이번 달 저장됨' : 'Month saved')
     logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
   }
+  // Retry is pressed from a toast after later renders, so it calls the
+  // current saveAll (with the plans as they are now) through a ref.
+  const saveAllRef = useRef(saveAll)
+  saveAllRef.current = saveAll
 
   // ─── Autosave ──────────────────────────────────────────────────────────
   // The week editor lets several days be edited without anything closing, so
@@ -762,7 +779,7 @@ function ParentCalendarView() {
       const weekMonday = week.length > 0 ? getMondayOf(week[0].date) : ''
       const hw = plan.hw[weekMonday] || ''
       if (hw) {
-        weeksHTML += `<tr>${daysHTML}</tr><tr><td colspan="5" class="hw-row"><span class="hw-label">Weekly Homework:</span> ${escapeHtml(hw)}</td></tr>`
+        weeksHTML += `<tr>${daysHTML}</tr><tr><td colspan="5" class="hw-row"><span class="hw-label">Weekly homework:</span> ${escapeHtml(hw)}</td></tr>`
       } else {
         weeksHTML += `<tr>${daysHTML}</tr>`
       }
@@ -770,7 +787,7 @@ function ParentCalendarView() {
 
     return `<div class="page">
   <div class="header">
-    <div><h1>${selectedClass} -- ${mn} ${year}${isPartial ? ' (Selected Weeks)' : ''}</h1><div class="sub">Grade ${grade} -- Daewoo Elementary School English Program</div></div>
+    <div><h1>${selectedClass} -- ${mn} ${year}${isPartial ? ' (selected weeks)' : ''}</h1><div class="sub">Grade ${grade} -- Daewoo Elementary School English Program</div></div>
     <div class="right">Daewoo Elementary School<br>English Program</div>
   </div>
   <table>
@@ -878,19 +895,19 @@ ${pages.join('\n')}
       <div className="bg-surface border-b border-border px-8 py-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-2xl font-bold text-navy">Lesson Plans</h2>
+            <h2 className="font-display text-2xl font-bold text-navy">Lesson plans</h2>
             <p className="text-[length:calc(13px*var(--ts))] text-text-secondary mt-1">Monthly parent calendar by class and grade</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
               <div className="flex">
-                <button onClick={() => handlePrint()} disabled={loading} className="disabled:opacity-60 inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[length:calc(12px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print Month</button>
-                <button onClick={() => setShowPrintOptions(!showPrintOptions)} className="px-2 py-2 rounded-r-lg text-white bg-navy hover:bg-navy-dark border-l border-white/20"><ChevronDown size={14} /></button>
+                <button onClick={() => handlePrint()} disabled={loading} className="disabled:opacity-60 inline-flex items-center gap-1.5 px-4 py-2 rounded-l-lg text-[length:calc(12px*var(--ts))] font-medium border border-rule-2 bg-surface text-ink-2 hover:text-ink">{printingAll ? <Loader2 size={14} className="animate-spin" /> : <Printer size={14} />} Print month</button>
+                <button onClick={() => setShowPrintOptions(!showPrintOptions)} aria-label="Print options" className="px-2 py-2 rounded-r-lg border border-l-0 border-rule-2 bg-surface text-ink-2 hover:text-ink"><ChevronDown size={14} /></button>
               </div>
               {showPrintOptions && (
                 <div className="absolute right-0 top-full mt-1 bg-surface border border-border rounded-xl shadow-lg z-50 p-3 min-w-[240px]">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Print Selected Weeks</p>
+                    <p className="text-[length:calc(11.5px*var(--ts))] font-semibold text-navy">Print selected weeks</p>
                     <button onClick={() => setPrintWeeks(printWeeks.size === weeks.length ? new Set() : new Set(weeks.map((_, i) => i)))}
                       className="text-[length:calc(11.5px*var(--ts))] text-text-secondary hover:text-navy">{printWeeks.size === weeks.length ? 'Clear' : 'All weeks'}</button>
                   </div>
@@ -917,20 +934,20 @@ ${pages.join('\n')}
                   <div className="flex gap-2">
                     <button onClick={() => { if (printAllGrades) handlePrintAllGrades(printWeeks); else handlePrint(printWeeks); setShowPrintOptions(false); setPrintWeeks(new Set()) }}
                       disabled={printWeeks.size === 0 || printingAll}
-                      className="flex-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-navy text-white hover:bg-navy-dark disabled:opacity-40">
-                      Print {printWeeks.size > 0 ? `${printWeeks.size} Week${printWeeks.size > 1 ? 's' : ''}${printAllGrades ? ' · Grades 1–5' : ''}` : '(select weeks)'}
+                      className="flex-1 px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-accent text-white hover:bg-accent-hover disabled:opacity-40">
+                      Print {printWeeks.size > 0 ? `${printWeeks.size} week${printWeeks.size > 1 ? 's' : ''}${printAllGrades ? ' · Grades 1–5' : ''}` : '(select weeks)'}
                     </button>
                     <button onClick={() => { setShowPrintOptions(false); setPrintWeeks(new Set()) }}
-                      className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
+                      className="px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-medium border border-rule-2 text-ink-2 hover:text-ink">Cancel</button>
                   </div>
                 </div>
               )}
             </div>
             {canEdit && (
               <button onClick={saveAll} disabled={saving || loading}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-gold text-navy-dark hover:bg-gold/90 disabled:opacity-50">
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-50">
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                {saving ? 'Saving...' : 'Save Month'}
+                {saving ? 'Saving...' : 'Save month'}
               </button>
             )}
           </div>
@@ -944,7 +961,7 @@ ${pages.join('\n')}
           </div>
           <div className="w-px h-6 bg-border" />
           <div className="flex gap-1">
-            {GRADES.map(g => <button key={g} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setSelectedGrade(g) } }} className={`px-3 py-1.5 rounded-lg text-[length:calc(11.5px*var(--ts))] font-semibold transition-all ${selectedGrade === g ? 'bg-navy text-white' : 'bg-surface-alt text-text-secondary'}`}>Grade {g}</button>)}
+            {GRADES.map(g => <button key={g} disabled={busyWriting} onClick={async () => { if (busyWriting) return; if (g !== selectedGrade) { await flushDirty(); setOpenWeek(null); setOpenPicker(null); setSelectedGrade(g) } }} className={`${chip(selectedGrade === g)} disabled:opacity-50`}>Grade {g}</button>)}
           </div>
         </div>
       </div>
@@ -954,7 +971,7 @@ ${pages.join('\n')}
         {undo && undo.cls === selectedClass && (
           <div className="mb-4 flex items-center gap-3 flex-wrap px-4 py-2.5 rounded-lg border border-border bg-surface-alt text-[length:calc(13px*var(--ts))]">
             <span className="text-text-primary">{undo.text}</span>
-            <button onClick={undoShift} disabled={shifting === 'undo'} className="px-3 py-1 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting === 'undo' ? 'Undoing…' : 'Undo'}</button>
+            <button onClick={undoShift} disabled={shifting === 'undo'} className="px-3 py-1 rounded-lg text-[length:calc(12px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-50">{shifting === 'undo' ? 'Undoing…' : 'Undo'}</button>
             <button onClick={() => setUndo(null)} className="ml-auto text-text-tertiary hover:text-text-primary" aria-label="Dismiss"><X size={14} /></button>
           </div>
         )}
@@ -984,7 +1001,7 @@ ${pages.join('\n')}
               <div key={wi}>
                 <div className="grid grid-cols-5 border-b border-border">
                 {fw.map((day, di) => {
-                  if (!day) return <div key={di} className="bg-gray-50/50 border-r border-border last:border-r-0 min-h-[110px]" />
+                  if (!day) return <div key={di} className="bg-paper-2/50 border-r border-border last:border-r-0 min-h-[110px]" />
                   const data = dayData[day.date] || emptyDay()
                   const evts = calEvents[day.date] || []
                   const isToday = day.date === todayStr
@@ -1014,13 +1031,13 @@ ${pages.join('\n')}
                     <div key={di}
                       onClick={() => openDayWeek(wi)}
                       className={`border-r border-border last:border-r-0 min-h-[140px] p-3 transition-all ${
-                        canEdit ? 'cursor-pointer hover:bg-blue-50/30' : ''
-                      } ${isToday ? 'bg-amber-50/30 ring-2 ring-inset ring-gold/40' : blocked?.kind === 'exam' ? 'bg-warn-soft/60' : 'bg-white'}`}>
+                        canEdit ? 'cursor-pointer hover:bg-paper-2/60' : ''
+                      } ${isToday ? 'bg-accent-soft/30 ring-2 ring-inset ring-accent/40' : blocked?.kind === 'exam' ? 'bg-warn-soft/60' : 'bg-white'}`}>
                       {/* Day header */}
-                      <div className={`text-[length:calc(12px*var(--ts))] font-bold mb-2 pb-1.5 border-b flex items-center justify-between ${isToday ? 'text-amber-700 border-gold/30' : 'text-slate-500 border-border/40'}`}>
+                      <div className={`text-[length:calc(12px*var(--ts))] font-bold mb-2 pb-1.5 border-b flex items-center justify-between ${isToday ? 'text-accent border-accent/30' : 'text-ink-3 border-border/40'}`}>
                         <span>{DAY_SHORT[di]} <span className="text-text-primary font-extrabold">{month + 1}/{day.dayNum}</span></span>
                         {isToday && <span className="text-[length:calc(11.5px*var(--ts))] bg-gold/20 text-gold-dark px-1.5 py-0.5 rounded-full font-bold">Today</span>}
-                        {canEdit && hasFill && <span className="text-[length:calc(11.5px*var(--ts))] text-blue-400">✎</span>}
+                        {canEdit && hasFill && <Pencil size={11} aria-hidden className="text-ink-3" />}
                       </div>
 
                       {noG5 ? (
@@ -1028,7 +1045,7 @@ ${pages.join('\n')}
                       ) : (
                         <>
                           {blocked?.kind === 'exam' && <div className="text-[length:calc(12px*var(--ts))] font-bold text-warn mb-1.5">{blocked.title}</div>}
-                          {evts.map((ev, ei) => <div key={ei} className="text-[length:calc(11.5px*var(--ts))] font-bold text-slate-600 bg-slate-100 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
+                          {evts.map((ev, ei) => <div key={ei} className="text-[length:calc(11.5px*var(--ts))] font-bold text-ink-2 bg-paper-2 rounded px-2 py-1 mb-1.5">{ev.title}</div>)}
                           {/* Only rows with content. A labeled-but-empty row must never
                               show here or in print -- this is the parent-facing calendar. */}
                           {data.subjects.map((s, si) => s.content.trim() ? (
@@ -1109,7 +1126,7 @@ ${pages.join('\n')}
                                     {data.subjects.length > 1 && (
                                       <button onClick={() => removeSubjectRow(day.date, si)}
                                         title="Remove this subject"
-                                        className="shrink-0 p-1 text-text-tertiary hover:text-red-500 transition-colors"><X size={13} /></button>
+                                        className="shrink-0 p-1 text-text-tertiary hover:text-bad transition-colors"><X size={13} /></button>
                                     )}
                                   </div>
                                   {/* The unit this row is about: for the teacher, never printed. */}
@@ -1199,7 +1216,7 @@ ${pages.join('\n')}
                     <div className="flex items-center justify-between gap-3 pt-3 mt-1">
                       <span className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">Saves as you type. Homework below covers the whole week.</span>
                       <button onClick={async () => { await flushDirty(); setOpenWeek(null); setOpenPicker(null) }}
-                        className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark transition-colors">
+                        className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover transition-colors">
                         Done
                       </button>
                     </div>
@@ -1208,8 +1225,8 @@ ${pages.join('\n')}
 
                 {/* Weekly homework bar */}
                 {(hw || canEdit) && (
-                  <div className={`border-b border-border px-3 py-1.5 flex items-center gap-2 ${hw ? 'bg-amber-50/50' : 'bg-gray-50/30'}`}>
-                    <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-amber-800 shrink-0">Weekly HW:</span>
+                  <div className={`border-b border-border px-3 py-1.5 flex items-center gap-2 ${hw ? 'bg-paper-2' : 'bg-paper-2/30'}`}>
+                    <span className="text-[length:calc(11.5px*var(--ts))] font-bold text-ink-2 shrink-0">Weekly HW:</span>
                     {canEdit ? (
                       <input value={hw} onChange={e => updateHomework(weekMonday, e.target.value)}
                         onBlur={async () => {
@@ -1221,9 +1238,9 @@ ${pages.join('\n')}
                           logActivity('saved', `Lesson plans · ${selectedClass} · Grade ${selectedGrade}: weekly homework for ${weekMonday}`, { key: `lessons|${selectedClass}|${selectedGrade}` })
                         }}
                         placeholder="Enter homework for this week..."
-                        className="flex-1 text-[length:calc(11.5px*var(--ts))] bg-transparent outline-none text-amber-900 placeholder:text-ink-3 py-0.5" />
+                        className="flex-1 text-[length:calc(11.5px*var(--ts))] bg-transparent outline-none text-ink placeholder:text-ink-3 py-0.5" />
                     ) : (
-                      <span className="text-[length:calc(11.5px*var(--ts))] text-amber-900">{hw || '--'}</span>
+                      <span className="text-[length:calc(11.5px*var(--ts))] text-ink">{hw || '--'}</span>
                     )}
                     {canEdit && weekMonday && (
                       <button data-guide="lessons.copy"
@@ -1283,7 +1300,7 @@ ${pages.join('\n')}
                 <span className="text-[length:calc(12px*var(--ts))] text-text-tertiary">{total} planned day{total === 1 ? '' : 's'} move. You can undo it afterwards.</span>
                 <span className="flex-1" />
                 <button onClick={() => setShiftPlan(null)} disabled={!!shifting} className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-medium bg-surface-alt text-text-secondary hover:bg-border">Cancel</button>
-                <button onClick={applyShift} disabled={!!shifting || total === 0} className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-navy text-white hover:bg-navy-dark disabled:opacity-50">{shifting ? 'Moving…' : verb}</button>
+                <button onClick={applyShift} disabled={!!shifting || total === 0} className="px-4 py-1.5 rounded-lg text-[length:calc(12.5px*var(--ts))] font-semibold bg-accent text-white hover:bg-accent-hover disabled:opacity-50">{shifting ? 'Moving…' : verb}</button>
               </div>
             </div>
           </div></Overlay>
