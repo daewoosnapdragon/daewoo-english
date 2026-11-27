@@ -1,4 +1,4 @@
-import type { CurriculumBook } from '@/lib/curriculumCore'
+import { splitUnitTitle, type CurriculumBook } from '@/lib/curriculumCore'
 import { addDays, mondayOf, termDates, weekList, type CurriculumPlacement, type SemesterLike, type Term, type YearWeeks } from '@/lib/curriculumPacing'
 
 // ─── Year plan: the pure parts of dragging a book on the timeline ──────────
@@ -78,12 +78,13 @@ export function lastYearFor(placements: CurriculumPlacement[], cls: string, grad
   return { grade: g, placements: out }
 }
 
-/** What to offer: for a new G1 the book last year's G1 used, else the next level after the latest of last year's books (fall, then year, then spring). */
+/** What to offer: for a new G1 the book last year's G1 used, else the next level after the latest of last year's books (fall, then year, then spring); a series with only one book (Science of Reading) runs on, so it is offered again. */
 export function suggestBook(grade: number, last: CurriculumPlacement[], books: CurriculumBook[]): CurriculumBook | undefined {
   const latest = [...last].sort((a, b) => TERM_ORDER.indexOf(b.term) - TERM_ORDER.indexOf(a.term))[0]
   const book = latest ? books.find(b => b.id === latest.book_id) : undefined
   if (!book) return undefined
-  return grade === 1 ? book : nextBook(book, books)
+  if (grade === 1) return book
+  return nextBook(book, books) || (books.some(b => b.series_id === book.series_id && b.id !== book.id) ? undefined : book)
 }
 
 const SPRING_WEEKS = 20, FALL_WEEKS = 18
@@ -146,4 +147,20 @@ export function classKey(k: ClassKeyCtx): 'prev' | 'next' | 'exit' | null {
   if (k.key !== 'ArrowLeft' && k.key !== 'ArrowRight') return null
   if (k.inField || k.onGrip || k.dialogOpen || k.panelOpen) return null
   return k.key === 'ArrowRight' ? 'next' : 'prev'
+}
+
+/**
+ * What fits on a unit's bar. A phonics unit ("Closed Syllables · Consonant Digraphs: sh") shows its pattern ("sh"),
+ * since the section name is the same for weeks on end; any other unit shows its badge ("Unit 4", "M3 W1"),
+ * "SL 2" for a School Link, else its name.
+ */
+export function unitLabel(title: string, phonics: boolean): string {
+  const t = splitUnitTitle(title)
+  if (phonics) {
+    let p = t.name.includes(':') ? t.name.slice(t.name.indexOf(':') + 1) : t.name
+    p = p.replace(/^\s*Suffix\s+/i, '').replace(/<([^>]+)>\s*spells\s*/i, '$1 → ').replace(/[<>]/g, '').replace(/\bTogether\b/i, '').replace(/,\s*/g, ' ')
+    return p.replace(/\s+/g, ' ').trim() || t.name
+  }
+  const sl = t.name.match(/^School Link\s*(\d+)/i)
+  return t.badge || (sl ? `SL ${sl[1]}` : t.name)
 }
