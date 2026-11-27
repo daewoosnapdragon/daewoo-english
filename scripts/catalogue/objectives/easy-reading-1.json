@@ -1,0 +1,533 @@
+{
+  "series": "Easy Reading",
+  "level": "1",
+  "units": [
+    {
+      "title": "Unit 1 · I See Me",
+      "objectives": [
+        {
+          "text": "listen to I See Me and tell what the pictures and words show",
+          "ccss": [
+            "RL.1.1",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read I See Me aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name things they can see when they look around, like a book or a bird",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about what they see, like “I see a bird.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · I Am Happy",
+      "objectives": [
+        {
+          "text": "listen to I Am Happy and tell the feelings shown in the pictures",
+          "ccss": [
+            "RL.1.1",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read I Am Happy aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name feelings, like happy, sad, angry and scared",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about feelings, like “I am happy.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Many Things",
+      "objectives": [
+        {
+          "text": "listen to Many Things and name the things they see in the pictures",
+          "ccss": [
+            "RI.1.1",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in Many Things to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name things they own and use, like a bag, a pencil and a ball",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about their own things, like “I have a red bag.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · My Family",
+      "objectives": [
+        {
+          "text": "listen to My Family and tell who is in the family",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread My Family aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name family members: mom, dad, brother, sister, grandma and grandpa",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences that introduce their family, like “This is my mom.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Play with Shapes",
+      "objectives": [
+        {
+          "text": "listen to Play with Shapes and point to the shapes in the pictures",
+          "ccss": [
+            "RI.1.1",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "read Play with Shapes aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name shapes, like circle, square, triangle and rectangle",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about shapes around them: “The clock is a circle.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Hungry Ben",
+      "objectives": [
+        {
+          "text": "listen to Hungry Ben and name the foods they see in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read Hungry Ben aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name foods, like bread, apples, milk and eggs",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about foods they like: “I like apples.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · What Can Go?",
+      "objectives": [
+        {
+          "text": "listen to What Can Go? and answer the title question using the pictures",
+          "ccss": [
+            "RI.1.1",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in What Can Go? to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name ways to travel, like car, bus, train, boat and plane",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about things that go: “A bus can go.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · My Dad",
+      "objectives": [
+        {
+          "text": "listen to My Dad and tell what happens in the kitchen",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread My Dad aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name kitchen things, like pot, pan, cup, bowl and spoon",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about cooking or helping in the kitchen at home",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Two Pets",
+      "objectives": [
+        {
+          "text": "listen to Two Pets and tell how the two pets are alike and different",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read Two Pets aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name animal body parts, like ears, eyes, tail, legs and fur",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about an animal's body: “A cat has a long tail.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · My Class",
+      "objectives": [
+        {
+          "text": "listen to My Class and tell what the children do in class",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read My Class aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name classroom things and people, like desk, chair, board and teacher",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about their own class: “I have a desk.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Little Bear",
+      "objectives": [
+        {
+          "text": "listen to Little Bear and tell what Little Bear likes best",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in Little Bear to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the word favorite to talk about colors, foods and toys they like best",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about their favorites: “My favorite color is blue.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · School Is Fun",
+      "objectives": [
+        {
+          "text": "listen to School Is Fun and tell what makes school fun in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread School Is Fun aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name things they do at school, like read, write, sing, draw and play",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about what they like at school: “I like to draw.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

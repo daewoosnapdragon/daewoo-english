@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useApp } from '@/lib/context'
 import { percentToLetter } from '@/lib/utils'
 import { tierForScore, suggestBand, gradeBand, usageCounts, BANDS, type Band, type Pronoun, type Tier } from '@/lib/phrases'
 import { loadPhraseBank, usablePhrases, AREA_LABEL, TIER_LABEL, type Phrase } from '@/lib/phraseBank'
@@ -10,7 +11,7 @@ import { taughtSkills, togglePick, type TaughtSkills } from '@/lib/taughtSkills'
 import { loadTaughtSources, saveTaughtPicks, type TaughtSources } from '@/lib/taughtSkillsData'
 import { skillsOf, AREA_FAMILIES } from '@/lib/phraseSkills'
 import { SKILLS } from '@/components/curriculum/standards-plain'
-import { readSpelling, saveSpelling, spell, type Spelling } from '@/lib/spelling'
+import { type Spelling } from '@/lib/spelling'
 import { fillKnownBlanks, type KnownFacts } from '@/lib/phraseFacts'
 import { PRONOUNS } from '@/lib/phrases'
 import { fillPhrase } from '@/lib/phrases'
@@ -101,8 +102,9 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
   const [picks, setPicks] = useState<{ add: string[]; remove: string[] }>({ add: [], remove: [] })
   const [showAll, setShowAll] = useState<Record<string, boolean>>({})
   // American by default (the bank is written that way); British converts each sentence as it fills.
-  const [spelling, setSpelling] = useState<Spelling>(() => readSpelling())
-  const pickSpelling = (s: Spelling) => { setSpelling(s); saveSpelling(s) }
+  // The app-wide spelling (Settings), so this switch and Settings always agree.
+  const { spelling, setSpelling, sp } = useApp()
+  const pickSpelling = (s: Spelling) => setSpelling(s)
   // The scrolling body and which card is at the top of it, for the rail.
   const bodyRef = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState('opener')
@@ -142,7 +144,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
 
   const usable = useMemo(() => usablePhrases(rows, doc, gradeBand(student.grade)), [rows, doc, student.grade])
   const counts = useMemo(() => usageCounts(usable.filter(p => p.kind !== 'ladder'), classComments), [usable, classComments])
-  const fill = (t: string) => spell(fillPhrase(t, { name: student.name, pronoun: student.pronoun }), spelling)
+  const fill = (t: string) => sp(fillPhrase(t, { name: student.name, pronoun: student.pronoun }), [student.name])
   /** A phrase's text with the blanks the app knows already filled. */
   const textOf = (p: Phrase) => fillKnownBlanks(p.seed_key, p.text, facts)
   const byId = useMemo(() => new Map(usable.map(p => [p.id, p])), [usable])
@@ -170,7 +172,7 @@ export default function CommentBuilder({ student, scores, behaviorGrade, wida, d
     home: usable.flatMap(p => p.kind === 'ladder' ? [checked[`${p.id}:1`] && p.home1, checked[`${p.id}:2`] && p.home2].filter(Boolean) as string[] : []),
     closer: closer ? byId.get(closer)?.text || null : null,
   }), [opener, closer, checked, usable, byId, order])
-  const draft = useMemo(() => spell(assembleComment(selection, { name: student.name, pronoun: student.pronoun }), spelling), [selection, student.name, student.pronoun, spelling])
+  const draft = useMemo(() => sp(assembleComment(selection, { name: student.name, pronoun: student.pronoun }), [student.name]), [selection, student.name, student.pronoun, sp])
   const words = wordCount(draft)
   const steps = nextStepCount(draft)
   const ticked = Object.values(checked).filter(Boolean).length

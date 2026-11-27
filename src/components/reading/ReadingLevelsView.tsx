@@ -756,7 +756,7 @@ function CwpmLineChart({ records, classBench }: { records: any[]; classBench: an
   return (
     <div>
       <LineChart points={points} band={band} height={220} />
-      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">Dot colour is accuracy: green 96%+, amber 90–95%, red below. Hover a dot for the passage level.</p>
+      <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-1">Dot color is accuracy: green 96%+, amber 90–95%, red below. Hover a dot for the passage level.</p>
     </div>
   )
 }

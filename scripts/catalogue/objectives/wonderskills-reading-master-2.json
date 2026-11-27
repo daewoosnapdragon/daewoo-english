@@ -1,0 +1,620 @@
+{
+  "series": "Wonderskills Reading",
+  "level": "Master 2",
+  "units": [
+    {
+      "title": "Unit 1 · The Girl and the Chenoo",
+      "objectives": [
+        {
+          "text": "tell the main events of The Girl and the Chenoo in order, using first, next and finally",
+          "ccss": [
+            "RL.5.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words from the folktale, like kindness, courage, stranger and fear",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "summarize The Girl and the Chenoo, giving only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about an act of kindness they did or saw",
+          "ccss": [
+            "W.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · The Bookers",
+      "objectives": [
+        {
+          "text": "picture the characters and events of The Bookers in their minds and describe them",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the theme, or message, of The Bookers and the details that show it",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use friendship words, like loyal, trust, support and friendship",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Bookers that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain what makes a friendship strong, with an example",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Remembering Hurricane Katrina",
+      "objectives": [
+        {
+          "text": "picture the people, places and events in Remembering Hurricane Katrina in their minds and describe them",
+          "ccss": [
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell whose point of view Remembering Hurricane Katrina is told from and how it shapes the account",
+          "ccss": [
+            "RI.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use disaster words, like hurricane, flood, rescue and rebuild",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Remembering Hurricane Katrina that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write how a community can help people after a disaster",
+          "ccss": [
+            "W.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Changing the World",
+      "objectives": [
+        {
+          "text": "reread parts of Changing the World that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what the author thinks about the person in Changing the World and the evidence given",
+          "ccss": [
+            "RI.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about justice, like liberty, justice, equal and rights",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Changing the World that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write their opinion on what fairness means, with reasons",
+          "ccss": [
+            "W.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Words for Change",
+      "objectives": [
+        {
+          "text": "reread parts of Words for Change that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the author of Words for Change supports a point with reasons and evidence",
+          "ccss": [
+            "RI.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about speaking up, like speech, powerful, persuade and change",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Words for Change that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short speech using powerful words to change something",
+          "ccss": [
+            "W.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Food for Thought",
+      "objectives": [
+        {
+          "text": "reread parts of Food for Thought that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what the author thinks about feeding the world and the reasons given",
+          "ccss": [
+            "RI.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use food words, like hunger, crop, farm, waste and supply",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Food for Thought that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "give their opinion on how to reduce food waste, with reasons",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Masters of the Imagination",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading Masters of the Imagination and find the answers",
+          "ccss": [
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell two main ideas of Masters of the Imagination and the key details that support them",
+          "ccss": [
+            "RI.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about the future, like imagine, future, invent and create",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Masters of the Imagination that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe what they imagine the world will be like in the future",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · A World Without Rules",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading A World Without Rules and find the answers",
+          "ccss": [
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the causes and effects in A World Without Rules using details from the text",
+          "ccss": [
+            "RI.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use law words, like law, rule, order, safety and fair",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of A World Without Rules that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain what might happen in a world without rules",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Galaxy Governments",
+      "objectives": [
+        {
+          "text": "make predictions while reading Galaxy Governments and check them against what happens",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main problem in Galaxy Governments and how it is solved",
+          "ccss": [
+            "RL.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use negotiation words, like negotiate, agree, compromise and government",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Galaxy Governments that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "role-play a negotiation with a partner and reach a compromise",
+          "ccss": [
+            "SL.5.1"
+          ],
+          "wida": [
+            "ELD-SI.4-5.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · A Telephone Mix-Up",
+      "objectives": [
+        {
+          "text": "make predictions while reading A Telephone Mix-Up and check them against what happens",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "explain how the narrator's point of view shapes how A Telephone Mix-Up is told",
+          "ccss": [
+            "RL.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use technology words, like telephone, invention, message and connect",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of A Telephone Mix-Up that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "compare communication in the past with the way they communicate today",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Wonders of the Night Sky",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading Wonders of the Night Sky and find the answers",
+          "ccss": [
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the causes and effects in Wonders of the Night Sky using details from the text",
+          "ccss": [
+            "RI.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use night sky words, like star, planet, constellation and meteor",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Wonders of the Night Sky that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain what causes one thing they can see in the night sky",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · The Road to Success",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading The Road to Success and find the answers",
+          "ccss": [
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell two main ideas of The Road to Success and the key details that support them",
+          "ccss": [
+            "RI.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about success, like achieve, goal, effort and succeed",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Road to Success that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about a goal they want to achieve and their plan",
+          "ccss": [
+            "W.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

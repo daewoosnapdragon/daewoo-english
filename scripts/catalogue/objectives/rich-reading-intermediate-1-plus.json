@@ -1,0 +1,517 @@
+{
+  "series": "Rich Reading",
+  "level": "Intermediate 1 Plus",
+  "units": [
+    {
+      "title": "Unit 1 · A New Home for Henry",
+      "objectives": [
+        {
+          "text": "tell the main problem in A New Home for Henry and how it is solved",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about giving a pet a home, like home, care, safe and space",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A New Home for Henry with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what a pet needs in a good home",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Wetlands",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Wetlands and what readers should learn",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use wetland words, like marsh, swamp, mud, reeds and wildlife",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Wetlands with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write why wetlands are important, using one fact from Wetlands",
+          "ccss": [
+            "W.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Mice on Ice",
+      "objectives": [
+        {
+          "text": "tell the plot of Mice on Ice: the problem, the main events and how it ends",
+          "ccss": [
+            "RL.2.5",
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about ice and cold, like slide, slippery, cold and frozen",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Mice on Ice with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what makes a good friend, using an example from Mice on Ice",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · A Guiding Light",
+      "objectives": [
+        {
+          "text": "tell the main idea of A Guiding Light and the key details that support it",
+          "ccss": [
+            "RI.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use building words, like structure, tower, tall, light and guide",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Guiding Light with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe a building or structure in their town and what it is for",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Fly the Hero",
+      "objectives": [
+        {
+          "text": "tell the main events of Fly the Hero in order, using first, next and finally",
+          "ccss": [
+            "RL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about courage, like brave, hero, fear and danger",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Fly the Hero with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time they or someone they know was brave",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Amazing Hippos!",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Amazing Hippos! and what readers should learn",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use hippo and mammal words, like mammal, river, heavy and huge",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Amazing Hippos! with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write three facts about hippos to teach a friend",
+          "ccss": [
+            "W.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Berries, Berries, Berries!",
+      "objectives": [
+        {
+          "text": "tell how different characters in Berries, Berries, Berries! feel, reading their parts in different voices",
+          "ccss": [
+            "RL.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use healthy habit words, like healthy, fruit, exercise and sleep",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Berries, Berries, Berries! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say one healthy habit they have and why it is good for them",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · High in the Sky",
+      "objectives": [
+        {
+          "text": "tell why the author wrote High in the Sky and what readers should learn",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use space words, like star, planet, moon and telescope",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of High in the Sky with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write what they would like to see in the night sky and why",
+          "ccss": [
+            "W.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Happy New Year!",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Happy New Year!",
+          "ccss": [
+            "RL.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use celebration words, like celebrate, holiday, wish, family and party",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Happy New Year! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how their family celebrates the new year",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Jane Goodall",
+      "objectives": [
+        {
+          "text": "tell the important events of Jane Goodall's life in the order they happened",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use science words, like scientist, chimpanzee, study and observe",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Jane Goodall with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they admire about Jane Goodall's work with chimpanzees",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Dangerous Rain",
+      "objectives": [
+        {
+          "text": "tell what happens in Dangerous Rain and why, using because",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use storm words, like flood, heavy rain, safe and warning",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Dangerous Rain with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how people can stay safe in heavy rain",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Glaciers",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how glaciers form and move",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use glacier words, like ice, snow, melt, frozen and mountain",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Glaciers with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain to a partner what a glacier is, in their own words",
+          "ccss": [
+            "SL.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,519 @@
+{
+  "series": "Rich Reading",
+  "level": "Intermediate 3",
+  "units": [
+    {
+      "title": "Unit 1 · A Job for Little Chad",
+      "objectives": [
+        {
+          "text": "tell the plot of A Job for Little Chad: the problem, the main events and how it ends",
+          "ccss": [
+            "RL.2.5",
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use helping words, like job, helpful, chore and proud",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Job for Little Chad with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a job they do to help at home",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · What Covers Animals’ Bodies?",
+      "objectives": [
+        {
+          "text": "compare animal coverings, like fur, feathers and scales, and tell what each does",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words for body coverings: fur, feathers, scales, shell and skin",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of What Covers Animals’ Bodies? with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "choose an animal and describe what covers its body",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Our Rainforest Gets a Thumbs-Up!",
+      "objectives": [
+        {
+          "text": "tell how different characters in Our Rainforest Gets a Thumbs-Up! feel, reading their parts in different voices",
+          "ccss": [
+            "RL.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use rainforest words, like rainforest, canopy, vine, tree and rain",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Our Rainforest Gets a Thumbs-Up! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say why rainforests are important places for animals",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Busy as a Bee",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the work bees do, using key details",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use bee words, like hive, worker, queen, nectar and pollen",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Busy as a Bee with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell what the saying “busy as a bee” means and when to use it",
+          "ccss": [
+            "L.2.5",
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Paul Saw Arctic Foxes!",
+      "objectives": [
+        {
+          "text": "tell the main problem in Paul Saw Arctic Foxes! and how it is solved",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about jobs, like dream job, work, explore and study",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Paul Saw Arctic Foxes! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about their dream job and why they want it",
+          "ccss": [
+            "W.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Be a Volunteer!",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Be a Volunteer! and what they want readers to do",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use volunteer words, like volunteer, community, help and donate",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Be a Volunteer! with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say how they could volunteer to help their community",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Hare’s Idea",
+      "objectives": [
+        {
+          "text": "tell the plot of Hare’s Idea: the problem, the main events and how it ends",
+          "ccss": [
+            "RL.2.5",
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about ideas, like idea, plan, clever and try",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Hare’s Idea with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a good idea they had and what happened",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Different Teeth, Different Uses",
+      "objectives": [
+        {
+          "text": "tell the main idea of Different Teeth, Different Uses and the key details that support it",
+          "ccss": [
+            "RI.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use teeth words, like sharp, flat, chew, bite and tusk",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Different Teeth, Different Uses with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain how their own teeth help them eat",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · The Same Goal",
+      "objectives": [
+        {
+          "text": "tell what happens in The Same Goal and why, using because",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use teamwork words, like goal, team, together and work hard",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Same Goal with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time a team reached a goal together",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · All About Penguins",
+      "objectives": [
+        {
+          "text": "ask and answer questions about penguins using key details from All About Penguins",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use penguin words, like flipper, waddle, ice, chick and swim",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of All About Penguins with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write three facts about penguins and one thing they want to know",
+          "ccss": [
+            "W.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Where Are They Going?",
+      "objectives": [
+        {
+          "text": "tell what happens in Where Are They Going? and why, using because",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use migration words, like migrate, travel, warm, south and journey",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Where Are They Going? with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell why some animals travel far each year",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Talking Underwater",
+      "objectives": [
+        {
+          "text": "tell the problem of talking underwater and the solutions the text describes",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use communication words, like signal, sound, message and underwater",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Talking Underwater with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "show and explain a hand signal they could use to talk without words",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,523 @@
+{
+  "series": "Rich Reading",
+  "level": "Basic 3",
+  "units": [
+    {
+      "title": "Unit 1 · Grandma Comes to Visit",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Grandma Comes to Visit",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use family visit words, like grandma, visit, hug, stay and miss",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Grandma Comes to Visit in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time a family member came to visit",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Push or Pull",
+      "objectives": [
+        {
+          "text": "ask and answer questions about pushes and pulls using key details from Push or Pull",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use force words, like push, pull, move, open and close",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Push or Pull in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "name things they push and things they pull every day",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Musical Chairs!",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Musical Chairs!",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use game words, like music, chair, stop, win and turn",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Musical Chairs! in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how to play a game they like",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Plants Have Many Parts",
+      "objectives": [
+        {
+          "text": "ask and answer questions about what each plant part does",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name plant parts: roots, stem, leaves, flower and seeds",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Plants Have Many Parts in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "draw a plant, label its parts and tell what one part does",
+          "ccss": [
+            "W.1.2",
+            "SL.1.5"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Who Can Stop the Top?",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Who Can Stop the Top?",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use toy words, like top, spin, stop, fast and slow",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Who Can Stop the Top? in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "describe their favorite toy and how to play with it",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · We Can Help the Earth!",
+      "objectives": [
+        {
+          "text": "ask and answer questions about ways to help the earth in We Can Help the Earth!",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about the earth, like recycle, reuse, save, trash and clean",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from We Can Help the Earth! in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say one way they will help the earth and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · BAM! BAM! BOOM!",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about BAM! BAM! BOOM!",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name instruments and their sounds, like drum, bang, boom and loud",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell BAM! BAM! BOOM! in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell which instrument they would like to play and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Treehouses",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how treehouses are built and used",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use building words, like tree, branch, ladder, wood and build",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Treehouses in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe the treehouse they would like to build",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · A Family on a Farm",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about A Family on a Farm",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use farm words, like barn, field, tractor, feed and crops",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell A Family on a Farm in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they would like and not like about living on a farm",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Where Do Animals Live?",
+      "objectives": [
+        {
+          "text": "answer the question Where Do Animals Live? using key details from the text",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name animal habitats, like forest, ocean, desert, pond and jungle",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Where Do Animals Live? in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "choose an animal and tell where it lives and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Friends Together",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Friends Together",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use friendship words, like together, share, kind and help",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Friends Together in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what makes someone a good friend",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Grow Your Own Food",
+      "objectives": [
+        {
+          "text": "put the steps for growing food in a garden in order",
+          "ccss": [
+            "RI.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use garden words, like seed, soil, water, sprout and pick",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Grow Your Own Food in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell what food they would like to grow and how they would grow it",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

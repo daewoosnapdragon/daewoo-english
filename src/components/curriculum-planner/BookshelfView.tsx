@@ -89,7 +89,7 @@ export default function BookshelfView() {
         </div>
       </div>
 
-      {c.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql */}{needsUpdate({ en: 'curriculum catalogue', ko: '교재 목록' }, ko)}</p>}
+      {c.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql */}{needsUpdate({ en: 'curriculum catalog', ko: '교재 목록' }, ko)}</p>}
 
       {!c.loading && !c.missing && (
         <p className="text-[length:calc(13px*var(--ts))] text-ink-2 mb-5 leading-relaxed">
@@ -245,7 +245,7 @@ function AddBookForm({ c, ko, fail, onDone, onCancel }: { c: C; ko: boolean; fai
           <div className="col-span-2"><span className={lbl}>{ko ? '시리즈 이름' : 'Series name'}</span><input value={newSeries.name} onChange={e => setNewSeries({ ...newSeries, name: e.target.value })} className={inp} placeholder="Super Phonics" /></div>
           <div><span className={lbl}>{ko ? '출판사' : 'Publisher'}</span><input value={newSeries.publisher} onChange={e => setNewSeries({ ...newSeries, publisher: e.target.value })} className={inp} /></div>
           <div><span className={lbl}>{ko ? '영역' : 'Strand'}</span><select value={newSeries.strand} onChange={e => setNewSeries({ ...newSeries, strand: e.target.value as Strand })} className={`${sel} w-full`}>{STRANDS.map(s => <option key={s} value={s}>{ko ? STRAND_LABEL[s].ko : STRAND_LABEL[s].en}</option>)}</select></div>
-          <div className="col-span-2"><span className={lbl}>{ko ? '색' : 'Colour'}</span>
+          <div className="col-span-2"><span className={lbl}>{ko ? '색' : 'Color'}</span>
             <div className="flex gap-1.5">{Object.entries(BOOK_COLORS).map(([k, v]) => <button key={k} type="button" onClick={() => setNewSeries({ ...newSeries, color: k })} title={v.label} className={`w-6 h-6 rounded ${newSeries.color === k ? 'ring-2 ring-ink ring-offset-1' : ''}`} style={{ background: v.hex }} />)}</div>
           </div>
         </div>

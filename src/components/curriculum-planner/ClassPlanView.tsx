@@ -39,7 +39,7 @@ function readLink(): { cls?: string; grade?: number; year?: string; view?: strin
 }
 
 export default function ClassPlanView() {
-  const { currentTeacher, language, semesters, activeSemester, showToast, confirmDialog } = useApp()
+  const { currentTeacher, language, semesters, activeSemester, showToast, confirmDialog, sp } = useApp()
   const ko = language === 'ko'
   const p = usePlanner()
   const canManage = currentTeacher?.role === 'admin' || !!currentTeacher?.is_head_teacher
@@ -212,18 +212,18 @@ export default function ClassPlanView() {
               </div>
               <button onClick={() => setOpenBar(null)} className="text-ink-3 hover:text-ink" aria-label="Close"><X size={14} /></button>
             </div>
-            {openedUnit.summary && <p className="mt-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 leading-snug whitespace-pre-line">{openedUnit.summary}</p>}
+            {openedUnit.summary && <p className="mt-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 leading-snug whitespace-pre-line">{sp(openedUnit.summary)}</p>}
             <div className="mt-3 grid gap-4 md:grid-cols-2">
               {bank.length > 0 && (
                 <div>
                   <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
-                  <ul className="space-y-1">{bank.map(o => <li key={o.text} className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {o.text}</li>)}</ul>
+                  <ul className="space-y-1">{bank.map(o => <li key={o.text} className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {sp(o.text)}</li>)}</ul>
                 </div>
               )}
               {lessons.length > 0 && (
                 <div>
                   <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '차시' : 'Lessons'}</p>
-                  <ol className="space-y-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-2">{lessons.map((x, i) => <li key={x.id}>{i + 1}. {x.title}</li>)}</ol>
+                  <ol className="space-y-0.5 text-[length:calc(12.5px*var(--ts))] text-ink-2">{lessons.map((x, i) => <li key={x.id}>{i + 1}. {sp(x.title)}</li>)}</ol>
                 </div>
               )}
             </div>

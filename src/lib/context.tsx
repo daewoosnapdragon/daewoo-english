@@ -9,6 +9,7 @@ import { translations } from '@/i18n/translations'
 import { canManageSemesters } from '@/lib/utils'
 import ConfirmDialog, { DialogRequest } from '@/components/ui/ConfirmDialog'
 import { confirmLeave, installLeaveGuard, setLeaveAsker } from '@/lib/unsaved'
+import { readSpelling, saveSpelling, spell, type Spelling } from '@/lib/spelling'
 
 export interface ToastOptions {
   /** 'error' shows the message in oxblood and keeps it up longer. Guessed from the wording when left out. */
@@ -31,6 +32,11 @@ interface AppContextType {
   setCurrentTeacher: (teacher: Teacher | null) => void
   language: Language
   setLanguage: (lang: Language) => void
+  /** American or British spelling for the words the app supplies (comment phrases, objective chips, unit text); never what a teacher types. Kept on this device. */
+  spelling: Spelling
+  setSpelling: (s: Spelling) => void
+  /** Text the app supplies, in the teacher's spelling. `keep` lists words to leave alone, such as a student's name. */
+  sp: (text: string, keep?: string[]) => string
   /** The semester an admin/Snapdragon account has marked active. */
   activeSemester: Semester | null
   /** Every non-archived semester. Only semester managers may browse these. */
@@ -74,6 +80,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try { const saved = localStorage.getItem('daewoo_lang'); if (saved === 'ko' || saved === 'en') setLanguageState(saved) } catch {}
   }, [])
+  const [spelling, setSpellingState] = useState<Spelling>('us')
+  const setSpelling = useCallback((s: Spelling) => { setSpellingState(s); saveSpelling(s) }, [])
+  useEffect(() => { setSpellingState(readSpelling()) }, [])
+  const sp = useCallback((text: string, keep: string[] = []) => spell(text, spelling, keep), [spelling])
   // The page's language follows the switch, so Korean is read and set as Korean.
   useEffect(() => { document.documentElement.lang = language === 'ko' ? 'ko' : 'en' }, [language])
   const [semesters, setSemesters] = useState<Semester[]>([])
@@ -218,6 +228,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       currentTeacher, setCurrentTeacher,
       language, setLanguage,
+      spelling, setSpelling, sp,
       activeSemester, semesters, semestersLoading, refreshSemesters,
       canSwitchSemester, visibleSemesters,
       theme, setTheme,

@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'spelling-setting', date: '2026-11-30', title: 'American or British spelling',
+    body: 'You can now choose American or British spelling in Settings, under Display. It applies to the words the app supplies: report comment phrases, the objective chips in your lesson plans and the unit text from the books, so “practice” and “practise” no longer mix on one page. What you type yourself is never changed. The Spelling switch in the comment builder is the same setting.',
+    path: '/settings', guide: 'bookshelf',
+  },
+  {
     id: 'curriculum-year-plan', date: '2026-11-30', title: 'Curriculum: a year plan for each class',
     body: 'You can now open Year plan on the Curriculum page to plan one class’s books for the whole year, one class at a time (← and → switch class, Present makes it big for a projector). The board shows what the class used last year a grade lower, with the next book one click away; new grade 1s start from what last year’s grade 1 used. Under it, a timeline of spring and fall shows a row per book, Into Reading by module, red markers where a book runs past the year, and the level tests with the unit each book will be on. Admin can drag a book’s end to stretch or squeeze it, or the line between two units to give one more time. Everyone else sees it read-only.',
     path: '/curriculum#year', guide: 'bookshelf',

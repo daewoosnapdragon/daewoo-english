@@ -1,0 +1,516 @@
+{
+  "series": "Rich Reading",
+  "level": "Intermediate 2 Plus",
+  "units": [
+    {
+      "title": "Unit 1 · Fixing the Playground",
+      "objectives": [
+        {
+          "text": "tell how different characters in Fixing the Playground feel, reading their parts in different voices",
+          "ccss": [
+            "RL.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use community words, like playground, neighbor, fix, together and safe",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Fixing the Playground with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they could help make their neighborhood better",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Amazing Team Players!",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how insects work as a team",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about insect teams, like colony, ant, bee, queen and work",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Amazing Team Players! with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "compare insect teamwork with how their class works together",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Not So Bad!",
+      "objectives": [
+        {
+          "text": "tell how different characters in Not So Bad! feel, reading their parts in different voices",
+          "ccss": [
+            "RL.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use family words, like brother, sister, share, help and get along",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Not So Bad! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time something turned out better than they expected",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Solar Power",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Solar Power and what they want readers to know",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use energy words, like solar, energy, panel, sun and power",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Solar Power with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say whether their school should use solar power and why",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Our Special Tree",
+      "objectives": [
+        {
+          "text": "tell the main problem in Our Special Tree and how it is solved",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use neighbor words, like neighbor, share, fence, yard and agree",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Our Special Tree with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how neighbors can solve a problem kindly",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Storms, Storms, Storms!",
+      "objectives": [
+        {
+          "text": "compare the kinds of storms in Storms, Storms, Storms! and how they are alike and different",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name kinds of storms, like thunderstorm, hurricane, tornado and blizzard",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Storms, Storms, Storms! with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell which kind of storm they think is most dangerous and why",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · A Fun Day with Flowers",
+      "objectives": [
+        {
+          "text": "tell how different characters in A Fun Day with Flowers feel, reading their parts in different voices",
+          "ccss": [
+            "RL.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use flower and color words, like petal, bloom, different and colorful",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Fun Day with Flowers with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell one way they are different from a friend and why that is good",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Fingerprints - Your Personal Code",
+      "objectives": [
+        {
+          "text": "tell the main idea of Fingerprints - Your Personal Code and the key details that support it",
+          "ccss": [
+            "RI.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use fingerprint words, like fingerprint, pattern, loop, whorl and unique",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Fingerprints - Your Personal Code with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "look at their own fingerprint and describe its pattern",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · A Hike in the Woods",
+      "objectives": [
+        {
+          "text": "tell the main events of A Hike in the Woods in order, using first, next and finally",
+          "ccss": [
+            "RL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use hiking words, like trail, woods, path, map and backpack",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Hike in the Woods with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a walk or hike they took, in order",
+          "ccss": [
+            "W.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Salt",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Salt and what readers learn about salt",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use mineral words, like salt, mineral, crystal, ocean and mine",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Salt with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell three ways people use salt every day",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · What Makes Ella Laugh?",
+      "objectives": [
+        {
+          "text": "tell the main problem in What Makes Ella Laugh? and how it is solved",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about humor, like funny, joke, laugh, silly and smile",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of What Makes Ella Laugh? with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell a joke or a funny story that makes them laugh",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · The Wright Brothers",
+      "objectives": [
+        {
+          "text": "tell causes and effects in The Wright Brothers, using because and so",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use flying words, like airplane, glider, wing, fly and test",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Wright Brothers with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say what they would like to invent and how they would test it",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

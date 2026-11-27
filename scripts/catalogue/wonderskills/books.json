@@ -1,0 +1,8431 @@
+[
+ {
+  "series": "Easy Reading",
+  "level": "1",
+  "source": "WonderSkills Easy Reading 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Looking Around",
+    "title": "I See Me",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 6-11 / PPT File",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 8-13 / PPT File",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Feelings",
+    "title": "I Am Happy",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 14-19 / PPT File",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 16-21 / PPT File",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "My Things",
+    "title": "Many Things",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 22-27 / PPT File",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 24-29 / PPT File",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Family",
+    "title": "My Family",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 30-35 / PPT File",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 32-37 / PPT File",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Shapes",
+    "title": "Play with  Shapes",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 38-43 / PPT File",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 40-45 / PPT File",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Food",
+    "title": "Hungry Ben",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 46-51 / PPT File",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 48-53 / PPT File",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Transportation",
+    "title": "What Can Go?",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 54-59 / PPT File",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 56-61 / PPT File",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Kitchen",
+    "title": "My Dad",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 62-67 / PPT File",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 64-69 / PPT File",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Animal Bodies",
+    "title": "Two Pets",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 70-75 / PPT File",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 72-77 / PPT File",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Class",
+    "title": "My Class",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 78-83 / PPT File",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 80-85 / PPT File",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Favorite",
+    "title": "Little Bear",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 86-91 / PPT File",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 88-93 / PPT File",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "School",
+    "title": "School Is Fun",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 94-99 / PPT File",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 96-101 / PPT File",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Easy Reading",
+  "level": "2",
+  "source": "WonderSkills Easy Reading 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Weather",
+    "title": "A Rainy Day",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 6-11 / PPT File",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 8-13 / PPT File",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Places",
+    "title": "We Run",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 14-19 / PPT File",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 16-21 / PPT File",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Trees",
+    "title": "Many Trees",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 22-27 / PPT File",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 24-29 / PPT File",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Plants",
+    "title": "My Garden Grows",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 30-35 / PPT File",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 32-37 / PPT File",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Nature",
+    "title": "In the Clouds",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 38-43 / PPT File",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 40-45 / PPT File",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Wild Animals",
+    "title": "We Want Water",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 46-51 / PPT File",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 48-53 / PPT File",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Cooking",
+    "title": "Let's Make a Salad",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 54-59 / PPT File",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 56-61 / PPT File",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Farm Animals",
+    "title": "Farm Sounds",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 62-67 / PPT File",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 64-69 / PPT File",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Friends",
+    "title": "Cal and Jin",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 70-75 / PPT File",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 72-77 / PPT File",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Vet and Pet",
+    "title": "The Good Vet",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 78-83 / PPT File",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 80-85 / PPT File",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Activities",
+    "title": "My Friend Sam",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 86-91 / PPT File",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 88-93 / PPT File",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Clothes",
+    "title": "A Winter Day",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 94-99 / PPT File",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 96-101 / PPT File",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Easy Reading",
+  "level": "3",
+  "source": "WonderSkills Easy Reading 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Dinner",
+    "title": "What Is in the Pan?",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 6-11 / PPT File",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 8-13 / PPT File",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Instruments",
+    "title": "What Can Fox Play?",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 14-19 / PPT File",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 16-21 / PPT File",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Pets",
+    "title": "My Cats",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 22-27 / PPT File",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 24-29 / PPT File",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Day and Night",
+    "title": "Wake Up!",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 30-35 / PPT File",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 32-37 / PPT File",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Helping",
+    "title": "Mike Helps Out",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 38-43 / PPT File",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 40-45 / PPT File",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "In Motion",
+    "title": "Hop! Hop! Hop!",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 46-51 / PPT File",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 48-53 / PPT File",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Market",
+    "title": "The Farmer's Market",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 54-59 / PPT File",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 56-61 / PPT File",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Bugs",
+    "title": "Play with Me",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 62-67 / PPT File",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 64-69 / PPT File",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Seasons",
+    "title": "The Four Seasons",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 70-75 / PPT File",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 72-77 / PPT File",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Animal Homes",
+    "title": "A New Home",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 78-83 / PPT File",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 80-85 / PPT File",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Movement",
+    "title": "We Can Move!",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 86-91 / PPT File",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 88-93 / PPT File",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Sports",
+    "title": "Go, Nat!",
+    "genre": "",
+    "strategy": "",
+    "skill": "",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Words to Know",
+       "Read the Story"
+      ],
+      "material": "SB pp. 94-99 / PPT File",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the Story",
+       "Understanding",
+       "Building Your Sentences"
+      ],
+      "material": "SB pp. 96-101 / PPT File",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Basic 1",
+  "source": "WonderSkills Rich Reading Basic 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Friends Together",
+    "title": "Who Is Best?",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.6-11 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Animal Bodies",
+    "title": "Animal Body Parts",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.14-19 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Dreams",
+    "title": "Toys at Night",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.22-27 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "School Rules",
+    "title": "Rules at School",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.30-35 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Weather",
+    "title": "Pack and Go",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.38-43 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Cooking",
+    "title": "Dad’s Pasta",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.46-51 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Animal Homes",
+    "title": "Mole’s Home",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.54-59 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Insects",
+    "title": "Meet the Insects",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.62-67 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Day Trips",
+    "title": "A Day at the Beach",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.70-75 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Sports",
+    "title": "Soccer Fun",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.78-83 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Pets",
+    "title": "Playing with Max",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.86-91 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Plants",
+    "title": "How Plants Grow",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Key words",
+       "Read the story"
+      ],
+      "material": "SB p.94-99 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Basic 1 Plus",
+  "source": "WonderSkills Rich Reading Basic Plus 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Birthday Gifts",
+    "title": "Joy’s Surprise",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting,  Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-11 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Home Appliances",
+    "title": "No More Hard Chores!",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Compare  and  Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-19 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Seasons",
+    "title": "The Four Seasons",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause  and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-27 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Teamwork",
+    "title": "Animals Work Together!",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-35 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Pet Care",
+    "title": "One More Pet?",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting,  Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-43 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Time",
+    "title": "Shadows and Sundials",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-51 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Wood Crafts",
+    "title": "Mia’s Birdhouse",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting,  Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-59 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Nature’s Colors",
+    "title": "Colors in the Sky",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-67 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Outdoor Activities",
+    "title": "Gem Park",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-75 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Animal Care",
+    "title": "Vets Help Pets",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-83 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Community Helpers",
+    "title": "Firefighter Fox",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Characters, Setting,  Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-91 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Bees",
+    "title": "Bee Heroes!",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-99 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Basic 2 Plus",
+  "source": "WonderSkills Rich Reading Basic Plus 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Safety",
+    "title": "The Storm",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting,  Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-11 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Hot Weather",
+    "title": "The Sun and Shade",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-19 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "The 3 R's: Reuse",
+    "title": "A Great Band",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-27 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Reptiles",
+    "title": "Amazing Chameleons",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-35 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Environmental Protection",
+    "title": "Earth Day",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-43 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Architecture",
+    "title": "Building a House",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-51 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Fairy Tale",
+    "title": "Jack and the Beans",
+    "genre": "Fairy Tale",
+    "strategy": "",
+    "skill": "Characters, Setting,  Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-59 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Fast Animals",
+    "title": "Animals Can Go Fast!",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-67 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Forest Activities",
+    "title": "Forest Fun",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-75 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Earth Science",
+    "title": "Day and Night",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Cause  and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-83 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Field Trips",
+    "title": "Is It Gold?",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause  and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-91 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Birds",
+    "title": "The Shoebill",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-99 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Basic 3",
+  "source": "WonderSkills Rich Reading Basic 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Family Visit",
+    "title": "Grandma Comes to Visit",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-11 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Force",
+    "title": "Push or Pull",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-19 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Games",
+    "title": "Musical Chairs!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-27 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Plant Parts",
+    "title": "Plants Have Many Parts",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-35 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Toys",
+    "title": "Who Can Stop the Top?",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-43 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Environment",
+    "title": "We Can Help the Earth!",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-51 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Musical Instruments",
+    "title": "BAM! BAM! BOOM!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-59 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Outdoor Structures",
+    "title": "Treehouses",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-67 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Farm Life",
+    "title": "A Family on a Farm",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-75 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Animal Habitats",
+    "title": "Where Do Animals Live?",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-83 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Friends",
+    "title": "Friends Together",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-91 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Food from the Garden",
+    "title": "Grow Your Own Food",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-99 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Basic 3 Plus",
+  "source": "WonderSkills Rich Reading Basic Plus 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Feelings",
+    "title": "The Lonely Lion",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-11 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Animal Body Parts",
+    "title": "Animal Tails",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-19 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Making Money",
+    "title": "Mike’s Hard Work",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem  and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-27 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Insects",
+    "title": "Glowing Bugs",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-35 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Friendship",
+    "title": "Being Together",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause  and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-43 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Animal Helpers",
+    "title": "Animals Help People!",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-51 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Arts & Crafts",
+    "title": "Charm Scarves",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem  and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-59 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Weather Tools",
+    "title": "Measuring Weather",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-67 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Playing with Pets",
+    "title": "Fran and White",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause  and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-75 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Papercrafts",
+    "title": "Making Paper Shapes",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-83 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Medical Jobs",
+    "title": "At Work with Mom",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-91 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Bears",
+    "title": "Two Kinds of Bears",
+    "genre": "Nonfiction",
+    "strategy": "",
+    "skill": "Compare  and  Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Key Words",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-99 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Retelling"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Intermediate 1",
+  "source": "WonderSkills Rich Reading Intermediate 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Outdoors Fun",
+    "title": "Family Camping",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Food Chains",
+    "title": "Food Chain",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Togetherness",
+    "title": "Pat and Tim",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Environment",
+    "title": "Saving Water",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Country Life",
+    "title": "Fun at Burns Farm",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting, Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Life Cycle",
+    "title": "From Tadpoles to Frogs",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Helping Others",
+    "title": "Patty Jumps!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Parts of a Tree",
+    "title": "Inside Trees",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Sounds",
+    "title": "Up or Down Sound",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting, Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Inventors",
+    "title": "The Sun Queen",
+    "genre": "Biography",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Thanksgiving",
+    "title": "A Feast in Fall",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Animal Homes",
+    "title": "A Beaver's Home",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Intermediate 1 Plus",
+  "source": "WonderSkills Rich Reading Intermediate Plus 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Pets",
+    "title": "A New Home for Henry",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem  and  Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Ecology",
+    "title": "Wetlands",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Friendship",
+    "title": "Mice on Ice",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Structures/Buildings",
+    "title": "A Guiding Light",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Courage",
+    "title": "Fly the Hero",
+    "genre": "Folktale",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Mammals",
+    "title": "Amazing Hippos!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Healthy Habits",
+    "title": "Berries, Berries, Berries!",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Astronomy",
+    "title": "High in the Sky",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Celebrations",
+    "title": "Happy New Year!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Scientists",
+    "title": "Jane Goodall",
+    "genre": "Biography",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Severe Weather",
+    "title": "Dangerous Rain",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Geology",
+    "title": "Glaciers",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Intermediate 2",
+  "source": "WonderSkills Rich Reading Intermediate 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Rules",
+    "title": "Stay Out of Trouble!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting, Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Materials",
+    "title": "From Sheep to Wool",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author’s Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Wildlife",
+    "title": "Saving a Bird",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Alligators",
+    "title": "Alligators",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Family Treasures",
+    "title": "The Old Chest",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Special Homes",
+    "title": "What Is a Yurt?",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea  and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Problem-solving",
+    "title": "Ray Saves the Play!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Birds",
+    "title": "Biggest Bird, Smallest Bird",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Air Travel",
+    "title": "Maria’s First Flight",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Space",
+    "title": "The Moon",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Baby Animals",
+    "title": "Cali’s Kittens",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Kid Inventions",
+    "title": "Kid Inventor",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author’s Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Intermediate 2 Plus",
+  "source": "WonderSkills Rich Reading Intermediate Plus 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Community",
+    "title": "Fixing the Playground",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Insects",
+    "title": "Amazing Team Players!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Family",
+    "title": "Not So Bad!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Energy",
+    "title": "Solar Power",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Neighbor Relations",
+    "title": "Our Special Tree",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem  and  Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Environment",
+    "title": "Storms, Storms, Storms!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare  and  Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Diversity",
+    "title": "A Fun Day with Flowers",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "ID (Identification)",
+    "title": "Fingerprints - Your Personal Code",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Nature",
+    "title": "A Hike in the Woods",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Minerals",
+    "title": "Salt",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Humor",
+    "title": "What Makes Ella Laugh?",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem  and  Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Inventions",
+    "title": "The Wright Brothers",
+    "genre": "Biography",
+    "strategy": "",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Intermediate 3",
+  "source": "WonderSkills Rich Reading Intermediate 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Being Helpful",
+    "title": "A Job for Little Chad",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Body Parts",
+    "title": "What Covers Animals’ Bodies?",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Animal Habitats",
+    "title": "Our Rainforest Gets a Thumbs-Up!",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Bees",
+    "title": "Busy as a Bee",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Dream Jobs",
+    "title": "Paul Saw Arctic Foxes!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Community Service",
+    "title": "Be a Volunteer!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author’s Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Good Ideas",
+    "title": "Hare’s Idea",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Body Parts",
+    "title": "Different Teeth, Different Uses",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Teamwork",
+    "title": "The Same Goal",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Cause and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Penguins",
+    "title": "All About Penguins",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Animal Migration",
+    "title": "Where Are They Going?",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Cause and  Effect",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Communication",
+    "title": "Talking Underwater",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Rich Reading",
+  "level": "Intermediate 3 Plus",
+  "source": "WonderSkills Rich Reading Intermediate Plus 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Values",
+    "title": "King Midas and the Golden Touch",
+    "genre": "Myth",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.2"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.3"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Ecology",
+    "title": "Survival in the Desert",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare  and  Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "School Life",
+    "title": "The Great Book Swap",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Treasures",
+    "title": "Gold Treasures",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Helping Others",
+    "title": "A Speech to Remember",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Food Manufacturing",
+    "title": "From Milk to Yogurt",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Environment",
+    "title": "Let's Carpool!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Characters, Setting, Events",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Sea Animals",
+    "title": "Discovering Whales",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Challenges",
+    "title": "Trish's Triumph",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Money",
+    "title": "Saving and Spending",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Kid Creations",
+    "title": "A Creative Recipe",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Space Exploration",
+    "title": "In Space",
+    "genre": "Biography",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Look and Answer",
+       "Voabulary",
+       "Read the story",
+       "Stop and Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary / Voabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Advanced 1",
+  "source": "WonderSkills Reading Advanced 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "The More I Know",
+    "title": "More Than Honey",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Story Time",
+    "title": "Bruno’s New Home",
+    "genre": "Fantasy",
+    "strategy": "Visualize",
+    "skill": "Character",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Traditions",
+    "title": "The Dream Catcher",
+    "genre": "Realistic Fiction",
+    "strategy": "Visualize",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Communities",
+    "title": "Room to Grow",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Inventions",
+    "title": "Mary Anderson’s Great Invention",
+    "genre": "Biography",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Landmarks",
+    "title": "An Amazing Landmark",
+    "genre": "Expository Text",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Problem Solving",
+    "title": "Fibonacci’s Surprising Discovery",
+    "genre": "Expository Text",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Cooperation",
+    "title": "Anansi Learns a Lesson",
+    "genre": "Folktale",
+    "strategy": "Make Predictions",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Finding a Home",
+    "title": "Sailing for Gold Mountain",
+    "genre": "Historical Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Government",
+    "title": "Every Vote Counts!",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Author’s Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Survival",
+    "title": "Kids to the Rescue!",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Author’s Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Figure It Out",
+    "title": "Two Cooks in the Kitchen",
+    "genre": "Realistic Fiction",
+    "strategy": "Summarize",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Advanced 2",
+  "source": "WonderSkills Reading Advanced 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Special Qualities",
+    "title": "Amazing Talents!",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Be Unique",
+    "title": "Inchworm’s Tale",
+    "genre": "Folktale",
+    "strategy": "Visualize",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Leadership",
+    "title": "Jane’s Discovery",
+    "genre": "Historical Fiction",
+    "strategy": "Visualize",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Discoveries",
+    "title": "The Earth and Its Neighbors",
+    "genre": "Expository Text",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "New Ideas",
+    "title": "Ideas from Nature",
+    "genre": "Expository Text",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Value the Past",
+    "title": "To the South Pole",
+    "genre": "Biography",
+    "strategy": "Summarize",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Challenges",
+    "title": "Helping Hands",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Choices",
+    "title": "Nail Soup",
+    "genre": "Folktale",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Skills and Talents",
+    "title": "The Impossible Pet Show",
+    "genre": "Realistic Fiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Adaptations",
+    "title": "Gray Wolf! Red Fox!",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Flight",
+    "title": "Firsts in Flight",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Inspiration",
+    "title": "Thinking Differently",
+    "genre": "Biography",
+    "strategy": "Summarize",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Advanced 3",
+  "source": "WonderSkills Reading Advanced 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "What Can I Do?",
+    "title": "Our Place",
+    "genre": "Realistic Fiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Let’s Trade",
+    "title": "When Corn Was Cash",
+    "genre": "Expository Text",
+    "strategy": "Summarize",
+    "skill": "Author's Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Reuse and Recycle",
+    "title": "The New Hoop",
+    "genre": "Realistic Fiction",
+    "strategy": "Summarize",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Teaming Up",
+    "title": "Rescue Dogs Save the Day",
+    "genre": "Expository Text",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Author's Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Good Citizens",
+    "title": "A Big Heart",
+    "genre": "Biography",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Energy",
+    "title": "We Have Power!",
+    "genre": "Expository Text",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Look Closer",
+    "title": "A Simple Life",
+    "genre": "Realistic Fiction",
+    "strategy": "Reread",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Treasures",
+    "title": "Athena and Arachne",
+    "genre": "Myth/Drama",
+    "strategy": "Make Predictions",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Weather",
+    "title": "The Big Blizzard",
+    "genre": "Historical Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Learning to Succeed",
+    "title": "Rocketing Into Space",
+    "genre": "Biography",
+    "strategy": "Reread",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Animals and You",
+    "title": "Butterflies Big and Small",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Funny Times",
+    "title": "The Camping Trip",
+    "genre": "Realistic Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Intermediate 1",
+  "source": "WonderSkills Reading Intermediate 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "We are Family",
+    "title": "Aunt Lucy Is the Best!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Friends Help Friends",
+    "title": "Little Flap Learns to Fly",
+    "genre": "Fantasy",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Families Around the World",
+    "title": "Family Festivals",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Pets Are Our Friends",
+    "title": "Finding Cal",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Character, Setting, Events",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Animals Need Care",
+    "title": "Jack’s Unusual Pet",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Families Working Together",
+    "title": "A Busy Family",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Topic and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Animals in Our Lives",
+    "title": "What Animals Give Us",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Animal Survival",
+    "title": "A Visit to the Desert",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Plot",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Animals in Stories",
+    "title": "The Boy Who Cried Wolf",
+    "genre": "Fable",
+    "strategy": "",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Animal Homes",
+    "title": "A Prairie Guard Dog",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Topic and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Baby Animals",
+    "title": "Eagles and Eaglets",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Topic and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "We Love Animals",
+    "title": "Cute Animals",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Intermediate 2",
+  "source": "WonderSkills Reading Intermediate 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Night and Day on Earth",
+    "title": "Every Day Is Amazing!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "The Earth’s Forces",
+    "title": "Magnets Work!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Look at the Sky!",
+    "title": "Starry Night",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Ways People Help",
+    "title": "Lighting Lives",
+    "genre": "Narrative Nonfiction",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Weather Alert!",
+    "title": "Tornado!",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Express Yourself",
+    "title": "Mia’s Song",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "All Around the World",
+    "title": "Places in Our World",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and  Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Earth’s Special Places",
+    "title": "Alaska, A Special Place",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Earth Changes",
+    "title": "Waves at Work",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Our Culture Makes Us Special",
+    "title": "Happy New Year!",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Folktales About Nature",
+    "title": "Why the Sun and Moon Live in the Sky",
+    "genre": "Folktale",
+    "strategy": "",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Exciting Nature",
+    "title": "The Snowman Contest",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Intermediate 3",
+  "source": "WonderSkills Reading Intermediate 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Making a Difference",
+    "title": "The Power to Change the World",
+    "genre": "Narrative Nonfiction",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Being a Good Citizen",
+    "title": "A Difficult Decision",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Cooperation Works!",
+    "title": "Soccer Friends",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Our Heroes",
+    "title": "Changing Lives",
+    "genre": "Biography",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Protecting Our Earth",
+    "title": "The Art Project",
+    "genre": "Realistic Fiction",
+    "strategy": "",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Rights and Rules",
+    "title": "The United Nations",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Our World at Work",
+    "title": "The Changing World of Work",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Myths and Facts",
+    "title": "Why Fir Tree Keeps His Leaves",
+    "genre": "Myth",
+    "strategy": "",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "We Need Energy",
+    "title": "Pedal Power",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Author's Purpose",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Team Up to Explore",
+    "title": "Better Together",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Money Matters",
+    "title": "The Life of a Dollar Bill",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Use Your Imagination",
+    "title": "The Power of Imagination",
+    "genre": "Expository Text",
+    "strategy": "",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehenion Check",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Master 1",
+  "source": "WonderSkills Reading Master 1",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Determination",
+    "title": "Little by Little Does the Trick",
+    "genre": "Folktale",
+    "strategy": "Visualize",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Clever Ideas",
+    "title": "The Dragon Problem",
+    "genre": "Fairy Tale",
+    "strategy": "Make Predictions",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Stand Up for Yourself",
+    "title": "The Talent Show",
+    "genre": "Realistic Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Take Action",
+    "title": "A World of Change",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Compare and Contrast",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Ideas in Motion",
+    "title": "The Big Race",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Reread",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Putting Ideas to Work",
+    "title": "The Business of Helping Others",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Fables",
+    "title": "Aesop: A Storyteller for All Time",
+    "genre": "Biography",
+    "strategy": "Summarize",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Animal Tales",
+    "title": "The Fisherman and the Kaha Bird",
+    "genre": "Folktale",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Animals in Fiction",
+    "title": "The Moonlight Concert Mystery",
+    "genre": "Fantasy",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Natural Connections",
+    "title": "Rescuing Our Reefs",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Adaptations",
+    "title": "Animal Adaptations",
+    "genre": "Expository Text",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Animals and Inventions",
+    "title": "Animals Show the Way",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Master 2",
+  "source": "WonderSkills Reading Master 2",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Acts of Kindness",
+    "title": "The Girl and the Chenoo",
+    "genre": "Folktale",
+    "strategy": "Summarize",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Friendship",
+    "title": "The Bookers",
+    "genre": "Fantasy",
+    "strategy": "Visualize",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "Helping the Community",
+    "title": "Remembering Hurricane Katrina",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Visualize",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Liberty and Justice",
+    "title": "Changing the World",
+    "genre": "Biography",
+    "strategy": "Reread",
+    "skill": "Author's Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Powerful Words",
+    "title": "Words for Change",
+    "genre": "Biography",
+    "strategy": "Reread",
+    "skill": "Author's Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Feeding the World",
+    "title": "Food for Thought",
+    "genre": "Expository Text",
+    "strategy": "Reread",
+    "skill": "Author's Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Imagine the Future",
+    "title": "Masters of the Imagination",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Law and Order",
+    "title": "A World Without Rules",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Negotiation",
+    "title": "Galaxy Governments",
+    "genre": "Fantasy",
+    "strategy": "Make Predictions",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Technology",
+    "title": "A Telephone Mix-Up",
+    "genre": "Historical Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Night Sky",
+    "title": "Wonders of the Night Sky",
+    "genre": "Expository Text",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Achievements",
+    "title": "The Road to Success",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "series": "Wonderskills Reading",
+  "level": "Master 3",
+  "source": "WonderSkills Reading Master 3",
+  "units": [
+   {
+    "n": 1,
+    "theme": "Understanding Nature",
+    "title": "The Fight for Persephone",
+    "genre": "Myth",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.6-10 / PPT file",
+      "homework": "WB p.4"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.8-13 / PPT file",
+      "homework": "WB p.5"
+     }
+    ]
+   },
+   {
+    "n": 2,
+    "theme": "Showing You Care",
+    "title": "Sadie’s Game",
+    "genre": "Realistic Fiction",
+    "strategy": "Visualize",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.14-18 / PPT file",
+      "homework": "WB p.6"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.16-21 / PPT file",
+      "homework": "WB p.7"
+     }
+    ]
+   },
+   {
+    "n": 3,
+    "theme": "On the Move",
+    "title": "My Big Brother, Johnny Kaw",
+    "genre": "Tall Tale",
+    "strategy": "Visualize",
+    "skill": "Cause and Effect",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.22-26 / PPT file",
+      "homework": "WB p.8"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.24-29 / PPT file",
+      "homework": "WB p.9"
+     }
+    ]
+   },
+   {
+    "n": 4,
+    "theme": "Inventions",
+    "title": "Stephanie Kwolek and Her Super Strong Invention",
+    "genre": "Biography",
+    "strategy": "Summarize",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.30-34 / PPT file",
+      "homework": "WB p.10"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.32-37 / PPT file",
+      "homework": "WB p.11"
+     }
+    ]
+   },
+   {
+    "n": 5,
+    "theme": "Zoom In",
+    "title": "Your World Up Close",
+    "genre": "Expository Text",
+    "strategy": "Summarize",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.38-42 / PPT file",
+      "homework": "WB p.12"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.40-45 / PPT file",
+      "homework": "WB p.13"
+     }
+    ]
+   },
+   {
+    "n": 6,
+    "theme": "Digging Up the Past",
+    "title": "The Chinese Terra-cotta Warriors",
+    "genre": "Expository Text",
+    "strategy": "Summarize",
+    "skill": "Sequence",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.46-50 / PPT file",
+      "homework": "WB p.14"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.48-53 / PPT file",
+      "homework": "WB p.15"
+     }
+    ]
+   },
+   {
+    "n": 7,
+    "theme": "Past Meets Present",
+    "title": "Exploring the Past",
+    "genre": "Realistic Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.54-58 / PPT file",
+      "homework": "WB p.16"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.56-61 / PPT file",
+      "homework": "WB p.17"
+     }
+    ]
+   },
+   {
+    "n": 8,
+    "theme": "Old and New",
+    "title": "Remembering Our Roots",
+    "genre": "Historical Fiction",
+    "strategy": "Reread",
+    "skill": "Theme",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.62-66 / PPT file",
+      "homework": "WB p.18"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.64-69 / PPT file",
+      "homework": "WB p.19"
+     }
+    ]
+   },
+   {
+    "n": 9,
+    "theme": "Notes from the Past",
+    "title": "The Power of Words",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Reread",
+    "skill": "Author's Point of View",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.70-74 / PPT file",
+      "homework": "WB p.20"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.72-77 / PPT file",
+      "homework": "WB p.21"
+     }
+    ]
+   },
+   {
+    "n": 10,
+    "theme": "Resources",
+    "title": "The Great Energy Debate",
+    "genre": "Narrative Nonfiction",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.78-82 / PPT file",
+      "homework": "WB p.22"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.80-85 / PPT file",
+      "homework": "WB p.23"
+     }
+    ]
+   },
+   {
+    "n": 11,
+    "theme": "Money Matters",
+    "title": "The History of Money",
+    "genre": "Expository Text",
+    "strategy": "Ask and Answer Questions",
+    "skill": "Main Idea and Key Details",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.86-90 / PPT file",
+      "homework": "WB p.24"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.88-93 / PPT file",
+      "homework": "WB p.25"
+     }
+    ]
+   },
+   {
+    "n": 12,
+    "theme": "Finding My Place",
+    "title": "A Place for Michael",
+    "genre": "Realistic Fiction",
+    "strategy": "Make Predictions",
+    "skill": "Problem and Solution",
+    "days": [
+     {
+      "objectives": [
+       "Warm-Up",
+       "Vocabulary",
+       "Read the story",
+       "Comprehenion Check"
+      ],
+      "material": "SB p.94-98 / PPT file",
+      "homework": "WB p.26"
+     },
+     {
+      "objectives": [
+       "Read the story",
+       "Comprehension Strategy",
+       "Comprehension Skill",
+       "Summary",
+       "Vocabulary Review"
+      ],
+      "material": "SB p.96-101 / PPT file",
+      "homework": "WB p.27"
+     }
+    ]
+   }
+  ]
+ }
+]

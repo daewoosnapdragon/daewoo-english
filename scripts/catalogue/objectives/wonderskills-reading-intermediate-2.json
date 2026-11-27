@@ -1,0 +1,520 @@
+{
+  "series": "Wonderskills Reading",
+  "level": "Intermediate 2",
+  "units": [
+    {
+      "title": "Unit 1 · Every Day Is Amazing!",
+      "objectives": [
+        {
+          "text": "ask and answer questions about day and night on Earth using key details",
+          "ccss": [
+            "RI.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about day and night, like sunrise, sunset, rotate and shadow",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Every Day Is Amazing! with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain in their own words why Earth has day and night",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Magnets Work!",
+      "objectives": [
+        {
+          "text": "tell the author's purpose in Magnets Work! and what they want readers to know",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use magnet words, like magnet, attract, repel, force and metal",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Magnets Work! with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "test which classroom objects a magnet attracts and report what they find",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Starry Night",
+      "objectives": [
+        {
+          "text": "tell the main events of Starry Night in order, using first, next and finally",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use sky words, like star, constellation, telescope and shine",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Starry Night with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about what they see when they look at the night sky",
+          "ccss": [
+            "W.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Lighting Lives",
+      "objectives": [
+        {
+          "text": "tell the author's purpose in Lighting Lives and how it shows people helping others",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about helping others, like volunteer, donate, need and community",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Lighting Lives with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell one way they could help people in their community",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Tornado!",
+      "objectives": [
+        {
+          "text": "tell the main idea of Tornado! and the key details that support it",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use severe weather words, like tornado, funnel, warning, shelter and wind",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Tornado! with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain what to do to stay safe when there is a tornado warning",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Mia’s Song",
+      "objectives": [
+        {
+          "text": "tell the main message of Mia’s Song and the details that show it",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about expressing yourself, like song, express, feelings and perform",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Mia’s Song with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "share a way they like to express their feelings, like drawing or singing",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Places in Our World",
+      "objectives": [
+        {
+          "text": "tell the main idea of Places in Our World and the key details that support it",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use geography words, like continent, ocean, country, map and city",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Places in Our World with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe a place in the world they would like to visit and why",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Alaska, A Special Place",
+      "objectives": [
+        {
+          "text": "compare and contrast two things described in Alaska, A Special Place",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about Alaska, like glacier, mountain, cold, wildlife and snow",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Alaska, A Special Place with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "compare Alaska with the place where they live",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Waves at Work",
+      "objectives": [
+        {
+          "text": "explain how waves cause changes to the land, using cause and effect words",
+          "ccss": [
+            "RI.3.3",
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use earth change words, like wave, shore, sand, erosion and rock",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Waves at Work with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "draw before and after pictures of a beach and explain the change",
+          "ccss": [
+            "SL.3.5",
+            "W.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Happy New Year!",
+      "objectives": [
+        {
+          "text": "compare and contrast the celebrations in Happy New Year! using alike and different",
+          "ccss": [
+            "RL.3.1",
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use celebration words, like culture, tradition, celebrate and custom",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Happy New Year! with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how their family celebrates the new year and what makes it special",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Why the Sun and Moon Live in the Sky",
+      "objectives": [
+        {
+          "text": "tell what happens in Why the Sun and Moon Live in the Sky and why, using because",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use folktale words, like folktale, explain, nature, sun and moon",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of the folktale with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short folktale that explains something in nature",
+          "ccss": [
+            "W.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · The Snowman Contest",
+      "objectives": [
+        {
+          "text": "tell the main events of The Snowman Contest in order, using first, next and finally",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use winter words, like snowman, contest, judge, prize and build",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Snowman Contest with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write how to build a snowman in order, using first, next and last",
+          "ccss": [
+            "W.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

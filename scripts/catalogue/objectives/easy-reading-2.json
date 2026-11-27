@@ -1,0 +1,530 @@
+{
+  "series": "Easy Reading",
+  "level": "2",
+  "units": [
+    {
+      "title": "Unit 1 · A Rainy Day",
+      "objectives": [
+        {
+          "text": "listen to A Rainy Day and tell what the weather is like in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read A Rainy Day aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name kinds of weather, like rainy, sunny, cloudy, windy and snowy",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about today's weather: “It is rainy.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · We Run",
+      "objectives": [
+        {
+          "text": "listen to We Run and name the places in the story, using the pictures",
+          "ccss": [
+            "RL.1.1",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read We Run aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name places, like park, school, store, beach and zoo",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about places they go: “We go to the park.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Many Trees",
+      "objectives": [
+        {
+          "text": "listen to Many Trees and tell what they learn about trees",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in Many Trees to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name parts of a tree and tree words, like leaf, branch and trunk",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about trees: “The tree is tall.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · My Garden Grows",
+      "objectives": [
+        {
+          "text": "listen to My Garden Grows and tell what grows in the garden",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "reread My Garden Grows aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name plant words, like seed, root, stem, leaf and flower",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about how plants grow: “The seed needs water.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · In the Clouds",
+      "objectives": [
+        {
+          "text": "listen to In the Clouds and tell what the clouds look like in the pictures",
+          "ccss": [
+            "RL.1.1",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read In the Clouds aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name things in the sky and nature, like cloud, sun, rain and rainbow",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about the sky: “I see a white cloud.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · We Want Water",
+      "objectives": [
+        {
+          "text": "listen to We Want Water and tell which wild animals want water",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read We Want Water aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name wild animals, like lion, elephant, zebra and giraffe",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about wild animals: “The elephant is big.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Let's Make a Salad",
+      "objectives": [
+        {
+          "text": "listen to Let's Make a Salad and tell what goes into the salad",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in Let's Make a Salad to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name salad foods, like lettuce, tomato, carrot and cucumber",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about making a salad: “I put in a tomato.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Farm Sounds",
+      "objectives": [
+        {
+          "text": "listen to Farm Sounds and match each farm animal to its sound",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "reread Farm Sounds aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name farm animals, like cow, pig, duck, sheep and horse",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about farm animals: “The cow says moo.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Cal and Jin",
+      "objectives": [
+        {
+          "text": "listen to Cal and Jin and tell what the two friends do together",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read Cal and Jin aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about friends, like friend, share, help and play",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about a friend: “My friend and I play ball.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · The Good Vet",
+      "objectives": [
+        {
+          "text": "listen to The Good Vet and tell how the vet helps the pets",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read The Good Vet aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name words about vets and pets, like vet, sick, help, dog and cat",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about caring for a pet: “The vet helps my dog.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · My Friend Sam",
+      "objectives": [
+        {
+          "text": "listen to My Friend Sam and tell what Sam likes to do",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in My Friend Sam to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name activities, like swim, ride a bike, dance and play soccer",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about things they can do: “I can swim.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · A Winter Day",
+      "objectives": [
+        {
+          "text": "listen to A Winter Day and tell what people wear on a cold day",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread A Winter Day aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name winter clothes, like coat, hat, scarf, gloves and boots",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about what they wear: “I wear a warm hat.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

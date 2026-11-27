@@ -1,0 +1,525 @@
+{
+  "series": "Rich Reading",
+  "level": "Basic 2 Plus",
+  "units": [
+    {
+      "title": "Unit 1 · The Storm",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of The Storm",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use storm safety words, like thunder, lightning, safe and inside",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell The Storm in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they should do to stay safe in a storm",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · The Sun and Shade",
+      "objectives": [
+        {
+          "text": "tell the main idea of The Sun and Shade and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use hot weather words, like shade, sunscreen, hot and cool",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from The Sun and Shade in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they stay cool on a hot day",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · A Great Band",
+      "objectives": [
+        {
+          "text": "tell the main message of A Great Band and the details that show it",
+          "ccss": [
+            "RL.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about reusing, like reuse, old, new, box and bottle",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell A Great Band in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they could reuse an old box or bottle",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Amazing Chameleons",
+      "objectives": [
+        {
+          "text": "tell the main idea of Amazing Chameleons and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use reptile words, like chameleon, lizard, scales, tongue and change color",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Amazing Chameleons in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say what they find most amazing about chameleons and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Earth Day",
+      "objectives": [
+        {
+          "text": "tell the main events of Earth Day in order, using first, next and finally",
+          "ccss": [
+            "RL.1.2",
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about caring for the earth, like trash, recycle, plant and clean",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Earth Day to a partner, using the pictures to help them remember",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell one thing they can do on Earth Day",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Building a House",
+      "objectives": [
+        {
+          "text": "put the steps for building a house in order, using first, next and last",
+          "ccss": [
+            "RI.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use building words, like build, wall, roof, floor and builder",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Building a House in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe the house they would like to build",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Jack and the Beans",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Jack and the Beans",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use fairy tale words, like once upon a time, magic, giant and castle",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Jack and the Beans in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how Jack and the Beans is like other fairy tales they know",
+          "ccss": [
+            "RL.1.9",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Animals Can Go Fast!",
+      "objectives": [
+        {
+          "text": "tell the main idea of Animals Can Go Fast! and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about speed, like fast, faster, fastest, cheetah and race",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Animals Can Go Fast! in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell which fast animal they would like to race and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Forest Fun",
+      "objectives": [
+        {
+          "text": "tell the main events of Forest Fun in order, using first, next and finally",
+          "ccss": [
+            "RL.1.2",
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name forest things and activities, like trail, hike, tent and campfire",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Forest Fun to a partner, using the pictures to help them remember",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they would like to do on a day in the forest",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Day and Night",
+      "objectives": [
+        {
+          "text": "explain what causes day and night, using facts from Day and Night",
+          "ccss": [
+            "RI.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about day and night, like sun, moon, spin, light and dark",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Day and Night in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they do in the day and what they do at night",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Is It Gold?",
+      "objectives": [
+        {
+          "text": "tell what happens in Is It Gold? and why, using because",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about field trips and finding things, like trip, explore, rock and shiny",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Is It Gold? in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a field trip they went on or would like to go on",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · The Shoebill",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the shoebill using key details from the text",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use bird words, like beak, feathers, wings, nest and swamp",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from The Shoebill in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe the shoebill and say what is special about it",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}
