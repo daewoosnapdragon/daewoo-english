@@ -166,3 +166,12 @@ export function unitLabel(title: string, phonics: boolean): string {
   const sl = t.name.match(/^School Link\s*(\d+)/i)
   return t.badge || (sl ? `SL ${sl[1]}` : t.name)
 }
+
+/** The units from one to the other, both included, in the list's order; either end may come first, and an end that is not in the list means the start or the end. */
+export function unitsInRange<T extends { id: string }>(list: T[], fromId: string, toId: string): T[] {
+  let a = list.findIndex(u => u.id === fromId), b = list.findIndex(u => u.id === toId)
+  if (a < 0) a = 0
+  if (b < 0) b = list.length - 1
+  if (a > b) [a, b] = [b, a]
+  return list.slice(a, b + 1)
+}

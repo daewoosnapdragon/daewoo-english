@@ -22,7 +22,10 @@ import { Check, Copy, ExternalLink, Loader2, Plus, X } from 'lucide-react'
 // Read-only for teachers; admin edits the lists under the timeline.
 
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
-const btnS = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const btnSBase = 'h-7 px-2 rounded border text-[length:calc(11.5px*var(--ts))] disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const btnS = `${btnSBase} border-rule-2 text-ink-2 hover:text-ink`
+/** A small toggle that is on: ink fill with paper text (btnS's ink-2 text would win and hide the label). */
+const btnSOn = `${btnSBase} bg-ink text-paper border-ink`
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 const fmtDay = (iso: string) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 const LABEL_W = 190
@@ -241,8 +244,8 @@ export default function ClassPlanView() {
         <section className="flex flex-col gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mr-2">{ko ? `${cls} ${grade}학년 계획 편집` : `Edit ${cls} Grade ${grade}'s plan`}</p>
-            <button onClick={() => { setPlacing(v => !v); setCopying(false) }} className={`${btnS} ${placing ? 'bg-ink text-paper border-ink' : ''}`}><Plus size={11} />{ko ? '교재 추가' : 'Add a book'}</button>
-            <button onClick={() => { setCopying(v => !v); setPlacing(false) }} className={`${btnS} ${copying ? 'bg-ink text-paper border-ink' : ''}`}><Copy size={11} />{ko ? '다른 학년에서 복사' : 'Copy another grade’s books'}</button>
+            <button onClick={() => { setPlacing(v => !v); setCopying(false) }} className={placing ? btnSOn : btnS}><Plus size={11} />{ko ? '교재 추가' : 'Add a book'}</button>
+            <button onClick={() => { setCopying(v => !v); setPlacing(false) }} className={copying ? btnSOn : btnS}><Copy size={11} />{ko ? '다른 학년에서 복사' : 'Copy another grade’s books'}</button>
           </div>
           {placing && <div className="border border-rule-2 rounded bg-paper-2 p-3"><PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cls} grade={grade} year={theYear} existing={placements.map(x => x.pl)} fail={fail} onDone={() => { setPlacing(false); p.reload() }} /></div>}
           {copying && <div className="border border-rule-2 rounded bg-paper-2 p-3"><CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cls, grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(false); p.reload() }} /></div>}

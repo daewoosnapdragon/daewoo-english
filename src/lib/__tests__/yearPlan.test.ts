@@ -95,7 +95,7 @@ describe('the next book', () => {
 })
 
 // ─── Meeting mode helpers ───
-import { fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, suggestBook, unitAt } from '../yearPlan'
+import { fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, suggestBook, unitAt, unitsInRange } from '../yearPlan'
 import type { CurriculumPlacement } from '../curriculumPacing'
 
 const pl = (id: string, book_id: string, english_class: string, grade: number, academic_year: string, term: 'spring' | 'fall' | 'year', is_master = true): CurriculumPlacement =>
@@ -268,5 +268,21 @@ describe('what a unit bar says', () => {
     expect(unitLabel('School Link 2', false)).toBe('SL 2')
     expect(unitLabel('M3 W1 · Clark the Shark', false)).toBe('M3 W1')
     expect(unitLabel('Review week', false)).toBe('Review week')
+  })
+})
+
+describe('a range of units', () => {
+  const list = ['a', 'b', 'c', 'd', 'e'].map(id => ({ id }))
+  const ids = (xs: { id: string }[]) => xs.map(x => x.id).join('')
+  it('keeps the units from one to the other, both included, in the list order', () => {
+    expect(ids(unitsInRange(list, 'b', 'd'))).toBe('bcd')
+    expect(ids(unitsInRange(list, 'c', 'c'))).toBe('c')
+  })
+  it('reads the ends either way round', () => {
+    expect(ids(unitsInRange(list, 'd', 'b'))).toBe('bcd')
+  })
+  it('runs to the end of the list from an unknown or empty end', () => {
+    expect(ids(unitsInRange(list, 'c', ''))).toBe('cde')
+    expect(ids(unitsInRange(list, '', 'b'))).toBe('ab')
   })
 })

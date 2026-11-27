@@ -8,11 +8,12 @@ import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classDot } from '@/lib/utils'
 import { STRAND_LABEL, bookName, colorHex, levelShort, splitUnitTitle, type CurriculumBook, type CurriculumUnit } from '@/lib/curriculumCore'
 import { TERMS, TERM_LABEL, academicYears, fitToTerm, groupByModule, layoutPacing, masterRows, placementLength, termsFor, totalWeeks, yearWeeks, holidayWeeks, termDates, type HolidayCounts, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
-import { addPacingMany, copyPlacements, createPlacement, deletePlacement, dropPacing, movePacing, patchMasterRows, setAimDate, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
+import { addPacingMany, copyPlacements, createPlacement, deletePlacement, dropPacing, dropPacingMany, movePacing, patchMasterRows, setAimDate, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
 import { usePlanner, type Planner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import StoryPicker from './StoryPicker'
-import { ArrowDown, ArrowUp, Check, Copy, Loader2, Maximize2, Plus, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Copy, Loader2, Maximize2, Plus, Scissors, Trash2, X } from 'lucide-react'
+import { unitsInRange } from '@/lib/yearPlan'
 import { needsUpdate } from '@/lib/dbUpdate'
 
 // ─── Books by class: every class plan at a glance (admin) ───────────────────
@@ -26,7 +27,10 @@ import { needsUpdate } from '@/lib/dbUpdate'
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
 const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
 const btnP = 'h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60 inline-flex items-center gap-1.5 whitespace-nowrap'
-const btnS = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const btnSBase = 'h-7 px-2 rounded border text-[length:calc(11.5px*var(--ts))] disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
+const btnS = `${btnSBase} border-rule-2 text-ink-2 hover:text-ink`
+/** A small toggle that is on: ink fill with paper text (btnS's ink-2 text would win and hide the label). */
+const btnSOn = `${btnSBase} bg-ink text-paper border-ink`
 const badge = 'inline-flex items-center h-4 px-1 rounded bg-paper-3 text-ink-3 text-[length:calc(11.5px*var(--ts))] font-semibold tracking-wide shrink-0'
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 const rowKey = (cls: string, grade: number) => `${cls}|${grade}`
@@ -159,6 +163,17 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
   const [picking, setPicking] = useState(false)
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
+  // Keep a range: the units now in the list, so a long book (Science of Reading) is cut to this year's part in one go.
+  const listed = rows.map(r => units.find(u => u.id === r.unit_id)).filter((u): u is CurriculumUnit => !!u)
+  const [range, setRange] = useState<{ from: string; to: string } | null>(null)
+  const kept = range ? unitsInRange(listed, range.from, range.to) : []
+  const keptIds = new Set(kept.map(u => u.id))
+  const keptWeeks = totalWeeks(rows.filter(r => keptIds.has(r.unit_id)))
+  const keepRange = async () => {
+    setBusy(true)
+    if (!fail(await dropPacingMany(rows.filter(r => !keptIds.has(r.unit_id)).map(r => r.id), label))) { setRange(null); await p.reload() }
+    setBusy(false)
+  }
   const over = length > 0 && total > length + 0.01
   const done = new Set(p.done.filter(d => d.placement_id === pl.id).map(d => d.unit_id))
   const remove = async () => {
@@ -184,12 +199,22 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
           <input type="date" value={pl.aim_date || ''} onChange={async e => { if (!fail(await setAimDate(pl.id, e.target.value || null, label))) p.reload() }} className={`${sel} w-[140px]`} />
         </label>
         {length > 0 && rows.length > 0 && Math.abs(total - length) > 0.01 && <button onClick={fit} disabled={busy} className={btnS} title={ko ? '학기에 맞게 길이를 고르게 나눕니다' : 'Give every unit an even share so the list fills the term'}><Maximize2 size={11} />{ko ? '학기에 맞추기' : 'Fit to the term'}</button>}
-        {left.length > 0 && <button onClick={() => { setPicking(s => !s); setPicked(new Set()) }} className={`${btnS} ${picking ? 'bg-ink text-paper border-ink' : ''}`}><Plus size={11} />{anthology ? (ko ? '이야기 추가' : 'Add stories') : (ko ? '단원 추가' : 'Add units')}</button>}
+        {!anthology && listed.length > 2 && <button onClick={() => { setRange(r => r ? null : { from: listed[0].id, to: listed[listed.length - 1].id }); setPicking(false) }} className={range ? btnSOn : btnS} title={ko ? '처음과 끝 단원을 골라 그 사이만 남깁니다' : 'Pick a first and last unit; the units outside them come out'}><Scissors size={11} />{ko ? '범위만 남기기' : 'Keep a range'}</button>}
+        {left.length > 0 && <button onClick={() => { setPicking(s => !s); setPicked(new Set()); setRange(null) }} className={picking ? btnSOn : btnS}><Plus size={11} />{anthology ? (ko ? '이야기 추가' : 'Add stories') : (ko ? '단원 추가' : 'Add units')}</button>}
         <select value={pl.term} onChange={async e => { if (!fail(await updatePlacementTerm(pl.id, e.target.value as Term, label))) p.reload() }} className={sel}>
           {(terms.includes(pl.term) ? terms : [pl.term, ...terms]).map(t => <option key={t} value={t}>{ko ? TERM_LABEL[t].ko : TERM_LABEL[t].en}</option>)}
         </select>
         <button onClick={remove} className={btnS} aria-label="Remove this book"><Trash2 size={11} />{ko ? '배치 삭제' : 'Remove'}</button>
       </div>
+      {range && (
+        <div className="px-4 py-3 border-b border-rule bg-paper-2 flex items-center gap-x-3 gap-y-2 flex-wrap">
+          <UnitRange units={listed} from={range.from} to={range.to} onChange={(from, to) => setRange({ from, to })} ko={ko} />
+          <span className="text-[length:calc(12px*var(--ts))] text-ink-2 tabular-nums">{ko ? `${kept.length}개 남김 · ${num(keptWeeks)}주` : `Keeps ${kept.length} ${noun(kept.length)}, ${num(keptWeeks)} wk${length ? ` of ${length} in the term` : ''}; ${listed.length - kept.length} come out`}</span>
+          <span className="flex-1" />
+          <button onClick={keepRange} disabled={busy || !kept.length || kept.length === listed.length} className={btnP}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Scissors size={13} />}{ko ? `${kept.length}개만 남기기` : `Keep these ${kept.length}`}</button>
+          <button onClick={() => setRange(null)} className={btn}>{ko ? '취소' : 'Cancel'}</button>
+        </div>
+      )}
       {picking && (
         <div className="px-4 py-3 border-b border-rule bg-paper-2 flex flex-col gap-2">
           <StoryPicker units={left} selected={picked} onChange={setPicked} ko={ko} />
@@ -297,10 +322,32 @@ export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone,
       {chosen && units.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{anthology ? (ko ? '이 반이 읽을 이야기를 고르세요. 책의 순서대로, 제안된 길이로 들어갑니다.' : 'Tick the stories this class will read. They go in the book’s order at their suggested lengths; change any length in the list.') : (ko ? '이 반이 할 단원을 고르세요. 책의 순서대로, 제안된 길이로 들어갑니다.' : 'Tick the units this class will do, or press All units. They go in the book’s order at their suggested lengths; change any length in the list.')}</p>
+          {!anthology && units.length > 2 && (() => {
+            const ticked = units.filter(u => picked.has(u.id))
+            const from = ticked[0]?.id || units[0].id, to = ticked[ticked.length - 1]?.id || units[units.length - 1].id
+            return <div className="flex items-center gap-3 flex-wrap">
+              <UnitRange units={units} from={from} to={to} onChange={(f, t) => setPicked(new Set(unitsInRange(units, f, t).map(u => u.id)))} ko={ko} />
+              <span className="text-[length:calc(12px*var(--ts))] text-ink-3 tabular-nums">{ko ? `${ticked.length}개 · ${num(ticked.reduce((a, u) => a + (u.default_weeks || 2), 0))}주` : `${ticked.length} ${ticked.length === 1 ? 'unit' : 'units'}, ${num(ticked.reduce((a, u) => a + (u.default_weeks || 2), 0))} wk`}</span>
+            </div>
+          })()}
           <StoryPicker units={units} selected={picked} onChange={setPicked} ko={ko} presets={presets} />
         </div>
       )}
     </div>
+  )
+}
+
+/** "Units from [first] to [last]": a run of a sequence book's units in two picks, numbered as in the book. */
+function UnitRange({ units, from, to, onChange, ko }: { units: CurriculumUnit[]; from: string; to: string; onChange: (from: string, to: string) => void; ko: boolean }) {
+  const opts = units.map(u => <option key={u.id} value={u.id}>{u.sort_order}. {splitUnitTitle(u.title).name}</option>)
+  return (
+    <span className="inline-flex items-center gap-1.5 flex-wrap text-[length:calc(12px*var(--ts))] text-ink-2">
+      {ko ? '단원' : 'Units from'}
+      <select aria-label={ko ? '첫 단원' : 'First unit'} value={from} onChange={e => onChange(e.target.value, to)} className={`${sel} max-w-[280px]`}>{opts}</select>
+      {ko ? '부터' : 'to'}
+      <select aria-label={ko ? '마지막 단원' : 'Last unit'} value={to} onChange={e => onChange(from, e.target.value)} className={`${sel} max-w-[280px]`}>{opts}</select>
+      {ko ? '까지' : ''}
+    </span>
   )
 }
 
