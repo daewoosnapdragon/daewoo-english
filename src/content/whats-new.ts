@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'curriculum-year-plan', date: '2026-11-30', title: 'Curriculum: a year plan for each class',
+    body: 'You can now open Year plan on the Curriculum page to see one class’s books for the whole year: a board of grades and subjects, with last year’s books in grey, and a timeline underneath with a row per book. The dashed outline shows each book’s suggested length. Admin can place books from the board (the next level is offered where a cell is empty), drag a book’s end to stretch or squeeze it, or drag the line between two units to give one more time. Everyone else sees it read-only.',
+    path: '/curriculum#year', guide: 'bookshelf',
+  },
+  {
     id: 'phonics-missed-before', date: '2026-11-23', title: 'Phonics: read again only the words missed last time',
     body: 'You can now press Missed before on the check screen to put every word a student missed on the latest check of each sheet on one card. The words they read again replace their old marks and the rest carry over, so each sheet is scored again without rereading the whole sheet. A red ×2 marks a word missed on two or more checks. Print for the student prints those words in large type, and on Groups, Print their missed words does the same for a teaching group.',
     path: '/reading?tab=phonics', guide: 'reading',

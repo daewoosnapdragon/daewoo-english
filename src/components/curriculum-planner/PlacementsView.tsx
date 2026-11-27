@@ -245,10 +245,15 @@ export function WeeksInput({ value, onSave }: { value: number; onSave: (w: numbe
 }
 
 // ─── Place a book ────────────────────────────────────────────────
-export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone, terms = TERMS }: { terms?: Term[]; p: Planner; ko: boolean; me: string; cls: string; grade: number; year: string; existing: CurriculumPlacement[]; fail: (e: string | null) => boolean; onDone: () => void }) {
-  const [bookId, setBookId] = useState('')
-  const [term, setTerm] = useState<Term>(terms.includes('year') ? 'year' : terms[0])
-  const [picked, setPicked] = useState<Set<string>>(new Set())
+export function PlaceForm({ p, ko, me, cls, grade, year, existing, fail, onDone, terms = TERMS, initialBookId = '', initialTerm }: { terms?: Term[]; p: Planner; ko: boolean; me: string; cls: string; grade: number; year: string; existing: CurriculumPlacement[]; fail: (e: string | null) => boolean; onDone: () => void; initialBookId?: string; initialTerm?: Term }) {
+  const [bookId, setBookId] = useState(initialBookId)
+  const [term, setTerm] = useState<Term>(initialTerm && terms.includes(initialTerm) ? initialTerm : terms.includes('year') ? 'year' : terms[0])
+  // A suggested sequence book starts with all its units ticked; an anthology's stories are still picked by hand.
+  const [picked, setPicked] = useState<Set<string>>(() => {
+    const b = initialBookId ? p.books.find(x => x.id === initialBookId) : undefined
+    const s = b ? p.series.find(x => x.id === b.series_id) : undefined
+    return b && s?.kind !== 'anthology' ? new Set(p.units.filter(u => u.book_id === b.id).map(u => u.id)) : new Set()
+  })
   const [saving, setSaving] = useState(false)
   const choices = p.books.filter(b => b.status !== 'retired').map(b => ({ b, s: p.series.find(s => s.id === b.series_id) })).sort((x, y) => (x.s?.sort_order || 0) - (y.s?.sort_order || 0) || (x.s?.name || '').localeCompare(y.s?.name || '') || x.b.level_number.localeCompare(y.b.level_number, undefined, { numeric: true }))
   const chosen = choices.find(c => c.b.id === bookId)
