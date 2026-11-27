@@ -54,3 +54,19 @@ python3 -I scripts/catalogue/objectives/make_seed.py
 ```
 
 WIDA grade clusters follow the book's nominal grade (Into Reading N and Hand in Hand Book N = grade N, Starter = K), not the age of the class using it.
+
+## WonderSkills Easy Reading, Rich Reading and Reading
+
+`supabase/seed-wonderskills.sql` loads Easy Reading, Rich Reading and WonderSkills Reading (Intermediate, Advanced, Master) from the publisher's 12-week syllabi Kyla uploaded on 27 Nov 2026. Run it in the Supabase SQL Editor after the catalogue migration; it is safe to re-run (a book that already has units is left alone), and its last query lists every book of the three series with its unit count so a book typed in by hand under another name shows up as a near-duplicate.
+
+- **One unit per syllabus unit**, titled `Unit 5 · Pack and Go`; the summary holds the theme, genre, strategy and skill. **Two lessons per unit**, one per syllabus day, with the day's activities, pages and homework in the notes and a drafted objective (suggested by Claude until confirmed).
+- **Default weeks 3 per unit** (36 weeks a book), because these books are now taught one book per year. The syllabi pace a book in 12 weeks at two lessons a week; set `DEFAULT_WEEKS` to 1 in the generator for that pace.
+- **Level names** follow the app: `Basic 1 Plus`, `Intermediate 2`, `2 Plus` (Easy Reading), `Advanced 1`, `Master 3`.
+- **Placeholder titles** for books without a usable syllabus in the upload: Rich Reading Basic 2 and Easy Reading 3 Plus (no file), Easy Reading 1 Plus (the file was a sample lesson plan for Unit 1 only, so only Unit 1 · My Garden is named) and Easy Reading 2 Plus (the file was the student book answer key, which gives every unit's title but no pages or skills). They have 12 units so a class can be placed now; correct their titles on the Bookshelf when the syllabus arrives.
+
+The extracted data is `scripts/catalogue/wonderskills/books.json`. Regenerate with:
+
+```
+python3 -I scripts/catalogue/wonderskills/extract.py scripts/catalogue/wonderskills/books.json <syllabus .xlsx files>
+python3 -I scripts/catalogue/wonderskills/make_seed.py scripts/catalogue/wonderskills/books.json supabase/seed-wonderskills.sql
+```
