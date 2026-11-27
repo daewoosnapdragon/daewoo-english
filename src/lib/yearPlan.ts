@@ -157,7 +157,9 @@ export function classKey(k: ClassKeyCtx): 'prev' | 'next' | 'exit' | null {
 export function unitLabel(title: string, phonics: boolean): string {
   const t = splitUnitTitle(title)
   if (phonics) {
-    let p = t.name.includes(':') ? t.name.slice(t.name.indexOf(':') + 1) : t.name
+    // The pattern follows the first colon outside brackets; an aside in brackets ("(& new grapheme: ng)") is dropped.
+    const name = t.name.replace(/\s*\(&[^)]*\)/g, '')
+    let p = name.includes(':') ? name.slice(name.indexOf(':') + 1) : name
     p = p.replace(/^\s*Suffix\s+/i, '').replace(/<([^>]+)>\s*spells\s*/i, '$1 → ').replace(/[<>]/g, '').replace(/\bTogether\b/i, '').replace(/,\s*/g, ' ')
     return p.replace(/\s+/g, ' ').trim() || t.name
   }

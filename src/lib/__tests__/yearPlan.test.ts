@@ -259,6 +259,10 @@ describe('what a unit bar says', () => {
     expect(unitLabel('Closed Syllables · <all> spells /ŏl/', true)).toBe('all → /ŏl/')
     expect(unitLabel('Closed Syllables · Review Together', true)).toBe('Review')
   })
+  it('reads a colon inside brackets as part of the pattern', () => {
+    expect(unitLabel('Closed Syllables · -ng and -nk (& new grapheme: ng)', true)).toBe('-ng and -nk')
+    expect(unitLabel('Closed Syllables · Exceptions: ild, old, ost, ind, olt', true)).toBe('ild old ost ind olt')
+  })
   it('shows other units by their badge, a School Link as SL, else the name', () => {
     expect(unitLabel('Unit 4 · Pack and Go', false)).toBe('Unit 4')
     expect(unitLabel('School Link 2', false)).toBe('SL 2')
