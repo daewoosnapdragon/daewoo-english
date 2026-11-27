@@ -3,21 +3,24 @@
 import { useEffect, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useViewLog } from '@/lib/useViewLog'
-import { BookOpen, CalendarRange, Map, TrainFront } from 'lucide-react'
+import { BookOpen, CalendarRange, GanttChart, Map, TrainFront } from 'lucide-react'
 import BookshelfView from './BookshelfView'
 import MapView from './PlacementsView'
 import ClassPlanView from './ClassPlanView'
 import ProgramMapView from './ProgramMapView'
+import YearPlanView from './YearPlanView'
 
 // ─── Curriculum ──────────────────────────────────────────────────
 // Class plans: one class and grade's books as a timeline, units at their
 // suggested lengths (admin edits the lists under it). All classes this
 // week: every class's units this week and what they share. Books by class:
-// the grid of every class plan, for admin. Bookshelf: the books, their
+// the grid of every class plan, for admin. Year plan: one class's books
+// for the year on a board with a timeline you drag (the planning meeting).
+// Bookshelf: the books, their
 // units, lessons, objectives and files. See docs/lesson-planning-review.md.
 
-type Tab = 'plans' | 'week' | 'books' | 'bookshelf'
-const TABS: Tab[] = ['plans', 'week', 'books', 'bookshelf']
+type Tab = 'plans' | 'year' | 'week' | 'books' | 'bookshelf'
+const TABS: Tab[] = ['plans', 'year', 'week', 'books', 'bookshelf']
 
 /** Old addresses (#boards/board, #map/bookshelf, …) still land somewhere sensible. */
 function tabFromHash(hash: string): Tab {
@@ -40,10 +43,11 @@ export default function CurriculumView() {
   }, [])
   const go = (t: Tab) => { setTab(t); history.replaceState(null, '', `#${t}`) }
   const shown: Tab = tab === 'books' && !canManage ? 'plans' : tab
-  useViewLog(`Curriculum · ${{ plans: 'class plans', week: 'program week', books: 'books', bookshelf: 'bookshelf' }[shown]}`)
+  useViewLog(`Curriculum · ${{ plans: 'class plans', year: 'year plan', week: 'program week', books: 'books', bookshelf: 'bookshelf' }[shown]}`)
 
   const tabs: { id: Tab; label: string; icon: React.ReactNode; hidden?: boolean }[] = [
     { id: 'plans', label: ko ? '학급 계획' : 'Class plans', icon: <CalendarRange size={13} /> },
+    { id: 'year', label: ko ? '연간 계획' : 'Year plan', icon: <GanttChart size={13} /> },
     { id: 'week', label: ko ? '이번 주 전체 반' : 'All classes this week', icon: <TrainFront size={13} /> },
     { id: 'books', label: ko ? '반별 교재' : 'Books by class', icon: <Map size={13} />, hidden: !canManage },
     { id: 'bookshelf', label: ko ? '책꽂이' : 'Bookshelf', icon: <BookOpen size={13} /> },
@@ -65,6 +69,7 @@ export default function CurriculumView() {
         ))}
       </div>
       {shown === 'plans' && <ClassPlanView />}
+      {shown === 'year' && <YearPlanView />}
       {shown === 'week' && <ProgramMapView />}
       {shown === 'books' && <MapView />}
       {shown === 'bookshelf' && <BookshelfView />}
