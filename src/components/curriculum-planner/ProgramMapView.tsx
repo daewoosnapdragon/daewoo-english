@@ -205,11 +205,11 @@ export default function ProgramMapView() {
                             const tag = notes.tagOf.get(b.unit.id)
                             const pos = weekOfBar(b, wk, hol?.cols || new Set())
                             return (
-                              <a key={b.pacing.id} href={boardLink(r.cls, r.grade, { year: theYear, view, week: wk })} title={`${b.series?.name || ''} ${b.book.level_number} · ${b.unit.title}`} className={`flex items-start gap-2 rounded px-2 py-1.5 hover:ring-1 hover:ring-rule-2 ${tag ? 'bg-paper-2' : 'bg-paper'}`}>
+                              <a key={b.pacing.id + (b.review ? 'r' : '')} href={boardLink(r.cls, r.grade, { year: theYear, view, week: wk })} title={`${b.series?.name || ''} ${b.book.level_number} · ${b.unit.title}`} className={`flex items-start gap-2 rounded px-2 py-1.5 hover:ring-1 hover:ring-rule-2 ${tag ? 'bg-paper-2' : 'bg-paper'}`}>
                                 <span className="w-2.5 h-2.5 rounded-sm shrink-0 mt-1" style={{ background: b.color }} />
                                 <span className="min-w-0 flex-1">
                                   <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3 truncate">{b.series?.name} {b.book.level_number}{t.badge ? ` · ${t.badge}` : ''}</span>
-                                  <span className="block text-[length:calc(13.5px*var(--ts))] font-semibold text-ink leading-snug">{t.name}</span>
+                                  <span className="block text-[length:calc(13.5px*var(--ts))] font-semibold text-ink leading-snug">{b.review ? (ko ? `복습: ${t.name}` : `Review: ${t.name}`) : t.name}</span>
                                   <span className="block text-[length:calc(11.5px*var(--ts))] text-ink-3">{pos.of > 1 ? (ko ? `${pos.of}주 중 ${pos.at}주` : `week ${pos.at} of ${pos.of}`) : (ko ? '이번 주' : 'this week')}{doneSet.has(`${b.placement.id}|${b.unit.id}`) ? (ko ? ' · 완료' : ' · done') : ''}</span>
                                 </span>
                                 {tag && <span className="shrink-0 w-[18px] h-[18px] rounded-full bg-ink text-paper text-[length:calc(11.5px*var(--ts))] font-bold inline-flex items-center justify-center" title={ko ? '같은 단원을 하는 반이 있습니다' : 'Another class is on this unit this week'}>{tag}</span>}

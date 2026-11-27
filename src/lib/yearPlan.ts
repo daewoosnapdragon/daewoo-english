@@ -173,3 +173,78 @@ export function unitsInRange<T extends { id: string }>(list: T[], fromId: string
   if (a > b) [a, b] = [b, a]
   return list.slice(a, b + 1)
 }
+
+// ─── Labels that fit a bar ────────────────────────────────────────
+
+/** Short forms of Science of Reading patterns too long for a thin bar (the full pattern stays in the bar's tooltip). */
+const PHONICS_SHORT: Record<string, string> = {
+  "All Short Vowels": "All short",
+  "Beginning /k/ spelling rule": "/k/ c k",
+  "Digraph & Triple Blends (str spr spl scr)": "str spr spl scr",
+  "One-syllable Open": "Open",
+  "Y as a vowel (long i)": "y = long i",
+  "Drop the y make it an i": "y → i",
+  "ge and dge spelling rule": "ge dge",
+  "Silent e with suffixes": "e + suffix",
+  "ie; other sounds of ea": "ie ea",
+  "Short /oo/ (as in book)": "oo (book)",
+  "/ou/ = ou and ow": "ou ow",
+  "VCCV Words (closed-closed)": "VC/CV",
+  "Y spells /ē/ & review Suffix -y": "y = /ē/",
+  "VCCCV Syllable Division Rule (closed-closed)": "VC/CCV",
+  "VCV Words (V-CV and VC-V)": "V/CV VC/V",
+  "Soft c and Soft G": "soft c g",
+  "2-Syllable Words with silent e": "2-syl e",
+  "2-Syllable Words with Bossy r": "2-syl r",
+  "2-Syllable Words with long Vowel Teams": "2-syl teams",
+  "2-Syllable Words with Vowel Teams (ou ow oo ue ew oi oy aw)": "2-syl ou oi aw",
+  "-al/-ial (final stable cial tial)": "-al -ial",
+  "ild old ost ind olt": "ild old ost",
+  "Suffixes -er and -est": "-er -est",
+  "Prefixes re- un-": "re- un-",
+  "Prefixes pre- and mis-": "pre- mis-",
+  "Prefixes con com in im": "con com in im",
+  "Prefixes de dis": "de- dis-",
+  "Prefix sub- trans-": "sub- trans-",
+  "Prefix ex-": "ex-",
+  "ir er ur = /er/": "ir er ur",
+  "oy and oi": "oy oi",
+  "aw and au": "aw au",
+  "-ive and -ion": "-ive -ion",
+  "Compound Words": "Compounds",
+  "Consonant -le": "-le",
+  "The Schwa": "schwa",
+  "-ng and -nk": "-ng -nk",
+  "Beginning Blends": "Blends",
+  "Ending Blends": "End blends",
+  "Review all": "Review",
+  "-ful -less -ly -ness": "-ful -less",
+}
+/** A pattern with no set short form loses its filler words and brackets: "Prefixes up- and down-" → "up- down-". */
+const shortenPattern = (p: string) => p.replace(/\([^)]*\)/g, ' ').replace(/\b(Prefix(es)?|Suffix(es)?|Words?|with|and|spelling|rule)\b/gi, ' ').replace(/\s+/g, ' ').trim()
+
+/** What a unit's bar can say, longest first: a phonics pattern then its short form; "Unit 4", "U4", "4"; "School Link 2", "SL 2", "SL". */
+export function unitLabels(title: string, phonics: boolean): string[] {
+  const full = unitLabel(title, phonics)
+  if (phonics) {
+    const s = PHONICS_SHORT[full] ?? shortenPattern(full)
+    return s && s !== full ? [full, s] : [full]
+  }
+  const u = full.match(/^Unit\s*(\d+)$/i)
+  if (u) return [`Unit ${u[1]}`, `U${u[1]}`, u[1]]
+  const sl = full.match(/^SL\s*(\d+)$/i)
+  if (sl) return [`School Link ${sl[1]}`, `SL ${sl[1]}`, 'SL']
+  return [full]
+}
+
+/** The longest label that fits `room` pixels, or the shortest when none does. */
+export function pickLabel(labels: string[], room: number, width: (t: string) => number): string {
+  return labels.find(t => width(t) <= room) ?? labels[labels.length - 1] ?? ''
+}
+
+/** For bars of one kind in a row (every "Unit n"): the index of the longest form that fits every bar, so the row reads Unit 1 … Unit 12, never Unit 9 next to U10. */
+export function levelForAll(labelSets: string[][], rooms: number[], width: (t: string) => number): number {
+  let level = 0
+  labelSets.forEach((ls, i) => { const k = ls.findIndex(t => width(t) <= rooms[i]); level = Math.max(level, k < 0 ? ls.length - 1 : k) })
+  return level
+}

@@ -29,6 +29,11 @@ export const WHATS_NEW: WhatsNewEntry[] = [
     path: '/settings', guide: 'bookshelf',
   },
   {
+    id: 'curriculum-review-weeks', date: '2026-11-30', title: 'Curriculum: review weeks, and easier-to-read plans',
+    body: 'You can now put a review week after any unit: click the unit on the Year plan, or use the Review after column in a book’s list, and the units after it move along. Review after every section adds one at the end of each section (Closed Syllables, Silent e, R-Controlled…) or Into Reading module in one click. Review weeks show as striped blocks on the Year plan and Class plans. Plans also have new, lighter book colours with dark labels, and a label that does not fit its bar switches to a shorter form (“/k/ c k”, “M2”, “SL 1”) with the full name in its tooltip. The first time, an admin runs supabase/migration-curriculum-review-weeks.sql in Supabase.',
+    path: '/curriculum#year', guide: 'bookshelf',
+  },
+  {
     id: 'curriculum-year-plan', date: '2026-11-30', title: 'Curriculum: a year plan for each class',
     body: 'You can now open Year plan on the Curriculum page to plan one class’s books for the whole year, one class at a time (← and → switch class). Each grade and subject is one row: what the class used last year a grade lower, this year’s book, and that book across spring and fall on the same line. An undecided row offers the next book in one click and shows it as a dashed bar; new grade 1s start from what last year’s grade 1 used, and Science of Reading carries on. Phonics bars show the pattern (sh, -ed), Into Reading shows modules, red marks a book running past the year, and the level tests show the unit each book will be on. Present fills the screen for a projector. Admin can drag a book’s end to stretch or squeeze it, or the line after a unit to give just that unit more time (the units after it move along). Everyone else sees it read-only.',
     path: '/curriculum#year', guide: 'bookshelf',
