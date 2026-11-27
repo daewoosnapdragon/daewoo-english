@@ -132,3 +132,18 @@ export function unitAt(weeks: number[], t: number): number | 'done' | null {
   for (let i = 0; i < weeks.length; i++) { end += weeks[i]; if (t <= end + 1e-9) return i }
   return 'done'
 }
+
+/** Like teachingAtColumn, but a position past the last column keeps counting weeks, so a book can be dragged beyond the end of the year. */
+export function teachingAtColumnOpen(pos: number, holidays: Set<number>, n: number): number {
+  return teachingAtColumn(pos, holidays, n) + Math.max(0, pos - n)
+}
+
+export interface ClassKeyCtx { key: string; alt: boolean; ctrl: boolean; meta: boolean; shift: boolean; defaultPrevented: boolean; inField: boolean; onGrip: boolean; dialogOpen: boolean; panelOpen: boolean; present: boolean }
+/** What a key does on the meeting screen: plain ← → switch class (never with a modifier, in a field, a dialog, on a book's handle or with a form open); Esc leaves Present unless typing. */
+export function classKey(k: ClassKeyCtx): 'prev' | 'next' | 'exit' | null {
+  if (k.alt || k.ctrl || k.meta || k.shift || k.defaultPrevented) return null
+  if (k.key === 'Escape') return k.present && !k.inField ? 'exit' : null
+  if (k.key !== 'ArrowLeft' && k.key !== 'ArrowRight') return null
+  if (k.inField || k.onGrip || k.dialogOpen || k.panelOpen) return null
+  return k.key === 'ArrowRight' ? 'next' : 'prev'
+}

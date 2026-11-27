@@ -205,3 +205,40 @@ describe('the unit at a week', () => {
     expect(unitAt([3, 3, 3], 10)).toBe('done')
   })
 })
+
+// ─── Review fixes ───
+import { classKey, teachingAtColumnOpen } from '../yearPlan'
+
+describe('dragging past the last week', () => {
+  it('keeps counting weeks beyond the last column', () => {
+    const hol = new Set([2])
+    expect(teachingAtColumnOpen(10, hol, 10)).toBe(9)
+    expect(teachingAtColumnOpen(13.5, hol, 10)).toBe(12.5)
+    expect(teachingAtColumnOpen(3.5, hol, 10)).toBe(2.5)
+  })
+})
+
+describe('the class keys', () => {
+  const k = (over: Partial<Parameters<typeof classKey>[0]>) => classKey({ key: 'ArrowRight', alt: false, ctrl: false, meta: false, shift: false, defaultPrevented: false, inField: false, onGrip: false, dialogOpen: false, panelOpen: false, present: false, ...over })
+  it('switch class with plain arrows', () => {
+    expect(k({})).toBe('next')
+    expect(k({ key: 'ArrowLeft' })).toBe('prev')
+  })
+  it('leave the arrows alone with a modifier (browser Back), when already handled, or in a field, a dialog, a handle or an open form', () => {
+    expect(k({ alt: true })).toBeNull()
+    expect(k({ meta: true })).toBeNull()
+    expect(k({ ctrl: true })).toBeNull()
+    expect(k({ shift: true })).toBeNull()
+    expect(k({ defaultPrevented: true })).toBeNull()
+    expect(k({ inField: true })).toBeNull()
+    expect(k({ dialogOpen: true })).toBeNull()
+    expect(k({ onGrip: true })).toBeNull()
+    expect(k({ panelOpen: true })).toBeNull()
+  })
+  it('leave Present with Esc, but not from inside a field', () => {
+    expect(k({ key: 'Escape', present: true })).toBe('exit')
+    expect(k({ key: 'Escape', present: true, inField: true })).toBeNull()
+    expect(k({ key: 'Escape', present: false })).toBeNull()
+    expect(k({ key: 'a' })).toBeNull()
+  })
+})

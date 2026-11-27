@@ -8,7 +8,7 @@ import { classDot, getKSTDateString } from '@/lib/utils'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { STRANDS, STRAND_LABEL, bookName, colorHex, levelShort, splitUnitTitle, type CurriculumBook, type CurriculumSeries, type Strand } from '@/lib/curriculumCore'
 import { TERMS, TERM_LABEL, academicYears, addDays, holidayWeeks, masterRows, placementLength, todayPosition, viewShift, viewWeeks, type CurriculumPlacement, type HolidayCounts, type Term } from '@/lib/curriculumPacing'
-import { changedWeeks, columnOfTeaching, fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, moveBoundary, nextBook, spreadEvenly, suggestBook, teachingAtColumn, unitAt } from '@/lib/yearPlan'
+import { changedWeeks, classKey, columnOfTeaching, fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, moveBoundary, nextBook, spreadEvenly, suggestBook, teachingAtColumn, teachingAtColumnOpen, unitAt } from '@/lib/yearPlan'
 import { createPlacement, patchMasterRows } from '@/lib/curriculumPlacementsData'
 import { needsUpdate } from '@/lib/dbUpdate'
 import { usePlanner } from './usePlanner'
@@ -42,7 +42,8 @@ const ALWAYS: Strand[] = ['phonics', 'reading', 'speaking']
 const TERM_ORDER: Term[] = ['spring', 'year', 'fall']
 const sumOf = (a: number[]) => a.reduce((x, y) => x + y, 0)
 
-interface Drag { plId: string; kind: 'end' | 'div'; k: number; w0: number[]; shift: number; grade: number }
+/** A drag in progress: for the end, where the pointer and the book's end were when it started (in columns, past the last week counted on). */
+interface Drag { plId: string; kind: 'end' | 'div'; k: number; w0: number[]; shift: number; grade: number; x0: number; col0: number }
 interface Hol { hc: HolidayCounts; cols: Set<number>; names: Map<number, string> }
 interface Seg { key: string; label: string; title: string; from: number; to: number }
 
@@ -122,15 +123,19 @@ export default function YearPlanView() {
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
   const step = (d: number) => { const i = PLACED_ENGLISH_CLASSES.indexOf(cls as any); setCls(PLACED_ENGLISH_CLASSES[(i + d + PLACED_ENGLISH_CLASSES.length) % PLACED_ENGLISH_CLASSES.length]) }
 
-  // ← → switch class (not while typing, in a dialog or on a book's handle); Esc leaves Present.
+  // ← → switch class; Esc leaves Present. Never with a modifier (Alt+← is Back), while typing, in a dialog, on a book's handle or with a form open under the board.
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
       const el = document.activeElement as HTMLElement | null
-      if (e.key === 'Escape' && present) { setPresent(false); return }
-      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-      if (el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable || el.dataset.grip)) return
-      if (document.querySelector('dialog[open], [role="dialog"], [aria-modal="true"]')) return
-      e.preventDefault(); step(e.key === 'ArrowRight' ? 1 : -1)
+      const what = classKey({
+        key: e.key, alt: e.altKey, ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey, defaultPrevented: e.defaultPrevented,
+        inField: !!el && (/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) || el.isContentEditable),
+        onGrip: !!el?.dataset.grip, dialogOpen: !!document.querySelector('dialog[open], [role="dialog"], [aria-modal="true"]'),
+        panelOpen: !!(placing || open), present,
+      })
+      if (!what) return
+      e.preventDefault()
+      if (what === 'exit') setPresent(false); else step(what === 'next' ? 1 : -1)
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -166,13 +171,12 @@ export default function YearPlanView() {
       if (!el || !h) return
       const r = el.getBoundingClientRect()
       const colW = (r.width - LABEL_W - RIGHT_PAD) / Math.max(1, N)
-      const t = teachingAtColumn((e.clientX - r.left - LABEL_W) / colW, h.cols, N)
       let next: number[]
       if (drag.kind === 'end') {
-        // Past the last week the pointer keeps counting, so a book can be stretched beyond December.
-        const past = Math.max(0, (e.clientX - r.left - LABEL_W) / colW - N)
-        next = spreadEvenly(Math.max(0.5 * drag.w0.length, t + past - drag.shift), drag.w0.length)
-      } else next = moveBoundary(drag.w0, drag.k, t - (drag.shift + sumOf(drag.w0.slice(0, drag.k + 1))))
+        // Relative to where the drag started, so grabbing the handle of a book that runs past the year changes nothing until it moves.
+        const t = teachingAtColumnOpen(drag.col0 + (e.clientX - drag.x0) / colW, h.cols, N)
+        next = spreadEvenly(Math.max(0.5 * drag.w0.length, t - drag.shift), drag.w0.length)
+      } else next = moveBoundary(drag.w0, drag.k, teachingAtColumn((e.clientX - r.left - LABEL_W) / colW, h.cols, N) - (drag.shift + sumOf(drag.w0.slice(0, drag.k + 1))))
       setDraft({ id: drag.plId, weeks: next })
       setTip({ x: e.clientX, y: e.clientY, pl: drag.plId })
     }
@@ -296,7 +300,8 @@ export default function YearPlanView() {
               <div className="px-3 py-2 font-display text-[length:calc(18px*var(--ts))] text-ink-2">G{g}</div>
               {strands.map(s => {
                 const cell = cells.find(c => c.grade === g && c.strand === s)
-                if (!cell) return <div key={s} className="border-l border-rule" />
+                // No book last year or this year: nothing to decide, but admin can still place one (a strand new this year).
+                if (!cell) return <div key={s} className="border-l border-rule p-1.5 min-h-[44px]">{canManage && <button onClick={() => { setPlacing({ grade: g, bookId: '', term: 'year', key: Date.now() }); setOpen(null) }} className="h-6 px-1 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '고르기…' : 'Choose…'}</button>}</div>
                 const last = lastYearFor(p.placements, cls, g, prevYear, x => strandOf(x) === s)
                 const now = mine.filter(x => x.grade === g && strandOf(x) === s).sort(sortPl)
                 const sug = !now.length ? suggestBook(g, last.placements, p.books) : undefined
@@ -320,6 +325,9 @@ export default function YearPlanView() {
                         {canManage && <button onClick={() => { setPlacing({ grade: g, bookId: '', term: 'year', key: Date.now() }); setOpen(null) }} className="h-6 px-1 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '고르기…' : 'Choose…'}</button>}
                       </div>
                     )}
+                    {canManage && now.length > 0 && !onlySpring && (
+                      <button onClick={() => { setPlacing({ grade: g, bookId: '', term: 'year', key: Date.now() }); setOpen(null) }} className="self-start h-6 px-1 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '+ 추가' : '+ Add'}</button>
+                    )}
                     {canManage && onlySpring && (
                       <button onClick={() => { const b = bookOf(now[0]); const nb = b ? nextBook(b, p.books) : undefined; setPlacing({ grade: g, bookId: nb?.id || '', term: 'fall', key: Date.now() }); setOpen(null) }} className="self-start h-6 px-1 text-[length:calc(11.5px*var(--ts))] text-ink-3 hover:text-ink">{ko ? '+ 가을 교재' : '+ Fall book'}</button>
                     )}
@@ -341,7 +349,7 @@ export default function YearPlanView() {
 
       {/* Timeline: a row per book, grouped by grade */}
       {gradesWithBooks.length === 0 ? (
-        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? `${cls}의 ${theYear} 교재가 아직 없습니다.` : `Nothing decided for ${cls} in ${theYear} yet. Press Use on the board to take the suggestion, or Choose….`}</p>
+        <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? `${cls}의 ${theYear} 교재가 아직 없습니다.${canManage ? ' 위 표에서 사용 또는 고르기를 누르세요.' : ''}` : `Nothing decided for ${cls} in ${theYear} yet.${canManage ? ' Press Use on the board to take the suggestion, or Choose….' : ''}`}</p>
       ) : (
         <section className="border border-rule rounded bg-surface overflow-x-auto">
           <div ref={gridRef} className="relative" style={{ minWidth: LABEL_W + RIGHT_PAD + N * COL_MIN }}>
@@ -430,14 +438,14 @@ export default function YearPlanView() {
                           const col = edgeR(shift + c, h)
                           if (col <= 0 || col >= N) return null
                           return <span key={'d' + k} role="separator" aria-label={`${ko ? '단원 경계' : 'Line between units'} ${k + 1}–${k + 2}`}
-                            onPointerDown={e => { e.preventDefault(); setDrag({ plId: pl.id, kind: 'div', k, w0: w.slice(), shift, grade: g }); setTip({ x: e.clientX, y: e.clientY, pl: pl.id }) }}
+                            onPointerDown={e => { e.preventDefault(); setDrag({ plId: pl.id, kind: 'div', k, w0: w.slice(), shift, grade: g, x0: e.clientX, col0: 0 }); setTip({ x: e.clientX, y: e.clientY, pl: pl.id }) }}
                             className="absolute top-[13px] h-[30px] w-[10px] -ml-[5px] cursor-col-resize z-[3] group touch-none" style={{ left: pos(col) }}>
                             <span className="absolute left-[4px] top-1 bottom-1 w-[2px] rounded bg-ink opacity-0 group-hover:opacity-70" />
                           </span>
                         })}
                         {canManage && rows.length > 0 && (
                           <button data-grip="1" aria-label={ko ? '책 길이 조절' : `Stretch or squeeze ${labelOf(pl)}`} title={ko ? '끌어서 길이 조절 (←/→ 키도 됨)' : 'Drag to stretch or squeeze (or use ← →)'}
-                            onPointerDown={e => { e.preventDefault(); setDrag({ plId: pl.id, kind: 'end', k: 0, w0: w.slice(), shift, grade: g }); setTip({ x: e.clientX, y: e.clientY, pl: pl.id }) }}
+                            onPointerDown={e => { e.preventDefault(); setDrag({ plId: pl.id, kind: 'end', k: 0, w0: w.slice(), shift, grade: g, x0: e.clientX, col0: edgeR(shift + total, h) }); setTip({ x: e.clientX, y: e.clientY, pl: pl.id }) }}
                             onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); save(pl, spreadEvenly(total + (e.key === 'ArrowRight' ? 1 : -1), rows.length), 'stretched on the year plan') } }}
                             className="absolute top-[11px] h-[34px] w-[14px] -ml-[7px] cursor-ew-resize z-[6] flex items-center justify-center touch-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded" style={{ left: pastYear > 0 ? `calc(${pos(N)} + 4px)` : pos(endCol) }}>
                             <span className="w-[6px] h-[22px] rounded-sm" style={{ background: color, boxShadow: '0 0 0 2px rgb(var(--white))' }} />
