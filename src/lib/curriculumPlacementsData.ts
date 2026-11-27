@@ -99,6 +99,14 @@ export async function dropPacing(id: string, label: string): Promise<string | nu
   return msg(error)
 }
 
+/** Takes several units out of a class's list at once (Keep a range). */
+export async function dropPacingMany(ids: string[], label: string): Promise<string | null> {
+  if (!ids.length) return null
+  const { error } = await supabase.from('curriculum_pacing').delete().in('id', ids)
+  if (!error) logActivity('edited', `Pacing: dropped ${ids.length} from ${label}`, { path: PATH })
+  return msg(error)
+}
+
 /** Puts a unit (back) into the pacing at the end. */
 export async function addPacing(placementId: string, unit: CurriculumUnit, after: number, label: string): Promise<string | null> {
   const { error } = await supabase.from('curriculum_pacing').insert({ placement_id: placementId, unit_id: unit.id, sort_order: after + 1, weeks: unit.default_weeks || 2, owner: 'master' })
