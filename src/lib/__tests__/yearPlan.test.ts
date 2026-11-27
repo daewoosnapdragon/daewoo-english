@@ -137,6 +137,10 @@ describe('the suggestion', () => {
   it('is the same book for a new grade 1', () => {
     expect(suggestBook(1, [pl('c', 'sp3', 'Daisy', 1, '2026', 'year')], books)?.id).toBe('sp3')
   })
+  it('keeps a one-book series, which runs on across grades', () => {
+    const sor = { ...books[0], id: 'sor', series_id: 'sor-series', level_number: 'Systematic Phonics' }
+    expect(suggestBook(2, [pl('c', 'sor', 'Daisy', 1, '2026', 'year')], [...books, sor])?.id).toBe('sor')
+  })
   it('is nothing after the last level or with nothing last year', () => {
     expect(suggestBook(2, [pl('c', 'sp4', 'Daisy', 1, '2026', 'year')], books)).toBeUndefined()
     expect(suggestBook(2, [], books)).toBeUndefined()
@@ -240,5 +244,25 @@ describe('the class keys', () => {
     expect(k({ key: 'Escape', present: true, inField: true })).toBeNull()
     expect(k({ key: 'Escape', present: false })).toBeNull()
     expect(k({ key: 'a' })).toBeNull()
+  })
+})
+
+// ─── Bar labels ───
+import { unitLabel } from '../yearPlan'
+
+describe('what a unit bar says', () => {
+  it('shows a phonics unit by its pattern, not its section', () => {
+    expect(unitLabel('Closed Syllables · Consonant Digraphs: sh', true)).toBe('sh')
+    expect(unitLabel('Closed Syllables · CVC & VC Words: Short a', true)).toBe('Short a')
+    expect(unitLabel('Alphabet · Set 1: a, b, t, s, m', true)).toBe('a b t s m')
+    expect(unitLabel('Closed Syllables · Morphology: Suffix -ed', true)).toBe('-ed')
+    expect(unitLabel('Closed Syllables · <all> spells /ŏl/', true)).toBe('all → /ŏl/')
+    expect(unitLabel('Closed Syllables · Review Together', true)).toBe('Review')
+  })
+  it('shows other units by their badge, a School Link as SL, else the name', () => {
+    expect(unitLabel('Unit 4 · Pack and Go', false)).toBe('Unit 4')
+    expect(unitLabel('School Link 2', false)).toBe('SL 2')
+    expect(unitLabel('M3 W1 · Clark the Shark', false)).toBe('M3 W1')
+    expect(unitLabel('Review week', false)).toBe('Review week')
   })
 })
