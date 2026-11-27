@@ -41,6 +41,7 @@ const fmtMonth = (iso: string) => new Date(iso + 'T12:00:00Z').toLocaleDateStrin
 /** The table's columns: grade, subject, last year, this year's book, then the year. */
 const COLS = '44px 84px minmax(110px, 150px) minmax(200px, 250px) minmax(480px, 1fr)'
 const TRACK_PAD = 80          // right of the last week: room for a long book's handle and its overflow marker
+const TALL_ROW = 116          // a phonics row with many units: room for a pattern written up its bar
 const TERM_ORDER: Term[] = ['spring', 'year', 'fall']
 const sumOf = (a: number[]) => a.reduce((x, y) => x + y, 0)
 /** A series colour deep enough to carry white labels (the light series colours are near 3:1 on their own). */
@@ -252,6 +253,8 @@ export default function YearPlanView() {
     setBusy(null)
   }
   const choose = (key: string, grade: number, bookId = '', term: Term = 'year') => { setPlacing(placing?.key === key ? null : { key, grade, bookId, term, k: Date.now() }); setOpen(null) }
+  /** A phonics book with many short units (Science of Reading: 91) gets a tall row, its patterns written up the bars so each one can be read. */
+  const tall = (r: Row) => r.strand === 'phonics' && plsOf(r).some(pl => rowsOf(pl.id).length > 16)
   const plsOf = (r: Row) => r.strand ? mine.filter(x => x.grade === r.grade && strandOf(x) === r.strand).sort(sortPl) : []
   const lastOf = (r: Row) => r.strand ? lastYearFor(p.placements, cls, r.grade, prevYear, x => strandOf(x) === r.strand) : { grade: r.grade > 1 ? r.grade - 1 : 1, placements: [] }
   const suggestionOf = (r: Row) => { const last = lastOf(r); return r.strand && !plsOf(r).length && last.placements.length ? suggestBook(r.grade, last.placements, p.books) : undefined }
@@ -272,6 +275,7 @@ export default function YearPlanView() {
 
   const lane = (r: Row) => {
     const h = hol[r.grade]
+    const tl = tall(r), barH = tl ? TALL_ROW - 20 : 20
     const pls = plsOf(r), sug = suggestionOf(r)
     return (
       <div data-track className="relative h-full" style={{ marginRight: TRACK_PAD }}>
@@ -301,20 +305,20 @@ export default function YearPlanView() {
           const cum: number[] = []; w.reduce((a, x) => { cum.push(a + x); return a + x }, 0)
           return (
             <Fragment key={pl.id}>
-              {Math.abs(total - sug2) > 0.01 && <div title={ko ? `제안 길이 ${num(sug2)}주` : `Suggested length: ${num(sug2)} wk`} className="absolute top-[12px] h-[26px] rounded border-[1.5px] border-dashed pointer-events-none" style={{ left: pos(startCol), width: pos(Math.max(0.5, sugEnd - startCol)), borderColor: color, opacity: 0.55 }} />}
+              {Math.abs(total - sug2) > 0.01 && <div title={ko ? `제안 길이 ${num(sug2)}주` : `Suggested length: ${num(sug2)} wk`} className="absolute top-[12px] rounded border-[1.5px] border-dashed pointer-events-none" style={{ left: pos(startCol), width: pos(Math.max(0.5, sugEnd - startCol)), height: barH + 6, borderColor: color, opacity: 0.55 }} />}
               {segs.map(sg => {
                 const a = shift + sumOf(w.slice(0, sg.from)), z = shift + sumOf(w.slice(0, sg.to + 1))
                 const L = edgeL(a, h), R = Math.min(N, edgeR(z, h))
                 if (L >= N) return null
                 return (
                   <div key={sg.key + sg.from} title={`${sg.title} · ${num(z - a)} wk · ${ko ? '끝' : 'ends'} ${whenEnds(z, h)}`}
-                    className="absolute top-[15px] h-[20px] rounded-[3px] px-1 text-[length:calc(11px*var(--ts))] leading-[20px] text-white font-medium overflow-hidden whitespace-nowrap"
-                    style={{ left: `calc(${pos(L)} + 1px)`, width: `calc(${pos(Math.max(0.2, R - L))} - 2px)`, background: fill }}>
+                    className={`absolute top-[15px] rounded-[3px] text-[length:calc(11px*var(--ts))] text-white font-medium overflow-hidden whitespace-nowrap ${tl ? 'py-1.5 leading-none [writing-mode:vertical-rl] rotate-180 flex items-center' : 'px-1 leading-[20px]'}`}
+                    style={{ left: `calc(${pos(L)} + 1px)`, width: `calc(${pos(Math.max(0.2, R - L))} - 2px)`, height: barH, background: fill }}>
                     {sg.label}
                   </div>
                 )
               })}
-              {length > 0 && total > length + 0.01 && endCol > termEnd && <div className="absolute top-[15px] h-[20px] pointer-events-none z-[2]" style={{ left: pos(termEnd), width: pos(endCol - termEnd), backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--bad) / 0.6) 0 4px, transparent 4px 8px)' }} />}
+              {length > 0 && total > length + 0.01 && endCol > termEnd && <div className="absolute top-[15px] pointer-events-none z-[2]" style={{ left: pos(termEnd), width: pos(endCol - termEnd), height: barH, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--bad) / 0.6) 0 4px, transparent 4px 8px)' }} />}
               {pins.map(pn => { const tag = tagAt(segs, w, shift, h, pn.col); return tag ? <span key={pn.label} title={`${pn.label}: ${tag === '✓' ? (ko ? '끝남' : 'finished') : tag}`} className="absolute top-0 -translate-x-1/2 z-[3] rounded-sm bg-ink text-paper px-1 text-[length:calc(11px*var(--ts))] font-semibold leading-[14px] whitespace-nowrap pointer-events-none max-w-[110px] truncate" style={{ left: pos(pn.col) }}>{tag}</span> : null })}
               {pastYear > 0 && <span className="absolute top-[15px] z-[4] rounded-full bg-bad text-white px-2 text-[length:calc(11px*var(--ts))] font-bold leading-[20px] whitespace-nowrap" style={{ left: `calc(100% + 14px)` }} title={ko ? '한 해를 넘어갑니다' : 'Runs past the end of the year'}>+{num(pastYear)} {ko ? '주' : 'wk'}</span>}
               {canManage && !anthology && rowsP.length > 1 && cum.slice(0, -1).map((c, k) => {
@@ -322,7 +326,7 @@ export default function YearPlanView() {
                 if (col <= 0 || col >= N) return null
                 return <span key={'d' + k} role="separator" aria-label={`${ko ? '단원 경계' : 'Line between units'} ${k + 1}–${k + 2}`}
                   onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'div', k, w0: w.slice(), shift, grade: r.grade, col0: 0 })}
-                  className="absolute top-[13px] h-[24px] w-[10px] -ml-[5px] cursor-col-resize z-[3] group touch-none" style={{ left: pos(col) }}>
+                  className="absolute top-[13px] w-[10px] -ml-[5px] cursor-col-resize z-[3] group touch-none" style={{ left: pos(col), height: barH + 4 }}>
                   <span className="absolute left-[4px] top-1 bottom-1 w-[2px] rounded bg-ink opacity-0 group-hover:opacity-70" />
                 </span>
               })}
@@ -330,8 +334,8 @@ export default function YearPlanView() {
                 <button data-grip="1" aria-label={ko ? '책 길이 조절' : `Stretch or squeeze ${labelOf(pl)}`} title={ko ? '끌어서 길이 조절 (←/→ 키도 됨)' : 'Drag to stretch or squeeze (or use ← →)'}
                   onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'end', k: 0, w0: w.slice(), shift, grade: r.grade, col0: edgeR(shift + total, h) })}
                   onKeyDown={e => { if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !saving) { e.preventDefault(); save(pl, spreadEvenly(total + (e.key === 'ArrowRight' ? 1 : -1), rowsP.length), 'stretched on the year plan') } }}
-                  className="absolute top-[10px] h-[30px] w-[14px] -ml-[7px] cursor-ew-resize z-[5] flex items-center justify-center touch-none rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" style={{ left: pastYear > 0 ? `calc(100% + 6px)` : pos(endCol) }}>
-                  <span className="w-[6px] h-[20px] rounded-sm" style={{ background: fill, boxShadow: '0 0 0 2px rgb(var(--white))' }} />
+                  className="absolute top-[10px] w-[14px] -ml-[7px] cursor-ew-resize z-[5] flex items-center justify-center touch-none rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" style={{ left: pastYear > 0 ? `calc(100% + 6px)` : pos(endCol), height: barH + 10 }}>
+                  <span className="w-[6px] rounded-sm" style={{ height: barH, background: fill, boxShadow: '0 0 0 2px rgb(var(--white))' }} />
                 </button>
               )}
             </Fragment>
@@ -437,7 +441,7 @@ export default function YearPlanView() {
             const isOpen = (!!placing && placing.key === r.key) || openedKey === r.key
             return (
               <Fragment key={r.key}>
-                <div role="row" className={`grid ${r.strand ? 'h-[40px]' : 'h-[32px]'} border-b ${r.first ? 'border-t border-t-rule-2' : ''} ${isOpen ? 'bg-paper-2 border-b-transparent' : 'border-rule'}`} style={{ gridTemplateColumns: COLS }}>
+                <div role="row" className={`grid border-b ${r.first ? 'border-t border-t-rule-2' : ''} ${isOpen ? 'bg-paper-2 border-b-transparent' : 'border-rule'}`} style={{ gridTemplateColumns: COLS, height: !r.strand ? 32 : tall(r) ? TALL_ROW : 40 }}>
                   <div role="cell" className="px-2 flex items-center font-display text-[length:calc(17px*var(--ts))] text-ink-2">{r.first ? `G${r.grade}` : ''}</div>
                   <div role="cell" className="px-2 flex items-center text-[length:calc(12px*var(--ts))] text-ink-2">{r.strand ? (ko ? STRAND_LABEL[r.strand].ko : STRAND_LABEL[r.strand].en) : ''}</div>
                   <div role="cell" className="px-2 flex items-center min-w-0 text-[length:calc(12px*var(--ts))]">{lastLine(r)}</div>
