@@ -1,0 +1,523 @@
+{
+  "series": "Rich Reading",
+  "level": "Basic 1 Plus",
+  "units": [
+    {
+      "title": "Unit 1 · Joy’s Surprise",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Joy’s Surprise",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use birthday words, like gift, surprise, party, wrap and card",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Joy’s Surprise in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a gift they gave or got and how it felt",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · No More Hard Chores!",
+      "objectives": [
+        {
+          "text": "compare doing chores by hand with using home appliances, using No More Hard Chores!",
+          "ccss": [
+            "RI.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name home appliances, like washing machine, vacuum, fridge and microwave",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from No More Hard Chores! in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say which home appliance helps their family most and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · The Four Seasons",
+      "objectives": [
+        {
+          "text": "tell what happens in The Four Seasons and why, using because",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name the seasons and words about them, like warm, cold, leaves and snow",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell The Four Seasons in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell which season they like best and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Animals Work Together!",
+      "objectives": [
+        {
+          "text": "tell the main idea of Animals Work Together! and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use teamwork words, like together, team, help, share and group",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Animals Work Together! in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time they worked as a team with others",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · One More Pet?",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of One More Pet?",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use pet care words, like feed, brush, walk, clean and take care of",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell One More Pet? in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say whether they would like one more pet and give a reason",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Shadows and Sundials",
+      "objectives": [
+        {
+          "text": "tell the main idea of Shadows and Sundials and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about time and shadows, like shadow, sundial, clock and hour",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Shadows and Sundials in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain in their own words how a sundial shows the time",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Mia’s Birdhouse",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Mia’s Birdhouse",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use wood craft words, like wood, nail, hammer, saw and paint",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Mia’s Birdhouse in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they would like to make from wood and how",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Colors in the Sky",
+      "objectives": [
+        {
+          "text": "tell the main idea of Colors in the Sky and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name colors and things in the sky, like rainbow, sunset, red and orange",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Colors in the Sky in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe the colors they have seen in the sky",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Gem Park",
+      "objectives": [
+        {
+          "text": "tell the main events of Gem Park in order, using first, next and finally",
+          "ccss": [
+            "RL.1.2",
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name outdoor activities, like ride a bike, fly a kite, skate and climb",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Gem Park to a partner, using the pictures to help them remember",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they like to do outdoors at a park",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Vets Help Pets",
+      "objectives": [
+        {
+          "text": "tell the main idea of Vets Help Pets and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about vets, like checkup, medicine, sick and healthy",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Vets Help Pets in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they would take care of a sick pet",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Firefighter Fox",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Firefighter Fox",
+          "ccss": [
+            "RL.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name community helpers, like firefighter, police officer, doctor and mail carrier",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Firefighter Fox in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say which community helper they would like to be and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Bee Heroes!",
+      "objectives": [
+        {
+          "text": "tell the main idea of Bee Heroes! and the key details that support it",
+          "ccss": [
+            "RI.1.2"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about bees, like hive, honey, flower and pollen",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Bee Heroes! in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell why bees are important, using facts from Bee Heroes!",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

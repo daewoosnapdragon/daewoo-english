@@ -1,0 +1,522 @@
+{
+  "series": "Rich Reading",
+  "level": "Basic 1",
+  "units": [
+    {
+      "title": "Unit 1 · Who Is Best?",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Who Is Best?",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about friends, like together, best, share and help",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Who Is Best? in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "say who their friends are and what they like to do together",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Animal Body Parts",
+      "objectives": [
+        {
+          "text": "ask and answer questions about what animals use their body parts for",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name animal body parts, like beak, fins, horns, tail and claws",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Animal Body Parts in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell which animal body part they would like to have and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Toys at Night",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Toys at Night",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name toys and night words, like teddy bear, robot, dream and sleep",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Toys at Night in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a dream they had or a dream they would like to have",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Rules at School",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the school rules in Rules at School",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about school rules, like line up, quiet, raise your hand and share",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Rules at School in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say which school rule they think matters most and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Pack and Go",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Pack and Go",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name weather words and things to pack, like rainy, sunny, umbrella and coat",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Pack and Go in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they would pack for a rainy day and for a sunny day",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Dad’s Pasta",
+      "objectives": [
+        {
+          "text": "put the steps for making pasta in Dad’s Pasta in order: first, next, last",
+          "ccss": [
+            "RI.1.3"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use cooking words, like boil, pour, mix, pot and sauce",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Dad’s Pasta in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell the steps for making a simple food they like",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Mole’s Home",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Mole’s Home",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name animal homes, like burrow, nest, den and hive",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Mole’s Home in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what Mole’s home is like and what their own home is like",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Meet the Insects",
+      "objectives": [
+        {
+          "text": "tell what readers learn about insects in Meet the Insects",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name insects and their parts, like ant, bee, wings, legs and antennae",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Meet the Insects in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell which insect they like best and one fact about it",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · A Day at the Beach",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about A Day at the Beach",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name beach words, like sand, waves, shell and swimsuit",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell A Day at the Beach in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a day trip they took or would like to take",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Soccer Fun",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how soccer is played, using Soccer Fun",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use soccer words, like ball, goal, kick, team and score",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from Soccer Fun in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say what sport they like to play and why",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Playing with Max",
+      "objectives": [
+        {
+          "text": "ask and answer who, what, where and why questions about Playing with Max",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name ways to play with a pet, like throw, catch, run and walk",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "retell Playing with Max in their own words: beginning, middle and end",
+          "ccss": [
+            "RL.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they would play with a pet like Max",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · How Plants Grow",
+      "objectives": [
+        {
+          "text": "ask and answer questions about what plants need to grow, using How Plants Grow",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name plant parts and needs, like seed, root, stem, sun and water",
+          "ccss": [
+            "L.1.4",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell the most important facts from How Plants Grow in their own words",
+          "ccss": [
+            "RI.1.2",
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell the steps of how a seed grows into a plant",
+          "ccss": [
+            "SL.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

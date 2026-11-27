@@ -1,0 +1,519 @@
+{
+  "series": "Rich Reading",
+  "level": "Intermediate 1",
+  "units": [
+    {
+      "title": "Unit 1 · Family Camping",
+      "objectives": [
+        {
+          "text": "tell the main events of Family Camping in order, using first, next and finally",
+          "ccss": [
+            "RL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use camping words, like tent, campfire, flashlight and sleeping bag",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Family Camping with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a fun day outdoors with their family",
+          "ccss": [
+            "W.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Food Chain",
+      "objectives": [
+        {
+          "text": "compare the living things in a food chain: what they eat and what eats them",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use food chain words, like plant, eat, predator, prey and energy",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Food Chain with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "draw a food chain and explain how energy moves through it",
+          "ccss": [
+            "W.2.2",
+            "SL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Pat and Tim",
+      "objectives": [
+        {
+          "text": "tell the main message of Pat and Tim and the details that show it",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about doing things together, like share, together, team and help",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Pat and Tim with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about something they like to do with a friend or family member",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Saving Water",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Saving Water and what they want readers to do",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use water-saving words, like save, waste, faucet, shower and drip",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Saving Water with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write two ways their family can save water at home",
+          "ccss": [
+            "W.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Fun at Burns Farm",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Fun at Burns Farm",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use country life words, like barn, field, hay, tractor and chores",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Fun at Burns Farm with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell whether they would like to live in the country and why",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · From Tadpoles to Frogs",
+      "objectives": [
+        {
+          "text": "tell the stages of a frog's life cycle in order, from egg to frog",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use life cycle words, like egg, tadpole, froglet, frog and change",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of From Tadpoles to Frogs with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "draw and label a frog's life cycle and explain each stage",
+          "ccss": [
+            "W.2.2",
+            "SL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Patty Jumps!",
+      "objectives": [
+        {
+          "text": "tell the main events of Patty Jumps! in order, using first, next and finally",
+          "ccss": [
+            "RL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about helping, like help, brave, careful and thank",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Patty Jumps! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time they helped someone",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Inside Trees",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the parts inside a tree using key details",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name parts of a tree, like bark, trunk, rings, roots and branches",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Inside Trees with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain what one part of a tree does for the tree",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Up or Down Sound",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Up or Down Sound",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use sound words, like loud, soft, high, low and sound",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Up or Down Sound with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "describe sounds they hear at home and at school",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · The Sun Queen",
+      "objectives": [
+        {
+          "text": "tell the main idea of The Sun Queen and key details about the inventor",
+          "ccss": [
+            "RI.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use inventor words, like invent, idea, experiment and test",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Sun Queen with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say what they would like to invent and why",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · A Feast in Fall",
+      "objectives": [
+        {
+          "text": "tell the plot of A Feast in Fall: the problem, the main events and how it ends",
+          "ccss": [
+            "RL.2.5",
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use Thanksgiving words, like feast, harvest, thankful and share",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Feast in Fall with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about what they are thankful for and why",
+          "ccss": [
+            "W.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · A Beaver's Home",
+      "objectives": [
+        {
+          "text": "ask and answer questions about how beavers build their homes",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use beaver words, like dam, lodge, river, gnaw and log",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Beaver's Home with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "compare a beaver's home with their own home",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

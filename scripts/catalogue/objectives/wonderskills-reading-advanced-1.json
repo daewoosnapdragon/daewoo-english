@@ -1,0 +1,611 @@
+{
+  "series": "Wonderskills Reading",
+  "level": "Advanced 1",
+  "units": [
+    {
+      "title": "Unit 1 · More Than Honey",
+      "objectives": [
+        {
+          "text": "tell the main idea of More Than Honey and the key details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use bee and honey words, like hive, pollinate, nectar and colony",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "summarize More Than Honey, giving the main ideas and key details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write why bees matter to people, using facts from the text",
+          "ccss": [
+            "W.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · Bruno’s New Home",
+      "objectives": [
+        {
+          "text": "picture the characters and events of Bruno’s New Home in their minds and describe them",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "describe the main character of Bruno’s New Home using what they say, think and do",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about moving to a new home, like move, unpack, neighbor and settle in",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Bruno’s New Home that keeps only the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a time they had to get used to something new",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · The Dream Catcher",
+      "objectives": [
+        {
+          "text": "picture the characters and events of The Dream Catcher in their minds and describe them",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main events of The Dream Catcher in order, using first, next and finally",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about traditions, like tradition, dream catcher, culture and pass down",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Dream Catcher that keeps only the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "describe a tradition in their family and how it is passed down",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Room to Grow",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading Room to Grow and find the answers",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "put the steps or events in Room to Grow in order, using first, next and last",
+          "ccss": [
+            "RI.4.3",
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use community words, like community, space, neighbors and plan",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Room to Grow that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "suggest one way to make their community a better place to grow",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Mary Anderson’s Great Invention",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading Mary Anderson’s Great Invention and find the answers",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain what led Mary Anderson to her invention and what changed because of it",
+          "ccss": [
+            "RI.4.3",
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use invention words, like invent, patent, windshield wiper and design",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Mary Anderson’s Great Invention that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe a problem in daily life and an invention that could solve it",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · An Amazing Landmark",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading An Amazing Landmark and find the answers",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main idea of An Amazing Landmark and the key details that support it",
+          "ccss": [
+            "RI.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use landmark words, like landmark, monument, tower, visit and famous",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of An Amazing Landmark that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about a landmark in Korea and why people visit it",
+          "ccss": [
+            "W.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Fibonacci’s Surprising Discovery",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading Fibonacci’s Surprising Discovery and find the answers",
+          "ccss": [
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the problem described in Fibonacci’s Surprising Discovery and how it is solved",
+          "ccss": [
+            "RI.4.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use math and pattern words, like pattern, sequence, number and solve",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Fibonacci’s Surprising Discovery that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "find a number pattern in nature or at home and explain it",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Anansi Learns a Lesson",
+      "objectives": [
+        {
+          "text": "make predictions while reading Anansi Learns a Lesson and check them against what happens",
+          "ccss": [
+            "RL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the theme, or message, of Anansi Learns a Lesson and the details that show it",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use folktale words, like trickster, spider, lesson and share",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Anansi Learns a Lesson that keeps only the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time working together helped them learn a lesson",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Sailing for Gold Mountain",
+      "objectives": [
+        {
+          "text": "make predictions while reading Sailing for Gold Mountain and check them against what happens",
+          "ccss": [
+            "RL.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the theme, or message, of Sailing for Gold Mountain and the details that show it",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about moving to a new land, like immigrant, voyage, ship and hope",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Sailing for Gold Mountain that keeps only the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write how they would feel moving to a new country, and why",
+          "ccss": [
+            "W.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Every Vote Counts!",
+      "objectives": [
+        {
+          "text": "reread parts of Every Vote Counts! that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.4.10",
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what the author thinks about voting in Every Vote Counts! and the reasons given",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use government words, like vote, election, citizen and leader",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Every Vote Counts! that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "give their opinion on why voting matters, with two reasons",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Kids to the Rescue!",
+      "objectives": [
+        {
+          "text": "reread parts of Kids to the Rescue! that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.4.10",
+            "RI.4.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell what the author thinks about kids who help in emergencies and the reasons given",
+          "ccss": [
+            "RI.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use rescue words, like rescue, emergency, survive and brave",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Kids to the Rescue! that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.4.2",
+            "W.4.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain what to do in an emergency, step by step",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Two Cooks in the Kitchen",
+      "objectives": [
+        {
+          "text": "tell the problem the two cooks face and how they solve it",
+          "ccss": [
+            "RL.4.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use kitchen words, like recipe, ingredient, stir, measure and bake",
+          "ccss": [
+            "L.4.4",
+            "L.4.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "summarize Two Cooks in the Kitchen, giving only the most important events",
+          "ccss": [
+            "RL.4.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how two people can solve a problem when they disagree",
+          "ccss": [
+            "SL.4.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

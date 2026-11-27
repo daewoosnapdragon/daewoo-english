@@ -1,0 +1,518 @@
+{
+  "series": "Rich Reading",
+  "level": "Intermediate 2",
+  "units": [
+    {
+      "title": "Unit 1 · Stay Out of Trouble!",
+      "objectives": [
+        {
+          "text": "describe the characters, the setting and the main events of Stay Out of Trouble!",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about rules, like rule, follow, safe, trouble and fair",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Stay Out of Trouble! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write one rule they think is important and why",
+          "ccss": [
+            "W.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · From Sheep to Wool",
+      "objectives": [
+        {
+          "text": "tell why the author wrote From Sheep to Wool and what readers should learn",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use wool words, like sheep, wool, shear, spin and yarn",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of From Sheep to Wool with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain the steps that turn sheep's wool into yarn or clothes",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Saving a Bird",
+      "objectives": [
+        {
+          "text": "tell the main events of Saving a Bird in order, using first, next and finally",
+          "ccss": [
+            "RL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about wild animals, like wild, hurt, nest, rescue and care",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Saving a Bird with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they should do if they find a hurt bird",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Alligators",
+      "objectives": [
+        {
+          "text": "ask and answer questions about alligators using key details from the text",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use alligator words, like reptile, swamp, scales, jaws and teeth",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Alligators with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write three facts about alligators they learned",
+          "ccss": [
+            "W.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · The Old Chest",
+      "objectives": [
+        {
+          "text": "tell the plot of The Old Chest: the problem, the main events and how it ends",
+          "ccss": [
+            "RL.2.5",
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about family treasures, like chest, old, special and remember",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Old Chest with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "describe a special object in their family and why it matters",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · What Is a Yurt?",
+      "objectives": [
+        {
+          "text": "tell the main idea of What Is a Yurt? and the key details that support it",
+          "ccss": [
+            "RI.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about homes, like yurt, tent, round, move and warm",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of What Is a Yurt? with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "compare a yurt with the home they live in",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Ray Saves the Play!",
+      "objectives": [
+        {
+          "text": "tell the plot of Ray Saves the Play!: the problem, the main events and how it ends",
+          "ccss": [
+            "RL.2.5",
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use theater words, like play, stage, costume, actor and audience",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Ray Saves the Play! with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a problem they solved and how they solved it",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Biggest Bird, Smallest Bird",
+      "objectives": [
+        {
+          "text": "compare the biggest bird and the smallest bird: how they are alike and different",
+          "ccss": [
+            "RI.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use size words, like big, bigger, biggest, small and smallest",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Biggest Bird, Smallest Bird with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell which bird they would like to see and why",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Maria’s First Flight",
+      "objectives": [
+        {
+          "text": "tell what happens in Maria’s First Flight and why, using because",
+          "ccss": [
+            "RL.2.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use flying words, like airport, pilot, ticket, seat and take off",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Maria’s First Flight with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a trip they took or would like to take",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · The Moon",
+      "objectives": [
+        {
+          "text": "ask and answer questions about the moon using key details from The Moon",
+          "ccss": [
+            "RI.2.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use moon words, like moon, crater, shape, orbit and light",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Moon with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write two facts about the moon and one question they still have",
+          "ccss": [
+            "W.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Cali’s Kittens",
+      "objectives": [
+        {
+          "text": "tell the main events of Cali’s Kittens in order, using first, next and finally",
+          "ccss": [
+            "RL.2.5"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use baby animal words, like kitten, puppy, newborn and grow",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Cali’s Kittens with the characters, the events and the ending",
+          "ccss": [
+            "RL.2.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they would care for a baby animal",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Kid Inventor",
+      "objectives": [
+        {
+          "text": "tell why the author wrote Kid Inventor and what they want readers to think",
+          "ccss": [
+            "RI.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use invention words, like invent, inventor, idea, problem and solve",
+          "ccss": [
+            "L.2.4",
+            "L.2.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Kid Inventor with the main idea and key details",
+          "ccss": [
+            "RI.2.2",
+            "W.2.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe an invention they would make to solve a problem",
+          "ccss": [
+            "SL.2.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

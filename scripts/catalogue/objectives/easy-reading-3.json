@@ -1,0 +1,528 @@
+{
+  "series": "Easy Reading",
+  "level": "3",
+  "units": [
+    {
+      "title": "Unit 1 · What Is in the Pan?",
+      "objectives": [
+        {
+          "text": "listen to What Is in the Pan? and name the foods cooked for dinner",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read What Is in the Pan? aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name dinner foods, like rice, soup, fish, chicken and noodles",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and ask questions about dinner, like “What is in the pan?”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · What Can Fox Play?",
+      "objectives": [
+        {
+          "text": "listen to What Can Fox Play? and name the instruments in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read What Can Fox Play? aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name instruments, like drum, piano, guitar, violin and flute",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about music: “I can play the drum.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · My Cats",
+      "objectives": [
+        {
+          "text": "listen to My Cats and tell what the cats look like and do",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in My Cats to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name pets and pet words, like cat, dog, fish, feed and pet",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about a pet: “My cat is soft.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Wake Up!",
+      "objectives": [
+        {
+          "text": "listen to Wake Up! and tell what happens in the day and at night",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread Wake Up! aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use day and night words, like morning, night, sun, moon and sleep",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about their day: “I wake up in the morning.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · Mike Helps Out",
+      "objectives": [
+        {
+          "text": "listen to Mike Helps Out and tell the ways Mike helps",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read Mike Helps Out aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name ways to help at home, like clean up, wash, carry and feed",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about how they help: “I help my mom.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · Hop! Hop! Hop!",
+      "objectives": [
+        {
+          "text": "listen to Hop! Hop! Hop! and act out the ways of moving in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read Hop! Hop! Hop! aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name action words, like hop, jump, run, skip and spin",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about how they move: “I can hop.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · The Farmer's Market",
+      "objectives": [
+        {
+          "text": "listen to The Farmer's Market and name what people buy at the market",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in The Farmer's Market to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RL.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name market foods, like corn, eggs, apples and beans",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about shopping: “I want to buy some apples.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Play with Me",
+      "objectives": [
+        {
+          "text": "listen to Play with Me and name the bugs in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread Play with Me aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name bugs, like ant, bee, ladybug, beetle and butterfly",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about bugs: “The ladybug is red.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · The Four Seasons",
+      "objectives": [
+        {
+          "text": "listen to The Four Seasons and tell what happens in each season",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "read The Four Seasons aloud with the teacher, then with a partner",
+          "ccss": [
+            "RF.1.4"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name the four seasons, spring, summer, fall and winter, and their weather",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about their favorite season: “I like summer.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · A New Home",
+      "objectives": [
+        {
+          "text": "listen to A New Home and tell where the animals in the story live",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "read A New Home aloud, pointing to each word as they say it",
+          "ccss": [
+            "RF.1.4",
+            "RF.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name animal homes, like nest, hole, hive, pond and cave",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about animal homes: “A bird lives in a nest.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · We Can Move!",
+      "objectives": [
+        {
+          "text": "listen to We Can Move! and tell the different ways our bodies can move",
+          "ccss": [
+            "RI.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use the pictures in We Can Move! to help them read new words",
+          "ccss": [
+            "RF.1.4C",
+            "RI.1.7"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "name body movements, like bend, stretch, kick, clap and turn",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about moving their bodies: “I can stretch my arms.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Go, Nat!",
+      "objectives": [
+        {
+          "text": "listen to Go, Nat! and tell what Nat does in the story",
+          "ccss": [
+            "RL.1.1"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "reread Go, Nat! aloud smoothly and with expression",
+          "ccss": [
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "name sports, like soccer, baseball, basketball, running and swimming",
+          "ccss": [
+            "L.1.5",
+            "L.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "build and say sentences about sports they like: “I like to play soccer.”",
+          "ccss": [
+            "L.1.1",
+            "SL.1.6"
+          ],
+          "wida": [
+            "ELD-LA.1.Narrate.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

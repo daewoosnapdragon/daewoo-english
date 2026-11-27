@@ -1,0 +1,604 @@
+{
+  "series": "Wonderskills Reading",
+  "level": "Master 1",
+  "units": [
+    {
+      "title": "Unit 1 · Little by Little Does Does the Trick",
+      "objectives": [
+        {
+          "text": "picture the characters and events of Little by Little Does the Trick in their minds and describe them",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main problem in Little by Little Does the Trick and how it is solved",
+          "ccss": [
+            "RL.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use determination words, like determined, patient, effort and goal",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Little by Little Does the Trick that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write about a goal they reached little by little",
+          "ccss": [
+            "W.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · The Dragon Problem",
+      "objectives": [
+        {
+          "text": "make predictions while reading The Dragon Problem and check them against what happens",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main events of The Dragon Problem in order, using first, next and finally",
+          "ccss": [
+            "RL.5.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use fairy tale words, like dragon, kingdom, clever and plan",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Dragon Problem that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell how they would solve the dragon problem in a clever way",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · The Talent Show",
+      "objectives": [
+        {
+          "text": "make predictions while reading The Talent Show and check them against what happens",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main problem in The Talent Show and how it is solved",
+          "ccss": [
+            "RL.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about standing up for yourself, like confident, brave, speak up and respect",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Talent Show that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "role-play standing up for themselves politely with a partner",
+          "ccss": [
+            "SL.5.1",
+            "SL.5.6"
+          ],
+          "wida": [
+            "ELD-SI.4-5.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · A World of Change",
+      "objectives": [
+        {
+          "text": "reread parts of A World of Change that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "compare and contrast ideas and events in A World of Change",
+          "ccss": [
+            "RI.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about change and action, like action, change, improve and effort",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of A World of Change that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about a change they would like to see in the world",
+          "ccss": [
+            "W.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · The Big Race",
+      "objectives": [
+        {
+          "text": "reread parts of The Big Race that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the causes and effects in The Big Race using details from the text",
+          "ccss": [
+            "RI.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use motion words, like speed, force, friction and motion",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Big Race that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "explain how speed and force affect who wins a race",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · The Business of Helping Others",
+      "objectives": [
+        {
+          "text": "reread parts of The Business of Helping Others that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "tell two main ideas of The Business of Helping Others and the key details that support them",
+          "ccss": [
+            "RI.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use business words, like business, profit, customer and donate",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Business of Helping Others that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "plan a small business idea that helps others and describe it",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · Aesop: A Storyteller for All Time",
+      "objectives": [
+        {
+          "text": "explain the causes and effects in Aesop: A Storyteller for All Time using details from the text",
+          "ccss": [
+            "RI.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use fable words, like fable, moral, storyteller and lesson",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "summarize Aesop: A Storyteller for All Time, giving the main ideas and key details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "retell a fable they know and explain its moral",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · The Fisherman and the Kaha Bird",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading The Fisherman and the Kaha Bird and find the answers",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the theme, or message, of The Fisherman and the Kaha Bird and the details that show it",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use folktale words, like folktale, fisherman, sea and lesson",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Fisherman and the Kaha Bird that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "compare the theme of this folktale with another animal tale they know",
+          "ccss": [
+            "RL.5.9",
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · The Moonlight Concert Mystery",
+      "objectives": [
+        {
+          "text": "ask questions before, during and after reading The Moonlight Concert Mystery and find the answers",
+          "ccss": [
+            "RL.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "tell the main events of The Moonlight Concert Mystery in order, using first, next and finally",
+          "ccss": [
+            "RL.5.5"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use mystery words, like clue, solve, suspect and mystery",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of The Moonlight Concert Mystery that keeps only the most important events",
+          "ccss": [
+            "RL.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short mystery with animal characters and a clue",
+          "ccss": [
+            "W.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Rescuing Our Reefs",
+      "objectives": [
+        {
+          "text": "tell two main ideas of Rescuing Our Reefs and the key details that support them",
+          "ccss": [
+            "RI.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use reef words, like coral, reef, ocean, protect and pollution",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "summarize Rescuing Our Reefs, giving the main ideas and key details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about one way people can protect coral reefs",
+          "ccss": [
+            "W.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · Animal Adaptations",
+      "objectives": [
+        {
+          "text": "tell two main ideas of Animal Adaptations and the key details that support them",
+          "ccss": [
+            "RI.5.2"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use adaptation words, like adapt, camouflage, survive and habitat",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "summarize Animal Adaptations, giving the main ideas and key details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "choose an animal and explain how one adaptation helps it survive",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · Animals Show the Way",
+      "objectives": [
+        {
+          "text": "reread parts of Animals Show the Way that are hard to understand to check the meaning",
+          "ccss": [
+            "RI.5.10",
+            "RI.5.1"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "explain the causes and effects in Animals Show the Way using details from the text",
+          "ccss": [
+            "RI.5.3"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about inventions from animals, like design, copy, invent and nature",
+          "ccss": [
+            "L.5.4",
+            "L.5.6"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a summary of Animals Show the Way that keeps the main ideas, not small details",
+          "ccss": [
+            "RI.5.2",
+            "W.5.8"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe an invention that copies an animal and how it works",
+          "ccss": [
+            "SL.5.4"
+          ],
+          "wida": [
+            "ELD-LA.4-5.Explain.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

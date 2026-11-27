@@ -1,0 +1,519 @@
+{
+  "series": "Wonderskills Reading",
+  "level": "Intermediate 3",
+  "units": [
+    {
+      "title": "Unit 1 · The Power to Change the World",
+      "objectives": [
+        {
+          "text": "tell the author's purpose in The Power to Change the World and its message",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about making a difference, like change, power, action and community",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Power to Change the World with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about one way a young person can make a difference",
+          "ccss": [
+            "W.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 2 · A Difficult Decision",
+      "objectives": [
+        {
+          "text": "tell how a character in A Difficult Decision sees things and how their own view is different",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use citizen words, like decision, honest, responsible and citizen",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of A Difficult Decision with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell what they would do in a hard choice and explain why",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 3 · Soccer Friends",
+      "objectives": [
+        {
+          "text": "tell how a character in Soccer Friends sees things and how their own view is different",
+          "ccss": [
+            "RL.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use teamwork words, like cooperate, pass, teammate and share",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Soccer Friends with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "tell about a time cooperation helped their team or class",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 4 · Changing Lives",
+      "objectives": [
+        {
+          "text": "tell the important events of the hero's life in Changing Lives in time order",
+          "ccss": [
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use hero words, like hero, courage, change and inspire",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Changing Lives with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write about a hero in their own life and what that person does",
+          "ccss": [
+            "W.3.1"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 5 · The Art Project",
+      "objectives": [
+        {
+          "text": "tell the main problem in The Art Project and how it is solved",
+          "ccss": [
+            "RL.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use recycling words, like recycle, reuse, trash and materials",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Art Project with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "plan an art project made from things that could be thrown away",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 6 · The United Nations",
+      "objectives": [
+        {
+          "text": "explain why the United Nations was started and what it does, using because",
+          "ccss": [
+            "RI.3.3",
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about rights and rules, like rights, rules, peace and nations",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The United Nations with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say one right every child should have and why",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 7 · The Changing World of Work",
+      "objectives": [
+        {
+          "text": "compare jobs in the past with jobs today, using The Changing World of Work",
+          "ccss": [
+            "RI.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use work words, like job, technology, machine, office and worker",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Changing World of Work with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell what job they would like in the future and why",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 8 · Why Fir Tree Keeps His Leaves",
+      "objectives": [
+        {
+          "text": "tell the theme, or message, of Why Fir Tree Keeps His Leaves and the details that show it",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about trees, like evergreen, needles, leaves, winter and fall",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of the myth with the characters, the events and the ending",
+          "ccss": [
+            "RL.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        },
+        {
+          "text": "explain the difference between a myth and a fact, with an example",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 9 · Pedal Power",
+      "objectives": [
+        {
+          "text": "tell the author's purpose in Pedal Power and what they want readers to think",
+          "ccss": [
+            "RI.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Interpretive"
+          ]
+        },
+        {
+          "text": "use energy words, like energy, pedal, power, electricity and machine",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Pedal Power with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "say whether pedal power is a good way to make energy and why",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 10 · Better Together",
+      "objectives": [
+        {
+          "text": "tell the main idea of Better Together and the key details that support it",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use exploration words, like explore, team, expedition and discover",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of Better Together with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "tell why exploring with a team is better than exploring alone",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Argue.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 11 · The Life of a Dollar Bill",
+      "objectives": [
+        {
+          "text": "tell the life of a dollar bill in order, from when it is made onward",
+          "ccss": [
+            "RI.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Explain.Interpretive"
+          ]
+        },
+        {
+          "text": "use money words, like dollar, bank, spend, print and wallet",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Life of a Dollar Bill with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short story told by a dollar bill about its travels",
+          "ccss": [
+            "W.3.3"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Narrate.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Unit 12 · The Power of Imagination",
+      "objectives": [
+        {
+          "text": "tell the main idea of The Power of Imagination and the key details that support it",
+          "ccss": [
+            "RI.3.2"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Interpretive"
+          ]
+        },
+        {
+          "text": "use words about imagination, like imagine, create, invent and dream",
+          "ccss": [
+            "L.3.4",
+            "L.3.6"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "write a short summary of The Power of Imagination with the main idea and key details",
+          "ccss": [
+            "RI.3.2",
+            "W.3.8"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        },
+        {
+          "text": "describe something they imagined and how they could make it real",
+          "ccss": [
+            "SL.3.4"
+          ],
+          "wida": [
+            "ELD-LA.2-3.Inform.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

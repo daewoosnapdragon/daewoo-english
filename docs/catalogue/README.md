@@ -55,6 +55,8 @@ python3 -I scripts/catalogue/objectives/make_seed.py
 
 WIDA grade clusters follow the book's nominal grade (Into Reading N and Hand in Hand Book N = grade N, Starter = K), not the age of the class using it.
 
+Banks for WonderSkills Easy Reading, Rich Reading and Wonderskills Reading were added 27 Nov 2026 (23 books, 276 units), written from each unit's story title, theme, genre, strategy and comprehension skill in the publisher's syllabi. Their CCSS grade and WIDA cluster: Easy Reading (all levels) and Rich Reading Basic levels (with Plus) = grade 1, cluster 1; Rich Reading Intermediate levels (with Plus) = grade 2, cluster 2-3; Wonderskills Reading Intermediate = grade 3, cluster 2-3; Advanced = grade 4, cluster 4-5; Master = grade 5, cluster 4-5. The four placeholder books (Rich Reading Basic 2, Easy Reading 1 Plus, 2 Plus and 3 Plus) have no banks until their syllabi arrive, so their units show in the seed's last query.
+
 ## WonderSkills Easy Reading, Rich Reading and Reading
 
 `supabase/seed-wonderskills.sql` loads Easy Reading, Rich Reading and WonderSkills Reading (Intermediate, Advanced, Master) from the publisher's 12-week syllabi Kyla uploaded on 27 Nov 2026. Run it in the Supabase SQL Editor after the catalogue migration; it is safe to re-run (a book that already has units is left alone), and its last query lists every book of the three series with its unit count so a book typed in by hand under another name shows up as a near-duplicate.
