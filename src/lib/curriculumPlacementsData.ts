@@ -19,17 +19,36 @@ export async function fetchPlacements(): Promise<{ placements: CurriculumPlaceme
   // Paged: plan rows pass Supabase's 1000-row cap within a year (see fetchAll.ts).
   const [p, c, d] = await Promise.all([
     fetchAll<any>((f, t) => supabase.from('curriculum_placements').select('*').order('created_at').order('id').range(f, t)),
-    fetchAll<any>((f, t) => supabase.from('curriculum_pacing').select('id, placement_id, unit_id, sort_order, weeks, owner, created_at, updated_at').order('sort_order').order('id').range(f, t)),
+    fetchPacingRows(),
     // Done ticks: a database without migration-curriculum-class-plans.sql simply has none.
     fetchAll<any>((f, t) => supabase.from('curriculum_unit_done').select('*').order('id').range(f, t)),
   ])
   return {
     placements: ((p.data || []) as any[]).map(x => ({ ...x, aim_date: x.aim_date || null })) as CurriculumPlacement[],
     // Teachers' own copies from the old class boards are not read: one plan per book.
-    pacing: ((c.data || []) as any[]).filter(x => (x.owner || 'master') === 'master').map(x => ({ ...x, weeks: Number(x.weeks), owner: 'master' })) as CurriculumPacing[],
+    pacing: ((c.data || []) as any[]).filter(x => (x.owner || 'master') === 'master').map(x => ({ ...x, weeks: Number(x.weeks), review_weeks: Number(x.review_weeks) || 0, owner: 'master' })) as CurriculumPacing[],
     done: d.error ? [] : (d.data || []) as UnitDone[],
     error: p.error?.message || c.error?.message || null,
   }
+}
+
+const PACING_COLS = 'id, placement_id, unit_id, sort_order, weeks, owner, created_at, updated_at'
+const missingReview = (m: string | null | undefined) => !!m && /review_weeks/.test(m)
+/** Plan rows with their review weeks; a database without migration-curriculum-review-weeks.sql is read without them. */
+async function fetchPacingRows() {
+  const read = (cols: string) => fetchAll<any>((f, t) => supabase.from('curriculum_pacing').select(cols).order('sort_order').order('id').range(f, t))
+  const r = await read(`${PACING_COLS}, review_weeks`)
+  return missingReview(r.error?.message) ? read(PACING_COLS) : r
+}
+
+/** Sets review weeks after units (0 takes a review out). Several rows at once for "Review after every section". */
+export async function setReviewWeeks(patches: { id: string; review_weeks: number }[], label: string): Promise<string | null> {
+  if (!patches.length) return null
+  const results = await Promise.all(patches.map(x => supabase.from('curriculum_pacing').update({ review_weeks: Math.max(0, Math.round(x.review_weeks * 2) / 2), updated_at: new Date().toISOString() }).eq('id', x.id)))
+  const err = results.find(r => r.error)?.error
+  if (missingReview(err?.message)) return 'Review weeks need a one-time database update: run supabase/migration-curriculum-review-weeks.sql in the Supabase SQL Editor.'
+  if (!err) logActivity('edited', `Pacing: review weeks in ${label}`, { path: PATH })
+  return msg(err)
 }
 
 export interface PlacementDraft { book_id: string; english_class: string; grade: number; academic_year: string; term: Term }
