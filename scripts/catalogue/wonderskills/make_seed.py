@@ -6,6 +6,8 @@ Decisions (Kyla, Nov 2026):
 - Easy Reading, Rich Reading and Wonderskills Reading are taught one book per year, so each of a book's
   12 units gets DEFAULT_WEEKS = 3 (36 weeks). The publisher's syllabi pace a book in 12 weeks at two
   lessons a week; change DEFAULT_WEEKS to 1 for that pace.
+- Two publisher typos in unit titles are corrected in books.json: Advanced 3 Unit 10 ("The Big BlizzardRocketing
+  Into Space") and Master 1 Unit 1 ("Does Does").
 - One unit per syllabus unit, titled "Unit 5 · Pack and Go"; the summary carries the theme, genre,
   strategy and skill. Two lessons per unit, one per syllabus day, with the day's activities, pages and
   homework in the notes and a drafted "Students will" objective (source 'claude', unconfirmed).
@@ -50,7 +52,7 @@ def objective(day, unit):
     if day is unit['days'][0]:
         return f'Students will learn the key words and read “{unit["title"]}”.'
     skill = unit['skill'] or ('retelling' if 'retell' in acts else '')
-    what = f' and practise {skill.lower()}' if skill else ' and check their understanding'
+    what = f' and practice {skill.lower()}' if skill else ' and check their understanding'
     return f'Students will reread “{unit["title"]}”{what}.'
 
 
