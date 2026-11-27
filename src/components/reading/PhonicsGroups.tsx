@@ -55,7 +55,7 @@ export default function PhonicsGroups({ students, latestByStudent, checksById, l
   const printGroupWords = (g: TeachGroup) => {
     const missed = missedWords(g.studentIds, latestByStudent, checksById, { sheets: g.sheets, min: 1 })
     const sections = g.sheets.map(id => { const sk = phonicsSkill(id); return { label: sk?.label || id, words: missed.filter(w => w.sheet === id).map(w => w.word), columns: sk?.sections ? 8 : 4 } })
-    printWordSheet(`${title(g)} · ${lang === 'ko' ? '틀린 단어' : 'words to practise'}`, sections, `Phonics group words: ${title(g)}`)
+    printWordSheet(`${title(g)} · ${lang === 'ko' ? '틀린 단어' : 'words to work on'}`, sections, `Phonics group words: ${title(g)}`)
   }
 
   const focus = (g: TeachGroup) => {

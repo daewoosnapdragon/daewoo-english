@@ -74,7 +74,7 @@ const FONT_INFO: Record<FontChoice, { en: string; ko: string; noteEn: string; no
 }
 
 function DisplaySection() {
-  const { language } = useApp()
+  const { language, spelling, setSpelling } = useApp()
   const ko = language === 'ko'
   const [font, setFontState] = useState<FontChoice>('classic')
   const [size, setSizeState] = useState<TextSize>('standard')
@@ -126,6 +126,18 @@ function DisplaySection() {
             </button>
           ))}
         </div>
+        <p className="eyebrow mb-2 mt-6">{ko ? '영어 철자' : 'Spelling'}</p>
+        <div role="radiogroup" aria-label={ko ? '영어 철자' : 'Spelling'} className="inline-flex border border-rule-2 rounded overflow-hidden">
+          {(['us', 'uk'] as const).map((v, i) => (
+            <button key={v} role="radio" aria-checked={spelling === v} onClick={() => setSpelling(v)}
+              className={`px-4 py-2 text-[length:calc(13px*var(--ts))] ${i > 0 ? 'border-l border-rule-2' : ''} ${spelling === v ? 'bg-ink text-paper font-semibold' : 'bg-surface text-ink-2 hover:bg-paper-2'}`}>
+              {v === 'us' ? (ko ? '미국식 (color, practice)' : 'American (color, practice)') : (ko ? '영국식 (colour, practise)' : 'British (colour, practise)')}
+            </button>
+          ))}
+        </div>
+        <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-2 max-w-[62ch]">
+          {ko ? '앱이 넣는 문구(성적표 코멘트, 수업 계획의 학습 목표 칩, 단원 설명)의 철자입니다. 선생님이 직접 쓴 글은 바뀌지 않습니다.' : 'For the words the app supplies: report comment phrases, the objective chips in lesson plans and unit text. What you type yourself is never changed.'}
+        </p>
       </div>
     </div>
   )
@@ -1259,7 +1271,7 @@ function ScheduleRulesSection() {
       <div className="flex items-baseline justify-between border-b border-rule-2 pb-2 mb-3">
         <div>
           <h3 className="font-display text-[length:calc(22px*var(--ts))] leading-none text-ink">{language === 'ko' ? '수업 없는 요일' : 'Days with no class'}</h3>
-          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-1">{language === 'ko' ? '체크된 요일은 수업 계획에서 회색으로 표시되고 출석에서 건너뜁니다.' : 'A checked day is greyed in the lesson planner and skipped in attendance for that grade.'}</p>
+          <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3 mt-1">{language === 'ko' ? '체크된 요일은 수업 계획에서 회색으로 표시되고 출석에서 건너뜁니다.' : 'A checked day is grayed out in the lesson planner and skipped in attendance for that grade.'}</p>
         </div>
         {dirty && <button onClick={save} disabled={saving} className="h-8 px-3.5 rounded bg-accent text-white text-[length:calc(12.5px*var(--ts))] font-semibold hover:bg-accent-hover disabled:opacity-60">{language === 'ko' ? '저장' : 'Save'}</button>}
       </div>

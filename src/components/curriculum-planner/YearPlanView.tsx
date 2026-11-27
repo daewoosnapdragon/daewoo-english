@@ -194,7 +194,7 @@ export default function YearPlanView() {
   }, [drag])
 
   if (p.loading) return <Loading rows={5} />
-  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{p.missing === 'catalogue' ? needsUpdate({ en: 'curriculum catalogue', ko: '교재 목록' }, ko) : needsUpdate({ en: 'curriculum placements', ko: '교재 배치' }, ko)}</p>
+  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{p.missing === 'catalogue' ? needsUpdate({ en: 'curriculum catalog', ko: '교재 목록' }, ko) : needsUpdate({ en: 'curriculum placements', ko: '교재 배치' }, ko)}</p>
 
   const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Spring', fall: ko ? '가을' : 'Fall', year: ko ? '한 해' : 'Year' }
   const pos = (col: number) => `calc(${LABEL_W}px + (100% - ${LABEL_W + RIGHT_PAD}px) * ${col / Math.max(1, N)})`
@@ -464,7 +464,7 @@ export default function YearPlanView() {
 
       {!present && gradesWithBooks.length > 0 && (
         <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-relaxed">
-          {ko ? '점선 = 제안된 길이 · 회색 빗금 = 휴일 주 · 빨간 빗금 = 학기 넘침 · 빨간 점선 = 레벨 테스트(그때 하고 있을 단원).' : 'Dashed outline = the suggested length (each unit’s default weeks). Grey hatching = holiday weeks; red hatching = time past the book’s term. Red dashed lines are level tests (end of each grading period), tagged with the unit each book is on then. Dates marked * are assumed.'}
+          {ko ? '점선 = 제안된 길이 · 회색 빗금 = 휴일 주 · 빨간 빗금 = 학기 넘침 · 빨간 점선 = 레벨 테스트(그때 하고 있을 단원).' : 'Dashed outline = the suggested length (each unit’s default weeks). Gray hatching = holiday weeks; red hatching = time past the book’s term. Red dashed lines are level tests (end of each grading period), tagged with the unit each book is on then. Dates marked * are assumed.'}
           {canManage && (ko ? ' 책 끝을 끌면 단원이 고르게 나뉘고, 단원 사이 선을 끌면 두 단원 사이에서 시간이 옮겨집니다. ← → 키로 반을 바꿉니다.' : ' Drag a book’s end to stretch or squeeze it (its units share the time evenly); drag the line between two units to give one more time. ← → switch class.')}
         </p>
       )}

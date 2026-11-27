@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { BookOpen, Check, ExternalLink, X } from 'lucide-react'
 import { standardInfo, standardTitle } from '@/lib/standardText'
 import { norm, type BookUnit, type ClassBook } from '@/lib/planLinks'
+import { useApp } from '@/lib/context'
 
 /**
  * The lines under a row linked to a unit, for the teacher only (never printed):
@@ -27,7 +28,10 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc) }
   }, [open])
   const added = (text: string) => !!text && norm(objective).includes(norm(text))
-  const bank = unit.objectives.slice(0, 5)
+  // The book's words in the teacher's spelling (Settings): what is shown is what goes on the line.
+  const { sp } = useApp()
+  const objectives = unit.objectives.map(o => ({ ...o, text: sp(o.text) }))
+  const bank = objectives.slice(0, 5)
   const codes = Array.from(new Set([...unit.objectives.flatMap(o => o.ccss), ...unit.ccss, ...unit.lessons.flatMap(l => l.ccss_codes)]))
   const wida = Array.from(new Set(unit.objectives.flatMap(o => o.wida)))
 
@@ -45,7 +49,7 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
             <select value={lessonId || ''} onChange={e => onLesson(e.target.value || null)} title="Only you see this. It is not printed."
               className="bg-transparent border-b border-border/60 outline-none focus:border-navy text-[length:calc(11.5px*var(--ts))] text-text-secondary max-w-[220px]">
               <option value="">—</option>
-              {unit.lessons.map(l => <option key={l.id} value={l.id}>{l.title}</option>)}
+              {unit.lessons.map(l => <option key={l.id} value={l.id}>{sp(l.title)}</option>)}
             </select>
           </label>
         )}
@@ -71,10 +75,10 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
         <div className="absolute left-0 top-full mt-1 z-30 w-[440px] max-w-[90vw] max-h-[440px] overflow-y-auto bg-surface border border-border rounded-xl shadow-lg p-4 text-[length:calc(12.5px*var(--ts))] text-text-primary">
           <p className="font-semibold text-[length:calc(13.5px*var(--ts))]">{unit.name}</p>
           <p className="text-[length:calc(11.5px*var(--ts))] text-text-tertiary">{book.name}{unit.badge ? ` · ${unit.badge}` : ''} · {unit.lessons.length} lesson{unit.lessons.length === 1 ? '' : 's'}</p>
-          {unit.summary && <p className="mt-2 text-text-secondary leading-snug whitespace-pre-line">{unit.summary}</p>}
-          {unit.objectives.length > 0 && (
+          {unit.summary && <p className="mt-2 text-text-secondary leading-snug whitespace-pre-line">{sp(unit.summary)}</p>}
+          {objectives.length > 0 && (
             <ul className="mt-3 space-y-1.5">
-              {unit.objectives.map(o => (
+              {objectives.map(o => (
                 <li key={o.text} className="flex items-start gap-2">
                   <p className="flex-1 text-text-secondary italic leading-snug"><span className="not-italic font-semibold text-navy">Students will</span> {o.text}</p>
                   <button type="button" onClick={() => onAddObjective(o.text)} disabled={added(o.text)}
@@ -87,7 +91,7 @@ export function UnitLine({ book, unit, lessonId, objective, onLesson, onAddObjec
             <>
               <p className="mt-3 text-[length:calc(12px*var(--ts))] font-semibold text-ink-2">Lessons</p>
               <ol className="mt-1 space-y-0.5">
-                {unit.lessons.map((l, i) => <li key={l.id} className={l.id === lessonId ? 'font-semibold text-navy' : ''}>{i + 1}. {l.title}</li>)}
+                {unit.lessons.map((l, i) => <li key={l.id} className={l.id === lessonId ? 'font-semibold text-navy' : ''}>{i + 1}. {sp(l.title)}</li>)}
               </ol>
             </>
           )}

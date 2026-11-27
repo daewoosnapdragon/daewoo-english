@@ -310,7 +310,7 @@ export default function PhonicsCompare({ scope, grade, lang, onOpenStudent, onCh
       ))}
       <div className="mt-4 mb-8">
         <p className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink mb-1.5">{lang === 'ko' ? '레벨링 후보' : 'Leveling candidates'} <span className="font-normal text-ink-3">· {candidates.length}</span></p>
-        {candidates.length === 0 ? <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '이웃 반 수준에 있는 학생이 없습니다.' : 'Nobody reads like a neighbouring class on phonics.'}</p> : (
+        {candidates.length === 0 ? <p className="text-[length:calc(12px*var(--ts))] text-ink-3">{lang === 'ko' ? '이웃 반 수준에 있는 학생이 없습니다.' : 'Nobody reads like a neighboring class on phonics.'}</p> : (
           <div className="border border-rule-2 rounded-md overflow-x-auto">
             <table className="w-full min-w-[760px] text-[length:calc(12px*var(--ts))] border-collapse">
               <thead><tr className="bg-paper-2 text-left">

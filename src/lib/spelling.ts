@@ -4,7 +4,11 @@
 // and the builder converts each sentence as it fills it. Word list only:
 // nothing clever, and a word not on the list is left alone. The verb
 // "practise" is the one rule-based case: American uses "practice" for
-// both noun and verb, so only the -ing and -ed forms are converted.
+// both noun and verb, so to British only the -ing and -ed forms are
+// converted, while to American the verb "practise(s)" becomes "practice(s)".
+// The setting is the teacher's, kept on this device (see context.tsx); it
+// applies to words the app supplies (comment phrases, lesson-plan objective
+// chips, unit text), never to what a teacher types.
 
 export type Spelling = 'us' | 'uk'
 export const SPELLING_KEY = 'daewoo_spelling'
@@ -41,13 +45,14 @@ const PAIRS: Array<[string, string]> = [
   ['jewelry', 'jewellery'], ['pajamas', 'pyjamas'], ['tire', 'tyre'], ['tires', 'tyres'], ['toward', 'towards'],
 ]
 const US_TO_UK = new Map(PAIRS)
-const UK_TO_US = new Map(PAIRS.map(([us, uk]) => [uk, us] as [string, string]))
+// British → American, plus the verb practise, which only goes one way.
+const UK_TO_US = new Map([...PAIRS.map(([us, uk]) => [uk, us] as [string, string]), ['practise', 'practice'], ['practises', 'practices']])
 
-function convert(text: string, map: Map<string, string>): string {
+function convert(text: string, map: Map<string, string>, keep: Set<string> = new Set()): string {
   return (text || '').replace(/[A-Za-z]+/g, w => {
     const lower = w.toLowerCase()
     const to = map.get(lower)
-    if (!to) return w
+    if (!to || keep.has(w)) return w
     if (w === w.toUpperCase() && w.length > 1) return to.toUpperCase()
     if (w[0] === w[0].toUpperCase()) return to[0].toUpperCase() + to.slice(1)
     return to
@@ -56,4 +61,9 @@ function convert(text: string, map: Map<string, string>): string {
 
 export function toBritish(text: string): string { return convert(text, US_TO_UK) }
 export function toAmerican(text: string): string { return convert(text, UK_TO_US) }
-export function spell(text: string, s: Spelling): string { return s === 'uk' ? toBritish(text) : text }
+/** Text in the chosen spelling, whichever spelling it was written in. */
+export function spell(text: string, s: Spelling, keep: string[] = []): string {
+  // Words in `keep` (a student's name, say) stay as written, each word of a multi-word name too.
+  const k = new Set(keep.flatMap(x => (x || '').match(/[A-Za-z]+/g) || []))
+  return convert(text, s === 'uk' ? US_TO_UK : UK_TO_US, k)
+}

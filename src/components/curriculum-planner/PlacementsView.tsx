@@ -64,7 +64,7 @@ export default function MapView() {
   const activeKey = placing || copying || (open ? (() => { const pl = masters.find(x => x.id === open); return pl ? rowKey(pl.english_class, pl.grade) : null })() : null)
 
   if (p.loading) return <Loading rows={5} />
-  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql, supabase/migration-curriculum-placements.sql */}{p.missing === 'catalogue' ? needsUpdate({ en: 'curriculum catalogue', ko: '교재 목록' }, ko) : needsUpdate({ en: 'curriculum placements', ko: '교재 배치' }, ko)}</p>
+  if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql, supabase/migration-curriculum-placements.sql */}{p.missing === 'catalogue' ? needsUpdate({ en: 'curriculum catalog', ko: '교재 목록' }, ko) : needsUpdate({ en: 'curriculum placements', ko: '교재 배치' }, ko)}</p>
 
   const TERM_TAG: Record<Term, string> = { spring: ko ? '봄' : 'Sp', fall: ko ? '가을' : 'F', year: ko ? '한 해' : 'Yr' }
   const showTags = terms.length > 1 || masters.some(x => !terms.includes(x.term))
