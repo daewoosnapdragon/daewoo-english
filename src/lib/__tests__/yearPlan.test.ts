@@ -93,3 +93,152 @@ describe('the next book', () => {
     expect(nextBook(books[4], books)).toBeUndefined()
   })
 })
+
+// ─── Meeting mode helpers ───
+import { fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, suggestBook, unitAt } from '../yearPlan'
+import type { CurriculumPlacement } from '../curriculumPacing'
+
+const pl = (id: string, book_id: string, english_class: string, grade: number, academic_year: string, term: 'spring' | 'fall' | 'year', is_master = true): CurriculumPlacement =>
+  ({ id, book_id, english_class, grade, academic_year, term, is_master, aim_date: null, created_by: null, created_at: '', updated_at: '' })
+const bk = (id: string, series_id: string, level_number: string): CurriculumBook =>
+  ({ id, series_id, level_number, title: '', status: 'confirmed', drive_folder_url: '', notes: '', created_at: '', updated_at: '' })
+
+describe('what the class used last year', () => {
+  const pls = [
+    pl('a', 'rrb1p', 'Daisy', 2, '2026', 'fall'), pl('b', 'rrb1', 'Daisy', 2, '2026', 'spring'),
+    pl('c', 'sp3', 'Daisy', 1, '2026', 'year'), pl('d', 'rrb3', 'Daisy', 3, '2026', 'fall'),
+    pl('e', 'rrb2', 'Lily', 2, '2026', 'fall'), pl('f', 'rrb2', 'Daisy', 2, '2025', 'fall'), pl('g', 'x', 'Daisy', 2, '2026', 'fall', false),
+  ]
+  const all = () => true
+  it('looks one grade lower in the same class for G2 to G5, spring before year before fall', () => {
+    const r = lastYearFor(pls, 'Daisy', 3, '2026', all)
+    expect(r.grade).toBe(2)
+    expect(r.placements.map(p => p.id)).toEqual(['b', 'a'])
+  })
+  it('looks at last year’s grade 1 for a new grade 1', () => {
+    const r = lastYearFor(pls, 'Daisy', 1, '2026', all)
+    expect(r.grade).toBe(1)
+    expect(r.placements.map(p => p.id)).toEqual(['c'])
+  })
+  it('keeps only the strand asked for', () => {
+    expect(lastYearFor(pls, 'Daisy', 3, '2026', p => p.book_id === 'rrb1').placements.map(p => p.id)).toEqual(['b'])
+  })
+  it('has nothing without a previous year', () => {
+    expect(lastYearFor(pls, 'Daisy', 3, '', all).placements).toEqual([])
+  })
+})
+
+describe('the suggestion', () => {
+  const books = [bk('rrb1', 'rr', 'Basic 1'), bk('rrb2', 'rr', 'Basic 2'), bk('sp3', 'sp', '3'), bk('sp4', 'sp', '4')]
+  it('is the next level after the latest book of the grade below', () => {
+    expect(suggestBook(3, [pl('b', 'rrb1', 'Daisy', 2, '2026', 'spring'), pl('x', 'sp3', 'Daisy', 2, '2026', 'fall')], books)?.id).toBe('sp4')
+    expect(suggestBook(3, [pl('x', 'sp3', 'Daisy', 2, '2026', 'fall'), pl('y', 'rrb1', 'Daisy', 2, '2026', 'year')], books)?.id).toBe('sp4')
+  })
+  it('is the same book for a new grade 1', () => {
+    expect(suggestBook(1, [pl('c', 'sp3', 'Daisy', 1, '2026', 'year')], books)?.id).toBe('sp3')
+  })
+  it('is nothing after the last level or with nothing last year', () => {
+    expect(suggestBook(2, [pl('c', 'sp4', 'Daisy', 1, '2026', 'year')], books)).toBeUndefined()
+    expect(suggestBook(2, [], books)).toBeUndefined()
+  })
+})
+
+describe('the year’s weeks, real or assumed', () => {
+  const springOnly = [
+    { academic_year: '2027-2028', type: 'spring_mid', start_date: '2027-03-02', end_date: '2027-04-30' },
+    { academic_year: '2027-2028', type: 'spring_final', start_date: '2027-05-03', end_date: '2027-07-16' },
+  ]
+  it('keeps real spring weeks and assumes 18 fall weeks from the fourth Monday of August', () => {
+    const r = fillYearWeeks(springOnly, '2027-2028')
+    expect(r.assumed).toEqual({ spring: false, fall: true })
+    expect(r.yw.spring[0].monday).toBe('2027-03-01')
+    expect(r.yw.fall[0].monday).toBe('2027-08-23')
+    expect(r.yw.fall).toHaveLength(18)
+  })
+  it('assumes both halves when the year has no dates', () => {
+    const r = fillYearWeeks([], '2027-2028')
+    expect(r.assumed).toEqual({ spring: true, fall: true })
+    expect(r.yw.spring[0].monday).toBe('2027-03-01')
+    expect(r.yw.spring).toHaveLength(20)
+    expect(r.yw.fall).toHaveLength(18)
+  })
+})
+
+describe('level tests', () => {
+  it('are the end dates of the grading periods, in date order, labelled', () => {
+    const sems = [
+      { academic_year: '2027', type: 'fall_mid', start_date: '2027-08-23', end_date: '2027-10-15' },
+      { academic_year: '2027', type: 'spring_mid', start_date: '2027-03-02', end_date: '2027-04-30' },
+      { academic_year: '2027', type: 'spring_final', start_date: '2027-05-03', end_date: '2027-07-16' },
+      { academic_year: '2027', type: 'fall_final', start_date: '2027-10-18', end_date: null },
+      { academic_year: '2026', type: 'spring_mid', start_date: '2026-03-02', end_date: '2026-04-30' },
+    ]
+    expect(levelTestDates(sems, '2027')).toEqual([
+      { label: 'Spring midterm', date: '2027-04-30' }, { label: 'Spring final', date: '2027-07-16' }, { label: 'Fall midterm', date: '2027-10-15' },
+    ])
+  })
+})
+
+describe('Into Reading modules', () => {
+  it('groups stories of one module and names it from the summary', () => {
+    const g = moduleGroups([
+      { title: 'M7 W1 · Storm Report', summary: 'Opinion Writing. Module 7 · The Big Outdoors, week 1, paired with Sam & Dave Dig a Hole.' },
+      { title: 'M7 W1 · Sam & Dave Dig a Hole', summary: '' },
+      { title: 'M7 W2 · Next', summary: '' },
+      { title: 'M8 W1 · Other', summary: 'No module name here.' },
+      { title: 'Review week', summary: '' },
+    ])
+    expect(g).toEqual([
+      { key: 'M7', label: 'M7 · The Big Outdoors', from: 0, to: 2 },
+      { key: 'M8', label: 'M8', from: 3, to: 3 },
+      { key: 'Review week', label: 'Review week', from: 4, to: 4 },
+    ])
+  })
+})
+
+describe('the unit at a week', () => {
+  it('is the unit running then, nothing before the start, done after the end', () => {
+    expect(unitAt([3, 3, 3], 0)).toBeNull()
+    expect(unitAt([3, 3, 3], 0.5)).toBe(0)
+    expect(unitAt([3, 3, 3], 3)).toBe(0)
+    expect(unitAt([3, 3, 3], 3.5)).toBe(1)
+    expect(unitAt([3, 3, 3], 10)).toBe('done')
+  })
+})
+
+// ─── Review fixes ───
+import { classKey, teachingAtColumnOpen } from '../yearPlan'
+
+describe('dragging past the last week', () => {
+  it('keeps counting weeks beyond the last column', () => {
+    const hol = new Set([2])
+    expect(teachingAtColumnOpen(10, hol, 10)).toBe(9)
+    expect(teachingAtColumnOpen(13.5, hol, 10)).toBe(12.5)
+    expect(teachingAtColumnOpen(3.5, hol, 10)).toBe(2.5)
+  })
+})
+
+describe('the class keys', () => {
+  const k = (over: Partial<Parameters<typeof classKey>[0]>) => classKey({ key: 'ArrowRight', alt: false, ctrl: false, meta: false, shift: false, defaultPrevented: false, inField: false, onGrip: false, dialogOpen: false, panelOpen: false, present: false, ...over })
+  it('switch class with plain arrows', () => {
+    expect(k({})).toBe('next')
+    expect(k({ key: 'ArrowLeft' })).toBe('prev')
+  })
+  it('leave the arrows alone with a modifier (browser Back), when already handled, or in a field, a dialog, a handle or an open form', () => {
+    expect(k({ alt: true })).toBeNull()
+    expect(k({ meta: true })).toBeNull()
+    expect(k({ ctrl: true })).toBeNull()
+    expect(k({ shift: true })).toBeNull()
+    expect(k({ defaultPrevented: true })).toBeNull()
+    expect(k({ inField: true })).toBeNull()
+    expect(k({ dialogOpen: true })).toBeNull()
+    expect(k({ onGrip: true })).toBeNull()
+    expect(k({ panelOpen: true })).toBeNull()
+  })
+  it('leave Present with Esc, but not from inside a field', () => {
+    expect(k({ key: 'Escape', present: true })).toBe('exit')
+    expect(k({ key: 'Escape', present: true, inField: true })).toBeNull()
+    expect(k({ key: 'Escape', present: false })).toBeNull()
+    expect(k({ key: 'a' })).toBeNull()
+  })
+})
