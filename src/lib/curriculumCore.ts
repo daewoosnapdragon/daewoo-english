@@ -50,6 +50,12 @@ export const BOOK_COLORS: Record<string, { hex: string; label: string }> = {
   berry: { hex: '#A5466B', label: 'Berry' }, slate: { hex: '#857D6E', label: 'Slate' },
 }
 export const colorHex = (key: string) => (BOOK_COLORS[key] || BOOK_COLORS.slate).hex
+/** A book colour as bar paint that follows the theme: a light fill, a deeper fill for alternate sections, and same-hue text and edge (see --bk-* in globals.css). */
+export function bookTone(key: string | null | undefined): { fill: string; alt: string; text: string; edge: string } {
+  const k = key && BOOK_COLORS[key] ? key : 'slate'
+  const v = (part: string) => `rgb(var(--bk-${k}-${part}))`
+  return { fill: v('fill'), alt: v('alt'), text: v('text'), edge: v('edge') }
+}
 
 /** A sequence is taught unit by unit in order and paced in weeks; an anthology is a book of stories a class picks from. */
 export type SeriesKind = 'sequence' | 'anthology'

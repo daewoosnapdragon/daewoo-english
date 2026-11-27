@@ -6,10 +6,10 @@ import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classDot, getKSTDateString } from '@/lib/utils'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
-import { STRANDS, STRAND_LABEL, bookName, colorHex, type CurriculumBook, type CurriculumSeries, type Strand } from '@/lib/curriculumCore'
-import { TERMS, TERM_LABEL, academicYears, addDays, holidayWeeks, masterRows, placementLength, todayPosition, viewShift, viewWeeks, type CurriculumPlacement, type HolidayCounts, type Term } from '@/lib/curriculumPacing'
-import { changedWeeks, classKey, columnOfTeaching, fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, moveBoundary, nextBook, spreadEvenly, suggestBook, teachingAtColumn, teachingAtColumnOpen, unitAt, unitLabel } from '@/lib/yearPlan'
-import { createPlacement, patchMasterRows } from '@/lib/curriculumPlacementsData'
+import { STRANDS, STRAND_LABEL, bookName, bookTone, type CurriculumBook, type CurriculumSeries, type Strand } from '@/lib/curriculumCore'
+import { TERMS, TERM_LABEL, academicYears, addDays, holidayWeeks, masterRows, placementLength, reviewOf, sectionEnds, sectionKey, todayPosition, viewShift, viewWeeks, type CurriculumPlacement, type HolidayCounts, type Term } from '@/lib/curriculumPacing'
+import { changedWeeks, classKey, columnOfTeaching, fillYearWeeks, lastYearFor, levelForAll, levelTestDates, moduleGroups, moveBoundary, nextBook, pickLabel, spreadEvenly, suggestBook, teachingAtColumn, teachingAtColumnOpen, unitAt, unitLabels } from '@/lib/yearPlan'
+import { createPlacement, patchMasterRows, setReviewWeeks } from '@/lib/curriculumPlacementsData'
 import { needsUpdate } from '@/lib/dbUpdate'
 import { usePlanner } from './usePlanner'
 import { PlaceForm, PlacementCard } from './PlacementsView'
@@ -44,15 +44,17 @@ const TRACK_PAD = 80          // right of the last week: room for a long book's 
 const TALL_ROW = 116          // a phonics row with many units: room for a pattern written up its bar
 const TERM_ORDER: Term[] = ['spring', 'year', 'fall']
 const sumOf = (a: number[]) => a.reduce((x, y) => x + y, 0)
-/** A series colour deep enough to carry white labels (the light series colours are near 3:1 on their own). */
-const deep = (hex: string) => `color-mix(in srgb, ${hex} 78%, #000)`
+/** Ruler for bar labels: the width of a label in the bars' own type. */
+const ctx2d = typeof document !== 'undefined' ? document.createElement('canvas').getContext('2d') : null
+const textWidth = (t: string, px: number) => { if (!ctx2d) return t.length * px * 0.6; ctx2d.font = `600 ${px}px ${getComputedStyle(document.body).fontFamily}`; return ctx2d.measureText(t).width }
 /** "Into Reading" → "IR", "Science of Reading" → "SoR", "Hand in Hand" → "HiH". */
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).map(w => /^(of|in|and|the)$/i.test(w) ? w[0].toLowerCase() : w[0].toUpperCase()).join('')
 
 /** A drag in progress: where the pointer and the book's end were when it started, and the lane it is measured against. */
-interface Drag { plId: string; kind: 'end' | 'div'; k: number; w0: number[]; shift: number; grade: number; x0: number; col0: number; left: number; width: number }
+interface Drag { plId: string; kind: 'end' | 'div'; k: number; w0: number[]; rv0: number[]; shift: number; grade: number; x0: number; col0: number; left: number; width: number }
 interface Hol { hc: HolidayCounts; cols: Set<number>; names: Map<number, string> }
-interface Seg { key: string; label: string; title: string; from: number; to: number }
+/** A bar: a unit, or a module of an anthology. `labels` longest first; bars of one `kind` (Unit n, SL n, module) take the same form across a row. */
+interface Seg { key: string; labels: string[]; kind: 'free' | 'unit' | 'sl' | 'mod'; alt: boolean; title: string; from: number; to: number }
 type Row = { key: string; grade: number; strand: Strand | null; first: boolean }
 
 export default function YearPlanView() {
@@ -156,6 +158,30 @@ export default function YearPlanView() {
   const setDraft = (d: { id: string; weeks: number[] } | null) => { draftRef.current = d; setDraftState(d) }
   const [tip, setTip] = useState<{ x: number; y: number; pl: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  // The year's lane width, to choose bar labels that fit (a label that does not fit takes its shorter form).
+  const tableRef = useRef<HTMLElement | null>(null)
+  const [trackW, setTrackW] = useState(900)
+  useEffect(() => {
+    const el = tableRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const measure = () => { const t = el.querySelector('[data-track]') as HTMLElement | null; if (t) setTrackW(t.getBoundingClientRect().width) }
+    const ro = new ResizeObserver(measure); ro.observe(el); measure()
+    return () => ro.disconnect()
+  })
+  const fontPx = 11 * (typeof document !== 'undefined' ? (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--ts')) || 1) : 1) * (present ? 1.15 : 1)
+  // The review menu: opened from a unit's bar, it sets the review weeks after that unit (or after every section of the book).
+  const [rvPop, setRvPop] = useState<{ plId: string; rowId: string; label: string; now: number; x: number; y: number } | null>(null)
+  useEffect(() => {
+    if (!rvPop) return
+    const close = (e: Event) => { if (e instanceof KeyboardEvent ? e.key === 'Escape' : !(e.target as HTMLElement)?.closest?.('[data-rvpop]')) setRvPop(null) }
+    window.addEventListener('keydown', close); window.addEventListener('pointerdown', close)
+    return () => { window.removeEventListener('keydown', close); window.removeEventListener('pointerdown', close) }
+  }, [rvPop])
+  const setReview = async (patches: { id: string; review_weeks: number }[], what: string) => {
+    setRvPop(null); setSaving(true)
+    if (!fail(await setReviewWeeks(patches, what))) await p.reload()
+    setSaving(false)
+  }
   const rowsOf = (plId: string) => masterRows(p.pacing, plId).sort((a, b) => a.sort_order - b.sort_order)
   const weeksOf = (plId: string) => draft && draft.id === plId ? draft.weeks : rowsOf(plId).map(r => Math.max(0.5, Number(r.weeks) || 0))
   const suggestedOf = (plId: string) => sumOf(rowsOf(plId).map(r => p.units.find(u => u.id === r.unit_id)?.default_weeks || 2))
@@ -189,9 +215,10 @@ export default function YearPlanView() {
       let next: number[]
       if (drag.kind === 'end') {
         // Relative to where the drag started, so grabbing the handle of a book that runs past the year changes nothing until it moves.
+        // Review weeks keep their length; the units share the rest.
         const t = teachingAtColumnOpen(drag.col0 + (e.clientX - drag.x0) / colW, h.cols, N)
-        next = spreadEvenly(Math.max(0.5 * drag.w0.length, t - drag.shift), drag.w0.length)
-      } else next = moveBoundary(drag.w0, drag.k, teachingAtColumnOpen((e.clientX - drag.left) / colW, h.cols, N) - (drag.shift + sumOf(drag.w0.slice(0, drag.k + 1))))
+        next = spreadEvenly(Math.max(0.5 * drag.w0.length, t - drag.shift - sumOf(drag.rv0)), drag.w0.length)
+      } else next = moveBoundary(drag.w0, drag.k, teachingAtColumnOpen((e.clientX - drag.left) / colW, h.cols, N) - (drag.shift + sumOf(drag.w0.slice(0, drag.k + 1)) + sumOf(drag.rv0.slice(0, drag.k))))
       setDraft({ id: drag.plId, weeks: next })
       setTip({ x: e.clientX, y: e.clientY, pl: drag.plId })
     }
@@ -228,8 +255,17 @@ export default function YearPlanView() {
     const se = seriesOf(bookOf(pl)), phonics = se?.strand === 'phonics'
     const rows = rowsOf(pl.id)
     const units = rows.map(r => p.units.find(u => u.id === r.unit_id))
-    if (se?.kind === 'anthology') return moduleGroups(units.map(u => ({ title: u?.title || '', summary: u?.summary || '' }))).map(g => ({ key: g.key, label: g.label, title: `${g.label} · ${g.to - g.from + 1} ${g.to === g.from ? 'story' : 'stories'}`, from: g.from, to: g.to }))
-    return units.map((u, i) => ({ key: rows[i].id, label: u ? sp(unitLabel(u.title, phonics)) || `#${i + 1}` : `#${i + 1}`, title: u ? sp(u.title) : '', from: i, to: i }))
+    if (se?.kind === 'anthology') return moduleGroups(units.map(u => ({ title: u?.title || '', summary: u?.summary || '' }))).map((g, i) => ({ key: g.key, labels: g.label === g.key ? [g.key] : [g.label, g.key], kind: 'mod' as const, alt: i % 2 === 1, title: `${g.label} · ${g.to - g.from + 1} ${g.to === g.from ? 'story' : 'stories'}`, from: g.from, to: g.to }))
+    // Every other section (Closed Syllables, Silent e…) in the deeper fill, so a section reads as one block.
+    let alt = false, prev = ''
+    return units.map((u, i) => {
+      const key = u ? sectionKey(u.title) : 'other'
+      if (i > 0 && key !== 'other' && key !== prev) alt = !alt
+      prev = key
+      const labels = u ? unitLabels(u.title, phonics).map(t => sp(t)) : [`#${i + 1}`]
+      const kind = /^Unit \d+$/.test(labels[0]) ? 'unit' as const : /^School Link \d+$/.test(labels[0]) ? 'sl' as const : 'free' as const
+      return { key: rows[i].id, labels, kind, alt: kind === 'sl' || (key !== 'other' && alt), title: u ? sp(u.title) : '', from: i, to: i }
+    })
   }
   /** The unit (or module) a book is on at a level test, for its tag. */
   const tagAt = (segs: Seg[], w: number[], shift: number, h: Hol, col: number): string | null => {
@@ -238,7 +274,7 @@ export default function YearPlanView() {
     if (at === null) return null
     if (at === 'done') return '✓'
     const sg = segs.find(s => at >= s.from && at <= s.to)
-    return sg ? (/^M\d+$/.test(sg.key) ? sg.key : sg.label) : null
+    return sg ? (/^M\d+$/.test(sg.key) ? sg.key : sg.labels[sg.labels.length - 1]) : null
   }
 
   // ─── Decisions ───
@@ -287,55 +323,83 @@ export default function YearPlanView() {
         {todayPos !== null && <div title={ko ? '오늘' : 'Today'} className="absolute top-0 bottom-0 border-l-2 border-accent pointer-events-none z-[4]" style={{ left: pos(todayPos - 1) }} />}
         {sug && (() => {
           const sugW = sumOf(p.units.filter(u => u.book_id === sug.id).map(u => u.default_weeks || 2)) || 36
-          const R = Math.min(N, edgeR(sugW, h)), color = colorHex(seriesOf(sug)?.color || 'slate')
+          const R = Math.min(N, edgeR(sugW, h)), color = bookTone(seriesOf(sug)?.color).text
           const cls2 = 'absolute top-[15px] h-[20px] rounded-sm border-[1.5px] border-dashed px-1.5 text-left text-[length:calc(11.5px*var(--ts))] leading-[17px] truncate'
           return canManage
             ? <button onClick={() => placeSuggestion(r.grade, sug, r.key, keeps(r, sug))} disabled={!!busy} title={ko ? '눌러서 이 교재로 정하기' : 'Click to use this book'} className={`${cls2} text-ink-2 hover:text-ink hover:bg-surface disabled:opacity-50`} style={{ left: 0, width: pos(Math.max(2, R)), borderColor: color }}>{sugText(r, sug)}</button>
             : <div className={`${cls2} text-ink-3`} style={{ left: 0, width: pos(Math.max(2, R)), borderColor: color }}>{sugText(r, sug)}</div>
         })()}
         {pls.map(pl => {
-          const b = bookOf(pl), color = colorHex(seriesOf(b)?.color || 'slate'), fill = deep(color)
-          const w = weeksOf(pl.id), segs = segsOf(pl), rowsP = rowsOf(pl.id)
+          const b = bookOf(pl), tone = bookTone(seriesOf(b)?.color)
+          const w = weeksOf(pl.id), segs = segsOf(pl), rowsP = rowsOf(pl.id), rv = rowsP.map(reviewOf)
+          // Where each unit starts, counting the review weeks before it.
+          const at: number[] = []; w.reduce((a, x, i) => { at.push(a); return a + x + (rv[i] || 0) }, 0)
+          const spans = w.map((x, i) => x + (rv[i] || 0))
           const shift = viewShift(pl.term, 'year', yw, h.hc)
-          const total = sumOf(w), length = placementLength(pl.term, yw, h.hc)
+          const total = sumOf(spans), length = placementLength(pl.term, yw, h.hc)
           const pastYear = Math.max(0, shift + total - lastTeaching(h))
           const endCol = Math.min(N, edgeR(shift + total, h)), termEnd = Math.min(N, edgeR(shift + length, h))
-          const sug2 = suggestedOf(pl.id), startCol = edgeL(shift, h), sugEnd = Math.min(N, edgeR(shift + sug2, h))
+          const sug2 = suggestedOf(pl.id) + sumOf(rv), startCol = edgeL(shift, h), sugEnd = Math.min(N, edgeR(shift + sug2, h))
           const anthology = seriesOf(b)?.kind === 'anthology'
-          const cum: number[] = []; w.reduce((a, x) => { cum.push(a + x); return a + x }, 0)
+          const span = (sg: Seg) => { const a = shift + at[sg.from], z = shift + at[sg.to] + w[sg.to]; return { a, z, L: edgeL(a, h), R: Math.min(N, edgeR(z, h)) } }
+          // Labels: the longest form that fits each bar; numbered bars of one kind all take the same form.
+          const room = (L: number, R: number) => tl ? barH - 14 : (R - L) / Math.max(1, N) * trackW - 10
+          const level: Record<string, number> = {}
+          for (const kind of ['unit', 'sl'] as const) {
+            const ks = segs.filter(sg => sg.kind === kind).map(sg => ({ sg, ...span(sg) })).filter(x => x.L < N)
+            if (ks.length) level[kind] = levelForAll(ks.map(x => x.sg.labels), ks.map(x => room(x.L, x.R)), t => textWidth(t, fontPx))
+          }
+          const labelOfSeg = (sg: Seg, L: number, R: number) => { const ls = sg.labels; if (sg.kind === 'unit' || sg.kind === 'sl') return ls[Math.min(ls.length - 1, level[sg.kind] ?? 0)]; const t = pickLabel(ls, room(L, R), x => textWidth(x, fontPx)); return textWidth(t, fontPx) <= room(L, R) + 4 ? t : '' }
+          const barCls = `absolute top-[15px] rounded-[4px] text-[length:calc(11px*var(--ts))] font-semibold overflow-hidden whitespace-nowrap text-left ${tl ? 'py-1.5 leading-none [writing-mode:vertical-rl] rotate-180 flex items-center' : 'px-1 leading-[20px]'}`
+          const reviewMenu = (e: React.MouseEvent, k: number, name: string) => { if (!canManage) return; const rc = (e.currentTarget as HTMLElement).getBoundingClientRect(); setRvPop({ plId: pl.id, rowId: rowsP[k].id, label: name, now: rv[k] || 0, x: rc.left + rc.width / 2, y: rc.bottom + 6 }) }
           return (
             <Fragment key={pl.id}>
-              {Math.abs(total - sug2) > 0.01 && <div title={ko ? `제안 길이 ${num(sug2)}주` : `Suggested length: ${num(sug2)} wk`} className="absolute top-[12px] rounded border-[1.5px] border-dashed pointer-events-none" style={{ left: pos(startCol), width: pos(Math.max(0.5, sugEnd - startCol)), height: barH + 6, borderColor: color, opacity: 0.55 }} />}
+              {Math.abs(total - sug2) > 0.01 && <div title={ko ? `제안 길이 ${num(sug2)}주` : `Suggested length: ${num(sug2)} wk`} className="absolute top-[12px] rounded border-[1.5px] border-dashed pointer-events-none" style={{ left: pos(startCol), width: pos(Math.max(0.5, sugEnd - startCol)), height: barH + 6, borderColor: tone.edge }} />}
               {segs.map(sg => {
-                const a = shift + sumOf(w.slice(0, sg.from)), z = shift + sumOf(w.slice(0, sg.to + 1))
-                const L = edgeL(a, h), R = Math.min(N, edgeR(z, h))
+                const { a, z, L, R } = span(sg)
                 if (L >= N) return null
+                const Tag = canManage ? 'button' : 'div'
                 return (
-                  <div key={sg.key + sg.from} title={`${sg.title} · ${num(z - a)} wk · ${ko ? '끝' : 'ends'} ${whenEnds(z, h)}`}
-                    className={`absolute top-[15px] rounded-[3px] text-[length:calc(11px*var(--ts))] text-white font-medium overflow-hidden whitespace-nowrap ${tl ? 'py-1.5 leading-none [writing-mode:vertical-rl] rotate-180 flex items-center' : 'px-1 leading-[20px]'}`}
-                    style={{ left: `calc(${pos(L)} + 1px)`, width: `calc(${pos(Math.max(0.2, R - L))} - 2px)`, height: barH, background: fill }}>
-                    {sg.label}
-                  </div>
+                  <Tag key={sg.key + sg.from} title={`${sg.title} · ${num(z - a)} wk · ${ko ? '끝' : 'ends'} ${whenEnds(z, h)}${canManage ? (ko ? ' · 눌러서 복습 주 추가' : ' · click to add a review week after it') : ''}`}
+                    onClick={canManage ? (e: React.MouseEvent) => reviewMenu(e, sg.to, sg.labels[0]) : undefined}
+                    className={`${barCls} ${canManage ? 'cursor-pointer hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent' : ''}`}
+                    style={{ left: `calc(${pos(L)} + 1px)`, width: `calc(${pos(Math.max(0.2, R - L))} - 2px)`, height: barH, background: sg.alt ? tone.alt : tone.fill, color: tone.text, boxShadow: `inset 0 0 0 1px ${tone.edge}` }}>
+                    {labelOfSeg(sg, L, R)}
+                  </Tag>
+                )
+              })}
+              {rv.map((x, k) => {
+                if (!x) return null
+                const a = shift + at[k] + w[k], L = edgeL(a, h), R = Math.min(N, edgeR(a + x, h))
+                if (L >= N) return null
+                const u = p.units.find(uu => uu.id === rowsP[k].unit_id), name = u ? unitLabels(u.title, seriesOf(b)?.strand === 'phonics')[0] : ''
+                const lab = pickLabel([ko ? '복습' : 'Review', 'R'], room(L, R), t => textWidth(t, fontPx))
+                return (
+                  <button key={'rv' + k} disabled={!canManage} onClick={e => reviewMenu(e, k, name)} title={`${ko ? '복습' : 'Review'}: ${name} · ${num(x)} wk`}
+                    className={`${barCls} ${canManage ? 'cursor-pointer' : 'cursor-default'}`}
+                    style={{ left: `calc(${pos(L)} + 1px)`, width: `calc(${pos(Math.max(0.2, R - L))} - 2px)`, height: barH, color: tone.text, boxShadow: `inset 0 0 0 1px ${tone.edge}`, backgroundImage: `repeating-linear-gradient(135deg, ${tone.alt} 0 5px, ${tone.fill} 5px 10px)` }}>
+                    {textWidth(lab, fontPx) <= room(L, R) + 4 ? lab : ''}
+                  </button>
                 )
               })}
               {length > 0 && total > length + 0.01 && endCol > termEnd && <div className="absolute top-[15px] pointer-events-none z-[2]" style={{ left: pos(termEnd), width: pos(endCol - termEnd), height: barH, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--bad) / 0.6) 0 4px, transparent 4px 8px)' }} />}
-              {pins.map(pn => { const tag = tagAt(segs, w, shift, h, pn.col); return tag ? <span key={pn.label} title={`${pn.label}: ${tag === '✓' ? (ko ? '끝남' : 'finished') : tag}`} className="absolute top-0 -translate-x-1/2 z-[3] rounded-sm bg-ink text-paper px-1 text-[length:calc(11px*var(--ts))] font-semibold leading-[14px] whitespace-nowrap pointer-events-none max-w-[110px] truncate" style={{ left: pos(pn.col) }}>{tag}</span> : null })}
+              {pins.map(pn => { const tag = tagAt(segs, spans, shift, h, pn.col); return tag ? <span key={pn.label} title={`${pn.label}: ${tag === '✓' ? (ko ? '끝남' : 'finished') : tag}`} className="absolute top-0 -translate-x-1/2 z-[3] rounded-sm bg-ink text-paper px-1 text-[length:calc(11px*var(--ts))] font-semibold leading-[14px] whitespace-nowrap pointer-events-none max-w-[110px] truncate" style={{ left: pos(pn.col) }}>{tag}</span> : null })}
               {pastYear > 0 && <span className="absolute top-[15px] z-[4] rounded-full bg-bad text-white px-2 text-[length:calc(11px*var(--ts))] font-bold leading-[20px] whitespace-nowrap" style={{ left: `calc(100% + 14px)` }} title={ko ? '한 해를 넘어갑니다' : 'Runs past the end of the year'}>+{num(pastYear)} {ko ? '주' : 'wk'}</span>}
-              {canManage && !anthology && rowsP.length > 1 && cum.slice(0, -1).map((c, k) => {
-                const col = edgeR(shift + c, h)
+              {canManage && !anthology && rowsP.length > 1 && w.slice(0, -1).map((x, k) => {
+                const col = edgeR(shift + at[k] + x, h)
                 if (col <= 0 || col >= N) return null
                 return <span key={'d' + k} role="separator" aria-label={`${ko ? '단원 끝' : 'End of unit'} ${k + 1}`} title={ko ? '끌어서 이 단원 길이 조절 (뒤 단원은 함께 이동)' : 'Drag to make this unit longer or shorter; the units after it move along'}
-                  onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'div', k, w0: w.slice(), shift, grade: r.grade, col0: 0 })}
+                  onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'div', k, w0: w.slice(), rv0: rv.slice(), shift, grade: r.grade, col0: 0 })}
                   className="absolute top-[13px] w-[10px] -ml-[5px] cursor-col-resize z-[3] group touch-none" style={{ left: pos(col), height: barH + 4 }}>
                   <span className="absolute left-[4px] top-1 bottom-1 w-[2px] rounded bg-ink opacity-0 group-hover:opacity-70" />
                 </span>
               })}
               {canManage && rowsP.length > 0 && (
                 <button data-grip="1" aria-label={ko ? '책 길이 조절' : `Stretch or squeeze ${labelOf(pl)}`} title={ko ? '끌어서 길이 조절 (←/→ 키도 됨)' : 'Drag to stretch or squeeze (or use ← →)'}
-                  onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'end', k: 0, w0: w.slice(), shift, grade: r.grade, col0: edgeR(shift + total, h) })}
-                  onKeyDown={e => { if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !saving) { e.preventDefault(); save(pl, spreadEvenly(total + (e.key === 'ArrowRight' ? 1 : -1), rowsP.length), 'stretched on the year plan') } }}
+                  onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'end', k: 0, w0: w.slice(), rv0: rv.slice(), shift, grade: r.grade, col0: edgeR(shift + total, h) })}
+                  onKeyDown={e => { if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !saving) { e.preventDefault(); save(pl, spreadEvenly(sumOf(w) + (e.key === 'ArrowRight' ? 1 : -1), rowsP.length), 'stretched on the year plan') } }}
                   className="absolute top-[10px] w-[14px] -ml-[7px] cursor-ew-resize z-[5] flex items-center justify-center touch-none rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" style={{ left: pastYear > 0 ? `calc(100% + 6px)` : pos(endCol), height: barH + 10 }}>
-                  <span className="w-[6px] rounded-sm" style={{ height: barH, background: fill, boxShadow: '0 0 0 2px rgb(var(--white))' }} />
+                  <span className="w-[6px] rounded-sm" style={{ height: barH, background: tone.text, boxShadow: '0 0 0 2px rgb(var(--white))' }} />
                 </button>
               )}
             </Fragment>
@@ -353,9 +417,9 @@ export default function YearPlanView() {
       return (
         <div className="flex items-center gap-1.5 min-w-0 w-full">
           {pls.map(pl => {
-            const b = bookOf(pl), color = colorHex(seriesOf(b)?.color || 'slate'), on = open === pl.id
+            const b = bookOf(pl), tone = bookTone(seriesOf(b)?.color), on = open === pl.id
             const inner = <>
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: deep(color) }} />
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: tone.alt, boxShadow: `inset 0 0 0 1px ${tone.text}` }} />
               <span className="min-w-0 flex-1 truncate text-[length:calc(12.5px*var(--ts))] font-medium text-ink">{pls.length > 1 ? shortOf(pl) : labelOf(pl)}</span>
               {(pls.length > 1 || pl.term !== 'year') && <span className="shrink-0 text-[length:calc(11px*var(--ts))] font-semibold px-1 rounded bg-paper-3 text-ink-2">{TERM_TAG[pl.term]}</span>}
             </>
@@ -373,7 +437,7 @@ export default function YearPlanView() {
     return (
       <div className="flex items-center gap-1.5 min-w-0 w-full">
         {sug && (
-          <button onClick={() => placeSuggestion(r.grade, sug, r.key, keeps(r, sug))} disabled={!!busy} className="min-w-0 h-7 px-2 rounded border-[1.5px] border-dashed text-[length:calc(12px*var(--ts))] text-ink bg-surface hover:bg-paper-2 inline-flex items-center gap-1 disabled:opacity-50" style={{ borderColor: colorHex(seriesOf(sug)?.color || 'slate') }} title={sugText(r, sug)}>
+          <button onClick={() => placeSuggestion(r.grade, sug, r.key, keeps(r, sug))} disabled={!!busy} className="min-w-0 h-7 px-2 rounded border-[1.5px] border-dashed text-[length:calc(12px*var(--ts))] text-ink bg-surface hover:bg-paper-2 inline-flex items-center gap-1 disabled:opacity-50" style={{ borderColor: bookTone(seriesOf(sug)?.color).text }} title={sugText(r, sug)}>
             {busy === `${r.grade}|${sug.id}` && <Loader2 size={10} className="animate-spin shrink-0" />}
             <span className="truncate">{r.grade === 1 ? (ko ? '같게:' : 'Same:') : keeps(r, sug) ? (ko ? '이어서:' : 'Carry on:') : (ko ? '사용:' : 'Use')} {bookName(sug, seriesOf(sug))}</span>
           </button>
@@ -421,7 +485,7 @@ export default function YearPlanView() {
       </div>
 
       {/* One table: last year, this year's book and the year, a row per grade and subject */}
-      <section className="shrink-0 border border-rule rounded bg-surface overflow-x-auto">
+      <section ref={tableRef} className="shrink-0 border border-rule rounded bg-surface overflow-x-auto">
         <div className="min-w-[1000px]" role="table" aria-label={ko ? `${cls} 연간 계획` : `${cls} year plan`}>
           <div role="row" className="grid border-b border-rule bg-paper text-[length:calc(11.5px*var(--ts))] text-ink-3" style={{ gridTemplateColumns: COLS }}>
             <div role="columnheader" className="px-2 pb-1.5 self-end">{ko ? '학년' : 'Gr'}</div>
@@ -463,8 +527,8 @@ export default function YearPlanView() {
       </section>
 
       <p className="shrink-0 text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-relaxed max-w-[75ch]">
-        {ko ? '점선 = 제안된 교재(눌러서 사용) · 회색 빗금 = 휴일 주 · 빨간 빗금 = 학기 넘침 · 세로 점선 = 레벨 테스트.' : 'Dashed = the suggested book, click to use it. Grey hatching = holiday weeks; red = past the book’s term. Vertical dashes = level tests, tagged with the unit each book is on.'}
-        {canManage && !present && (ko ? ' 책 끝을 끌어 길이를, 단원 끝 선을 끌어 그 단원만 늘리거나 줄입니다(뒤 단원은 함께 이동).' : ' Drag a book’s end to stretch it, or the line after a unit to lengthen just that unit; the units after it move along.')}
+        {ko ? '점선 = 제안된 교재(눌러서 사용) · 줄무늬 = 복습 주 · 회색 빗금 = 휴일 주 · 빨간 빗금 = 학기 넘침 · 세로 점선 = 레벨 테스트.' : 'Dashed = the suggested book, click to use it. Striped = review weeks. Grey hatching = holiday weeks; red = past the book’s term. Vertical dashes = level tests, tagged with the unit each book is on.'}
+        {canManage && !present && (ko ? ' 책 끝을 끌어 길이를, 단원 끝 선을 끌어 그 단원만 늘리거나 줄입니다(뒤 단원은 함께 이동).' : ' Drag a book’s end to stretch it, or the line after a unit to lengthen just that unit; the units after it move along. Click a unit to add a review week after it.')}
       </p>
 
       {/* Live readout while dragging */}
@@ -473,19 +537,37 @@ export default function YearPlanView() {
         if (!pl) return null
         const h = hol[pl.grade]
         const segs = segsOf(pl)
-        const w = draft.weeks, total = sumOf(w), sug = suggestedOf(pl.id), shift = viewShift(pl.term, 'year', yw, h.hc)
+        const rv = rowsOf(pl.id).map(reviewOf)
+        const w = draft.weeks, spans = w.map((x, i) => x + (rv[i] || 0)), total = sumOf(spans), sug = suggestedOf(pl.id) + sumOf(rv), shift = viewShift(pl.term, 'year', yw, h.hc)
         const length = placementLength(pl.term, yw, h.hc)
-        const segName = (i: number) => segs.find(s => i >= s.from && i <= s.to)?.label || `#${i + 1}`
+        const segName = (i: number) => { const sg = segs.find(s => i >= s.from && i <= s.to); return sg ? sg.labels[sg.labels.length - 1] : `#${i + 1}` }
         const mid = Math.ceil(w.length / 2)
         return (
           <div className="fixed z-[90] pointer-events-none rounded bg-ink text-paper px-3 py-2 text-[length:calc(12px*var(--ts))] leading-snug shadow-lg tabular-nums max-w-[320px]"
             style={{ left: Math.min(tip.x + 16, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 330), top: Math.max(8, tip.y - 140) }}>
             <b>{labelOf(pl)}</b> · {num(total)} {ko ? '주' : 'wk'}<br />
             {drag?.kind === 'div' ? <>{segName(drag.k)}: {num(w[drag.k])} {ko ? '주' : 'wk'} · {ko ? '뒤 단원은 함께 이동' : 'the rest move along'}<br /></> : <>≈ {num(total / Math.max(1, w.length))} {ko ? '주/단원' : 'wk each'}<br /></>}
-            {segName(mid - 1)} {ko ? '끝:' : 'done by'} {whenEnds(shift + sumOf(w.slice(0, mid)), h)} · {ko ? '끝나는 날:' : 'finishes'} {whenEnds(shift + total, h)}<br />
-            {pins.map(pn => { const tag = tagAt(segs, w, shift, h, pn.col); return tag ? <span key={pn.label}>{pn.label}: {tag === '✓' ? (ko ? '끝남' : 'finished') : tag}<br /></span> : null })}
+            {segName(mid - 1)} {ko ? '끝:' : 'done by'} {whenEnds(shift + sumOf(spans.slice(0, mid - 1)) + w[mid - 1], h)} · {ko ? '끝나는 날:' : 'finishes'} {whenEnds(shift + total, h)}<br />
+            {pins.map(pn => { const tag = tagAt(segs, spans, shift, h, pn.col); return tag ? <span key={pn.label}>{pn.label}: {tag === '✓' ? (ko ? '끝남' : 'finished') : tag}<br /></span> : null })}
             {Math.abs(total - sug) < 0.01 ? (ko ? '제안과 같음' : 'Same as suggested') : `${total > sug ? '+' : '−'}${num(Math.abs(total - sug))} ${ko ? '주 (제안' : 'wk vs suggested ('}${num(sug)})`}
             {length > 0 && total > length + 0.01 && <><br /><span className="text-warn">{ko ? `학기보다 ${num(total - length)}주 넘침` : `Runs ${num(total - length)} wk past ${pl.term === 'year' ? 'the year' : 'the term'}`}</span></>}
+          </div>
+        )
+      })()}
+      {rvPop && (() => {
+        const pl = mine.find(x => x.id === rvPop.plId)
+        if (!pl) return null
+        const rowsP = rowsOf(pl.id), ends = sectionEnds(rowsP, p.units), name = labelOf(pl)
+        const opt = (wk: number, text: string) => <button key={wk} onClick={() => setReview([{ id: rvPop.rowId, review_weeks: wk }], `${name} · ${pl.english_class} G${pl.grade}`)} aria-pressed={rvPop.now === wk} className={`h-7 px-2.5 rounded border text-[length:calc(12px*var(--ts))] ${rvPop.now === wk ? 'bg-ink text-paper border-ink' : 'border-rule-2 text-ink-2 hover:text-ink'}`}>{text}</button>
+        const allSet = ends.length > 0 && ends.every(id => reviewOf(rowsP.find(r => r.id === id)!) > 0)
+        return (
+          <div data-rvpop role="dialog" aria-label={ko ? '복습 주' : 'Review weeks'} className="fixed z-[95] rounded border border-rule-2 bg-surface shadow-lg p-3 flex flex-col gap-2 w-[280px]"
+            style={{ left: Math.max(8, Math.min(rvPop.x - 140, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 290)), top: Math.min(rvPop.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 150) }}>
+            <p className="m-0 text-[length:calc(12.5px*var(--ts))] text-ink">{ko ? '이 단원 뒤 복습:' : 'Review after'} <b>{rvPop.label}</b></p>
+            <div className="flex gap-1.5 flex-wrap">{opt(0, ko ? '없음' : 'None')}{opt(0.5, ko ? '½주' : '½ wk')}{opt(1, ko ? '1주' : '1 wk')}{opt(2, ko ? '2주' : '2 wk')}</div>
+            {ends.length > 0 && <button onClick={() => setReview(ends.map(id => ({ id, review_weeks: allSet ? 0 : 1 })), `${name} · ${pl.english_class} G${pl.grade}`)} className="self-start text-[length:calc(12px*var(--ts))] text-accent hover:underline">
+              {allSet ? (ko ? '모든 단원군 뒤 복습 지우기' : `Take out the review after every section (${ends.length})`) : (ko ? `모든 단원군 뒤에 복습 1주 (${ends.length})` : `1 wk review after every section (${ends.length})`)}
+            </button>}
           </div>
         )
       })()}

@@ -29,6 +29,8 @@ export interface CurriculumPlacement {
 /** One unit of a book's plan for a class and grade: its place in the order and its suggested length. */
 export interface CurriculumPacing {
   id: string; placement_id: string; unit_id: string; sort_order: number; weeks: number; owner: 'master' | 'teacher'
+  /** Review weeks straight after the unit, before the next one starts (0 or missing: none). */
+  review_weeks?: number
   created_at: string; updated_at: string
 }
 /** A unit a class has finished (see curriculum_unit_done). */
@@ -119,7 +121,11 @@ export function viewWeeks(yw: YearWeeks, view: View): Week[] {
 
 // ─── Where the units land ────────────────────────────────────────
 
-export interface Bar { pacing: CurriculumPacing; unit: CurriculumUnit; start: number; end: number }
+/** A unit's span, or with `review` its review weeks straight after it (same pacing row and unit). */
+export interface Bar { pacing: CurriculumPacing; unit: CurriculumUnit; start: number; end: number; review?: boolean }
+
+/** A row's review weeks after its unit, in half weeks; 0 when it has none or was saved before review weeks existed. */
+export const reviewOf = (p: { review_weeks?: number | null }) => Math.max(0, Math.round((Number(p.review_weeks) || 0) * 2) / 2)
 
 /**
  * Adds the weeks up in order: unit 1 runs from week 1, unit 2 starts where it ends, and so on. `start` and `end` are in placement weeks and may be fractional.
@@ -136,11 +142,13 @@ export function layoutPacing(pacing: CurriculumPacing[], units: CurriculumUnit[]
     const w = Math.max(0.5, Number(p.weeks) || 0)
     out.push({ pacing: p, unit, start: cursor + 1, end: cursor + w })
     cursor += w
+    const r = reviewOf(p)
+    if (r > 0) { out.push({ pacing: p, unit, start: cursor + 1, end: cursor + r, review: true }); cursor += r }
   }
   return out
 }
 
-export const totalWeeks = (pacing: CurriculumPacing[]) => pacing.reduce((a, p) => a + Math.max(0.5, Number(p.weeks) || 0), 0)
+export const totalWeeks = (pacing: CurriculumPacing[]) => pacing.reduce((a, p) => a + Math.max(0.5, Number(p.weeks) || 0) + reviewOf(p), 0)
 
 export interface ViewBar extends Bar { viewStart: number; viewEnd: number; cutLeft: boolean; cutRight: boolean }
 
@@ -263,7 +271,8 @@ export function shareWeeks(avail: number, k: number): number[] {
 export function fitToTerm(rows: CurriculumPacing[], length: number): { id: string; weeks: number }[] {
   const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order)
   if (!sorted.length || length <= 0) return []
-  const shares = shareWeeks(length, sorted.length)
+  // Review weeks stay as they are; the units share what is left of the term.
+  const shares = shareWeeks(length - sorted.reduce((a, r) => a + reviewOf(r), 0), sorted.length)
   return sorted.map((r, i) => ({ id: r.id, weeks: shares[i] }))
 }
 
@@ -296,14 +305,27 @@ export function viewsFor(yw: YearWeeks): View[] {
 export const termsFor = (yw: YearWeeks): Term[] => { const v = viewsFor(yw); return TERMS.filter(t => v.includes(t as View)) }
 
 
+/** The module ("M3") or section ("Closed Syllables") a unit's title puts it in; "Unit 4", "Lesson 12" or "School Link 3" is a numbering, not a section, so 'other'. */
+export function sectionKey(title: string): string {
+  const badge = splitUnitTitle(title).badge
+  const m = badge.match(/^M(\d+)/i)
+  return m ? 'M' + m[1] : (/^(unit|lesson|school link)\s*\d+/i.test(badge) || !badge ? 'other' : badge)
+}
+
+/** The plan rows that end a run of one section or module, in plan order: where "Review after every section" puts a review week. */
+export function sectionEnds(rows: CurriculumPacing[], units: CurriculumUnit[]): string[] {
+  const sorted = [...rows].sort((a, b) => a.sort_order - b.sort_order)
+  const keyOf = (r: CurriculumPacing) => { const u = units.find(x => x.id === r.unit_id); return u ? sectionKey(u.title) : 'other' }
+  return sorted.filter((r, i) => keyOf(r) !== 'other' && (i === sorted.length - 1 || keyOf(sorted[i + 1]) !== keyOf(r))).map(r => r.id)
+}
+
 /** Units grouped by the module or section in their title badge ("M3 W1 · …" → Module 3; "Closed Syllables · …" → Closed Syllables), in book order. */
 export function groupByModule<T extends { title: string; sort_order: number }>(units: T[]): { key: string; label: string; units: T[] }[] {
   const out: { key: string; label: string; units: T[] }[] = []
   for (const u of [...units].sort((a, b) => a.sort_order - b.sort_order)) {
     const badge = splitUnitTitle(u.title).badge
     const m = badge.match(/^M(\d+)/i)
-    // "Unit 4", "Lesson 12" or "School Link 3" is a numbering, not a section: those stay ungrouped.
-    const key = m ? 'M' + m[1] : (/^(unit|lesson|school link)\s*\d+/i.test(badge) || !badge ? 'other' : badge)
+    const key = sectionKey(u.title)
     let g = out.find(x => x.key === key)
     if (!g) { g = { key, label: m ? `Module ${m[1]}` : (badge || 'Other'), units: [] }; out.push(g) }
     g.units.push(u)

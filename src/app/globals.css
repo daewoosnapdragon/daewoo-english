@@ -31,6 +31,15 @@
   --good: 46 107 58;   --good-soft: 220 233 214;
   --warn: 132 91 15;   --warn-soft: 245 231 194;
   --bad: 160 50 46;    --bad-soft: 243 217 213;
+  /* Book colours on the Year plan and Class plans: a light fill, a deeper fill for every other section, same-hue text and edge (palette 1, Nov 2026). */
+  --bk-orange-fill: 251 227 200; --bk-orange-alt: 246 205 158; --bk-orange-text: 122 62 12; --bk-orange-edge: 233 181 126;
+  --bk-plum-fill: 230 220 247; --bk-plum-alt: 210 194 240; --bk-plum-text: 71 48 127; --bk-plum-edge: 187 166 228;
+  --bk-berry-fill: 250 217 227; --bk-berry-alt: 244 188 205; --bk-berry-text: 138 35 71; --bk-berry-edge: 231 163 184;
+  --bk-blue-fill: 214 230 250; --bk-blue-alt: 184 211 245; --bk-blue-text: 22 63 115; --bk-blue-edge: 157 191 233;
+  --bk-ochre-fill: 251 239 184; --bk-ochre-alt: 244 224 138; --bk-ochre-text: 94 74 7; --bk-ochre-edge: 226 203 107;
+  --bk-teal-fill: 207 239 234; --bk-teal-alt: 169 225 216; --bk-teal-text: 14 82 73; --bk-teal-edge: 140 207 196;
+  --bk-green-fill: 213 239 210; --bk-green-alt: 181 226 176; --bk-green-text: 31 90 27; --bk-green-edge: 152 209 145;
+  --bk-slate-fill: 233 228 218; --bk-slate-alt: 217 209 194; --bk-slate-text: 62 58 51; --bk-slate-edge: 197 188 171;
   --info: 47 92 138;   --info-soft: 217 228 240;
   /* Calendar event colours, as hex so inline styles can use them directly. */
   --ev-good: #2E6B3A; --ev-accent: #8A2A2B; --ev-info: #2F5C8A; --ev-warn: #845B0F; --ev-teal: #4E948A; --ev-other: #6C6559;
@@ -61,6 +70,14 @@ html.dark {
   --good: 127 191 134;  --good-soft: 31 49 34;
   --warn: 216 174 78;   --warn-soft: 58 47 20;
   --bad: 224 122 114;   --bad-soft: 62 34 32;
+  --bk-orange-fill: 61 42 23; --bk-orange-alt: 83 55 32; --bk-orange-text: 246 199 149; --bk-orange-edge: 110 74 42;
+  --bk-plum-fill: 46 38 64; --bk-plum-alt: 61 50 87; --bk-plum-text: 205 187 242; --bk-plum-edge: 84 70 122;
+  --bk-berry-fill: 61 33 41; --bk-berry-alt: 83 43 55; --bk-berry-text: 242 179 198; --bk-berry-edge: 112 64 79;
+  --bk-blue-fill: 28 43 64; --bk-blue-alt: 37 58 87; --bk-blue-text: 169 201 242; --bk-blue-edge: 54 82 122;
+  --bk-ochre-fill: 56 49 26; --bk-ochre-alt: 74 64 33; --bk-ochre-text: 235 215 128; --bk-ochre-edge: 102 89 44;
+  --bk-teal-fill: 23 55 51; --bk-teal-alt: 31 74 68; --bk-teal-text: 150 221 209; --bk-teal-edge: 45 99 91;
+  --bk-green-fill: 29 51 32; --bk-green-alt: 38 69 42; --bk-green-text: 166 219 159; --bk-green-edge: 54 96 58;
+  --bk-slate-fill: 46 42 36; --bk-slate-alt: 61 56 48; --bk-slate-text: 214 205 188; --bk-slate-edge: 87 80 67;
   --info: 127 166 214;  --info-soft: 31 44 59;
   --wet: 232 180 168;
   --ev-good: #6FAF78; --ev-accent: #D9736F; --ev-info: #7FA6D6; --ev-warn: #D8AE4E; --ev-teal: #6FB8AD; --ev-other: #988F7D;

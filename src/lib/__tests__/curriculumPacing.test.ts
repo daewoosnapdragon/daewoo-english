@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aimWeek, masterRows, yearFor, barsForView, boardLanes, halfOf, holidayWeeks, layoutPacing, mondayOf, termDates, todayPosition, weekList, yearWeeks, type CurriculumPacing, type CurriculumPlacement } from '../curriculumPacing'
+import { aimWeek, fitToTerm, masterRows, sectionEnds, totalWeeks, yearFor, barsForView, boardLanes, halfOf, holidayWeeks, layoutPacing, mondayOf, termDates, todayPosition, weekList, yearWeeks, type CurriculumPacing, type CurriculumPlacement } from '../curriculumPacing'
 import type { CurriculumBook, CurriculumSeries, CurriculumUnit } from '../curriculumCore'
 
 const sems = [
@@ -115,5 +115,42 @@ describe('class plans', () => {
     expect(aimWeek('2027-09-08', 'year', yw, none)).toBe(6)
     expect(aimWeek('2027-03-10', 'fall', yw, none)).toBeNull()
     expect(aimWeek(null, 'fall', yw, none)).toBeNull()
+  })
+})
+
+describe('review weeks', () => {
+  const units3 = ['u1', 'u2', 'u3'].map((id, i) => ({ id, book_id: 'b', sort_order: i + 1, title: `Unit ${i + 1}`, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 2, source: 'teacher', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })) as any
+  const rv = (p: CurriculumPacing, review_weeks: number) => ({ ...p, review_weeks })
+  it('puts a review block straight after its unit and starts the next unit after it', () => {
+    const bars = layoutPacing([rv(pace('a', 'u1', 1, 2), 1), pace('b', 'u2', 2, 2)], units3)
+    expect(bars.map(b => [b.unit.id, !!b.review, b.start, b.end])).toEqual([['u1', false, 1, 2], ['u1', true, 3, 3], ['u2', false, 4, 5]])
+  })
+  it('counts review weeks in the total', () => {
+    expect(totalWeeks([rv(pace('a', 'u1', 1, 2), 1), rv(pace('b', 'u2', 2, 2), 0.5)])).toBe(5.5)
+  })
+  it('fits the units into what the review weeks leave of the term', () => {
+    expect(fitToTerm([rv(pace('a', 'u1', 1, 2), 1), pace('b', 'u2', 2, 2), pace('c', 'u3', 3, 2)], 10).map(x => x.weeks)).toEqual([3, 3, 3])
+  })
+  it('reads a row from before review weeks existed as no review', () => {
+    expect(layoutPacing([pace('a', 'u1', 1, 2)], units3).every(b => !b.review)).toBe(true)
+  })
+})
+
+describe('the end of each section', () => {
+  const mk = (titles: string[]) => {
+    const us = titles.map((title, i) => ({ id: 'u' + i, book_id: 'b', sort_order: i + 1, title, summary: '', skill_tags: [], ccss_codes: [], default_weeks: 1, source: 'teacher', confirmed_by: null, confirmed_at: null, drive_folder_url: '', created_at: '', updated_at: '' })) as any[]
+    return { us, rows: us.map((u, i) => pace('r' + i, u.id, i + 1, 1)) }
+  }
+  it('is the last unit of each run of a section in the plan', () => {
+    const { us, rows } = mk(['Silent e · a_e', 'Silent e · i_e', 'Vowel Teams · ai ay', 'Vowel Teams · ee ea', 'R-Controlled · ar'])
+    expect(sectionEnds(rows, us)).toEqual(['r1', 'r3', 'r4'])
+  })
+  it('is each module’s last story in an anthology', () => {
+    const { us, rows } = mk(['M1 W1 · A', 'M1 W2 · B', 'M2 W1 · C'])
+    expect(sectionEnds(rows, us)).toEqual(['r1', 'r2'])
+  })
+  it('is nothing for a book numbered by unit', () => {
+    const { us, rows } = mk(['Unit 1 · Pack and Go', 'Unit 2 · My Garden'])
+    expect(sectionEnds(rows, us)).toEqual([])
   })
 })

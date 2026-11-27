@@ -100,7 +100,7 @@ describe('the next book', () => {
 })
 
 // ─── Meeting mode helpers ───
-import { fillYearWeeks, lastYearFor, levelTestDates, moduleGroups, suggestBook, unitAt, unitsInRange } from '../yearPlan'
+import { fillYearWeeks, lastYearFor, levelForAll, levelTestDates, moduleGroups, pickLabel, suggestBook, unitAt, unitLabels, unitsInRange } from '../yearPlan'
 import type { CurriculumPlacement } from '../curriculumPacing'
 
 const pl = (id: string, book_id: string, english_class: string, grade: number, academic_year: string, term: 'spring' | 'fall' | 'year', is_master = true): CurriculumPlacement =>
@@ -289,5 +289,29 @@ describe('a range of units', () => {
   it('runs to the end of the list from an unknown or empty end', () => {
     expect(ids(unitsInRange(list, 'c', ''))).toBe('cde')
     expect(ids(unitsInRange(list, '', 'b'))).toBe('ab')
+  })
+})
+
+describe('labels that fit a bar', () => {
+  it('offers a phonics pattern and then a shorter form', () => {
+    expect(unitLabels('Closed Syllables · Beginning /k/ spelling rule', true)).toEqual(['Beginning /k/ spelling rule', '/k/ c k'])
+    expect(unitLabels('Closed Syllables · Consonant Digraphs: sh', true)).toEqual(['sh'])
+  })
+  it('shortens a pattern with no set short form by dropping the filler words', () => {
+    expect(unitLabels('Morphology · Prefixes up- and down-', true)).toEqual(['Prefixes up- and down-', 'up- down-'])
+  })
+  it('offers numbered units and School Links in shorter and shorter forms', () => {
+    expect(unitLabels('Unit 4 · Pack and Go', false)).toEqual(['Unit 4', 'U4', '4'])
+    expect(unitLabels('School Link 2', false)).toEqual(['School Link 2', 'SL 2', 'SL'])
+  })
+  it('takes the longest label that fits, else the shortest', () => {
+    const w = (t: string) => t.length * 6
+    expect(pickLabel(['Unit 4', 'U4', '4'], 20, w)).toBe('U4')
+    expect(pickLabel(['Unit 4', 'U4', '4'], 3, w)).toBe('4')
+  })
+  it('gives every bar of a kind the same form: the longest that fits all of them', () => {
+    const w = (t: string) => t.length * 6
+    expect(levelForAll([['Unit 9', 'U9', '9'], ['Unit 10', 'U10', '10']], [40, 40], w)).toBe(1)
+    expect(levelForAll([['Unit 9', 'U9', '9'], ['Unit 10', 'U10', '10']], [60, 60], w)).toBe(0)
   })
 })

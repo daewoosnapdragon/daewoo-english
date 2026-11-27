@@ -7,8 +7,8 @@ import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classDot } from '@/lib/utils'
 import { STRAND_LABEL, bookName, colorHex, levelShort, splitUnitTitle, type CurriculumBook, type CurriculumUnit } from '@/lib/curriculumCore'
-import { TERMS, TERM_LABEL, academicYears, fitToTerm, groupByModule, layoutPacing, masterRows, placementLength, termsFor, totalWeeks, yearWeeks, holidayWeeks, termDates, type HolidayCounts, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
-import { addPacingMany, copyPlacements, createPlacement, deletePlacement, dropPacing, dropPacingMany, movePacing, patchMasterRows, setAimDate, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
+import { TERMS, TERM_LABEL, academicYears, fitToTerm, groupByModule, layoutPacing, masterRows, placementLength, reviewOf, sectionEnds, termsFor, totalWeeks, yearWeeks, holidayWeeks, termDates, type HolidayCounts, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
+import { addPacingMany, copyPlacements, createPlacement, deletePlacement, dropPacing, dropPacingMany, movePacing, setReviewWeeks, patchMasterRows, setAimDate, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
 import { usePlanner, type Planner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import StoryPicker from './StoryPicker'
@@ -157,7 +157,8 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
   const rows = masterRows(p.pacing, pl.id).sort((a, b) => a.sort_order - b.sort_order)
   const units = p.units.filter(u => u.book_id === pl.book_id).sort((a, b) => a.sort_order - b.sort_order)
   const length = placementLength(pl.term, yw, hc)
-  const bars = layoutPacing(rows, units)
+  // The unit rows of the list; review weeks show as a column, and move the weeks of the units after them.
+  const bars = layoutPacing(rows, units).filter(b => !b.review)
   const total = totalWeeks(rows)
   const left = units.filter(u => !rows.some(r => r.unit_id === u.id))
   const [picking, setPicking] = useState(false)
@@ -180,6 +181,9 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
     if (!await confirmDialog({ title: ko ? '배치 삭제' : 'Take this book out', message: ko ? `${label}을(를) ${pl.english_class} ${pl.grade}학년에서 뺍니다.` : `${label} comes out of ${pl.english_class} Grade ${pl.grade} for ${TERM_LABEL[pl.term].en.toLowerCase()} ${pl.academic_year}, with its list of ${anthology ? 'stories' : 'units'}.`, confirmLabel: ko ? '삭제' : 'Remove' })) return
     if (!fail(await deletePlacement(pl.id, label))) { onRemoved(); p.reload() }
   }
+  const ends = sectionEnds(rows, units)
+  const allReviews = ends.length > 0 && ends.every(id => reviewOf(rows.find(r => r.id === id)!) > 0)
+  const reviewEverySection = async () => { setBusy(true); if (!fail(await setReviewWeeks(ends.map(id => ({ id, review_weeks: allReviews ? 0 : 1 })), label))) await p.reload(); setBusy(false) }
   const fit = async () => { setBusy(true); if (!fail(await patchMasterRows(fitToTerm(rows, length), `${label} fitted to the term`))) await p.reload(); setBusy(false) }
   const addPicked = async () => { setBusy(true); const chosen = units.filter(u => picked.has(u.id)); if (!fail(await addPacingMany(pl.id, chosen, rows, label))) { setPicking(false); setPicked(new Set()); await p.reload() } setBusy(false) }
   const groups = groupByModule(bars.map(b => ({ ...b, title: b.unit.title, sort_order: b.pacing.sort_order })))
@@ -199,6 +203,7 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
           <input type="date" value={pl.aim_date || ''} onChange={async e => { if (!fail(await setAimDate(pl.id, e.target.value || null, label))) p.reload() }} className={`${sel} w-[140px]`} />
         </label>
         {length > 0 && rows.length > 0 && Math.abs(total - length) > 0.01 && <button onClick={fit} disabled={busy} className={btnS} title={ko ? '학기에 맞게 길이를 고르게 나눕니다' : 'Give every unit an even share so the list fills the term'}><Maximize2 size={11} />{ko ? '학기에 맞추기' : 'Fit to the term'}</button>}
+        {ends.length > 1 && <button onClick={reviewEverySection} disabled={busy} className={btnS} title={ko ? '각 단원군(섹션·모듈) 끝에 복습 1주' : 'A review week at the end of each section or module'}>{allReviews ? (ko ? '단원군 뒤 복습 지우기' : 'Take out section reviews') : (ko ? '단원군마다 복습 1주' : 'Review after every section')}</button>}
         {!anthology && listed.length > 2 && <button onClick={() => { setRange(r => r ? null : { from: listed[0].id, to: listed[listed.length - 1].id }); setPicking(false) }} className={range ? btnSOn : btnS} title={ko ? '처음과 끝 단원을 골라 그 사이만 남깁니다' : 'Pick a first and last unit; the units outside them come out'}><Scissors size={11} />{ko ? '범위만 남기기' : 'Keep a range'}</button>}
         {left.length > 0 && <button onClick={() => { setPicking(s => !s); setPicked(new Set()); setRange(null) }} className={picking ? btnSOn : btnS}><Plus size={11} />{anthology ? (ko ? '이야기 추가' : 'Add stories') : (ko ? '단원 추가' : 'Add units')}</button>}
         <select value={pl.term} onChange={async e => { if (!fail(await updatePlacementTerm(pl.id, e.target.value as Term, label))) p.reload() }} className={sel}>
@@ -224,11 +229,11 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
       {rows.length === 0 && <p className="px-4 py-3 text-[length:calc(12.5px*var(--ts))] text-ink-3">{units.length ? (ko ? '아직 고른 것이 없습니다. 추가를 누르세요.' : `Nothing picked yet. Press Add ${anthology ? 'stories' : 'units'}.`) : (ko ? '이 책에는 아직 단원이 없습니다. 책꽂이에서 먼저 색인하세요.' : 'This book has no units yet. Add them on the Bookshelf first.')}</p>}
       {rows.length > 0 && (
         <table className="w-full text-[length:calc(12.5px*var(--ts))]">
-          <thead><tr className="text-[length:calc(12px*var(--ts))] text-ink-2"><th className="text-left font-medium px-4 py-1.5 w-10">#</th><th className="text-left font-medium py-1.5">{anthology ? (ko ? '이야기' : 'Story') : (ko ? '단원' : 'Unit')}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '주' : 'Weeks'}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '위치' : 'Weeks of the term'}</th><th className="w-48" /></tr></thead>
+          <thead><tr className="text-[length:calc(12px*var(--ts))] text-ink-2"><th className="text-left font-medium px-4 py-1.5 w-10">#</th><th className="text-left font-medium py-1.5">{anthology ? (ko ? '이야기' : 'Story') : (ko ? '단원' : 'Unit')}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '주' : 'Weeks'}</th><th className="text-left font-medium py-1.5 w-28">{ko ? '위치' : 'Weeks of the term'}</th><th className="text-left font-medium py-1.5 w-24">{ko ? '뒤 복습' : 'Review after'}</th><th className="w-48" /></tr></thead>
           <tbody>
             {groups.map(g => (
               <Fragment key={g.key}>
-                {showGroups && <tr className="border-t border-rule bg-paper"><td colSpan={5} className="px-4 py-1 text-[length:calc(12px*var(--ts))] text-ink-2">{g.label}</td></tr>}
+                {showGroups && <tr className="border-t border-rule bg-paper"><td colSpan={6} className="px-4 py-1 text-[length:calc(12px*var(--ts))] text-ink-2">{g.label}</td></tr>}
                 {g.units.map(b => {
                   n += 1; const i = n - 1
                   const t = splitUnitTitle(b.unit.title)
@@ -238,6 +243,12 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
                       <td className="py-1.5"><span className="inline-flex items-center gap-2 min-w-0">{t.badge && !showGroups && <span className={badge}>{t.badge}</span>}{t.badge && showGroups && /^M\d+/i.test(t.badge) && <span className={badge}>{t.badge}</span>}<span className="text-ink">{t.name}</span>{done.has(b.unit.id) && <span className="text-[length:calc(11.5px*var(--ts))] text-good inline-flex items-center gap-0.5"><Check size={10} />{ko ? '끝남' : 'done'}</span>}</span></td>
                       <td className="py-1.5"><WeeksInput key={`${b.pacing.id}-${b.pacing.weeks}`} value={b.pacing.weeks} onSave={async w => { if (!fail(await setPacingWeeks(b.pacing.id, w, `${label} · ${b.unit.title}`))) p.reload() }} /></td>
                       <td className="py-1.5 tabular-nums text-ink-2">{b.start === b.end ? `${num(b.start)}` : `${num(b.start)}–${num(b.end)}`}{length && b.end > length + 0.01 ? <span className="text-ink-3">{ko ? ' (학기 뒤)' : ' (after the term)'}</span> : null}</td>
+                      <td className="py-1.5">
+                        <select aria-label={ko ? `${t.name} 뒤 복습` : `Review after ${t.name}`} value={String(reviewOf(b.pacing))} onChange={async e => { if (!fail(await setReviewWeeks([{ id: b.pacing.id, review_weeks: Number(e.target.value) }], `${label} · ${b.unit.title}`))) p.reload() }}
+                          className={`h-7 px-1 bg-surface border rounded text-[length:calc(12px*var(--ts))] ${reviewOf(b.pacing) ? 'border-ink text-ink font-semibold' : 'border-rule-2 text-ink-3'}`}>
+                          {[0, 0.5, 1, 2].map(x => <option key={x} value={String(x)}>{x === 0 ? '—' : x === 0.5 ? (ko ? '½주' : '½ wk') : `${x} ${ko ? '주' : 'wk'}`}</option>)}
+                        </select>
+                      </td>
                       <td className="py-1.5 pr-3 text-right">
                         <span className="inline-flex gap-1">
                           <button onClick={async () => { if (!fail(await movePacing(rows, b.pacing.id, -1))) p.reload() }} disabled={i === 0} className={btnS} aria-label="Up"><ArrowUp size={11} /></button>

@@ -6,7 +6,8 @@ import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { getKSTDateString } from '@/lib/utils'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
-import { STRANDS, bookName, colorHex, splitUnitTitle } from '@/lib/curriculumCore'
+import { unitLabels } from '@/lib/yearPlan'
+import { STRANDS, bookName, bookTone, colorHex, splitUnitTitle } from '@/lib/curriculumCore'
 import { TERM_LABEL, academicYears, aimWeek, barsForView, halfOf, holidayWeeks, layoutPacing, masterRows, placementLength, teachingToColumns, termDates, termsFor, todayPosition, totalWeeks, viewWeeks, viewsFor, yearWeeks, type CurriculumPlacement, type View } from '@/lib/curriculumPacing'
 import { unitBank } from '@/lib/planLinks'
 import { standardInfo, standardTitle } from '@/lib/standardText'
@@ -103,7 +104,7 @@ export default function ClassPlanView() {
     const length = placementLength(pl.term, yw, hol.hc)
     const total = totalWeeks(rows)
     const aimW = aimWeek(pl.aim_date, pl.term, yw, hol.sets)
-    return { pl, book, series, color: colorHex(series?.color || 'slate'), bars, rows, length, total, aimW, aimPos: pl.aim_date ? todayPosition(weeks, pl.aim_date) : null }
+    return { pl, book, series, color: colorHex(series?.color || 'slate'), tone: bookTone(series?.color), bars, rows, length, total, aimW, aimPos: pl.aim_date ? todayPosition(weeks, pl.aim_date) : null }
   }), [placements, p.pacing, p.units, view, yw, hol, N, weeks])
   const done = useMemo(() => new Set(p.done.map(d => `${d.placement_id}|${d.unit_id}`)), [p.done])
   const todayPos = todayPosition(weeks, today)
@@ -165,7 +166,7 @@ export default function ClassPlanView() {
               return (
                 <div key={l.pl.id} className="relative h-[64px] border-b border-rule last:border-b-0">
                   <div className="absolute left-0 top-0 bottom-0 px-3 py-2 flex flex-col justify-center bg-surface border-r border-rule z-[1]" style={{ width: LABEL_W }}>
-                    <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink truncate" style={{ borderLeft: `3px solid ${l.color}`, paddingLeft: 6 }}>{labelOf(l.pl)}</span>
+                    <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink truncate inline-flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: l.tone.alt, boxShadow: `inset 0 0 0 1px ${l.tone.text}` }} />{labelOf(l.pl)}</span>
                     <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-snug pl-[9px]">
                       {l.rows.length} {l.series?.kind === 'anthology' ? (l.rows.length === 1 ? 'story' : 'stories') : (l.rows.length === 1 ? 'unit' : 'units')} · {num(l.total)} wk{overTerm ? ` · ${num(l.total - l.length)} past the term` : ''}
                       {l.pl.aim_date ? <><br />{ko ? '목표' : 'aim'} {fmtDay(l.pl.aim_date)}{pastAim ? ` · ${num(l.total - l.aimW!)} wk after it` : ''}</> : null}
@@ -173,14 +174,24 @@ export default function ClassPlanView() {
                   </div>
                   {l.bars.map(b => {
                     const t = splitUnitTitle(b.unit.title)
+                    // Phonics bars lead with the pattern ("sh", "a b t s m"), its short form, then the section.
+                    const phonicsLabels = l.series?.strand === 'phonics' ? unitLabels(b.unit.title, true) : null
+                    const name = phonicsLabels ? phonicsLabels[phonicsLabels.length - 1] : t.name
                     const isDone = done.has(`${l.pl.id}|${b.unit.id}`)
                     const on = openBar?.placement === l.pl.id && openBar.unit === b.unit.id
+                    const place = { left: `calc(${left(b.viewStart - 1)} + 1px)`, width: `calc((100% - ${LABEL_W}px) * ${(b.viewEnd - b.viewStart + 1) / N} - 2px)` }
+                    // Review weeks after a unit: a striped block in the book's colour.
+                    if (b.review) return (
+                      <div key={b.pacing.id + 'r'} title={`${ko ? '복습' : 'Review'}: ${b.unit.title} · ${num(b.end - b.start + 1)} wk`}
+                        className="absolute top-3 h-[40px] rounded-sm px-1.5 text-[length:calc(11.5px*var(--ts))] leading-[40px] font-semibold overflow-hidden whitespace-nowrap"
+                        style={{ ...place, color: l.tone.text, boxShadow: `inset 0 0 0 1px ${l.tone.edge}`, backgroundImage: `repeating-linear-gradient(135deg, ${l.tone.alt} 0 5px, ${l.tone.fill} 5px 10px)` }}>{ko ? '복습' : 'Review'}</div>
+                    )
                     return (
                       <button key={b.pacing.id} onClick={() => setOpenBar(on ? null : { placement: l.pl.id, unit: b.unit.id })}
                         title={`${b.unit.title} · ${num(b.pacing.weeks)} wk${isDone ? ' · done' : ''}`}
-                        className={`absolute top-3 h-[40px] rounded-sm px-1.5 text-left text-[length:calc(11.5px*var(--ts))] leading-tight text-white overflow-hidden ${on ? 'ring-2 ring-ink ring-offset-1' : ''}`}
-                        style={{ left: `calc(${left(b.viewStart - 1)} + 1px)`, width: `calc((100% - ${LABEL_W}px) * ${(b.viewEnd - b.viewStart + 1) / N} - 2px)`, background: l.color, opacity: isDone ? 0.45 : 1 }}>
-                        <span className="block truncate font-medium">{isDone && <Check size={10} className="inline mr-0.5 -mt-px" />}{t.name}</span>
+                        className={`absolute top-3 h-[40px] rounded-sm px-1.5 text-left text-[length:calc(11.5px*var(--ts))] leading-tight overflow-hidden ${on ? 'ring-2 ring-ink ring-offset-1' : ''}`}
+                        style={{ ...place, background: l.tone.fill, color: l.tone.text, boxShadow: `inset 0 0 0 1px ${l.tone.edge}`, opacity: isDone ? 0.5 : 1 }}>
+                        <span className="block truncate font-semibold">{isDone && <Check size={10} className="inline mr-0.5 -mt-px" />}{name}</span>
                         {t.badge && <span className="block truncate opacity-80 text-[length:calc(11.5px*var(--ts))]">{t.badge}</span>}
                       </button>
                     )
