@@ -26,20 +26,25 @@ describe('stretching a book', () => {
   })
 })
 
-describe('moving the line between two units', () => {
-  it('gives one unit what the other loses', () => {
-    expect(moveBoundary([2, 2, 2], 0, 1)).toEqual([3, 1, 2])
-    expect(moveBoundary([2, 2, 2], 1, -0.5)).toEqual([2, 1.5, 2.5])
+describe('moving the line after a unit', () => {
+  it('makes that unit longer or shorter', () => {
+    expect(moveBoundary([2, 2, 2], 0, 1)).toEqual([3, 2, 2])
+    expect(moveBoundary([2, 2, 2], 1, -0.5)).toEqual([2, 1.5, 2])
   })
-  it('stops at half a week either side', () => {
-    expect(moveBoundary([2, 2, 2], 0, 5)).toEqual([3.5, 0.5, 2])
-    expect(moveBoundary([2, 2, 2], 0, -5)).toEqual([0.5, 3.5, 2])
+  it('pushes the later units along instead of squeezing the next one', () => {
+    const w = moveBoundary([2, 2, 2], 0, 3)
+    expect(w).toEqual([5, 2, 2])
+    expect(sum(w)).toBe(9)
+  })
+  it('stops at half a week', () => {
+    expect(moveBoundary([2, 2, 2], 0, -5)).toEqual([0.5, 2, 2])
   })
   it('moves in half weeks', () => {
-    expect(moveBoundary([2, 2], 0, 0.3)).toEqual([2.5, 1.5])
+    expect(moveBoundary([2, 2], 0, 0.3)).toEqual([2.5, 2])
   })
-  it('ignores a line that is not there', () => {
-    expect(moveBoundary([2, 2], 1, 1)).toEqual([2, 2])
+  it('moves the last unit’s end too, and ignores a unit that is not there', () => {
+    expect(moveBoundary([2, 2], 1, 1)).toEqual([2, 3])
+    expect(moveBoundary([2, 2], 2, 1)).toEqual([2, 2])
   })
 })
 

@@ -26,7 +26,7 @@ import { ChevronLeft, ChevronRight, Loader2, Maximize2, Minimize2, RotateCcw } f
 // Into Reading by module, phonics by pattern, level tests as dashed lines
 // tagged with the unit each book is on, and overflow past the year in red.
 // Admin drags a book's end to stretch it (units share the time evenly) or the
-// line between two units to move time between them. Present fills the screen
+// end of a unit to lengthen it, pushing the rest along. Present fills the screen
 // for a projector. Saves go to the same placements and pacing as Books by
 // class and Class plans; teachers see it read-only.
 // Design: docs/superpowers/specs/2026-11-27-year-plan-meeting-mode-design.md,
@@ -191,14 +191,14 @@ export default function YearPlanView() {
         // Relative to where the drag started, so grabbing the handle of a book that runs past the year changes nothing until it moves.
         const t = teachingAtColumnOpen(drag.col0 + (e.clientX - drag.x0) / colW, h.cols, N)
         next = spreadEvenly(Math.max(0.5 * drag.w0.length, t - drag.shift), drag.w0.length)
-      } else next = moveBoundary(drag.w0, drag.k, teachingAtColumn((e.clientX - drag.left) / colW, h.cols, N) - (drag.shift + sumOf(drag.w0.slice(0, drag.k + 1))))
+      } else next = moveBoundary(drag.w0, drag.k, teachingAtColumnOpen((e.clientX - drag.left) / colW, h.cols, N) - (drag.shift + sumOf(drag.w0.slice(0, drag.k + 1))))
       setDraft({ id: drag.plId, weeks: next })
       setTip({ x: e.clientX, y: e.clientY, pl: drag.plId })
     }
     const up = () => {
       setDrag(null); setTip(null)
       const d = draftRef.current
-      if (pl && d && d.id === pl.id) void save(pl, d.weeks, drag.kind === 'end' ? 'stretched on the year plan' : 'unit lengths moved on the year plan')
+      if (pl && d && d.id === pl.id) void save(pl, d.weeks, drag.kind === 'end' ? 'stretched on the year plan' : 'a unit lengthened on the year plan')
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
@@ -324,7 +324,7 @@ export default function YearPlanView() {
               {canManage && !anthology && rowsP.length > 1 && cum.slice(0, -1).map((c, k) => {
                 const col = edgeR(shift + c, h)
                 if (col <= 0 || col >= N) return null
-                return <span key={'d' + k} role="separator" aria-label={`${ko ? '단원 경계' : 'Line between units'} ${k + 1}–${k + 2}`}
+                return <span key={'d' + k} role="separator" aria-label={`${ko ? '단원 끝' : 'End of unit'} ${k + 1}`} title={ko ? '끌어서 이 단원 길이 조절 (뒤 단원은 함께 이동)' : 'Drag to make this unit longer or shorter; the units after it move along'}
                   onPointerDown={e => startDrag(e, { plId: pl.id, kind: 'div', k, w0: w.slice(), shift, grade: r.grade, col0: 0 })}
                   className="absolute top-[13px] w-[10px] -ml-[5px] cursor-col-resize z-[3] group touch-none" style={{ left: pos(col), height: barH + 4 }}>
                   <span className="absolute left-[4px] top-1 bottom-1 w-[2px] rounded bg-ink opacity-0 group-hover:opacity-70" />
@@ -464,7 +464,7 @@ export default function YearPlanView() {
 
       <p className="shrink-0 text-[length:calc(11.5px*var(--ts))] text-ink-3 leading-relaxed max-w-[75ch]">
         {ko ? '점선 = 제안된 교재(눌러서 사용) · 회색 빗금 = 휴일 주 · 빨간 빗금 = 학기 넘침 · 세로 점선 = 레벨 테스트.' : 'Dashed = the suggested book, click to use it. Grey hatching = holiday weeks; red = past the book’s term. Vertical dashes = level tests, tagged with the unit each book is on.'}
-        {canManage && !present && (ko ? ' 책 끝을 끌어 길이를, 단원 사이 선을 끌어 시간을 옮깁니다.' : ' Drag a book’s end to stretch it, or the line between two units to move time.')}
+        {canManage && !present && (ko ? ' 책 끝을 끌어 길이를, 단원 끝 선을 끌어 그 단원만 늘리거나 줄입니다(뒤 단원은 함께 이동).' : ' Drag a book’s end to stretch it, or the line after a unit to lengthen just that unit; the units after it move along.')}
       </p>
 
       {/* Live readout while dragging */}
@@ -481,7 +481,7 @@ export default function YearPlanView() {
           <div className="fixed z-[90] pointer-events-none rounded bg-ink text-paper px-3 py-2 text-[length:calc(12px*var(--ts))] leading-snug shadow-lg tabular-nums max-w-[320px]"
             style={{ left: Math.min(tip.x + 16, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 330), top: Math.max(8, tip.y - 140) }}>
             <b>{labelOf(pl)}</b> · {num(total)} {ko ? '주' : 'wk'}<br />
-            {drag?.kind === 'div' ? <>{segName(drag.k)}: {num(w[drag.k])} {ko ? '주' : 'wk'} · {segName(drag.k + 1)}: {num(w[drag.k + 1])} {ko ? '주' : 'wk'}<br /></> : <>≈ {num(total / Math.max(1, w.length))} {ko ? '주/단원' : 'wk each'}<br /></>}
+            {drag?.kind === 'div' ? <>{segName(drag.k)}: {num(w[drag.k])} {ko ? '주' : 'wk'} · {ko ? '뒤 단원은 함께 이동' : 'the rest move along'}<br /></> : <>≈ {num(total / Math.max(1, w.length))} {ko ? '주/단원' : 'wk each'}<br /></>}
             {segName(mid - 1)} {ko ? '끝:' : 'done by'} {whenEnds(shift + sumOf(w.slice(0, mid)), h)} · {ko ? '끝나는 날:' : 'finishes'} {whenEnds(shift + total, h)}<br />
             {pins.map(pn => { const tag = tagAt(segs, w, shift, h, pn.col); return tag ? <span key={pn.label}>{pn.label}: {tag === '✓' ? (ko ? '끝남' : 'finished') : tag}<br /></span> : null })}
             {Math.abs(total - sug) < 0.01 ? (ko ? '제안과 같음' : 'Same as suggested') : `${total > sug ? '+' : '−'}${num(Math.abs(total - sug))} ${ko ? '주 (제안' : 'wk vs suggested ('}${num(sug)})`}

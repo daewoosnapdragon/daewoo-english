@@ -18,13 +18,11 @@ export function spreadEvenly(total: number, k: number): number[] {
   return Array.from({ length: k }, (_, i) => (base + (Math.floor((i + 1) * extra / k) > Math.floor(i * extra / k) ? 1 : 0)) / 2)
 }
 
-/** Moves the line between unit `k` and unit `k + 1` by `delta` weeks; neither unit goes below half a week. */
+/** Moves the line after unit `k` by `delta` weeks: that unit gets longer or shorter (never below half a week) and the units after it move along, keeping their lengths. */
 export function moveBoundary(weeks: number[], k: number, delta: number): number[] {
-  if (k < 0 || k + 1 >= weeks.length) return weeks.slice()
-  const d = Math.max(0.5 - weeks[k], Math.min(half(delta), weeks[k + 1] - 0.5))
+  if (k < 0 || k >= weeks.length) return weeks.slice()
   const out = weeks.slice()
-  out[k] = weeks[k] + d
-  out[k + 1] = weeks[k + 1] - d
+  out[k] = Math.max(0.5, weeks[k] + half(delta))
   return out
 }
 
