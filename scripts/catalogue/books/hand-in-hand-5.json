@@ -1,0 +1,1287 @@
+{
+ "series": "Hand in Hand",
+ "level": "5",
+ "title": "",
+ "strand": "speaking",
+ "color": "green",
+ "kind": "sequence",
+ "source": "Hand in Hand 2nd ed. scope and sequence, Student Book 5",
+ "units": [
+  {
+   "title": "Unit 1 · Comparing Animals",
+   "summary": "Conversation: I'm reading a book about animals. / What's this? / It's a gazelle. It lives in Africa. / Did you know that it's a very fast animal? / No, I didn't. How fast can it run? / It can run up to 97 km/h. / That is fast!\nWords: cheetah, deer, fox, giraffe, hippopotamus, rhinoceros, turtle, wolf, slow, fast, light, heavy\nGrammar: Which animal is faster, the deer or the giraffe? / The giraffe is faster than the deer. / Which animal is the fastest? / The cheetah is the fastest.\nThe World around Us: The Slow Sloth (Costa Rica)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I'm reading a book about animals. / What's this? / It's a gazelle. It lives in Africa. / Did you know that it's a very fast animal? / No, I didn't. How fast can it run? / It can run up to 97 km/h. / That is fast!"
+    },
+    {
+     "title": "Words",
+     "notes": "cheetah, deer, fox, giraffe, hippopotamus, rhinoceros, turtle, wolf, slow, fast, light, heavy"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Which animal is faster, the deer or the giraffe? / The giraffe is faster than the deer. / Which animal is the fastest? / The cheetah is the fastest."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "The Slow Sloth (Costa Rica)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation about a gazelle that begins “I'm reading a book about animals.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name animals and describing words: cheetah, rhinoceros, hippopotamus, slow, heavy",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare two animals with -er and than: “The giraffe is faster than the deer.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which animal is the fastest or heaviest, like “The cheetah is the fastest.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Slow Sloth” from Costa Rica and tell facts about how the sloth lives",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Comparing Things",
+   "summary": "Conversation: Can I try on these shoes? / Sure, you can. What's your shoe size? / I wear a size 5. / How do you like those shoes? / I like them. They're comfortable. / They look nice on you. / Thanks.\nWords: earrings, helmet, necklace, puzzle, sneakers, difficult, comfortable, expensive, beautiful, colorful\nGrammar: Which puzzle is more difficult? / This puzzle is more difficult. / Which sneakers are the most comfortable? / These sneakers are the most comfortable.\nThe World around Us: The Most Popular Flavor (Belgium)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Can I try on these shoes? / Sure, you can. What's your shoe size? / I wear a size 5. / How do you like those shoes? / I like them. They're comfortable. / They look nice on you. / Thanks."
+    },
+    {
+     "title": "Words",
+     "notes": "earrings, helmet, necklace, puzzle, sneakers, difficult, comfortable, expensive, beautiful, colorful"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Which puzzle is more difficult? / This puzzle is more difficult. / Which sneakers are the most comfortable? / These sneakers are the most comfortable."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "The Most Popular Flavor (Belgium)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the shoe shop conversation that begins “Can I try on these shoes?”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name things and describing words: earrings, helmet, necklace, expensive, colorful",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare two things with more, like “This puzzle is more difficult.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Which sneakers are the most comfortable?” using the most",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Most Popular Flavor” from Belgium and tell what it says about the favorite flavor",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Wonders of the world",
+   "summary": "Social Studies: Wonders of the world\nProject: Write a report about a special place in your country.\nWriting Style: Sentences",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Wonders of the world"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about a special place in your country."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Sentences"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about famous wonders of the world and where they are",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a special place in Korea",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write complete sentences that start with a capital letter and end with a period",
+     "ccss": [
+      "L.5.1",
+      "L.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class why their special place is worth a visit",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Music and Sports",
+   "summary": "Conversation: My school band is having a concert. / Would you like to come? / Yes, of course. / What musical instrument do you play? / I play the violin. / Do you practice every day? / No, I practice twice a week.\nWords: play the cello, play the guitar, practice the violin, go to a concert, play basketball, play badminton, go swimming, go to a soccer game, once, twice, three times, day, week, month, year\nGrammar: How often does he play basketball? / He plays basketball once a week.\nThe World around Us: Team Sports (USA)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "My school band is having a concert. / Would you like to come? / Yes, of course. / What musical instrument do you play? / I play the violin. / Do you practice every day? / No, I practice twice a week."
+    },
+    {
+     "title": "Words",
+     "notes": "play the cello, play the guitar, practice the violin, go to a concert, play basketball, play badminton, go swimming, go to a soccer game, once, twice, three times, day, week, month, year"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How often does he play basketball? / He plays basketball once a week."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Team Sports (USA)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the concert invitation that begins “My school band is having a concert.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name music and sports activities: play the cello, practice the violin, play badminton",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How often does he play basketball?” with once, twice or three times a week",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say how often they practice something, like “I practice twice a week.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "read “Team Sports” from the USA and tell the main idea in their own words",
+     "ccss": [
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Ways of Doing Things",
+   "summary": "Conversation: Look! Matt is next. / I can't watch. I'm nervous. / Don't worry. He's a good batter. / It's a home run! He hit it well. / It's his second home run this month. / Are you good at baseball too? / No, I'm not. But I'm good at soccer.\nWords: a quick runner, a slow runner, a good singer, a quiet chess player, a loud drum player, a careful driver, carefully, well, loudly, quickly, quietly, slowly\nGrammar: He's a slow runner. He runs slowly. / How does she eat? / She eats quickly.\nThe World around Us: The Talent Show (South Africa)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Look! Matt is next. / I can't watch. I'm nervous. / Don't worry. He's a good batter. / It's a home run! He hit it well. / It's his second home run this month. / Are you good at baseball too? / No, I'm not. But I'm good at soccer."
+    },
+    {
+     "title": "Words",
+     "notes": "a quick runner, a slow runner, a good singer, a quiet chess player, a loud drum player, a careful driver, carefully, well, loudly, quickly, quietly, slowly"
+    },
+    {
+     "title": "Grammar",
+     "notes": "He's a slow runner. He runs slowly. / How does she eat? / She eats quickly."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "The Talent Show (South Africa)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the baseball game conversation that begins “Look! Matt is next.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name kinds of people and how they act: a quick runner, a careful driver, a loud drum player",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "turn “He's a slow runner” into “He runs slowly,” using words like quickly and loudly",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How does she eat?” with “She eats quickly.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Talent Show” from South Africa and retell what happens at the show",
+     "ccss": [
+      "RL.5.1",
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · String instruments",
+   "summary": "Music: String instruments\nProject: Write a report about a musical instrument.\nWriting Style: Parts of Sentences",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Music",
+     "notes": "Music: String instruments"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about a musical instrument."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Parts of Sentences"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about string instruments and how they make sounds",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "name string instruments like the violin, cello and guitar and tell how they are played",
+     "ccss": [
+      "L.5.6",
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "find the naming part and the telling part of a sentence",
+     "ccss": [
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a musical instrument",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · School Field Day",
+   "summary": "Conversation: I don't know how to hula hoop. / Don't worry. I'll show you. / Thanks. / Hold the hoop with two hands and spin it like this. / Oh, it's not working. / Try it again. You're doing great!\nWords: do face painting, eat cotton candy, have a hula hoop contest, run in a race, play Frisbee, wear school T-shirts, have a sack race, play tug-of-war\nGrammar: What are they going to do? / They're going to run in a race.\nThe World around Us: Field Day (Canada)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I don't know how to hula hoop. / Don't worry. I'll show you. / Thanks. / Hold the hoop with two hands and spin it like this. / Oh, it's not working. / Try it again. You're doing great!"
+    },
+    {
+     "title": "Words",
+     "notes": "do face painting, eat cotton candy, have a hula hoop contest, run in a race, play Frisbee, wear school T-shirts, have a sack race, play tug-of-war"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What are they going to do? / They're going to run in a race."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Field Day (Canada)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the hula hoop conversation that begins “I don't know how to hula hoop.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "encourage a friend with “Don't worry. I'll show you.” and “You're doing great!”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name field day events: have a sack race, play tug-of-war, run in a race, play Frisbee",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What are they going to do?” with “They're going to run in a race.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Field Day” from Canada and compare it with field day at their school",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Going Camping",
+   "summary": "Conversation: Tomorrow is our camping trip. / Let's pack. Bring your things to the living room. / Here's my sun hat. / Don't forget to pack your toothbrushes. / Should we take the lantern? / Yes, that's a good idea.\nWords: build a campfire, catch fireflies, go fishing, go canoeing, set up a tent, sleep in a sleeping bag, tell scary stories, look at the stars\nGrammar: What's he going to do? / He's going to go fishing. / Are they going to look at the stars? / Yes, they are. No, they aren't.\nThe World around Us: Catching Fireflies (Argentina)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Tomorrow is our camping trip. / Let's pack. Bring your things to the living room. / Here's my sun hat. / Don't forget to pack your toothbrushes. / Should we take the lantern? / Yes, that's a good idea."
+    },
+    {
+     "title": "Words",
+     "notes": "build a campfire, catch fireflies, go fishing, go canoeing, set up a tent, sleep in a sleeping bag, tell scary stories, look at the stars"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What's he going to do? / He's going to go fishing. / Are they going to look at the stars? / Yes, they are. No, they aren't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Catching Fireflies (Argentina)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the packing conversation that begins “Tomorrow is our camping trip.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name camping activities: set up a tent, build a campfire, go canoeing, catch fireflies",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's he going to do?” and “Are they going to look at the stars?”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner what they are going to do on a camping trip",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "retell the main events of “Catching Fireflies” from Argentina in order",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Muscles and bones",
+   "summary": "Science: Muscles and bones\nProject: Write a report about the flexor and extensor muscles of your body.\nWriting Style: Statements and Questions",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Science",
+     "notes": "Science: Muscles and bones"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about the flexor and extensor muscles of your body."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Statements and Questions"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn how muscles and bones work together to move the body",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "show how a muscle pulls on a bone when they bend an arm",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write a report about the muscles that bend and straighten their arms and legs",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write telling sentences and asking sentences with the right end marks",
+     "ccss": [
+      "L.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Chores to Do",
+   "summary": "Conversation: Pass me the salt, please. / Here you are. / Thanks. / Would you like some more? / No, thanks. I'm full. / Who's going to help me with the dishes? / I'm sorry. I have a lot of homework. / I'll help you.\nWords: clean the room, mow the lawn, do the laundry, feed the dog, set the table, take out the garbage, wash the dishes, water the plants\nGrammar: What does she have to do? / She has to mow the lawn. / Do they have to set the table? / Yes, they do. No, they don't.\nThe World around Us: Morning Chores (Singapore)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Pass me the salt, please. / Here you are. / Thanks. / Would you like some more? / No, thanks. I'm full. / Who's going to help me with the dishes? / I'm sorry. I have a lot of homework. / I'll help you."
+    },
+    {
+     "title": "Words",
+     "notes": "clean the room, mow the lawn, do the laundry, feed the dog, set the table, take out the garbage, wash the dishes, water the plants"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What does she have to do? / She has to mow the lawn. / Do they have to set the table? / Yes, they do. No, they don't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Morning Chores (Singapore)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the dinner table conversation that begins “Pass me the salt, please.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "offer and turn down food politely: “Would you like some more?” “No, thanks. I'm full.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name chores: mow the lawn, do the laundry, set the table, take out the garbage",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does she have to do?” with “She has to mow the lawn.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Morning Chores” from Singapore and compare the chores with their own",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Time to Clean Up",
+   "summary": "Conversation: The weather is so nice! / It's a perfect day for spring cleaning. / Oh, Mom. I want to go to the park. / Not today. / What do you want me to do? / Go clean your room. / Let me get the vacuum cleaner. / I want to help too. / You can put away your toys.\nWords: clean the windows, dust the furniture, mop the floor, pick up the toys, put away the books, sweep the floor, vacuum the floor, wipe the table, first, next, after that\nGrammar: What will she do first? / She'll pick up the toys. / Will they dust the furniture next? / Yes, they will. No, they won't.\nThe World around Us: Our Clean Classroom (Japan)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "The weather is so nice! / It's a perfect day for spring cleaning. / Oh, Mom. I want to go to the park. / Not today. / What do you want me to do? / Go clean your room. / Let me get the vacuum cleaner. / I want to help too. / You can put away your toys."
+    },
+    {
+     "title": "Words",
+     "notes": "clean the windows, dust the furniture, mop the floor, pick up the toys, put away the books, sweep the floor, vacuum the floor, wipe the table, first, next, after that"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What will she do first? / She'll pick up the toys. / Will they dust the furniture next? / Yes, they will. No, they won't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Our Clean Classroom (Japan)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the spring cleaning conversation that begins “The weather is so nice!”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name cleaning jobs: dust the furniture, mop the floor, sweep the floor, wipe the table",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell cleaning steps in order with first, next and after that",
+     "ccss": [
+      "SL.5.4",
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What will she do first?” and “Will they dust the furniture next?”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Our Clean Classroom” from Japan and tell how the class keeps the room clean",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Recycling",
+   "summary": "Social Studies: Recycling\nProject: Make a plastic bag parachute.\nWriting Style: Commands and Exclamations",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Recycling"
+    },
+    {
+     "title": "Project",
+     "notes": "Make a plastic bag parachute."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Commands and Exclamations"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn why recycling matters and which things can be recycled",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "make a parachute from a plastic bag by following the steps",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "write commands and exclamations, like “Tie the strings.” and “Look, it's flying!”",
+     "ccss": [
+      "L.5.2",
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner how to reuse something instead of throwing it away",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Getting There",
+   "summary": "Conversation: We're going to the museum today. / Where is the museum? / It's downtown. We'll take the subway. / Here are the tickets. / How long will it take by subway? / It'll take about 20 minutes. / We'll get off at the next station.\nWords: take a bus, take the subway, take a taxi, take the tram, take the train, drive a car, ride a motorcycle, walk\nGrammar: How does he get to work? / He takes a bus to work. / How is she going to get to the airport tomorrow? / She's going to take a bus.\nThe World around Us: The Convenient T-money Card (South Korea)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "We're going to the museum today. / Where is the museum? / It's downtown. We'll take the subway. / Here are the tickets. / How long will it take by subway? / It'll take about 20 minutes. / We'll get off at the next station."
+    },
+    {
+     "title": "Words",
+     "notes": "take a bus, take the subway, take a taxi, take the tram, take the train, drive a car, ride a motorcycle, walk"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How does he get to work? / He takes a bus to work. / How is she going to get to the airport tomorrow? / She's going to take a bus."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "The Convenient T-money Card (South Korea)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the museum trip conversation that begins “We're going to the museum today.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How long will it take by subway?” with “It'll take about 20 minutes.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name ways to travel: take the subway, take a taxi, take the tram, ride a motorcycle",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How does he get to work?” with “He takes a bus to work.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Convenient T-money Card” and explain how the card helps people in Korea",
+     "ccss": [
+      "RI.5.2",
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Getting Ready",
+   "summary": "Conversation: Do you need help with the invitation cards? / It's OK. We can do it ourselves. / How many friends are you going to invite? / About ten. Will that be OK, Mom? / No problem. / You're invited to my birthday party. / It's at three o'clock this Saturday.\nWords: bake a cake, decorate the room, go shopping for a gift, make a banner, order pizza, wrap the gift\nGrammar: She has baked the cake already. / They haven't ordered pizza yet. / Has he wrapped the gift yet? / Yes, he has. No, he hasn't.\nThe World around Us: Making a Birthday Card",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Do you need help with the invitation cards? / It's OK. We can do it ourselves. / How many friends are you going to invite? / About ten. Will that be OK, Mom? / No problem. / You're invited to my birthday party. / It's at three o'clock this Saturday."
+    },
+    {
+     "title": "Words",
+     "notes": "bake a cake, decorate the room, go shopping for a gift, make a banner, order pizza, wrap the gift"
+    },
+    {
+     "title": "Grammar",
+     "notes": "She has baked the cake already. / They haven't ordered pizza yet. / Has he wrapped the gift yet? / Yes, he has. No, he hasn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Making a Birthday Card"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation about birthday invitations that begins “Do you need help with the invitation cards?”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name party jobs: bake a cake, make a banner, order pizza, wrap the gift",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what is done and not done yet, like “She has baked the cake already.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Has he wrapped the gift yet?” with “Yes, he has” or “No, he hasn't”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Making a Birthday Card” and follow the steps in order",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · The Sumerians' wheel",
+   "summary": "History: The Sumerians' wheel\nProject: Write a report about where wheels are used.\nWriting Style: Sentence Fragments",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "History",
+     "notes": "History: The Sumerians' wheel"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about where wheels are used."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Sentence Fragments"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about the Sumerians and the wheel they made long ago",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name things with wheels and tell how a wheel makes work easier",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write a report about where wheels are used",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SS.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "fix unfinished sentences by adding the missing part to make a whole sentence",
+     "ccss": [
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · How Much Food",
+   "summary": "Conversation: I'm getting hungry. / Let's make sandwiches. / I can make peanut butter and jelly sandwiches. / Is there any peanut butter? / Yes, and here's some jelly too. / We have some bread here. / Now we're all set.\nWords: a lot of: cookies, sandwiches, ice cream, lemonade; a few: potato chips, hot dogs; a little: pizza, fruit\nGrammar: How many sandwiches are there? / There are (a lot of / a few) sandwiches. / How much ice cream is there? / There is (a lot of / a little) ice cream. / Are there a lot of cookies? Is there a lot of fruit?\nThe World around Us: All-Fruit Popsicles (Spain)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I'm getting hungry. / Let's make sandwiches. / I can make peanut butter and jelly sandwiches. / Is there any peanut butter? / Yes, and here's some jelly too. / We have some bread here. / Now we're all set."
+    },
+    {
+     "title": "Words",
+     "notes": "a lot of: cookies, sandwiches, ice cream, lemonade; a few: potato chips, hot dogs; a little: pizza, fruit"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How many sandwiches are there? / There are (a lot of / a few) sandwiches. / How much ice cream is there? / There is (a lot of / a little) ice cream. / Are there a lot of cookies? Is there a lot of fruit?"
+    },
+    {
+     "title": "The World around Us",
+     "notes": "All-Fruit Popsicles (Spain)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the sandwich-making conversation that begins “I'm getting hungry.”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "use a lot of, a few and a little with foods like cookies, hot dogs and fruit",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How many sandwiches are there?” and “How much ice cream is there?”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell when to use how many, like cookies, and how much, like ice cream",
+     "ccss": [
+      "L.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "read “All-Fruit Popsicles” from Spain and tell what they learned about the popsicles",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Five Senses",
+   "summary": "Conversation: These are new sneakers, aren't they? / Yes. How did you know? / I can see them. They look new. / Your mom is making chili, isn't she? / Yes. How did you know? / I can smell it. It smells good. / It's raining outside, isn't it? / Yes. I can hear it too.\nWords: look, smell, sound, taste, feel, pretty, terrible, good, awful, wonderful, loud, delicious, sweet, soft, hard\nGrammar: How does the music sound? / It sounds wonderful. / How do the flowers smell? / They smell good.\nThe World around Us: My Dad's Bakery (France)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "These are new sneakers, aren't they? / Yes. How did you know? / I can see them. They look new. / Your mom is making chili, isn't she? / Yes. How did you know? / I can smell it. It smells good. / It's raining outside, isn't it? / Yes. I can hear it too."
+    },
+    {
+     "title": "Words",
+     "notes": "look, smell, sound, taste, feel, pretty, terrible, good, awful, wonderful, loud, delicious, sweet, soft, hard"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How does the music sound? / It sounds wonderful. / How do the flowers smell? / They smell good."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "My Dad's Bakery (France)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation with check questions like “These are new sneakers, aren't they?”",
+     "ccss": [
+      "SL.5.1",
+      "SL.5.6"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive"
+     ]
+    },
+    {
+     "text": "name sense and describing words: smell, taste, sound, delicious, awful, soft",
+     "ccss": [
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How does the music sound?” with “It sounds wonderful.”",
+     "ccss": [
+      "L.5.1",
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-SI.4-5.Expressive",
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe a food with look, smell and taste, like “It smells good.”",
+     "ccss": [
+      "SL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “My Dad's Bakery” from France and tell which senses the writer uses",
+     "ccss": [
+      "RI.5.1",
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · The five senses and the brain",
+   "summary": "Science: The five senses and the brain\nProject: Write a report about different foods and tastes.\nWriting Style: Questions",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Science",
+     "notes": "Science: The five senses and the brain"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about different foods and tastes."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Questions"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn how the five senses send messages to the brain",
+     "ccss": [
+      "RI.5.3"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about different foods and tastes, like sweet, salty and sour",
+     "ccss": [
+      "W.5.2"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write questions that start with who, what, where or how and end with a question mark",
+     "ccss": [
+      "L.5.1",
+      "L.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which sense they use to learn about each food",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-SC.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

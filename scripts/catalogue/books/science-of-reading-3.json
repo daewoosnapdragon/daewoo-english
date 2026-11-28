@@ -1,0 +1,459 @@
+{
+  "series": "Science of Reading",
+  "level": "3",
+  "title": "Consonant Digraphs",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 3 Teacher Guide",
+  "units": [
+    {
+      "title": "sh",
+      "summary": "Lesson 5.1. A digraph is two consonants that together make one sound; sh, th and ch are sometimes called the \"h brothers\". Word lists use short vowels only. Word endings -ash, -ish, -ush. High-frequency words: she, push (the e in she and the u in push are irregular for now, so mark a heart). Pacing: about a week per digraph in kindergarten, 2 to 3 days in first grade.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear /sh/ at the start and end of words."
+        },
+        {
+          "title": "Model",
+          "notes": "Build words with a sh tile; sound boxes show two letters for one sound."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list; dictation and sentence reading."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "she, push; heart over the irregular letter."
+        },
+        {
+          "title": "More practice",
+          "notes": "Sort words by ending -ash, -ish, -ush; dictation, e.g. \"A fish is on a dish\"."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say that the letters sh together make one sound",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like ship, shop, fish, dish and rush",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with sh, such as shed, shin, gash and wish",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words she and push",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: sh"
+      ]
+    },
+    {
+      "title": "th",
+      "summary": "Lesson 5.2. th is made by resting the teeth on the tongue and has two sounds: voiced (this, that, breathe, felt in the throat) and unvoiced (with, thumb, path). Most high-frequency function words that start with th are voiced. Word list uses short vowels only. High-frequency words: the, that, this, then, with, than, them, both.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Phonemic awareness and background",
+          "notes": "Voiced and unvoiced th; hand on the throat."
+        },
+        {
+          "title": "Model",
+          "notes": "Build words with the th tile and ask which sound it makes."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list; dictation and sentence reading."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "the (heart over the e if it sounds like /ŭ/), that, this, then, with."
+        },
+        {
+          "title": "More practice",
+          "notes": "Sort voiced and unvoiced th; sort by where th sits in the word."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "tell the voiced th in this and that from the unvoiced th in thin and path",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like thin, bath, with, then and them",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with th, such as thud, math and moth",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words the, that, this and with",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: th"
+      ]
+    },
+    {
+      "title": "ch",
+      "summary": "Lesson 5.3. ch is a stopping sound; use a chopping arm motion. It is the unvoiced partner of /j/, so the two are often confused. Word list uses short vowels only. Dictation and sentence reading are included.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "RF.K.3C"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Review",
+          "notes": "Build thin, that and ship and say which th sound is used."
+        },
+        {
+          "title": "Model",
+          "notes": "Build words with the ch tile; ch as a stopping sound with a chopping motion."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list; dictation and sentence reading."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Taught with the encoding steps and practised on note cards."
+        },
+        {
+          "title": "More practice",
+          "notes": "Dictation; read sentences, circle the subject and underline the predicate."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear the stopping /ch/ sound at the start and end of words",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like chip, chop, chat, much and rich",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with ch, such as chin, chill, such and inch",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "tell /ch/ in chin from /j/ in jam",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: ch"
+      ]
+    },
+    {
+      "title": "wh",
+      "summary": "Mini-lesson 5.4. For most speakers wh sounds the same as w; long ago it sounded like /hw/. Only a few words can be read at this point (when, what, whip, which, whisk, whiff), so introduce it briefly and point out new wh words as they come. Most question words (who, what, when, where, why) use wh. High-frequency words: what, which (what is irregular: the a spells /ŭ/).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Teaching skill",
+          "notes": "Some sounds use more than one letter; wh can also represent /w/."
+        },
+        {
+          "title": "Model",
+          "notes": "Build whip, whisk and whiff with the wh tile; compare w and wh if you hear a difference."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "what and which; mark a heart over the irregular letter."
+        },
+        {
+          "title": "Dictation and sentence reading",
+          "notes": "\"What is that?\" \"Which box is his?\""
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read wh words like when, whip, whisk and whiff",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "know that wh and w can spell the same /w/ sound",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read the question words what, when and which",
+          "ccss": [
+            "RF.1.3A",
+            "RF.K.3C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: wh"
+      ]
+    },
+    {
+      "title": "Review all digraphs",
+      "summary": "Lesson 5.5. Read and spell sh, th, ch and wh words together, with practice to automaticity. Irregular high-frequency words: what, the. Dictation sentences include: A bad gash is on my shin. A fish is on a dish. I wish I had a ship. I shut the shed. That is a thin kid. I can dip a chip. I am on a path.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Mixed decoding and encoding",
+          "notes": "Words with sh, th, ch and wh, sorted by digraph."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "what, the; heart over the irregular letter."
+        },
+        {
+          "title": "Dictation",
+          "notes": "Say the sentence, count the words, write it, correct."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words that mix sh, th, ch and wh without stopping to work them out",
+          "ccss": [
+            "RF.1.3A"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "write dictated sentences such as \"I wish I had a ship\"",
+          "ccss": [
+            "RF.1.3A"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "sort words by the digraph they contain",
+          "ccss": [
+            "RF.1.3A"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: Review all"
+      ]
+    },
+    {
+      "title": "Suffix -es",
+      "summary": "Lesson 6. When a base word ends in /s/, /z/, /sh/ or /ch/ (dish, box, buzz, lunch), the suffix -es is used instead of -s, because /s/ and /z/ cannot follow those sounds; the extra vowel sound is needed to say the word (dishes). Spelling of doubled letters is taught later (lesson 9).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3F",
+        "L.1.4C"
+      ],
+      "skill_tags": [
+        "suffixes",
+        "plurals"
+      ],
+      "lessons": [
+        {
+          "title": "Introduce",
+          "notes": "Build dish, try -s (\"dishz\"), then use the purple -es suffix to make dishes."
+        },
+        {
+          "title": "Listen for the extra vowel sound",
+          "notes": "Say words with the base and suffix separated."
+        },
+        {
+          "title": "Sort",
+          "notes": "Words that take -s and words that take -es."
+        },
+        {
+          "title": "Practice",
+          "notes": "Read and spell plural nouns and verbs with -es."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "add -es to words that end in sh, ch, x and s, like dishes and boxes",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "explain why dishz cannot be said and dishes can",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like wishes, catches and fixes",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Morphology: Suffix -es"
+      ]
+    }
+  ]
+}

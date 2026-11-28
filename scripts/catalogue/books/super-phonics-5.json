@@ -1,0 +1,714 @@
+{
+ "series": "Super Phonics",
+ "level": "5",
+ "title": "",
+ "strand": "phonics",
+ "kind": "sequence",
+ "source": "Super Phonics 3rd ed. Teacher's Guide, Book 5",
+ "units": [
+  {
+   "title": "Unit 1 · ai, ay",
+   "summary": "Key words: rain, mail, tail, nail, train, snail, hay, pay, gray, tray, clay, play. Sight words: sky, when, let’s.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "vowel teams",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with ai and ay, like rain, mail and train",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like snail, hay and tray",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings ai and ay apart by where they come in a word",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like pay, gray, clay and play",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the ai and ay words and the sight words sky, when and let’s",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 4 · Audio 01–02"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 5"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 05"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 06–07"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 08–09"
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · ee, ea",
+   "summary": "Key words: bee, tree, seed, green, teeth, sleep, tea, sea, eat, seal, leaf, peach. Sight words: grow, fall, by.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "vowel teams",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with ee and ea, like bee, tree and green",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like teeth, sleep and seed",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings ee and ea apart by where they come in a word",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like tea, seal, leaf and peach",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the ee and ea words and the sight words grow, fall and by",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 12 · Audio 10"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 13 · Audio 11"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 14"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 15–16"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 17–18"
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · oa, ow",
+   "summary": "Key words: boat, coat, goat, road, toad, soap, bowl, blow, crow, row, snow, yellow. Sight words: where, want, then.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "vowel teams",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with oa and ow, like boat, coat and road",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like goat, toad and soap",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings oa and ow apart by where they come in a word",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like bowl, blow, snow and yellow",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the oa and ow words and the sight words where, want and then",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 20 · Audio 19"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 21 · Audio 20"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 23"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 24–25"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 26–27"
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · oo, u",
+   "summary": "Key words: moon, pool, spoon, zoo, food, broom, bush, put, pull, push. Sight words: walk, goes, out.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "vowel teams",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with oo and u, like moon, pool and zoo",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like spoon, food and broom",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings oo and u apart by the sound they make, like moon and put",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like bush, put, pull and push",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the oo and u words and the sight words walk, goes and out",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 28 · Audio 28"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 29 · Audio 29"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 32"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 33–34"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 35–36"
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · ow, ou",
+   "summary": "Key words: clown, crown, frown, owl, cow, brown, cloud, loud, house, mouse, round, mouth. Sight words: below, will, ask.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "vowel teams",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with ow and ou, like clown, owl and cow",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like cloud, house and mouse",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings ow and ou apart by where they come in a word",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like crown, brown, round and mouth",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the ow and ou words and the sight words below, will and ask",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 42 · Audio 40"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 43 · Audio 41–43"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 44"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 45–46"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 47–48"
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · oi, oy",
+   "summary": "Key words: boil, coin, foil, oil, point, soil, boy, toy, soy, joy. Sight words: fill, mine, away.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "vowel teams",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with oi and oy, like coin, oil and point",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like boil, soil and foil",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings oi and oy apart by where they come in a word",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like boy, toy, soy and joy",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the oi and oy words and the sight words fill, mine and away",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 50 · Audio 49"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 51 · Audio 50–51"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 53"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 54–55"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 56–57"
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · ar, or",
+   "summary": "Key words: card, jar, arm, farm, park, star, corn, horn, fork, horse, shore, store. Sight words: bright, sleep, above.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "r-controlled vowels",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with ar and or, like card, jar and farm",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like park, star and arm",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the two spellings ar and or apart by the sound they make, like card and corn",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like corn, fork, horse and store",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the ar and or words and the sight words bright, sleep and above",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 58 · Audio 58"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 59 · Audio 59–61"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 62"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 63–64"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 65–66"
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · er, ir, ur",
+   "summary": "Key words: singer, teacher, farmer, flower, bird, girl, shirt, first, nurse, purse, church, turtle. Sight words: water, give, happy.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.2.3B",
+    "RF.2.3F"
+   ],
+   "skill_tags": [
+    "r-controlled vowels",
+    "spelling patterns",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read words with er, ir and ur, like teacher, farmer and singer",
+     "ccss": [
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words like bird, girl, shirt and first",
+     "ccss": [
+      "RF.2.3B",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the three spellings er, ir and ur apart by looking at how the rest of the word is spelled",
+     "ccss": [
+      "RF.2.3B",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read, match and write words like nurse, purse, church and turtle",
+     "ccss": [
+      "RF.2.3B",
+      "L.2.2D"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read a short story and find the er, ir and ur words and the sight words water, give and happy",
+     "ccss": [
+      "RF.2.3F",
+      "RF.2.4A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 66 · Audio 67"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 67 · Audio 68–70"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "Audio 71"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 72–73"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 74–75"
+    }
+   ]
+  }
+ ]
+}

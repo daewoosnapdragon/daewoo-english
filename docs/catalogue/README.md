@@ -1,5 +1,16 @@
 # Catalogue paste files
 
+## Update the books (28 Nov 2026): the one way books are loaded now
+
+Every book lives as one file in `scripts/catalogue/books/` (format in `FORMAT.md`), written only from the publisher's materials: Into Reading, Hand in Hand, Easy/Rich/Wonderskills Reading from their seeds via `convert.py`; Super Phonics 1–5 from the 3rd-edition teacher's guides; Science of Reading Levels 1–9 from each level's Teacher Guide (nine books; the old single book is retired once its classes move). Each unit carries its own objective list; lessons carry no objectives.
+
+1. `python3 -I scripts/catalogue/books/check.py scripts/catalogue/books/*.json` (add `--sor-old docs/catalogue/science-of-reading.txt` for the Science of Reading files).
+2. `python3 -I scripts/catalogue/books/build.py` writes `src/data/catalogue.json`.
+3. In Supabase, once: `supabase/migration-curriculum-book-update.sql`.
+4. In the app: Curriculum → Bookshelf → Update the books → Update all. Each book is swapped in one transaction; classes keep their lengths, done ticks, files and lesson-plan links on the matching unit, and the page lists any old unit with no match before anything changes. A book already loaded at its file's version shows "Up to date", so fixing a file and updating again is safe.
+
+Not rebuilt: Grammar Workshop, and the placeholders without a syllabus (Easy Reading 1 Plus, 2 Plus, 3 Plus; Rich Reading Basic 2). The older sections below describe how the seeds were made.
+
 Text files in the shape the Bookshelf page reads (Curriculum → Curriculum map → Bookshelf → open the book → Draft units and lessons from the contents → paste → Read the lines → Save as suggested). One file per book. Everything lands marked "Suggested by Claude" until admin confirms it.
 
 ## Into Reading 1 to 4

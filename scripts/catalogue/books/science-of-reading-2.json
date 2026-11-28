@@ -1,0 +1,750 @@
+{
+  "series": "Science of Reading",
+  "level": "2",
+  "title": "CVC - Short Vowels",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 2 Teacher Guide",
+  "units": [
+    {
+      "title": "Consonants and vowels",
+      "summary": "Mini-lesson 1. Review what a syllable is (a word part with one vowel sound; count by clapping), then vowels (a, e, i, o, u) against consonants. Every syllable must have a vowel sound. For now students focus on the short vowel sounds: apple, edge, igloo, otter, umbrella.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.2B",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "vowels and consonants",
+        "syllables"
+      ],
+      "lessons": [
+        {
+          "title": "Count syllables",
+          "notes": "Say a word, repeat it, clap the syllables, and ask how many vowel sounds it has: window, step, crocodile, basket."
+        },
+        {
+          "title": "Review vowels and consonants",
+          "notes": "Letter tiles labelled C and V; vowel sounds are not blocked by the lips, tongue or teeth."
+        },
+        {
+          "title": "Short vowel sounds",
+          "notes": "/ă/ apple, /ĕ/ edge, /ĭ/ igloo, /ŏ/ otter, /ŭ/ umbrella."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "clap the syllables in words like window, step and basket",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "name the vowels a, e, i, o, u and tell them from consonants",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "say that every syllable needs one vowel sound",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Closed syllables",
+      "summary": "Mini-lesson 2. A closed syllable ends with a consonant, which closes in the vowel so it says its short sound (sip, camp). A syllable that ends in a vowel, like he, is not closed; that comes later. Students build words with letter tiles and say whether each is closed and how they know.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "RF.1.2C"
+      ],
+      "skill_tags": [
+        "closed syllables",
+        "short vowels"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Say a word, repeat it, then say its vowel sound: sad, rip."
+        },
+        {
+          "title": "Closed syllable poster",
+          "notes": "Consonants are blue magnets, vowels yellow; the consonant closes in the vowel."
+        },
+        {
+          "title": "Build and decide",
+          "notes": "Build sip, camp and he; is it closed and what will the vowel say."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Build further words, label C and V, and say closed or not closed; this is identifying, not reading."
+        },
+        {
+          "title": "Finger-spell and map",
+          "notes": "Segment map as /m/ /ă/ /p/, push three boxes or magnets, match a letter to each sound."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "tell a closed syllable from a syllable that ends in a vowel",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "explain that the consonant closes in the vowel so it says a short sound",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "break a word like map into three sounds and match each to a letter",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Short a",
+      "summary": "CVC words with short a, plus the \"whiny a\" before n and m (jam, can, van, ham). Word endings: -at, -an, -ap, -ag, -ad, -am, -ab (also -ax). High-frequency words: at, am, an, can, man, had; as, has. Mouth wide open for /ă/.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.3B",
+        "RF.1.2C",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "short a",
+        "cvc",
+        "word families"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Listen for the /ă/ sound in spoken words and give a thumbs up; mouth position and a key-word chant."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "Letter tile and key-word chant: apple, apple, /ă/, /ă/, /ă/."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Stretch the word, tap the sounds, match each sound to a letter; is it a closed syllable and what does the vowel say."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Touch and say, blending sound by sound; successive blending and backward decoding for readers who struggle."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list, then dictation of one or two sentences."
+        },
+        {
+          "title": "Common word endings",
+          "notes": "-at, -an, -ap, -ag, -ad, -am, -ab."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: at, am, an, can, man, had. New learning: as, has (s spells /z/ at the end of a word)"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts, onset-rime match, word chains, reading sentences; independent practice in the student workbook."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear the short a sound in words like cat, fan, bag and map",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like sad, rat, jam and tag by tapping out the sounds",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read words in the -at, -an and -ap families by blending",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words at, am, an, can, had and has",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · CVC & VC Words: Short a"
+      ]
+    },
+    {
+      "title": "Short i",
+      "summary": "CVC words with short i. Word endings: -ip, -ig, -in, -ib, -id (word families it, ig, in, ip, ix, ib, id). High-frequency words: in, if, it, big, did, him; is, his.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.3B",
+        "RF.1.2C",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "short i",
+        "cvc",
+        "word families"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Listen for the /ĭ/ sound in spoken words and give a thumbs up; mouth position and a key-word chant."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "Letter tile and key-word chant: igloo."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Stretch the word, tap the sounds, match each sound to a letter; is it a closed syllable and what does the vowel say."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Touch and say, blending sound by sound; successive blending and backward decoding for readers who struggle."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list, then dictation of one or two sentences."
+        },
+        {
+          "title": "Common word endings",
+          "notes": "-ip, -ig, -in, -ib, -id."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: in, if, it, big, did, him. Review new learning: is, his (s spells /z/)"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts, onset-rime match, word chains, reading sentences; independent practice in the student workbook."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear the short i sound in words like pig, sit, lip and bin",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like zip, dig, fin and kid by matching sounds to letters",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read words in the -ig, -in, -ip and -id families",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words in, if, it, big, did, him, is and his",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · CVC & VC Words: Short i"
+      ]
+    },
+    {
+      "title": "Short o",
+      "summary": "CVC words with short o. Word families: ot, og, ox, od, ob, op. High-frequency words: on, got, not. Word sorts by word ending and onset-rime matching.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.3B",
+        "RF.1.2C",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "short o",
+        "cvc",
+        "word families"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Listen for the /ŏ/ sound in spoken words and give a thumbs up; mouth position and a key-word chant."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "Letter tile and key-word chant: otter."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Stretch the word, tap the sounds, match each sound to a letter; is it a closed syllable and what does the vowel say."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Touch and say, blending sound by sound; successive blending and backward decoding for readers who struggle."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list, then dictation of one or two sentences."
+        },
+        {
+          "title": "Common word endings",
+          "notes": "-ot, -og, -ox, -od, -ob, -op."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: on, got, not"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts, onset-rime match, word chains, reading sentences; independent practice in the student workbook."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear the short o sound in words like dog, hop, box and pot",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like log, mop, rod and fox by tapping out the sounds",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read words in the -ot, -og, -op and -ob families",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words on, got and not",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · CVC & VC Words: Short o"
+      ]
+    },
+    {
+      "title": "Short u",
+      "summary": "CVC words with short u. Word families: ut, ug, up, un, ub, ud. High-frequency words: up, us, but, run.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.3B",
+        "RF.1.2C",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "short u",
+        "cvc",
+        "word families"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Listen for the /ŭ/ sound in spoken words and give a thumbs up; mouth position and a key-word chant."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "Letter tile and key-word chant: umbrella."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Stretch the word, tap the sounds, match each sound to a letter; is it a closed syllable and what does the vowel say."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Touch and say, blending sound by sound; successive blending and backward decoding for readers who struggle."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list, then dictation of one or two sentences."
+        },
+        {
+          "title": "Common word endings",
+          "notes": "-ut, -ug, -up, -un, -ub, -ud."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: up, us, but, run"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts, onset-rime match, word chains, reading sentences; independent practice in the student workbook."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear the short u sound in words like bug, cup, sun and tub",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like hug, nut, bun and mud by matching sounds to letters",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read words in the -ug, -un, -ut and -up families",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words up, us, but and run",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · CVC & VC Words: Short u"
+      ]
+    },
+    {
+      "title": "Short e",
+      "summary": "CVC words with short e. Word families: eg, et, en, ed. High-frequency words: let, get, red, yes.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.3B",
+        "RF.1.2C",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "short e",
+        "cvc",
+        "word families"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Listen for the /ĕ/ sound in spoken words and give a thumbs up; mouth position and a key-word chant."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "Letter tile and key-word chant: Eddie / edge."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Stretch the word, tap the sounds, match each sound to a letter; is it a closed syllable and what does the vowel say."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Touch and say, blending sound by sound; successive blending and backward decoding for readers who struggle."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list, then dictation of one or two sentences."
+        },
+        {
+          "title": "Common word endings",
+          "notes": "-eg, -et, -en, -ed."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: let, get, red, yes"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts, onset-rime match, word chains, reading sentences; independent practice in the student workbook."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear the short e sound in words like pen, bed, net and leg",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like hen, jet, red and peg by tapping out the sounds",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read words in the -et, -en, -ed and -eg families",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words let, get, red and yes",
+          "ccss": [
+            "RF.K.3B",
+            "RF.1.2C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · CVC & VC Words: Short e"
+      ]
+    },
+    {
+      "title": "All short vowels together",
+      "summary": "Lesson 3.6. No new teaching: students read and spell CVC words and sentences with all five short vowels mixed. Each day: review the concepts, one phonemic awareness drill (isolate the vowel, segment, add, delete or change a sound), guided decoding and encoding, then independent practice. Irregular high-frequency words are taught by marking the unexpected letter with a heart.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "RF.1.4B"
+      ],
+      "skill_tags": [
+        "cvc",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness drills",
+          "notes": "Isolate the vowel sound, segment words with manipulatives, or add, delete and change a sound (cap to map)."
+        },
+        {
+          "title": "Mixed decoding and encoding",
+          "notes": "Guided practice with all vowels together; independent workbook pages and decodable sentences."
+        },
+        {
+          "title": "Irregular high-frequency words",
+          "notes": "Say, use in a sentence, break into sounds, mark the unexpected letter with a heart."
+        },
+        {
+          "title": "More activities",
+          "notes": "Roll and Read, Which Doesn't Belong, word sorts."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read and spell words that mix all five short vowels",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "say which vowel sound they hear in a word like fan, pig, hot, bug or bed",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "change one sound in a word to make a new word, like cap to map",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read short sentences smoothly and accurately",
+          "ccss": [
+            "RF.1.3B",
+            "RF.1.4B"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · CVC Words: All Short Vowels Together"
+      ]
+    },
+    {
+      "title": "Suffix -s",
+      "summary": "Lessons 4A and 4B. A suffix is added to the end of a base word. -s on a noun makes it more than one (cat, cats); -s on an action word shows it is happening now (run, runs). The suffix -s says /s/ or /z/ (cats, dogs).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3F",
+        "L.1.4C"
+      ],
+      "skill_tags": [
+        "suffixes",
+        "plurals"
+      ],
+      "lessons": [
+        {
+          "title": "Suffix -s on nouns",
+          "notes": "Build cat and cats with a purple -s magnet; base word and suffix; listen for /s/ or /z/: bugs, pets, pens, cups, mugs, cubs, maps."
+        },
+        {
+          "title": "Suffix -s on verbs",
+          "notes": "Run and runs, jog and jogs; use in sentences and listen for the suffix in fits, hums, fills, subs, pats."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "name the base word and the suffix in words like cats and runs",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "add -s to make a word mean more than one, as in cat and cats",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "hear that -s can sound like /s/ or /z/ in bugs and pets",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "use -s on an action word so the sentence sounds right, such as she runs",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Morphology: Suffix -s"
+      ]
+    }
+  ]
+}

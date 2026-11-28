@@ -1,0 +1,691 @@
+{
+ "series": "Rich Reading",
+ "level": "Intermediate 2",
+ "title": "",
+ "strand": "reading",
+ "color": "teal",
+ "kind": "sequence",
+ "source": "WonderSkills Rich Reading Intermediate 2 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · Stay Out of Trouble!",
+   "summary": "Theme: Rules. Realistic Fiction · Characters, Setting, Events.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.2"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.3"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "describe the characters, the setting and the main events of Stay Out of Trouble!",
+     "ccss": [
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about rules, like rule, follow, safe, trouble and fair",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Stay Out of Trouble! with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write one rule they think is important and why",
+     "ccss": [
+      "W.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · From Sheep to Wool",
+   "summary": "Theme: Materials. Expository Text · Author’s Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote From Sheep to Wool and what readers should learn",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use wool words, like sheep, wool, shear, spin and yarn",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of From Sheep to Wool with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain the steps that turn sheep's wool into yarn or clothes",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Saving a Bird",
+   "summary": "Theme: Wildlife. Realistic Fiction · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of Saving a Bird in order, using first, next and finally",
+     "ccss": [
+      "RL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about wild animals, like wild, hurt, nest, rescue and care",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Saving a Bird with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they should do if they find a hurt bird",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Alligators",
+   "summary": "Theme: Alligators. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about alligators using key details from the text",
+     "ccss": [
+      "RI.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use alligator words, like reptile, swamp, scales, jaws and teeth",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Alligators with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write three facts about alligators they learned",
+     "ccss": [
+      "W.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · The Old Chest",
+   "summary": "Theme: Family Treasures. Realistic Fiction · Plot.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the plot of The Old Chest: the problem, the main events and how it ends",
+     "ccss": [
+      "RL.2.5",
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about family treasures, like chest, old, special and remember",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of The Old Chest with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "describe a special object in their family and why it matters",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · What Is a Yurt?",
+   "summary": "Theme: Special Homes. Expository Text · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of What Is a Yurt? and the key details that support it",
+     "ccss": [
+      "RI.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about homes, like yurt, tent, round, move and warm",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of What Is a Yurt? with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare a yurt with the home they live in",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Ray Saves the Play!",
+   "summary": "Theme: Problem-solving. Realistic Fiction · Plot.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the plot of Ray Saves the Play!: the problem, the main events and how it ends",
+     "ccss": [
+      "RL.2.5",
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use theater words, like play, stage, costume, actor and audience",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Ray Saves the Play! with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a problem they solved and how they solved it",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Biggest Bird, Smallest Bird",
+   "summary": "Theme: Birds. Expository Text · Compare and Contrast.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "compare the biggest bird and the smallest bird: how they are alike and different",
+     "ccss": [
+      "RI.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use size words, like big, bigger, biggest, small and smallest",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Biggest Bird, Smallest Bird with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which bird they would like to see and why",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Maria’s First Flight",
+   "summary": "Theme: Air Travel. Realistic Fiction · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell what happens in Maria’s First Flight and why, using because",
+     "ccss": [
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use flying words, like airport, pilot, ticket, seat and take off",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Maria’s First Flight with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a trip they took or would like to take",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · The Moon",
+   "summary": "Theme: Space. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about the moon using key details from The Moon",
+     "ccss": [
+      "RI.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use moon words, like moon, crater, shape, orbit and light",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of The Moon with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write two facts about the moon and one question they still have",
+     "ccss": [
+      "W.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Cali’s Kittens",
+   "summary": "Theme: Baby Animals. Realistic Fiction · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of Cali’s Kittens in order, using first, next and finally",
+     "ccss": [
+      "RL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use baby animal words, like kitten, puppy, newborn and grow",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Cali’s Kittens with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how they would care for a baby animal",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Kid Inventor",
+   "summary": "Theme: Kid Inventions. Expository Text · Author’s Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote Kid Inventor and what they want readers to think",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use invention words, like invent, inventor, idea, problem and solve",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Kid Inventor with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe an invention they would make to solve a problem",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

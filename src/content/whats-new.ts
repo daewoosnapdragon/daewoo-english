@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'books-from-publishers', date: '2026-11-30', title: 'Curriculum: every book from the publisher',
+    body: 'Every book’s units, lessons and Students will lines now come from the publisher’s own guides and syllabi, not from old lesson plans: Hand in Hand, Rich Reading, Easy Reading, Super Phonics 1 to 5, and Science of Reading as nine level books. Click a unit on Class plans to see its objectives. Your class keeps its place on each book.',
+    path: '/curriculum#plans', guide: 'bookshelf',
+  },
+  {
     id: 'class-plans-drag', date: '2026-11-30', title: 'Curriculum: drag a unit on your class plan',
     body: 'You can now give a unit more or less time on Curriculum → Class plans: drag the right end of its bar and the units after it move along. It saves when you let go, and the Year plan changes with it, because they are the same plan. Click a unit to see its objectives, lessons and files. The Bookshelf no longer asks anyone to confirm anything.',
     path: '/curriculum#plans', guide: 'bookshelf',

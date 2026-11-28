@@ -1,0 +1,691 @@
+{
+ "series": "Wonderskills Reading",
+ "level": "Intermediate 1",
+ "title": "",
+ "strand": "reading",
+ "color": "berry",
+ "kind": "sequence",
+ "source": "Wonderskills Reading Intermediate 1 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · Aunt Lucy Is the Best!",
+   "summary": "Theme: We are Family. Realistic Fiction · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer who, what, where and why questions about Aunt Lucy Is the Best!",
+     "ccss": [
+      "RL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use family words, like aunt, uncle, cousin, relative and visit",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Aunt Lucy Is the Best! with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write about a family member who is special to them and why",
+     "ccss": [
+      "W.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Little Flap Learns to Fly",
+   "summary": "Theme: Friends Help Friends. Fantasy · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer who, what, where and why questions about Little Flap Learns to Fly",
+     "ccss": [
+      "RL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use flying words, like flap, wings, practice, try and fly",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Little Flap Learns to Fly with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a time a friend helped them learn something new",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Family Festivals",
+   "summary": "Theme: Families Around the World. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about how families around the world celebrate festivals",
+     "ccss": [
+      "RI.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use festival words, like festival, celebrate, tradition and costume",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Family Festivals with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe a festival their family celebrates",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Finding Cal",
+   "summary": "Theme: Pets Are Our Friends. Realistic Fiction · Character, Setting, Events.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "describe the characters, the setting and the main events of Finding Cal",
+     "ccss": [
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about lost pets, like lost, search, find and worried",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Finding Cal with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they would do if their pet went missing",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Jack’s Unusual Pet",
+   "summary": "Theme: Animals Need Care. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about how to care for an unusual pet",
+     "ccss": [
+      "RI.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use pet care words, like unusual, care, feed, cage and healthy",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Jack’s Unusual Pet with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write about an unusual pet they would like and how to care for it",
+     "ccss": [
+      "W.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · A Busy Family",
+   "summary": "Theme: Families Working Together. Expository Text · Main Topic and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main topic of A Busy Family and the key details about it",
+     "ccss": [
+      "RI.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about family jobs, like chores, schedule, share and busy",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A Busy Family with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell how their family works together at home",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · What Animals Give Us",
+   "summary": "Theme: Animals in Our Lives. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about what people get from animals",
+     "ccss": [
+      "RI.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words for things animals give us, like milk, eggs, wool and honey",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of What Animals Give Us with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain why people should take care of the animals that help us",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · A Visit to the Desert",
+   "summary": "Theme: Animal Survival. Realistic Fiction · Plot.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the plot of A Visit to the Desert: the problem, the main events and how it ends",
+     "ccss": [
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use desert survival words, like desert, cactus, shade, survive and dry",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A Visit to the Desert with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "explain how one desert animal survives the heat",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · The Boy Who Cried Wolf",
+   "summary": "Theme: Animals in Stories. Fable · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "explain what happens because the boy cries wolf, using because and so",
+     "ccss": [
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words from the fable, like shepherd, sheep, wolf, trick and lie",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of The Boy Who Cried Wolf with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell the lesson of The Boy Who Cried Wolf and why it matters",
+     "ccss": [
+      "RL.3.2",
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · A Prairie Guard Dog",
+   "summary": "Theme: Animal Homes. Expository Text · Main Topic and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main topic of A Prairie Guard Dog and key details about prairie dog homes",
+     "ccss": [
+      "RI.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about prairie dog homes, like burrow, tunnel, prairie and guard",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A Prairie Guard Dog with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare a prairie dog's home with another animal home they know",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Eagles and Eaglets",
+   "summary": "Theme: Baby Animals. Expository Text · Main Topic and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main topic of Eagles and Eaglets and key details about how eaglets grow",
+     "ccss": [
+      "RI.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use eagle words, like eaglet, nest, feathers, hatch and hunt",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Eagles and Eaglets with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write how eagle parents take care of their eaglets",
+     "ccss": [
+      "W.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Cute Animals",
+   "summary": "Theme: We Love Animals. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.26"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.27"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about the animals in Cute Animals using key details",
+     "ccss": [
+      "RI.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words to describe animals, like cute, fluffy, tiny and playful",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Cute Animals with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say which animal they think is the cutest and give reasons",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

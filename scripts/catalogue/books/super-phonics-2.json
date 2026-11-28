@@ -1,0 +1,754 @@
+{
+ "series": "Super Phonics",
+ "level": "2",
+ "title": "",
+ "strand": "phonics",
+ "kind": "sequence",
+ "source": "Super Phonics 3rd ed. Teacher's Guide, Book 2",
+ "units": [
+  {
+   "title": "Unit 1 · -at, -an, -ag",
+   "summary": "Key words: cat, mat, hat, fan, man, can, bag, tag, wag. Sight words: a, has.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short a",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -at, -an and -ag, like cat, fan and bag",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like mat, can and tag",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short a sound and write the missing letters in hat, man and wag",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words a and has in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -at, -an and -ag words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 6–7 · Audio 01"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 6–7 · Audio 02–05"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 06"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 07"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 08–09"
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · -ad, -ap, -am",
+   "summary": "Key words: sad, dad, mad, cap, map, nap, jam, ham, ram. Sight words: eat, my.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short a",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -ad, -ap and -am, like sad, cap and jam",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like dad, nap and ham",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short a sound and write the missing letters in mad, map and ram",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words eat and my in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -ad, -ap and -am words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 14–15 · Audio 01"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 14–15 · Audio 10–13"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 14"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 15"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 16–17"
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · -ig, -in, -it",
+   "summary": "Key words: pig, wig, dig, pin, win, fin, sit, hit. Sight words: the, is.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short i",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -ig, -in and -it, like pig, pin and sit",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like wig, win and hit",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short i sound and write the missing letters in dig, fin and sit",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words the and is in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -ig, -in and -it words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 22–23 · Audio 01, 18–19"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 23 · Audio 20–21"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 22"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 23"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 24–25"
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · -ip, -ix, -id",
+   "summary": "Key words: lip, rip, dip, six, mix, fix, kid, lid. Sight words: can, I.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short i",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -ip, -ix and -id, like lip, six and kid",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like rip, mix and lid",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short i sound and write the missing letters in dip, fix and kid",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words can and I in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -ip, -ix and -id words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 30–31 · Audio 01, 26–27"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 31 · Audio 28–29"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 30"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 31"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 32–33"
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · -op, -ox",
+   "summary": "Key words: hop, mop, pop, top, fox, box, ox. Sight words: we, see.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short o",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -op and -ox, like hop, top and fox",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like mop, pop and box",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short o sound and write the missing letters in pop, ox and box",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words we and see in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -op and -ox words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 44–45 · Audio 01"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 44–45 · Audio 37–40"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 41"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 42"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 43–44"
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · -og, -ot",
+   "summary": "Key words: dog, jog, log, fog, hot, pot, dot. Sight words: with, it.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short o",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -og and -ot, like dog, log and hot",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like jog, fog and pot",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short o sound and write the missing letters in dot, pot and dog",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words with and it in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -og and -ot words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 52–53 · Audio 01"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 52–53 · Audio 45–48"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 49"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 50"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 51–52"
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · -ug, -un, -ub, -ut",
+   "summary": "Key words: bug, hug, tug, sun, bun, run, tub, rub, nut, cut. Sight words: with, it.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short u",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -ug, -un, -ub and -ut, like bug, sun, tub and nut",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like hug, bun, rub and cut",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short u sound and write the missing letters in tug, run and cut",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words with and it in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -ug, -un, -ub and -ut words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 60–61 · Audio 01"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 60–61 · Audio 53–56"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 57"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 58"
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 59–60"
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · -et, -en, -ed, -eg",
+   "summary": "Key words: jet, net, wet, hen, ten, pen, bed, red, leg, egg. Sight words: on, no.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.3B",
+    "RF.1.3B"
+   ],
+   "skill_tags": [
+    "short e",
+    "word families",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell words that end in -et, -en, -ed and -eg, like jet, hen, bed and leg",
+     "ccss": [
+      "RF.K.3B",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "blend a beginning sound with the ending to read words like net, ten, red and egg",
+     "ccss": [
+      "RF.K.2D",
+      "RF.1.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for the short e sound and write the missing letters in wet, pen and bed",
+     "ccss": [
+      "RF.K.3B",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "read the sight words on and no in a short story and find them on the page",
+     "ccss": [
+      "RF.K.3C",
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story aloud with a partner using -et, -en, -ed and -eg words",
+     "ccss": [
+      "RF.1.4B",
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 68–69 · Audio 01"
+    },
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 68–69 · Audio 61–64"
+    },
+    {
+     "title": "Blend and circle",
+     "notes": ""
+    },
+    {
+     "title": "Say and circle",
+     "notes": "Audio 65"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sentence practice",
+     "notes": "Audio 67–68"
+    }
+   ]
+  }
+ ]
+}

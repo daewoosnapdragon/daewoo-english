@@ -1,0 +1,1321 @@
+{
+ "series": "Hand in Hand",
+ "level": "2",
+ "title": "",
+ "strand": "speaking",
+ "color": "green",
+ "kind": "sequence",
+ "source": "Hand in Hand 2nd ed. scope and sequence, Student Book 2",
+ "units": [
+  {
+   "title": "Unit 1 · Colorful Clothes",
+   "summary": "Conversation: Are these your books? / Yes, they are. / Are these your clothes? / Yes, they are. / What a mess!\nWords: a jacket, pants, a shirt, a skirt, shoes, a sweater\nGrammar: What's that? / It's a shirt. / What are those? / They're pants.\nThe World around Us: School Clothes (New Zealand, Brazil, France)\nEnglish Sounds: a and o",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Are these your books? / Yes, they are. / Are these your clothes? / Yes, they are. / What a mess!"
+    },
+    {
+     "title": "Words",
+     "notes": "a jacket, pants, a shirt, a skirt, shoes, a sweater"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What's that? / It's a shirt. / What are those? / They're pants."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "School Clothes (New Zealand, Brazil, France)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "a and o"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “Are these your books?” and answer “Yes, they are.” while tidying up",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name clothes: a jacket, pants, a shirt, a skirt, shoes and a sweater",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use “What's that?” for one thing and “What are those?” for more than one",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read School Clothes and compare what students wear to school in New Zealand, Brazil and France",
+     "ccss": [
+      "RI.2.1",
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "hear the difference between the a and o sounds and read words with each",
+     "ccss": [
+      "RF.2.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · At the Clothing Store",
+   "summary": "Conversation: How do I look? / It's too big. / How do I look? / It's too small. / How do I look? / You look great!\nWords: big, small, long, short, old, new\nGrammar: This skirt is short. / These pants are long. / Is this sweater old? / Yes, it is. No, it isn't.\nThe World around Us: People's Fashion (Italy)\nEnglish Sounds: e and u",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "How do I look? / It's too big. / How do I look? / It's too small. / How do I look? / You look great!"
+    },
+    {
+     "title": "Words",
+     "notes": "big, small, long, short, old, new"
+    },
+    {
+     "title": "Grammar",
+     "notes": "This skirt is short. / These pants are long. / Is this sweater old? / Yes, it is. No, it isn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "People's Fashion (Italy)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "e and u"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “How do I look?” and answer “It's too big.” or “You look great!”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "describe clothes with opposites: big and small, long and short, old and new",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe clothes with “This skirt is short.” and “These pants are long.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read People's Fashion, from Italy, and tell what people like to wear",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear the difference between the e and u sounds and read words with each",
+     "ccss": [
+      "RF.2.3A"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Traditional clothes",
+   "summary": "Social Studies: Traditional clothes\nProject: Make a poster of the traditional clothes of a country.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Traditional clothes"
+    },
+    {
+     "title": "Project",
+     "notes": "Make a poster of the traditional clothes of a country."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about traditional clothes that people wear in different countries",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "describe a traditional outfit using clothes words and colors",
+     "ccss": [
+      "SL.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster of the traditional clothes of one country",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "present their poster, naming the country and the clothes",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Lunch Time",
+   "summary": "Conversation: Oh, I'm hungry. / What's for lunch, Mom? / Tuna sandwiches. / Here you are. / Thank you, Mom.\nWords: chicken, fish, spaghetti, a sandwich, fried rice, salad\nGrammar: She likes/doesn't like salad. / They like/don't like salad. / Does he like fish? / Yes, he does. No, he doesn't.\nThe World around Us: It's Lunch Time! (USA, Japan)\nEnglish Sounds: h and j",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Oh, I'm hungry. / What's for lunch, Mom? / Tuna sandwiches. / Here you are. / Thank you, Mom."
+    },
+    {
+     "title": "Words",
+     "notes": "chicken, fish, spaghetti, a sandwich, fried rice, salad"
+    },
+    {
+     "title": "Grammar",
+     "notes": "She likes/doesn't like salad. / They like/don't like salad. / Does he like fish? / Yes, he does. No, he doesn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "It's Lunch Time! (USA, Japan)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "h and j"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “What's for lunch, Mom?” and answer “Tuna sandwiches.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name lunch foods: chicken, fish, spaghetti, fried rice and salad",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what others like and don't like: “She likes salad.” “They don't like salad.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read It's Lunch Time! and compare school lunches in the USA and Japan",
+     "ccss": [
+      "RI.2.1",
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the h and j sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Art Class",
+   "summary": "Conversation: It's time for art class. / Oops! I'm sorry. / That's OK. / Hurry up! / OK. I'm coming.\nWords: clay, glue, paint, a colored pencil, paper, tape\nGrammar: Whose clay is this? / It's Sam's clay.\nThe World around Us: Arts and Crafts (UK)\nEnglish Sounds: s and z",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "It's time for art class. / Oops! I'm sorry. / That's OK. / Hurry up! / OK. I'm coming."
+    },
+    {
+     "title": "Words",
+     "notes": "clay, glue, paint, a colored pencil, paper, tape"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Whose clay is this? / It's Sam's clay."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Arts and Crafts (UK)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "s and z"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "say “Hurry up!” and “OK. I'm coming.” when it is time for art class",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name art things: clay, glue, paint, a colored pencil, paper and tape",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Whose clay is this?” and answer with a name, like “It's Sam's clay.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Arts and Crafts, from the UK, and tell what people make",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the s and z sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Different art activities",
+   "summary": "Art: Different art activities\nProject: Make an art book.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Art",
+     "notes": "Art: Different art activities"
+    },
+    {
+     "title": "Project",
+     "notes": "Make an art book."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn the names of different art activities and the things each one needs",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how to do an art activity step by step with first, next and last",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make an art book with a page for each art activity",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "show a page of their art book and say what they used to make it",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · In the Living Room",
+   "summary": "Conversation: Let's play! / OK. / How about a board game? / That's a good idea. / I like this game. / Me too. It's fun.\nWords: a coffee table, a lamp, a picture, a rug, a sofa, a TV\nGrammar: There is a TV. There are lamps. / Is there a lamp? / Yes, there is. No, there isn't. / Are there rugs? / Yes, there are. No, there aren't.\nThe World around Us: What's in the Living Room? (Canada, Switzerland)\nEnglish Sounds: k and g",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Let's play! / OK. / How about a board game? / That's a good idea. / I like this game. / Me too. It's fun."
+    },
+    {
+     "title": "Words",
+     "notes": "a coffee table, a lamp, a picture, a rug, a sofa, a TV"
+    },
+    {
+     "title": "Grammar",
+     "notes": "There is a TV. There are lamps. / Is there a lamp? / Yes, there is. No, there isn't. / Are there rugs? / Yes, there are. No, there aren't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "What's in the Living Room? (Canada, Switzerland)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "k and g"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "suggest “How about a board game?” and answer “That's a good idea.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name things in a living room: a coffee table, a lamp, a rug and a sofa",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what is in a room with “There is a TV.” and “There are lamps.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read What's in the Living Room? and compare living rooms in Canada and Switzerland",
+     "ccss": [
+      "RI.2.1",
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the k and g sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · In My Room",
+   "summary": "Conversation: I can't find my hat. / Look under your bed. / It's not here! / Look in your closet. / Oh, here it is.\nWords: bed, bookcase, box, computer, toys, wall, in, on, under, next to\nGrammar: Where is the bag? / It's under the chair.\nThe World around Us: What's in the Room? (Hong Kong)\nEnglish Sounds: k and q",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I can't find my hat. / Look under your bed. / It's not here! / Look in your closet. / Oh, here it is."
+    },
+    {
+     "title": "Words",
+     "notes": "bed, bookcase, box, computer, toys, wall, in, on, under, next to"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Where is the bag? / It's under the chair."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "What's in the Room? (Hong Kong)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "k and q"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "help a friend find something with “Look under your bed.” and “Oh, here it is.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name bedroom things and place words: bookcase, computer, in, on, under and next to",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Where is the bag?” and answer “It's under the chair.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read What's in the Room?, from Hong Kong, and tell where things are in the room",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and say words spelled with k and words spelled with qu",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Rooms in a house",
+   "summary": "Social Studies: Rooms in a house\nProject: Make a house mobile.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Rooms in a house"
+    },
+    {
+     "title": "Project",
+     "notes": "Make a house mobile."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn the names of the rooms in a house and what people do in each",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "say what people do in a room, like “We sleep in the bedroom.”",
+     "ccss": [
+      "SL.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a house mobile with a piece for each room",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class about each room in their house mobile",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Wild Animals",
+   "summary": "Conversation: Do you like wild animals? / Yes, I do. / Come with me. / OK. / These posters are cool! / Thanks.\nWords: numbers 11–20, a bear, an elephant, a giraffe, a lion, a tiger, a zebra\nGrammar: How many zebras are there? / There are four zebras.\nThe World around Us: Wild Animals of the World (Australia, China, Indonesia, Argentina)\nEnglish Sounds: r and w",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Do you like wild animals? / Yes, I do. / Come with me. / OK. / These posters are cool! / Thanks."
+    },
+    {
+     "title": "Words",
+     "notes": "numbers 11–20, a bear, an elephant, a giraffe, a lion, a tiger, a zebra"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How many zebras are there? / There are four zebras."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Wild Animals of the World (Australia, China, Indonesia, Argentina)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "r and w"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “Do you like wild animals?” and answer “Yes, I do.” or “No, I don't.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "count from eleven to twenty and name a bear, a giraffe, a tiger and a zebra",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “How many zebras are there?” and answer “There are four zebras.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Wild Animals of the World and tell which animals live in Australia, China, Indonesia and Argentina",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the r and w sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Fun Things",
+   "summary": "Conversation: I'm sorry I'm late. / That's OK. / This is my new skateboard. / How nice! / Let's go! / OK.\nWords: a bike, a camera, a jump rope, a kite, a skateboard, a soccer ball\nGrammar: She has/doesn't have a kite. / They have/don't have a kite. / Does he have a kite? / Yes, he does. No, he doesn't.\nThe World around Us: Favorite Things (New Zealand, South Korea, Spain, France)\nEnglish Sounds: w and y",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I'm sorry I'm late. / That's OK. / This is my new skateboard. / How nice! / Let's go! / OK."
+    },
+    {
+     "title": "Words",
+     "notes": "a bike, a camera, a jump rope, a kite, a skateboard, a soccer ball"
+    },
+    {
+     "title": "Grammar",
+     "notes": "She has/doesn't have a kite. / They have/don't have a kite. / Does he have a kite? / Yes, he does. No, he doesn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Favorite Things (New Zealand, South Korea, Spain, France)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "w and y"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "say “I'm sorry I'm late.” and answer “That's OK.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name fun things: a bike, a camera, a kite, a skateboard and a soccer ball",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Does he have a kite?” and answer “Yes, he does.” or “No, he doesn't.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Favorite Things and tell what children in New Zealand, South Korea, Spain and France like",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the w and y sounds apart in words they hear and read",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Counting numbers and ordinal numbers",
+   "summary": "Math: Counting numbers and ordinal numbers\nProject: Make a poster about ordinal numbers.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Math",
+     "notes": "Math: Counting numbers and ordinal numbers"
+    },
+    {
+     "title": "Project",
+     "notes": "Make a poster about ordinal numbers."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn the difference between counting numbers like one and two and order numbers like first and second",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "say who is first, second and third in a line",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster about order numbers like first, second and third",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their poster to tell the order of things, like “The cat is third.”",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Doing Things Outside",
+   "summary": "Conversation: I'm bored. / Let's go out and play. / I like running. / I like running too. / Hey! Wait up!\nWords: dancing, jumping, running, singing, sleeping, walking\nGrammar: What's she doing? / She's walking. / What are they doing? / They're walking.\nThe World around Us: Fun Things to Do (Vietnam, Canada, Belgium, Austria)\nEnglish Sounds: ch and sh (initial)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I'm bored. / Let's go out and play. / I like running. / I like running too. / Hey! Wait up!"
+    },
+    {
+     "title": "Words",
+     "notes": "dancing, jumping, running, singing, sleeping, walking"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What's she doing? / She's walking. / What are they doing? / They're walking."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Fun Things to Do (Vietnam, Canada, Belgium, Austria)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "ch and sh (initial)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "say “I'm bored.” and invite a friend with “Let's go out and play.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name and act out dancing, jumping, running, sleeping and walking",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What's she doing?” and answer “She's walking.” or “They're walking.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Fun Things to Do and tell what people do outside in Vietnam, Canada, Belgium and Austria",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear and read words that start with ch, like chair, and with sh, like ship",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Doing Things Inside",
+   "summary": "Conversation: Hello, Mila. / Hi, Matt. / What are you doing? / I'm reading. / Can I come over? / Sure.\nWords: drawing, drinking, painting, reading, talking, writing\nGrammar: Is he talking? / Yes, he is. No, he isn't. / Are they talking? / Yes, they are. No, they aren't.\nThe World around Us: Fun Hobbies (Argentina, Denmark, Spain, Peru)\nEnglish Sounds: ch and sh (final)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Hello, Mila. / Hi, Matt. / What are you doing? / I'm reading. / Can I come over? / Sure."
+    },
+    {
+     "title": "Words",
+     "notes": "drawing, drinking, painting, reading, talking, writing"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Is he talking? / Yes, he is. No, he isn't. / Are they talking? / Yes, they are. No, they aren't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Fun Hobbies (Argentina, Denmark, Spain, Peru)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "ch and sh (final)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask a friend “What are you doing?” and then ask “Can I come over?”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name and act out drawing, painting, reading, talking and writing",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is he talking?” and answer “Yes, he is.” or “No, he isn't.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Fun Hobbies and tell about hobbies in Argentina, Denmark, Spain and Peru",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "hear and read words that end with ch, like lunch, and with sh, like fish",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · Different activities in gym class",
+   "summary": "Physical Education: Different activities in gym class\nProject: Create a poster about your favorite activity in gym class.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Physical Education",
+     "notes": "Physical Education: Different activities in gym class"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a poster about your favorite activity in gym class."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn the names of different gym class activities and how to do them",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how to do one gym activity using action words",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster about their favorite gym class activity",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell why they like their favorite gym activity best",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Favorite Activities",
+   "summary": "Conversation: Let's play hopscotch. / Yes, it's my favorite game. / Can I go first? / Sure. / Now, it's your turn. / OK.\nWords: climb a tree, fly a kite, play the drum, play hopscotch, play soccer, ride a bike\nGrammar: What can he do? / He can play hopscotch. / Can they play soccer? / Yes, they can. No, they can't.\nThe World around Us: School Talent Show (USA)\nEnglish Sounds: s and th (initial)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Let's play hopscotch. / Yes, it's my favorite game. / Can I go first? / Sure. / Now, it's your turn. / OK."
+    },
+    {
+     "title": "Words",
+     "notes": "climb a tree, fly a kite, play the drum, play hopscotch, play soccer, ride a bike"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What can he do? / He can play hopscotch. / Can they play soccer? / Yes, they can. No, they can't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "School Talent Show (USA)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "s and th (initial)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "take turns in a game with “Can I go first?” and “Now, it's your turn.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name activities: climb a tree, play the drum, play hopscotch and ride a bike",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Can they play soccer?” and answer “Yes, they can.” or “No, they can't.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read School Talent Show, from the USA, and tell what the children can do",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell s and th apart at the start of words, like sink and think",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Favorite Snacks",
+   "summary": "Conversation: I'm very excited. / Me too. / Can we get popcorn, Dad? / Yes, we can. / Can we get candy too? / No, we can't.\nWords: chips, a cookie, ice cream, juice, a candy bar, popcorn\nGrammar: What does he want? / He wants ice cream. / Do they want chips? / Yes, they do. No, they don't.\nThe World around Us: Healthy Snacks (Sweden)\nEnglish Sounds: s and th (final)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I'm very excited. / Me too. / Can we get popcorn, Dad? / Yes, we can. / Can we get candy too? / No, we can't."
+    },
+    {
+     "title": "Words",
+     "notes": "chips, a cookie, ice cream, juice, a candy bar, popcorn"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What does he want? / He wants ice cream. / Do they want chips? / Yes, they do. No, they don't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Healthy Snacks (Sweden)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "s and th (final)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “Can we get popcorn, Dad?” and answer “Yes, we can.” or “No, we can't.”",
+     "ccss": [
+      "SL.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name snacks: chips, a cookie, a candy bar, popcorn and ice cream",
+     "ccss": [
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What does he want?” and answer “He wants ice cream.”",
+     "ccss": [
+      "L.2.1",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Healthy Snacks, from Sweden, and tell which snacks are good for our bodies",
+     "ccss": [
+      "RI.2.1",
+      "RI.2.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell s and th apart at the end of words, like bus and bath",
+     "ccss": [
+      "RF.2.3",
+      "RF.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Five food groups",
+   "summary": "Science: Five food groups\nProject: Create a poster about your dinner plate.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Science",
+     "notes": "Science: Five food groups"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a poster about your dinner plate."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn the five food groups and name a food from each group",
+     "ccss": [
+      "SL.2.2",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain why we need food from every group to stay healthy",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "make a poster of a dinner plate with foods from the five food groups",
+     "ccss": [
+      "W.2.7",
+      "SL.2.5"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class what is on their plate and which group each food is in",
+     "ccss": [
+      "SL.2.4",
+      "SL.2.6"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

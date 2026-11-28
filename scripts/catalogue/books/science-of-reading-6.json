@@ -1,0 +1,1158 @@
+{
+  "series": "Science of Reading",
+  "level": "6",
+  "title": "VCe - Long Vowels with 'e'",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 6 Teacher Guide",
+  "units": [
+    {
+      "title": "Introduction to Silent e",
+      "summary": "Mini-lesson 1. Review: a closed syllable gives a short vowel (shop); a syllable that ends in a vowel can say its name (she). Silent e is the first job introduced: it tells the reader that another vowel will say its long sound. The silent e has many jobs: it makes vowels long, makes c say /s/ and g say /j/, keeps words from ending in v, keeps a word from looking plural, and gives the voiced th. Students review short vowels (apple, Eddie, igloo, otter, upstairs) and long vowels (apron, equal, iron, over, unicorn).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B",
+        "RF.1.3D"
+      ],
+      "skill_tags": [
+        "silent e",
+        "open syllables",
+        "long vowels"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Say a word and identify the vowel sound: like, late, cast, mole, mop, wave, cube, bike, build, mute, male; is it long?"
+        },
+        {
+          "title": "Review",
+          "notes": "Closed syllables (shop) and open syllables (she); a vowel that says its name is a long vowel."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "The letter e can be silent; one job of the silent e is to make the other vowel long."
+        },
+        {
+          "title": "Model",
+          "notes": "Build words with letter tiles and label the vowel and consonants."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "explain that a silent e makes the vowel before it say its name",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "tell short vowels in shop and cap from long vowels in she and cake",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "say what the silent e does in words like cake and bike",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read one-syllable words that end in a vowel, like me, go and hi",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Open Syllables · One-syllable Open",
+        "Open Syllables · Y as a vowel (long i)"
+      ]
+    },
+    {
+      "title": "a_e",
+      "summary": "Lesson 2: long a with the VCe pattern (cake, name, late). Compare with the short a words from Level 2; sort by word family or short versus long vowel. High-frequency words to map: made, make, take, came, gave, ate.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B"
+      ],
+      "skill_tags": [
+        "long a vce",
+        "silent e"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long a sound in spoken words and segment them into sounds."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with letter tiles; the first vowel says its name and the e is silent."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Sound boxes: match each sound, then add the silent e."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Spot the VCe pattern, then read the word; short or long vowel?"
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and write words from the word list; reading phrases and sentences; dictation."
+        },
+        {
+          "title": "\"Mapping\" high-frequency words",
+          "notes": "made, make, take, came, gave, ate (the silent e can sit in the last box or outside the boxes)"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts by word family or short versus long vowel; student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like cake, name, late and game with a long a",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with the a_e pattern, such as safe, wave and shake",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "tell short a words from long a words, like cap and cape",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words made, make, take, came, gave and ate",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · VCe Pattern: a_e"
+      ]
+    },
+    {
+      "title": "i_e",
+      "summary": "Lesson 3: long i with the VCe pattern (bike, time, five). High-frequency words to map: like, five, time, ride, white, live (also write).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B"
+      ],
+      "skill_tags": [
+        "long i vce",
+        "silent e"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long i sound in spoken words and segment them into sounds."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with letter tiles; the first vowel says its name and the e is silent."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Sound boxes: match each sound, then add the silent e."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Spot the VCe pattern, then read the word; short or long vowel?"
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and write words from the word list; reading phrases and sentences; dictation."
+        },
+        {
+          "title": "\"Mapping\" high-frequency words",
+          "notes": "like, five, time, ride, white, live, write"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts by word family or short versus long vowel; student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like bike, time, five and slide with a long i",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with the i_e pattern, such as hide, smile and prize",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "tell short i words from long i words, like kit and kite",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words like, five, time, ride and white",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · VCe Pattern: i_e"
+      ]
+    },
+    {
+      "title": "o_e",
+      "summary": "Lesson 4: long o with the VCe pattern (home, bone, nose). Some o_e words are very irregular, such as move; those are taught as heart words. High-frequency words: those, more, move.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B"
+      ],
+      "skill_tags": [
+        "long o vce",
+        "silent e"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long o sound in spoken words and segment them into sounds."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with letter tiles; the first vowel says its name and the e is silent."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Sound boxes: match each sound, then add the silent e."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Spot the VCe pattern, then read the word; short or long vowel?"
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and write words from the word list; reading phrases and sentences; dictation."
+        },
+        {
+          "title": "\"Mapping\" high-frequency words",
+          "notes": "those, more, move (irregular)"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts by word family or short versus long vowel; student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like home, bone, rope and stone with a long o",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with the o_e pattern, such as joke, smoke and globe",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "tell short o words from long o words, like hop and hope",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spot the odd one out in irregular o_e words like move and more",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · VCe Pattern: o_e"
+      ]
+    },
+    {
+      "title": "u_e",
+      "summary": "Lesson 5: long u with the VCe pattern. Long u has two sounds, /ū/ as in rule and /yū/ as in cube. Regular high-frequency word: use; irregular: sure.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B",
+        "RF.2.3F"
+      ],
+      "skill_tags": [
+        "long u vce",
+        "silent e"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long u sound in spoken words and segment them into sounds."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with letter tiles; the first vowel says its name and the e is silent."
+        },
+        {
+          "title": "Encoding (spelling)",
+          "notes": "Sound boxes: match each sound, then add the silent e."
+        },
+        {
+          "title": "Decoding (reading)",
+          "notes": "Spot the VCe pattern, then read the word; short or long vowel?"
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and write words from the word list; reading phrases and sentences; dictation."
+        },
+        {
+          "title": "\"Mapping\" high-frequency words",
+          "notes": "use (regular), sure (irregular)"
+        },
+        {
+          "title": "More practice",
+          "notes": "Word sorts by word family or short versus long vowel; student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like cube, huge, tube and rule with a long u",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with the u_e pattern, such as mule, flute and fume",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "tell the two long u sounds in cube and rule",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words use and sure",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · VCe Pattern: u_e"
+      ]
+    },
+    {
+      "title": "Review: all vowels mixed",
+      "summary": "Review of all four VCe patterns (a_e, i_e, o_e, u_e) together, to automaticity; duration varies. Word sorts by short or long vowel, reading phrases and connected text, and the word and sentence reading assessments. High-frequency words reviewed: make, take, made, came, gave, ate, five, like, here, time, white, ride, more, those, these, use, write; irregular: some, come, move, change, one, done.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B",
+        "RF.2.3D"
+      ],
+      "skill_tags": [
+        "long a vce",
+        "long i vce",
+        "long o vce",
+        "long u vce",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Read word endings and graphemes taught so far."
+        },
+        {
+          "title": "Mixed reading and spelling",
+          "notes": "Words with all four VCe patterns; sort by vowel sound."
+        },
+        {
+          "title": "Reading phrases and sentences",
+          "notes": "Model decoding each word, then reread."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular and irregular lists."
+        },
+        {
+          "title": "Assessment",
+          "notes": "Word reading and sentence reading; accuracy and fluency."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read and spell words that mix a_e, i_e, o_e and u_e",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "sort words by whether the vowel is long or short",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read two-syllable words and compound words that contain a silent e, like cupcake and inside",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "write dictated sentences with long vowel words",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · VCe Pattern: Review all together",
+        "Multisyllable & Morphology · 2-Syllable Words with silent e",
+        "Multisyllable & Morphology · VCV Words (V-CV and VC-V)",
+        "Multisyllable & Morphology · Consonant -le",
+        "Multisyllable & Morphology · Compound Words"
+      ]
+    },
+    {
+      "title": "-se and -ze",
+      "summary": "Lesson 6. The /z/ sound at the end of a silent e word is usually spelled s (nose, use); z is less common. Use can say /yūs/ or /yūz/. Phonemic awareness, mapping and reading words with the final /z/ sound.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B",
+        "L.2.2D"
+      ],
+      "skill_tags": [
+        "silent e",
+        "spelling rules"
+      ],
+      "lessons": [
+        {
+          "title": "Model spelling",
+          "notes": "Nose: /n/ /ō/ /z/; s spells /z/ and then add the silent e."
+        },
+        {
+          "title": "Reading words",
+          "notes": "Point out the VCe pattern in nose, use and similar words."
+        },
+        {
+          "title": "Practice",
+          "notes": "Word lists, sentences and workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear /z/ at the end of words like nose and use",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words that end in /z/ with a silent e, like rose and size",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read words like these, those, prize and froze",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "know that use can be said two ways, as a noun and as a verb",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "-ce",
+      "summary": "Lesson 7. Job 2 of silent e: when e follows c, the c says /s/ (ice, lace). This is one way to spell the /s/ sound at the end of silent e words, besides s (base, wise). High-frequency words: place, chance, once. Soft c: c says /s/ before e, i or y.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "L.2.2D",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "soft c and g",
+        "silent e",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Introduce",
+          "notes": "Build wise and base, then ice; the e makes c say /s/."
+        },
+        {
+          "title": "Model spelling",
+          "notes": "Lace: /l/ /ā/ /s/ with sound boxes."
+        },
+        {
+          "title": "Lessons 7a and 7b",
+          "notes": "Read and spell words that end in ce."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Reading words and sentences, spelling and dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "place, chance, once."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "know that the silent e after c makes the c say /s/",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like ice, lace, face and dance",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words that end with the /s/ sound, such as place, price and fence",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "sort c words by the sound c makes, soft c before e, i or y",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · <ce>",
+        "Multisyllable & Morphology · Soft c and Soft G"
+      ]
+    },
+    {
+      "title": "-ge and -dge",
+      "summary": "Lessons 8a and 8b. Job 3 of silent e: after /j/ at the end of a word, use ge or dge, since j does not end English words. After a short vowel use dge (judge, ridge); after a long vowel or a consonant use ge (page, huge, plunge). ck, tch and dge are used only after short vowels. Words ending in -age and -ure are formed with the same silent e.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "L.2.2D",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "soft c and g",
+        "spelling rules",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 8a: ge",
+          "notes": "Model page and huge; the e makes the vowel long and the g say /j/ (two jobs)."
+        },
+        {
+          "title": "Lesson 8b: dge",
+          "notes": "Segment judge, page, ridge, singe, plunge; what comes right before /j/."
+        },
+        {
+          "title": "Spelling review",
+          "notes": "ck, tch and dge are only used after short vowels."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Reading and spelling words with ge and dge; dictation."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "choose dge after a short vowel and ge after a long vowel or a consonant",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like page, huge, bridge and fudge",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words that end in the /j/ sound, such as judge, stage and badge",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read words that end in -age, such as cage and stage",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · <ge> and <dge> spelling rule",
+        "Multisyllable & Morphology · Morphology: Suffix -ure, -age"
+      ]
+    },
+    {
+      "title": "-ve",
+      "summary": "Lesson 9. Job 4 of silent e: English words do not end in v, so a word that ends with /v/ gets a silent e. After a short vowel the silent e does not make the vowel long: delve, give, have, live, solve, twelve, valve. Irregular: dove, love, move. Long vowel words: cave, cove, crave, dive, five, grove, hive, save, stove, wave. High-frequency words: have, give, live.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "L.2.2D",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "spelling rules",
+        "sight words",
+        "silent e"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Graphemes A to Z, sh, ch, th, tch, ng, ck, a_e, i_e, o_e, u_e, ce, ge, dge."
+        },
+        {
+          "title": "Phonemic awareness",
+          "notes": "Segment twelve, give, cave, active."
+        },
+        {
+          "title": "Spelling review",
+          "notes": "dge, tch, ck and floss words come only after short vowels."
+        },
+        {
+          "title": "Reading and spelling",
+          "notes": "Long vowel -ve words and short vowel -ve words."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "have, give, live; irregular dove, love, move."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "know that no English word ends in the letter v without a silent e",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read long vowel words like cave, dive and wave",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read short vowel words like give, have and live",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words that end in /v/, such as glove, solve and drove",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · <ve>"
+      ]
+    },
+    {
+      "title": "Suffix -s and -es with silent e",
+      "summary": "Lesson 10. Adding -s or -es to a silent e word: if the word ends in /j/, /s/ or /z/ the suffix is -es and the e makes its own syllable (noses). Cover the suffix, read the base word first, then count syllables.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3E",
+        "L.2.2D"
+      ],
+      "skill_tags": [
+        "suffixes",
+        "silent e"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 10: Suffix -s",
+          "notes": "Read and spell silent e words plus -s (cakes, bikes)."
+        },
+        {
+          "title": "Lesson 10b: Suffix -es",
+          "notes": "Words ending in /j/, /s/ or /z/ take -es (noses); how many syllables?"
+        },
+        {
+          "title": "Practice",
+          "notes": "Reading and spelling, workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read plurals and verbs like cakes, bikes and homes",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "explain why noses and prices need -es",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "add -s or -es to silent e words, such as faces and bridges",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Suffixes -ed and -ing",
+      "summary": "Lesson 11. A vowel suffix (starting with a vowel sound) means dropping the silent e from the base word: hope, hoped, hoping. With one consonant after the vowel the vowel is long; a doubled consonant shows a short vowel (hopping, hopped). Practice words: faked, making, smiled, waving, voted, muting. Dropping y rule: when a word ends in a consonant then y, change y to i before adding suffixes except -ing.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3E",
+        "L.2.2D"
+      ],
+      "skill_tags": [
+        "suffixes",
+        "spelling rules"
+      ],
+      "lessons": [
+        {
+          "title": "Review the dropping rule",
+          "notes": "Hope, hoped, hoping."
+        },
+        {
+          "title": "Compare with doubling",
+          "notes": "Hop, hopping, hopped."
+        },
+        {
+          "title": "Reading practice",
+          "notes": "Faked, making, smiled, waving, voted, muting."
+        },
+        {
+          "title": "Spelling practice",
+          "notes": "Add -ed and -ing to silent e words."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "drop the silent e before adding -ed or -ing, as in hope, hoped, hoping",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "tell hoping from hopping by the number of consonants",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like making, smiled and waving",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "change y to i before adding a suffix, as in carry and carried",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Silent e · Morphology: Silent e with suffixes",
+        "Open Syllables · Morphology: Drop the y, make it an i"
+      ]
+    },
+    {
+      "title": "Plural-cancelling e",
+      "summary": "Lesson 12 (mini-lesson). Another job of silent e: it shows the reader that a final s is part of the base word and not a plural suffix (dense, else, lapse, pulse, rinse, sense, tense). Not taught in depth; students meet more of these later with two-syllable words.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "L.2.2D"
+      ],
+      "skill_tags": [
+        "silent e",
+        "spelling rules"
+      ],
+      "lessons": [
+        {
+          "title": "Build and compare",
+          "notes": "Den and dens (plural) against dense; what the final e tells the reader."
+        },
+        {
+          "title": "Practice",
+          "notes": "Read and spell dense, else, lapse, pulse, rinse, sense, tense."
+        },
+        {
+          "title": "Workbook",
+          "notes": "Two workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "tell a plural -s from an s that belongs to the word, as in dens and dense",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like dense, else, pulse and sense",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like tense, rinse and lapse",
+          "ccss": [
+            "RF.2.3F",
+            "L.2.2D"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Voiced th: -the",
+      "summary": "Lesson 13 (mini-lesson). Another job of silent e: it shows that th is voiced (bathe, clothe). Words to use now: bathe, clothe. After the lessons: give the word and sentence reading assessments; if students are accurate but slow, give more practice with decodable text rather than reteaching.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "RF.2.3B"
+      ],
+      "skill_tags": [
+        "silent e",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Teaching skill",
+          "notes": "The silent e after th makes the voiced sound: bath and bathe."
+        },
+        {
+          "title": "Practice",
+          "notes": "Read and spell bathe and clothe."
+        },
+        {
+          "title": "After the lessons",
+          "notes": "Word and sentence reading assessment; extra decodable text for fluency."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "hear that the th in bathe is voiced and the th in bath is not",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read bathe and clothe",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words that end in -the, such as breathe",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Review of all silent e",
+      "summary": "End of the unit. Review all jobs of silent e: long vowels (VCe), ce, ge, dge, ve, se and ze, plural-cancelling e, voiced th. Reading and spelling assessments with word, phrase and sentence lists; student workbook review pages.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3B",
+        "RF.2.3F"
+      ],
+      "skill_tags": [
+        "silent e",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Review pages",
+          "notes": "Workbook review of all lessons."
+        },
+        {
+          "title": "Reading assessment",
+          "notes": "Word and sentence reading, accuracy and fluency."
+        },
+        {
+          "title": "Spelling assessment",
+          "notes": "Dictation."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "name the jobs silent e does at the end of a word",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read mixed lists of silent e words smoothly",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell silent e words in dictated sentences",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3B"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    }
+  ]
+}

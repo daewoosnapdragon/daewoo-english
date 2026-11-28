@@ -1,0 +1,1141 @@
+{
+  "series": "Science of Reading",
+  "level": "9",
+  "title": "Other Long Vowel Teams & Diphthongs",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 9 Teacher Guide",
+  "units": [
+    {
+      "title": "/ū/: oo",
+      "summary": "Lesson 1. oo spells /ū/ (moon, food, zoom, pool). The sound /ū/ can also be spelled ew, ue and ui. Connect the word too to its meaning. High-frequency words: too, soon.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "oo says /ū/ as in moon, food and zoom. There are two long u sounds, /ū/ and /yū/."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "too, soon"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like moon, food, zoom and pool with oo saying /ū/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as spoon, roof and broom using oo",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words too and soon",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "say that oo can say /ū/ as in moon",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · /ū/: oo"
+      ]
+    },
+    {
+      "title": "/ū/ at the end: ew and ue",
+      "summary": "Lessons 2A and 2B. ew and ue spell /ū/ at the end of a word (new, grew, blue, true); /yū/ is usually spelled ue or ew (few, cue). High-frequency words: blue (also new, few).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "ew and ue spell /ū/ at the end of words (new, flew, blue, glue); ue can also say /yū/ (cue, value)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "blue, new, few"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like new, flew, blue and glue with /ū/ at the end",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "tell /ū/ in blue from /yū/ in few and cue",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as grew, true, clue and chew using ew or ue",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words new, few and blue",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · /ū/ and /yū/: ew, ui, ue"
+      ]
+    },
+    {
+      "title": "/ū/ in the middle: ui",
+      "summary": "Lesson 2C (mini-lesson; may be saved for later). ui is the rarest spelling of /ū/ and comes in the middle of a word (fruit, juice, suit).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "ui spells /ū/ in the middle of a few words (fruit, juice, suit, cruise)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like fruit, juice, suit and bruise with ui saying /ū/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell fruit and juice by remembering ui",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "tell ui in the middle of words from ew and ue at the end",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Review of /ū/ graphemes",
+      "summary": "Lesson 2D. Review all the spellings of /ū/: oo, ew, ue and ui, with word sorts and irregular high-frequency words that also have the /ū/ sound.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Read and spell the graphemes together; sorts and sentences."
+        },
+        {
+          "title": "Spelling",
+          "notes": "Choose the right grapheme by position in the word."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "sort /ū/ words by their spelling: oo, ew, ue or ui",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose the right spelling of /ū/ by where it comes in the word",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "write dictated sentences with /ū/ words",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Short oo",
+      "summary": "Lesson 3. oo has a second sound, short /oo/ (book, foot, wood). High-frequency words: good, look; could, should and would use the letters oul for the same sound.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "oo can also say the short /oo/ sound (book, look, good). Could, should and would use oul for the same sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "good, look; irregular: could, would, should"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like book, look, foot and wood with the short /oo/ sound",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "tell short oo in book from long oo in moon",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words good and look",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read could, should and would",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · Short /oo/ (as in book)"
+      ]
+    },
+    {
+      "title": "/ou/: ou",
+      "summary": "Lesson 4A. ou spells /ou/ at the beginning or middle of words (out, house, cloud). High-frequency words: out, our, round, found.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "diphthongs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "ou says /ou/ at the beginning or in the middle of a word (out, house, round, found)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "out, our, round, found"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like out, house, cloud and round with ou saying /ou/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words out, our, round and found",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as mouth, sound and shout using ou",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "say that ou usually comes at the beginning or middle of a word",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · /ou/ = <ou> and <ow>"
+      ]
+    },
+    {
+      "title": "/ou/: ow",
+      "summary": "Lessons 4B and 4C. ow spells /ou/ at the end of a word, or at the beginning or middle if followed by a single l or n (cow, now, down, owl); ou and ow are then practised together. High-frequency words: how, now, down, brown.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "diphthongs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "ow says /ou/ at the end of a word, or in the middle if followed by l or n (cow, down, owl)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "how, now, down, brown"
+        },
+        {
+          "title": "Lesson 4C: ou and ow together",
+          "notes": "Sort by position and spell."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like cow, now, down, owl and town with ow saying /ou/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose ou or ow by where the sound comes in the word",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as clown, crown, brown and frown using ow",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words how, now, down and brown",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Review of /ou/ graphemes",
+      "summary": "Lesson 4C and review. Practise ou and ow together and sort words by position.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "diphthongs",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Read and spell the graphemes together; sorts and sentences."
+        },
+        {
+          "title": "Spelling",
+          "notes": "Choose the right grapheme by position in the word."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "sort /ou/ words by ou and ow",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read mixed lists with ou and ow without stopping",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell dictated /ou/ words, choosing ou or ow",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/oi/: oi",
+      "summary": "Lessons 5A and 5B. oi is found at the beginning or middle of a word (oil, coin, point, boil).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "diphthongs"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "oi says /oi/ at the beginning or in the middle of a word (oil, coin, point, soil)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like oil, coin, point and boil with oi saying /oi/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as soil, join and voice using oi",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "say that oi comes at the beginning or in the middle of a word",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · /oi/: <oy> and <oi>"
+      ]
+    },
+    {
+      "title": "/oi/: oy",
+      "summary": "Lesson 5B. oy spells /oi/ at the end of a word (boy, toy, joy); oi and oy are then practised together.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "diphthongs",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "oy says /oi/ at the end of a word (boy, toy, joy, enjoy)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "boy"
+        },
+        {
+          "title": "Lesson 5ab: oi and oy together",
+          "notes": "Sort by position and spell."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like boy, toy, joy and enjoy with oy saying /oi/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose oi or oy by where the sound comes in the word",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as annoy, royal and employ using oy",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common word boy",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Review of /oi/ graphemes",
+      "summary": "Review of oi and oy together, with word sorts by position and spelling.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "diphthongs",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Read and spell the graphemes together; sorts and sentences."
+        },
+        {
+          "title": "Spelling",
+          "notes": "Choose the right grapheme by position in the word."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "sort /oi/ words by oi and oy",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read mixed lists with oi and oy smoothly",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell dictated /oi/ words, choosing oi or oy",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "/ô/ in the middle: au",
+      "summary": "Lessons 6A (two options). au spells /ô/ at the beginning or middle of a word (haul, sauce, cause, author). High-frequency words: cause; irregular: caught, laugh. The gh in caught and taught is silent and shows the word is from Old English.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "au says /ô/ at the beginning or middle of a word (haul, sauce, cause)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "cause; irregular: caught, laugh"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like haul, sauce, cause and August with au saying /ô/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common word cause and the irregular words caught and laugh",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as launch, haunt and pause using au",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · <aw> and <au>"
+      ]
+    },
+    {
+      "title": "/ô/ at the end: aw",
+      "summary": "Lessons 6B and 6ab. aw spells /ô/ at the end of a word, or in the middle if followed by a single l, n or k (saw, draw, lawn, hawk); au and aw are then practised together. High-frequency words: saw, draw.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "aw says /ô/ at the end of a word or before l, n or k (saw, draw, claw, hawk)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "saw, draw"
+        },
+        {
+          "title": "Lesson 6ab: au and aw together",
+          "notes": "Sort by position and spell."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like saw, draw, claw and straw with aw saying /ô/",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose au or aw by where the sound comes in the word",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as paw, jaw, lawn and hawk using aw",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words saw and draw",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Review of /ô/ graphemes",
+      "summary": "Review of au and aw together, with word sorts by position and spelling.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Read and spell the graphemes together; sorts and sentences."
+        },
+        {
+          "title": "Spelling",
+          "notes": "Choose the right grapheme by position in the word."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "sort /ô/ words by au and aw",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read mixed lists with au and aw smoothly",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell dictated /ô/ words, choosing au or aw",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Less common sounds of ou",
+      "summary": "Lessons 37 and 38. Less common or unpredictable sounds for ou, taught as the exceptions, with the matching high-frequency words (for example bought, thought, caught).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck flip and auditory drill; mix in words from earlier units (ai, oa) to keep retrieval sharp."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "ou can say other sounds: /oo/ (you, soup), short /ŭ/ (touch, young), long o (soul), /ô/ (bought, thought)."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "bought, thought"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words where ou makes an unusual sound, like you, soup, touch and young",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words bought and thought",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words with a less common ou sound, such as group and cousin",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Review of all diphthongs and vowel teams",
+      "summary": "Final review of oo, ew, ue, ui, ou, ow, oi, oy, au and aw, with decoding and spelling assessments and sound charts. Prefixes and two-syllable words are practised here too.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "diphthongs",
+        "prefixes",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Read and spell all of the graphemes together."
+        },
+        {
+          "title": "Assessment",
+          "notes": "Decoding and spelling assessments."
+        },
+        {
+          "title": "Sound charts",
+          "notes": "Fill in the vowel sound charts."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read mixed lists of oo, ew, ue, ou, ow, oi, oy, au and aw words",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read two-syllable words with these vowel teams, like cartoon and outside",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell two-syllable words with these vowel teams in dictated sentences",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "use prefixes like pre-, mis-, de- and ex- to work out new words",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Other Vowels · Morphology: Prefixes pre- and mis-",
+        "Multisyllable & Morphology · Morphology: Prefix ex-",
+        "Multisyllable & Morphology · Prefixes con, com, in, im",
+        "Multisyllable & Morphology · Prefixes de, dis",
+        "Multisyllable & Morphology · Prefix sub-, trans-",
+        "Multisyllable & Morphology · 2-Syllable Words with Vowel Teams (ou, ow, oo, ue, ew, oi, oy, aw)"
+      ]
+    }
+  ]
+}

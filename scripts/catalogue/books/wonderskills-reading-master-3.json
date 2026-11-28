@@ -1,0 +1,773 @@
+{
+ "series": "Wonderskills Reading",
+ "level": "Master 3",
+ "title": "",
+ "strand": "reading",
+ "color": "berry",
+ "kind": "sequence",
+ "source": "Wonderskills Reading Master 3 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · The Fight for Persephone",
+   "summary": "Theme: Understanding Nature. Myth · Ask and Answer Questions · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask questions before, during and after reading The Fight for Persephone and find the answers",
+     "ccss": [
+      "RL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the events in The Fight for Persephone lead to the seasons in the myth",
+     "ccss": [
+      "RL.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use myth words, like myth, goddess, underworld and seasons",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of The Fight for Persephone that keeps only the most important events",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short myth that explains something in nature",
+     "ccss": [
+      "W.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Sadie’s Game",
+   "summary": "Theme: Showing You Care. Realistic Fiction · Visualize · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "picture the characters and events of Sadie’s Game in their minds and describe them",
+     "ccss": [
+      "RL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how events in Sadie’s Game cause other events to happen",
+     "ccss": [
+      "RL.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use caring words, like care, kind, include and support",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Sadie’s Game that keeps only the most important events",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how they show they care about family or friends",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · My Big Brother, Johnny Kaw",
+   "summary": "Theme: On the Move. Tall Tale · Visualize · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "picture the characters and events of My Big Brother, Johnny Kaw in their minds and describe them",
+     "ccss": [
+      "RL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how events in My Big Brother, Johnny Kaw cause other events to happen",
+     "ccss": [
+      "RL.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use tall tale words, like exaggerate, giant, legend and pioneer",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of My Big Brother, Johnny Kaw that keeps only the most important events",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a tall tale sentence that exaggerates something they can do",
+     "ccss": [
+      "W.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Stephanie Kwolek and Her Super Strong Invention",
+   "summary": "Theme: Inventions. Biography · Summarize · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "explain the problem Stephanie Kwolek worked on and how her invention solved it",
+     "ccss": [
+      "RI.5.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use science words, like chemist, fiber, strong and experiment",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize Stephanie Kwolek and Her Super Strong Invention, giving the main ideas and key details",
+     "ccss": [
+      "RI.5.2",
+      "W.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe a problem they would like to solve with an invention",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Your World Up Close",
+   "summary": "Theme: Zoom In. Expository Text · Summarize · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell two main ideas of Your World Up Close and the key details that support them",
+     "ccss": [
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words for looking closely, like microscope, magnify, tiny and detail",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize Your World Up Close, giving the main ideas and key details",
+     "ccss": [
+      "RI.5.2",
+      "W.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe something ordinary as it might look up close",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · The Chinese Terra-cotta Warriors",
+   "summary": "Theme: Digging Up the Past. Expository Text · Summarize · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the events in The Chinese Terra-cotta Warriors in the order they happened",
+     "ccss": [
+      "RI.5.3",
+      "RI.5.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use history words, like archaeologist, emperor, clay and discover",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize The Chinese Terra-cotta Warriors, giving the main ideas and key details",
+     "ccss": [
+      "RI.5.2",
+      "W.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write what they would like to discover if they were an archaeologist",
+     "ccss": [
+      "W.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Exploring the Past",
+   "summary": "Theme: Past Meets Present. Realistic Fiction · Make Predictions · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "make predictions while reading Exploring the Past and check them against what happens",
+     "ccss": [
+      "RL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the main problem in Exploring the Past and how it is solved",
+     "ccss": [
+      "RL.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about the past, like history, past, present, ancient and discover",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Exploring the Past that keeps only the most important events",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "compare life in the past with life today",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Remembering Our Roots",
+   "summary": "Theme: Old and New. Historical Fiction · Reread · Theme.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "reread parts of Remembering Our Roots that are hard to understand to check the meaning",
+     "ccss": [
+      "RL.5.10",
+      "RL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the theme, or message, of Remembering Our Roots and the details that show it",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about family history, like roots, ancestor, heritage and tradition",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Remembering Our Roots that keeps only the most important events",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write about a family tradition or story passed down to them",
+     "ccss": [
+      "W.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · The Power of Words",
+   "summary": "Theme: Notes from the Past. Narrative Nonfiction · Reread · Author's Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "reread parts of The Power of Words that are hard to understand to check the meaning",
+     "ccss": [
+      "RI.5.10",
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell what the author thinks about the power of words and the evidence given",
+     "ccss": [
+      "RI.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about writing and history, like letter, diary, record and history",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of The Power of Words that keeps the main ideas, not small details",
+     "ccss": [
+      "RI.5.2",
+      "W.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short note to someone in the future about their life today",
+     "ccss": [
+      "W.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · The Great Energy Debate",
+   "summary": "Theme: Resources. Narrative Nonfiction · Ask and Answer Questions · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask questions before, during and after reading The Great Energy Debate and find the answers",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell two main ideas of The Great Energy Debate and the key details that support them",
+     "ccss": [
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use energy words, like resource, renewable, fossil fuel and debate",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of The Great Energy Debate that keeps the main ideas, not small details",
+     "ccss": [
+      "RI.5.2",
+      "W.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "take a side in an energy debate and give two reasons",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · The History of Money",
+   "summary": "Theme: Money Matters. Expository Text · Ask and Answer Questions · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask questions before, during and after reading The History of Money and find the answers",
+     "ccss": [
+      "RI.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "tell two main ideas of The History of Money and the key details that support them",
+     "ccss": [
+      "RI.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use money words, like trade, coin, currency and value",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of The History of Money that keeps the main ideas, not small details",
+     "ccss": [
+      "RI.5.2",
+      "W.5.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain how money has changed over time in their own words",
+     "ccss": [
+      "SL.5.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · A Place for Michael",
+   "summary": "Theme: Finding My Place. Realistic Fiction · Make Predictions · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.26"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.27"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "make predictions while reading A Place for Michael and check them against what happens",
+     "ccss": [
+      "RL.5.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the main problem in A Place for Michael and how it is solved",
+     "ccss": [
+      "RL.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about belonging, like belong, welcome, fit in and accept",
+     "ccss": [
+      "L.5.4",
+      "L.5.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of A Place for Michael that keeps only the most important events",
+     "ccss": [
+      "RL.5.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write about a place where they feel they belong",
+     "ccss": [
+      "W.5.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,690 @@
+{
+ "series": "Rich Reading",
+ "level": "Intermediate 1 Plus",
+ "title": "",
+ "strand": "reading",
+ "color": "teal",
+ "kind": "sequence",
+ "source": "WonderSkills Rich Reading Intermediate 1 Plus 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · A New Home for Henry",
+   "summary": "Theme: Pets. Realistic Fiction · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.2"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.3"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main problem in A New Home for Henry and how it is solved",
+     "ccss": [
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about giving a pet a home, like home, care, safe and space",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A New Home for Henry with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell what a pet needs in a good home",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Wetlands",
+   "summary": "Theme: Ecology. Expository Text · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote Wetlands and what readers should learn",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use wetland words, like marsh, swamp, mud, reeds and wildlife",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Wetlands with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write why wetlands are important, using one fact from Wetlands",
+     "ccss": [
+      "W.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Mice on Ice",
+   "summary": "Theme: Friendship. Fantasy · Plot.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the plot of Mice on Ice: the problem, the main events and how it ends",
+     "ccss": [
+      "RL.2.5",
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about ice and cold, like slide, slippery, cold and frozen",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Mice on Ice with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell what makes a good friend, using an example from Mice on Ice",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · A Guiding Light",
+   "summary": "Theme: Structures/Buildings. Expository Text · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of A Guiding Light and the key details that support it",
+     "ccss": [
+      "RI.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use building words, like structure, tower, tall, light and guide",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A Guiding Light with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe a building or structure in their town and what it is for",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Fly the Hero",
+   "summary": "Theme: Courage. Folktale · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of Fly the Hero in order, using first, next and finally",
+     "ccss": [
+      "RL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about courage, like brave, hero, fear and danger",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Fly the Hero with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a time they or someone they know was brave",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Amazing Hippos!",
+   "summary": "Theme: Mammals. Expository Text · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote Amazing Hippos! and what readers should learn",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use hippo and mammal words, like mammal, river, heavy and huge",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Amazing Hippos! with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write three facts about hippos to teach a friend",
+     "ccss": [
+      "W.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Berries, Berries, Berries!",
+   "summary": "Theme: Healthy Habits. Fantasy · Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell how different characters in Berries, Berries, Berries! feel, reading their parts in different voices",
+     "ccss": [
+      "RL.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use healthy habit words, like healthy, fruit, exercise and sleep",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Berries, Berries, Berries! with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say one healthy habit they have and why it is good for them",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · High in the Sky",
+   "summary": "Theme: Astronomy. Expository Text · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote High in the Sky and what readers should learn",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use space words, like star, planet, moon and telescope",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of High in the Sky with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write what they would like to see in the night sky and why",
+     "ccss": [
+      "W.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Happy New Year!",
+   "summary": "Theme: Celebrations. Realistic Fiction · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer who, what, where and why questions about Happy New Year!",
+     "ccss": [
+      "RL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use celebration words, like celebrate, holiday, wish, family and party",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Happy New Year! with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how their family celebrates the new year",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Jane Goodall",
+   "summary": "Theme: Scientists. Biography · Plot.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the important events of Jane Goodall's life in the order they happened",
+     "ccss": [
+      "RI.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use science words, like scientist, chimpanzee, study and observe",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Jane Goodall with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they admire about Jane Goodall's work with chimpanzees",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Dangerous Rain",
+   "summary": "Theme: Severe Weather. Realistic Fiction · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell what happens in Dangerous Rain and why, using because",
+     "ccss": [
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use storm words, like flood, heavy rain, safe and warning",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Dangerous Rain with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how people can stay safe in heavy rain",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Glaciers",
+   "summary": "Theme: Geology. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about how glaciers form and move",
+     "ccss": [
+      "RI.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use glacier words, like ice, snow, melt, frozen and mountain",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Glaciers with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain to a partner what a glacier is, in their own words",
+     "ccss": [
+      "SL.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

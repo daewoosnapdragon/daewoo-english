@@ -1,0 +1,761 @@
+{
+ "series": "Wonderskills Reading",
+ "level": "Advanced 2",
+ "title": "",
+ "strand": "reading",
+ "color": "berry",
+ "kind": "sequence",
+ "source": "Wonderskills Reading Advanced 2 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · Amazing Talents!",
+   "summary": "Theme: Special Qualities. Narrative Nonfiction · Summarize · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Amazing Talents! and the key details that support it",
+     "ccss": [
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about talents, like talent, skill, practice and special",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize Amazing Talents!, giving the main ideas and key details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write about a talent they have or want to have",
+     "ccss": [
+      "W.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Inchworm’s Tale",
+   "summary": "Theme: Be Unique. Folktale · Visualize · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "picture the characters and events of Inchworm’s Tale in their minds and describe them",
+     "ccss": [
+      "RL.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "tell the main problem in Inchworm’s Tale and how it is solved",
+     "ccss": [
+      "RL.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about being unique, like unique, different, small and special",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Inchworm’s Tale that keeps only the most important events",
+     "ccss": [
+      "RL.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell what makes them unique and why it matters",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Jane’s Discovery",
+   "summary": "Theme: Leadership. Historical Fiction · Visualize · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "picture the characters and events of Jane’s Discovery in their minds and describe them",
+     "ccss": [
+      "RL.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how events in Jane’s Discovery cause other events to happen",
+     "ccss": [
+      "RL.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use leadership words, like leader, discover, brave and decision",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Jane’s Discovery that keeps only the most important events",
+     "ccss": [
+      "RL.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "describe a good leader and the qualities a leader needs",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · The Earth and Its Neighbors",
+   "summary": "Theme: Discoveries. Expository Text · Summarize · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of The Earth and Its Neighbors and the key details that support it",
+     "ccss": [
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use space words, like planet, solar system, orbit and neighbor",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize The Earth and Its Neighbors, giving the main ideas and key details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write three facts about one of Earth's neighbors in space",
+     "ccss": [
+      "W.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Ideas from Nature",
+   "summary": "Theme: New Ideas. Expository Text · Summarize · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Ideas from Nature and the key details that support it",
+     "ccss": [
+      "RI.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about ideas from nature, like nature, design, copy and invention",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize Ideas from Nature, giving the main ideas and key details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe an invention that could copy an idea from nature",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · To the South Pole",
+   "summary": "Theme: Value the Past. Biography · Summarize · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of the journey to the South Pole in time order",
+     "ccss": [
+      "RI.4.3",
+      "RI.4.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use exploration words, like explorer, expedition, journey and freezing",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize To the South Pole, giving the main ideas and key details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write about what it would be like to travel to the South Pole",
+     "ccss": [
+      "W.4.3"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Helping Hands",
+   "summary": "Theme: Challenges. Expository Text · Reread · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "reread parts of Helping Hands that are hard to understand to check the meaning",
+     "ccss": [
+      "RI.4.10",
+      "RI.4.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain the causes and effects in Helping Hands using details from the text",
+     "ccss": [
+      "RI.4.3",
+      "RI.4.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about helping, like volunteer, support, challenge and help out",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Helping Hands that keeps the main ideas, not small details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell how helping others can change a community",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Nail Soup",
+   "summary": "Theme: Choices. Folktale · Ask and Answer Questions · Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask questions before, during and after reading Nail Soup and find the answers",
+     "ccss": [
+      "RL.4.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "tell who is telling Nail Soup and whether it is told in first or third person",
+     "ccss": [
+      "RL.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use folktale words, like soup, nail, share and clever",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Nail Soup that keeps only the most important events",
+     "ccss": [
+      "RL.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say whether sharing is a good choice and why, using Nail Soup",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · The Impossible Pet Show",
+   "summary": "Theme: Skills and Talents. Realistic Fiction · Ask and Answer Questions · Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask questions before, during and after reading The Impossible Pet Show and find the answers",
+     "ccss": [
+      "RL.4.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "tell who is telling The Impossible Pet Show and whether it is told in first or third person",
+     "ccss": [
+      "RL.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use pet show words, like contest, judge, talent and prize",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of The Impossible Pet Show that keeps only the most important events",
+     "ccss": [
+      "RL.4.2"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "describe the pet they would bring to a pet show and its talent",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Gray Wolf! Red Fox!",
+   "summary": "Theme: Adaptations. Expository Text · Reread · Compare and Contrast.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "reread parts of Gray Wolf! Red Fox! that are hard to understand to check the meaning",
+     "ccss": [
+      "RI.4.10",
+      "RI.4.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "compare and contrast the gray wolf and the red fox using facts from the text",
+     "ccss": [
+      "RI.4.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use adaptation words, like adapt, hunt, fur, den and pack",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Gray Wolf! Red Fox! that keeps the main ideas, not small details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say which animal is better suited to its home and why",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Firsts in Flight",
+   "summary": "Theme: Flight. Expository Text · Reread · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "reread parts of Firsts in Flight that are hard to understand to check the meaning",
+     "ccss": [
+      "RI.4.10",
+      "RI.4.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "explain the causes and effects in Firsts in Flight using details from the text",
+     "ccss": [
+      "RI.4.3",
+      "RI.4.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use flight words, like pilot, glider, engine, wing and record",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a summary of Firsts in Flight that keeps the main ideas, not small details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain how one first in flight led to later changes",
+     "ccss": [
+      "SL.4.4"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Thinking Differently",
+   "summary": "Theme: Inspiration. Biography · Summarize · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story, Comprehension Check\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.26"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Strategy, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.27"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the important events in Thinking Differently in the order they happened",
+     "ccss": [
+      "RI.4.3",
+      "RI.4.5"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about inspiration, like inspire, different, create and succeed",
+     "ccss": [
+      "L.4.4",
+      "L.4.6"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "summarize Thinking Differently, giving the main ideas and key details",
+     "ccss": [
+      "RI.4.2",
+      "W.4.8"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write about a person who inspires them and why",
+     "ccss": [
+      "W.4.1"
+     ],
+     "wida": [
+      "ELD-LA.4-5.Argue.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

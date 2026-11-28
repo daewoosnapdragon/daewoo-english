@@ -1,0 +1,1325 @@
+{
+ "series": "Hand in Hand",
+ "level": "3",
+ "title": "",
+ "strand": "speaking",
+ "color": "green",
+ "kind": "sequence",
+ "source": "Hand in Hand 2nd ed. scope and sequence, Student Book 3",
+ "units": [
+  {
+   "title": "Unit 1 · In the Morning",
+   "summary": "Conversation: Wake up, Matt. / What time is it? / It's seven o'clock. / OK. I'm coming. / Have a nice day, Matt. / Thanks, Mom.\nWords: get up, wash his face, get dressed, eat breakfast, brush her teeth, go to school\nGrammar: What does he do in the morning? / He goes to school.\nThe World around Us: A Morning on a Farm (Spain)\nEnglish Sounds: a and a_e",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Wake up, Matt. / What time is it? / It's seven o'clock. / OK. I'm coming. / Have a nice day, Matt. / Thanks, Mom."
+    },
+    {
+     "title": "Words",
+     "notes": "get up, wash his face, get dressed, eat breakfast, brush her teeth, go to school"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What does he do in the morning? / He goes to school."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "A Morning on a Farm (Spain)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "a and a_e"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "wake someone up with “Wake up, Matt.” and ask and answer “What time is it?”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name morning routines: get up, wash his face, eat breakfast and brush her teeth",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What does he do in the morning?” and answer “He goes to school.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read A Morning on a Farm, from Spain, and compare that morning with their own",
+     "ccss": [
+      "RI.3.1",
+      "SL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with short a, like cap, and a with a silent e, like cape",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · At Home",
+   "summary": "Conversation: Can you play after school? / I'm sorry I can't. I have a piano lesson. / Can you play after your lesson? / Sure! I'd like that.\nWords: do homework, have a snack, eat dinner, watch TV, read a book, go to bed\nGrammar: Do they do homework before dinner? / Yes, they do. No, they don't.\nThe World around Us: Band Practice (Canada)\nEnglish Sounds: i and i_e",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Can you play after school? / I'm sorry I can't. I have a piano lesson. / Can you play after your lesson? / Sure! I'd like that."
+    },
+    {
+     "title": "Words",
+     "notes": "do homework, have a snack, eat dinner, watch TV, read a book, go to bed"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Do they do homework before dinner? / Yes, they do. No, they don't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Band Practice (Canada)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "i and i_e"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "say no politely with “I'm sorry I can't. I have a piano lesson.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name after-school activities: do homework, have a snack, watch TV and go to bed",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Do they do homework before dinner?” and answer “Yes, they do.” or “No, they don't.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Band Practice, from Canada, and talk about what they do after school",
+     "ccss": [
+      "RI.3.1",
+      "SL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words with short i, like pin, and i with a silent e, like pine",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Telling time, numbers 1–100",
+   "summary": "Math: Telling time, numbers 1–100\nProject: Create a schedule of your day.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Math",
+     "notes": "Math: Telling time, numbers 1–100"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a schedule of your day."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "read the time on a clock and say it, like “It's seven o'clock.”",
+     "ccss": [
+      "SL.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say the numbers from 1 to 100 in English and count by tens",
+     "ccss": [
+      "SL.3.2",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "create a schedule of their day with a time for each activity",
+     "ccss": [
+      "W.3.7",
+      "SL.3.5"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner about their day, like “I get up at seven o'clock.”",
+     "ccss": [
+      "SL.3.4",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Favorite Clothes",
+   "summary": "Conversation: May I try on this jacket? / Yes, of course. / How do I look? / You look great! / It's 40 dollars.\nWords: a dress, jeans, shorts, sneakers, a sweatshirt, a T-shirt\nGrammar: What's he wearing? / He's wearing shorts. / Is she wearing sneakers? / Yes, she is. No, she isn't.\nThe World around Us: Colorful and Stylish (Scotland)\nEnglish Sounds: o and o_e",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "May I try on this jacket? / Yes, of course. / How do I look? / You look great! / It's 40 dollars."
+    },
+    {
+     "title": "Words",
+     "notes": "a dress, jeans, shorts, sneakers, a sweatshirt, a T-shirt"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What's he wearing? / He's wearing shorts. / Is she wearing sneakers? / Yes, she is. No, she isn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Colorful and Stylish (Scotland)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "o and o_e"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "shop for clothes with “May I try on this jacket?” and “How do I look?”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name clothes: a dress, jeans, shorts, sneakers, a sweatshirt and a T-shirt",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Is she wearing sneakers?” and answer “Yes, she is.” or “No, she isn't.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Colorful and Stylish, from Scotland, and describe the clothes in the photos",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell words with short o, like hop, and o with a silent e, like hope",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Fun Activities",
+   "summary": "Conversation: Let's go to the park. / That sounds like a great idea. / Look over there! / They're flying kites. / Can you fly a kite? / No, I can't. / Don't worry. I'll show you.\nWords: drawing pictures, in-line skating, listening to music, playing badminton, riding a bike, taking pictures\nGrammar: What does he like doing? / He likes riding a bike. / Does she like in-line skating? / Yes, she does. No, she doesn't.\nThe World around Us: Fun Family Activities (Portugal)\nEnglish Sounds: u and u_e",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Let's go to the park. / That sounds like a great idea. / Look over there! / They're flying kites. / Can you fly a kite? / No, I can't. / Don't worry. I'll show you."
+    },
+    {
+     "title": "Words",
+     "notes": "drawing pictures, in-line skating, listening to music, playing badminton, riding a bike, taking pictures"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What does he like doing? / He likes riding a bike. / Does she like in-line skating? / Yes, she does. No, she doesn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Fun Family Activities (Portugal)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "u and u_e"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "suggest “Let's go to the park.” and offer help with “Don't worry. I'll show you.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name activities: in-line skating, listening to music, playing badminton and taking pictures",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What does he like doing?” “He likes riding a bike.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Fun Family Activities, from Portugal, and tell what the family likes doing together",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell words with short u, like cub, and u with a silent e, like cube",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Different exercises",
+   "summary": "Physical Education: Different exercises\nProject: Create a daily exercise chart.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Physical Education",
+     "notes": "Physical Education: Different exercises"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a daily exercise chart."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn the names of different exercises and how each one helps the body",
+     "ccss": [
+      "SL.3.2",
+      "SL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how to do one exercise in a few short steps",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "create a daily exercise chart that shows what exercise they do each day",
+     "ccss": [
+      "W.3.7",
+      "SL.3.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "share their exercise chart and tell which exercise they like best",
+     "ccss": [
+      "SL.3.4",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Going Places",
+   "summary": "Conversation: Where are you going? / I'm going home. How about you? / I'm going to the playground. / Can I come with you? / Sure. Let's go!\nWords: bank, hospital, library, post office, restaurant, shopping mall\nGrammar: Where is he going? / He's going to the hospital. / Are they going to the library? / Yes, they are. No, they aren't.\nThe World around Us: The Library on the Truck (Netherlands)\nEnglish Sounds: j and y",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Where are you going? / I'm going home. How about you? / I'm going to the playground. / Can I come with you? / Sure. Let's go!"
+    },
+    {
+     "title": "Words",
+     "notes": "bank, hospital, library, post office, restaurant, shopping mall"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Where is he going? / He's going to the hospital. / Are they going to the library? / Yes, they are. No, they aren't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "The Library on the Truck (Netherlands)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "j and y"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “Where are you going?” and answer “I'm going home.” or “I'm going to the playground.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name places in town: bank, hospital, library, post office and shopping mall",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Are they going to the library?” and answer “Yes, they are.” or “No, they aren't.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read The Library on the Truck, from the Netherlands, and tell why it is useful",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "hear and read words that start with j, like jet, and with y, like yes",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Going Shopping",
+   "summary": "Conversation: I want some ice cream. / There's an ice cream shop. / What flavor do you like? / I like chocolate. / Can I help you? / Yes. Two chocolate ice cream cones, please.\nWords: in front of, behind, next to, across from, between, bakery, bookstore, clothing store, pet store, shoe store, parking lot\nGrammar: Where is the bakery? / It's next to the bookstore.\nThe World around Us: Mr. Robot Ice Cream Shop (Japan)\nEnglish Sounds: bl and br",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I want some ice cream. / There's an ice cream shop. / What flavor do you like? / I like chocolate. / Can I help you? / Yes. Two chocolate ice cream cones, please."
+    },
+    {
+     "title": "Words",
+     "notes": "in front of, behind, next to, across from, between, bakery, bookstore, clothing store, pet store, shoe store, parking lot"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Where is the bakery? / It's next to the bookstore."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Mr. Robot Ice Cream Shop (Japan)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "bl and br"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "order at a shop with “Can I help you?” and “Two chocolate ice cream cones, please.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name shops: bakery, bookstore, clothing store, pet store and shoe store",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell where a shop is with behind, between or next to: “It's next to the bookstore.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Mr. Robot Ice Cream Shop, from Japan, and tell what is special about the shop",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with bl and br, like blue and brown",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Different places in a city",
+   "summary": "Social Studies: Different places in a city\nProject: Create a map of your neighborhood.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Different places in a city"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a map of your neighborhood."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about different places in a city and what people do there",
+     "ccss": [
+      "SL.3.2",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "give simple directions using next to, behind and across from",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "draw a map of their neighborhood with labels for the main places",
+     "ccss": [
+      "W.3.7",
+      "SL.3.5"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their map to tell where places are, like “The bank is next to the bakery.”",
+     "ccss": [
+      "SL.3.4",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · School Subjects",
+   "summary": "Conversation: What day is it today? / It's Tuesday. / There's a math test tomorrow. / I know. I like math. / Are you ready for the test? / Yes, I am.\nWords: days of the week, art, English, math, music, science, social studies, PE\nGrammar: What classes does he have on Monday? / He has English and art.\nThe World around Us: Home Schooling (USA)\nEnglish Sounds: pl and pr",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "What day is it today? / It's Tuesday. / There's a math test tomorrow. / I know. I like math. / Are you ready for the test? / Yes, I am."
+    },
+    {
+     "title": "Words",
+     "notes": "days of the week, art, English, math, music, science, social studies, PE"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What classes does he have on Monday? / He has English and art."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Home Schooling (USA)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "pl and pr"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “What day is it today?” and talk about being ready for a test",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name the days of the week and school subjects like math, music, science and PE",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What classes does he have on Monday?” and answer “He has English and art.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Home Schooling, from the USA, and compare learning at home with learning at school",
+     "ccss": [
+      "RI.3.1",
+      "SL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with pl and pr, like plant and print",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · On the Weekend",
+   "summary": "Conversation: What are you doing tomorrow? / I'm going shopping with my mom. How about you? / I'm playing tennis with my dad. / Have a great weekend. / Thanks. You too.\nWords: always, usually, sometimes, never, go shopping, go swimming, go to the movies, practice the piano, take a nap, take a walk, walk the dog, write stories\nGrammar: What do they do on the weekend? / They usually go shopping.\nThe World around Us: City Camping (South Korea)\nEnglish Sounds: cl and cr",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "What are you doing tomorrow? / I'm going shopping with my mom. How about you? / I'm playing tennis with my dad. / Have a great weekend. / Thanks. You too."
+    },
+    {
+     "title": "Words",
+     "notes": "always, usually, sometimes, never, go shopping, go swimming, go to the movies, practice the piano, take a nap, take a walk, walk the dog, write stories"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What do they do on the weekend? / They usually go shopping."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "City Camping (South Korea)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "cl and cr"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “What are you doing tomorrow?” and wish a friend “Have a great weekend.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "use always, usually, sometimes and never with activities like take a walk and walk the dog",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What do they do on the weekend?” and answer “They usually go shopping.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read City Camping, from South Korea, and tell how people camp in the city",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with cl and cr, like clap and crab",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Pictograph charts",
+   "summary": "Math: Pictograph charts\nProject: Create a class pictograph chart on favorite weekend activities.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Math",
+     "notes": "Math: Pictograph charts"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a class pictograph chart on favorite weekend activities."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "read a pictograph chart and tell what each picture stands for",
+     "ccss": [
+      "SL.3.2",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "ask classmates about their favorite weekend activity and keep a tally",
+     "ccss": [
+      "SL.3.1"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "create a class pictograph chart of favorite weekend activities",
+     "ccss": [
+      "W.3.7",
+      "SL.3.5"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what the chart shows, like “Most students like to go swimming.”",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-MA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · My House",
+   "summary": "Conversation: What's for dinner, Mom? / We're having a barbecue. / Where's your sister? / She's in her room. / Go get your sister. Dinner's ready. / Oh, good. I'm hungry.\nWords: bathroom, bedroom, kitchen, dining room, living room, backyard, a bathtub, a dining table, a dresser, a mirror, a refrigerator, a sink, a stove, a toilet\nGrammar: What's in the bathroom? / There's a sink and a toilet.\nThe World around Us: Old and New (Germany)\nEnglish Sounds: gl and gr",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "What's for dinner, Mom? / We're having a barbecue. / Where's your sister? / She's in her room. / Go get your sister. Dinner's ready. / Oh, good. I'm hungry."
+    },
+    {
+     "title": "Words",
+     "notes": "bathroom, bedroom, kitchen, dining room, living room, backyard, a bathtub, a dining table, a dresser, a mirror, a refrigerator, a sink, a stove, a toilet"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What's in the bathroom? / There's a sink and a toilet."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Old and New (Germany)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "gl and gr"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “What's for dinner, Mom?” and answer “We're having a barbecue.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name rooms like the kitchen and dining room, and things like a sink, a stove and a mirror",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “What's in the bathroom?” and answer “There's a sink and a toilet.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Old and New, from Germany, and compare the old and new homes in the reading",
+     "ccss": [
+      "RI.3.1",
+      "SL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with gl and gr, like glass and green",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Doing Things",
+   "summary": "Conversation: What are you doing? / I'm having a snack. / Are you ready for the test? / No, I'm not. / Do you want to study together? / That sounds good. / Can you come over? / OK. See you soon.\nWords: making dinner, feeding the dog, cleaning the desk, talking on the phone, taking a bath, working on the computer\nGrammar: Where is she? / She's in the backyard. / What's she doing? / She's feeding the dog.\nThe World around Us: Time to Clean (Mexico)\nEnglish Sounds: fl and fr",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "What are you doing? / I'm having a snack. / Are you ready for the test? / No, I'm not. / Do you want to study together? / That sounds good. / Can you come over? / OK. See you soon."
+    },
+    {
+     "title": "Words",
+     "notes": "making dinner, feeding the dog, cleaning the desk, talking on the phone, taking a bath, working on the computer"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Where is she? / She's in the backyard. / What's she doing? / She's feeding the dog."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Time to Clean (Mexico)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "fl and fr"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "invite a friend to study with “Do you want to study together?” and “See you soon.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name things people do at home: making dinner, feeding the dog, taking a bath and cleaning the desk",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Where is she?” and “What's she doing?” and answer “She's feeding the dog.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Time to Clean, from Mexico, and talk about how they help clean at home",
+     "ccss": [
+      "RI.3.1",
+      "SL.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive",
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with fl and fr, like flag and frog",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · Homes around the world",
+   "summary": "Social Studies: Homes around the world\nProject: Find an interesting house on the internet and create a poster.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Homes around the world"
+    },
+    {
+     "title": "Project",
+     "notes": "Find an interesting house on the internet and create a poster."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about different kinds of homes around the world and why people build them that way",
+     "ccss": [
+      "SL.3.2",
+      "SL.3.3"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "compare a home from another country with their own home",
+     "ccss": [
+      "SL.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "find an interesting house on the internet and make a poster about it",
+     "ccss": [
+      "W.3.7",
+      "SL.3.5"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "present their house poster and tell where the house is and what is special about it",
+     "ccss": [
+      "SL.3.4",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SS.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · At Different Places",
+   "summary": "Conversation: It's great to see you. / It's good to see you too. / Where's Mom? / She's at the shoe store. / Why is she at the shoe store? / Because your sister needs new shoes.\nWords: at home, at work, at school, airport, amusement park, beach, movie theater, museum, zoo\nGrammar: Where were they yesterday? / They were at the museum.\nThe World around Us: Safari World (Thailand)\nEnglish Sounds: sm and sn",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "It's great to see you. / It's good to see you too. / Where's Mom? / She's at the shoe store. / Why is she at the shoe store? / Because your sister needs new shoes."
+    },
+    {
+     "title": "Words",
+     "notes": "at home, at work, at school, airport, amusement park, beach, movie theater, museum, zoo"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Where were they yesterday? / They were at the museum."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Safari World (Thailand)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "sm and sn"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask a why question and answer with because: “Because your sister needs new shoes.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name places: airport, amusement park, beach, movie theater, museum and zoo",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "talk about the past with “Where were they yesterday?” “They were at the museum.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Safari World, from Thailand, and tell what visitors can see there",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with sm and sn, like smile and snow",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Different Weather",
+   "summary": "Conversation: How's the weather today? / It's sunny. / Let's go bike riding. / Put on your helmets. / Are we ready to go? / Yes, we are.\nWords: sunny, cloudy, rainy, snowy, windy, foggy\nGrammar: How was the weather yesterday? / It was foggy. / Was it snowy on Wednesday? / Yes, it was. No, it wasn't.\nThe World around Us: Swimming or Skiing (Morocco)\nEnglish Sounds: dr and tr",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "How's the weather today? / It's sunny. / Let's go bike riding. / Put on your helmets. / Are we ready to go? / Yes, we are."
+    },
+    {
+     "title": "Words",
+     "notes": "sunny, cloudy, rainy, snowy, windy, foggy"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How was the weather yesterday? / It was foggy. / Was it snowy on Wednesday? / Yes, it was. No, it wasn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Swimming or Skiing (Morocco)"
+    },
+    {
+     "title": "English Sounds",
+     "notes": "dr and tr"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask “How's the weather today?” and get ready for a bike ride with “Put on your helmets.”",
+     "ccss": [
+      "SL.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "name weather words: sunny, cloudy, rainy, snowy, windy and foggy",
+     "ccss": [
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask “Was it snowy on Wednesday?” and answer “Yes, it was.” or “No, it wasn't.”",
+     "ccss": [
+      "L.3.1",
+      "SL.3.6"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read Swimming or Skiing, from Morocco, and tell what people can do in different weather",
+     "ccss": [
+      "RI.3.1",
+      "RI.3.7"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "read and spell words that start with dr and tr, like drum and tree",
+     "ccss": [
+      "RF.3.3",
+      "RF.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Weather reports",
+   "summary": "Science: Weather reports\nProject: Create a weekly weather chart.",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Science",
+     "notes": "Science: Weather reports"
+    },
+    {
+     "title": "Project",
+     "notes": "Create a weekly weather chart."
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to a weather report and tell what the weather will be",
+     "ccss": [
+      "SL.3.2",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "give a short weather report, like “Today it's sunny and windy.”",
+     "ccss": [
+      "SL.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "create a weekly weather chart and fill it in each day",
+     "ccss": [
+      "W.3.7",
+      "SL.3.5"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their chart to tell how the weather was, like “It was rainy on Monday.”",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-SC.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

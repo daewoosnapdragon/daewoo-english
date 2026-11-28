@@ -1,0 +1,1283 @@
+{
+ "series": "Hand in Hand",
+ "level": "6",
+ "title": "",
+ "strand": "speaking",
+ "color": "green",
+ "kind": "sequence",
+ "source": "Hand in Hand 2nd ed. scope and sequence, Student Book 6",
+ "units": [
+  {
+   "title": "Unit 1 · Weekend Life",
+   "summary": "Conversation: How was your weekend? / It was great. We went to the amusement park. / How did you like the new roller coaster? / I was a little scared at first, but it was really exciting. / Did you have a good weekend? / Not really. I had a boring weekend. / I didn't do anything interesting.\nWords: eat out at a restaurant, build a model plane, see a musical, sail on a boat, visit grandparents, write emails to friends, go to a water park, have a sleepover\nGrammar: What did she do on the weekend? / She ate out at a restaurant. / Did he see a musical on the weekend? / Yes, he did. No, he didn't.\nThe World around Us: My First Bike Ride (Netherlands)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "How was your weekend? / It was great. We went to the amusement park. / How did you like the new roller coaster? / I was a little scared at first, but it was really exciting. / Did you have a good weekend? / Not really. I had a boring weekend. / I didn't do anything interesting."
+    },
+    {
+     "title": "Words",
+     "notes": "eat out at a restaurant, build a model plane, see a musical, sail on a boat, visit grandparents, write emails to friends, go to a water park, have a sleepover"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What did she do on the weekend? / She ate out at a restaurant. / Did he see a musical on the weekend? / Yes, he did. No, he didn't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "My First Bike Ride (Netherlands)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “How was your weekend?” about an amusement park",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "tell how their weekend was with words like great, exciting and boring",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name weekend activities: see a musical, sail on a boat, build a model plane, have a sleepover",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What did she do on the weekend?” using past words like ate and saw",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “My First Bike Ride” from the Netherlands and retell the writer's story in order",
+     "ccss": [
+      "RL.6.1",
+      "RL.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Going on Vacation",
+   "summary": "Conversation: I've just finished making the hotel reservation. / Our kids don't have passports yet. / You're right. They need to get passport photos. / Let's have their photos taken this afternoon. / What are you doing? / We're making plans for our summer vacation. / Great! I can't wait to see the pyramids.\nWords: go rock climbing, go horseback riding, go rafting, go snorkeling, go whale watching, go on a cruise, explore a cave, ride a camel\nGrammar: What will he do during vacation? / He'll probably go rafting. / She'll probably go on a cruise. / She probably won't go on a cruise.\nThe World around Us: A Vacation in Iceland (Iceland)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I've just finished making the hotel reservation. / Our kids don't have passports yet. / You're right. They need to get passport photos. / Let's have their photos taken this afternoon. / What are you doing? / We're making plans for our summer vacation. / Great! I can't wait to see the pyramids."
+    },
+    {
+     "title": "Words",
+     "notes": "go rock climbing, go horseback riding, go rafting, go snorkeling, go whale watching, go on a cruise, explore a cave, ride a camel"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What will he do during vacation? / He'll probably go rafting. / She'll probably go on a cruise. / She probably won't go on a cruise."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "A Vacation in Iceland (Iceland)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the trip planning conversation that begins “I've just finished making the hotel reservation.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name vacation activities: go snorkeling, go whale watching, explore a cave, ride a camel",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say what will probably happen: “He'll probably go rafting.” “She probably won't go on a cruise.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What will he do during vacation?” about their own vacation plans",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “A Vacation in Iceland” and tell what visitors can see and do there",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 1 · Wonderful theater",
+   "summary": "Music: Wonderful theater\nProject: Write a report about a play, opera, or musical that's playing in your city.\nWriting Style: Joining Sentences",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Music",
+     "notes": "Music: Wonderful theater"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about a play, opera, or musical that's playing in your city."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Joining Sentences"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn how a play, an opera and a musical are alike and different",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a play, opera or musical showing in their city",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "join two short sentences into one with and, but or so",
+     "ccss": [
+      "L.6.3A",
+      "L.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class why they would or would not like to see the show",
+     "ccss": [
+      "SL.6.4"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Getting Around",
+   "summary": "Conversation: Excuse me. I'm looking for a bank. / There's one near here. / Can you tell me how to get there? / Sure. Go down this street and turn right. Walk one block, and you'll see it on the corner. / Thank you.\nWords: into the box, out of the box, up the stairs, down the stairs, over the box, under the box, around the box, through the pipe\nGrammar: He came down the stairs and walked out of the house. / The mouse came out of its hole.\nThe World around Us: Going for a Walk (Germany)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Excuse me. I'm looking for a bank. / There's one near here. / Can you tell me how to get there? / Sure. Go down this street and turn right. Walk one block, and you'll see it on the corner. / Thank you."
+    },
+    {
+     "title": "Words",
+     "notes": "into the box, out of the box, up the stairs, down the stairs, over the box, under the box, around the box, through the pipe"
+    },
+    {
+     "title": "Grammar",
+     "notes": "He came down the stairs and walked out of the house. / The mouse came out of its hole."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Going for a Walk (Germany)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “Excuse me. I'm looking for a bank.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "give directions with go down this street, turn right and walk one block",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "use movement words: into, out of, up, down, over, under, around, through",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe movement, like “He came down the stairs and walked out of the house.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Going for a Walk” from Germany and find the words that tell where things move",
+     "ccss": [
+      "RL.6.1",
+      "L.6.4"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Narrate.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · School Clubs",
+   "summary": "Conversation: Welcome to our robotics club! / Thanks. / What are we working on today? / We're building a robot using a can. / You can help me put these parts together. / How does it move? / It runs on a battery.\nWords: art club, book club, drama club, Spanish club, music club, science club, act in school plays, build model rockets, draw comics, learn foreign languages, read books, play musical instruments\nGrammar: What's she interested in? / She's interested in acting in school plays. / She'll probably join the drama club. / Are they interested in reading books?\nThe World around Us: Robotic Fun (UK)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Welcome to our robotics club! / Thanks. / What are we working on today? / We're building a robot using a can. / You can help me put these parts together. / How does it move? / It runs on a battery."
+    },
+    {
+     "title": "Words",
+     "notes": "art club, book club, drama club, Spanish club, music club, science club, act in school plays, build model rockets, draw comics, learn foreign languages, read books, play musical instruments"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What's she interested in? / She's interested in acting in school plays. / She'll probably join the drama club. / Are they interested in reading books?"
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Robotic Fun (UK)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the robotics club conversation that begins “Welcome to our robotics club!”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name school clubs and what members do: drama club, science club, build model rockets, draw comics",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What's she interested in?” with “She's interested in acting in school plays.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "guess which club someone will join, like “She'll probably join the drama club.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Argue.Expressive"
+     ]
+    },
+    {
+     "text": "read “Robotic Fun” from the UK and tell what they learned about building robots",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 2 · Road safety",
+   "summary": "Social Studies: Road safety\nProject: Write a report about traffic signs.\nWriting Style: Run-on Sentences",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Social Studies",
+     "notes": "Social Studies: Road safety"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about traffic signs."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Run-on Sentences"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn road safety rules for crossing the street and riding a bike",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about traffic signs and what each one means",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "fix run-on sentences by splitting them or joining them with and, but or so",
+     "ccss": [
+      "L.6.1",
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain to a partner why one traffic sign is important for safety",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Around Town",
+   "summary": "Conversation: Your uncle is coming to visit this weekend. / Great! He's always fun. / Can we go to the sports park when Uncle comes? / What do you want to do there? / I want to go rock climbing with him. / Is everyone ready to have a good time? / Yes, we are!\nWords: library, stationery store, supermarket, art museum, post office, police station, sports park, train station, borrow books, buy a birthday card, shop for groceries, see an exhibition, mail a package, report a missing dog, jog on the track, wait for the train\nGrammar: What was he doing there? / He was waiting for the train.\nThe World around Us: Oriental Pearl TV Tower (China)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Your uncle is coming to visit this weekend. / Great! He's always fun. / Can we go to the sports park when Uncle comes? / What do you want to do there? / I want to go rock climbing with him. / Is everyone ready to have a good time? / Yes, we are!"
+    },
+    {
+     "title": "Words",
+     "notes": "library, stationery store, supermarket, art museum, post office, police station, sports park, train station, borrow books, buy a birthday card, shop for groceries, see an exhibition, mail a package, report a missing dog, jog on the track, wait for the train"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What was he doing there? / He was waiting for the train."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Oriental Pearl TV Tower (China)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation that begins “Your uncle is coming to visit this weekend.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name places in town: library, post office, police station, train station, art museum",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "match places with what people do there: borrow books, mail a package, wait for the train",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "ask and answer “What was he doing there?” with “He was waiting for the train.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Oriental Pearl TV Tower” about China and tell facts about the tower",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · At the Fair",
+   "summary": "Conversation: Our class is going to march in the school parade. / Everyone is going to dress up like a storybook character. / What will you dress up as for the parade? / I want to dress up like Peter Pan. / I have your costume ready. / Thank you. It looks great!\nWords: march in the parade, ride a unicycle, pose for pictures, take a selfie, make masks, sell cotton candy, leave the fair, arrive at the fair\nGrammar: What were they doing at the fair when it started to snow? / They were marching in the parade when it started to snow.\nThe World around Us: Chanthaburi Fruit Festival (Thailand)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Our class is going to march in the school parade. / Everyone is going to dress up like a storybook character. / What will you dress up as for the parade? / I want to dress up like Peter Pan. / I have your costume ready. / Thank you. It looks great!"
+    },
+    {
+     "title": "Words",
+     "notes": "march in the parade, ride a unicycle, pose for pictures, take a selfie, make masks, sell cotton candy, leave the fair, arrive at the fair"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What were they doing at the fair when it started to snow? / They were marching in the parade when it started to snow."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Chanthaburi Fruit Festival (Thailand)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the school parade conversation that begins “Our class is going to march in the school parade.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they would dress up as for a parade, like Peter Pan",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name fair activities: ride a unicycle, pose for pictures, take a selfie, make masks",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What were they doing at the fair when it started to snow?”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Chanthaburi Fruit Festival” from Thailand and tell what people do at the festival",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 3 · Precipitation",
+   "summary": "Science: Precipitation\nProject: Make a bar graph based on the average monthly precipitation of a city.\nWriting Style: Capitalizing I (Names of People)",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Science",
+     "notes": "Science: Precipitation"
+    },
+    {
+     "title": "Project",
+     "notes": "Make a bar graph based on the average monthly precipitation of a city."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Capitalizing I (Names of People)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn about rain, snow, sleet and hail and how they fall from clouds",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "make a bar graph of the average precipitation each month in a city",
+     "ccss": [
+      "RI.6.7"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "use their graph to tell which month gets the most and least rain or snow",
+     "ccss": [
+      "SL.6.4",
+      "SL.6.5"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write the names of people with capital letters, like Ted and Mary",
+     "ccss": [
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · At the Market",
+   "summary": "Conversation: Mom, can we make muffins? / Sure, we can. We need flour, eggs, milk, butter, and sugar. / We're out of eggs. We need more milk. / Let's go grocery shopping first. / How much flour should we get? / A bag of flour will do.\nWords: a bottle of (water / ketchup), a box of (cereal / cookies), a bunch of (bananas / grapes), a can of (tomato sauce / soup), a carton of (milk / eggs), (a loaf of / loaves of) bread\nGrammar: What did she buy? / She bought two cartons of milk and a bottle of ketchup.\nThe World around Us: Flea Markets (Finland)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "Mom, can we make muffins? / Sure, we can. We need flour, eggs, milk, butter, and sugar. / We're out of eggs. We need more milk. / Let's go grocery shopping first. / How much flour should we get? / A bag of flour will do."
+    },
+    {
+     "title": "Words",
+     "notes": "a bottle of (water / ketchup), a box of (cereal / cookies), a bunch of (bananas / grapes), a can of (tomato sauce / soup), a carton of (milk / eggs), (a loaf of / loaves of) bread"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What did she buy? / She bought two cartons of milk and a bottle of ketchup."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Flea Markets (Finland)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the muffin conversation that begins “Mom, can we make muffins?”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name amounts: a bottle of ketchup, a box of cereal, a bunch of grapes, a carton of eggs",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what someone bought, like “She bought two cartons of milk and a bottle of ketchup.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a shopping list for muffins and say how much of each thing they need",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “Flea Markets” about Finland and tell what people buy and sell there",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · At the Library",
+   "summary": "Conversation: I have to return some books. / Do you want to come with me? / OK. I need to borrow some books. / Wait. Let me drop off these books first. / Alright. Take your time. / Excuse me. I'd like to check out these books. / Can I see your library card? / Here you are.\nWords: carry the books, drink water, look for a book, talk to the librarian, use the computer, wait in line, write a report, wear headphones\nGrammar: Which one is Mary? / She's the one who's looking for a book. / Which one is Ted? / He's the one who's carrying the books.\nThe World around Us: Library of Celsus (Turkey)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "I have to return some books. / Do you want to come with me? / OK. I need to borrow some books. / Wait. Let me drop off these books first. / Alright. Take your time. / Excuse me. I'd like to check out these books. / Can I see your library card? / Here you are."
+    },
+    {
+     "title": "Words",
+     "notes": "carry the books, drink water, look for a book, talk to the librarian, use the computer, wait in line, write a report, wear headphones"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Which one is Mary? / She's the one who's looking for a book. / Which one is Ted? / He's the one who's carrying the books."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Library of Celsus (Turkey)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the library conversation that begins “I have to return some books.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "ask to check out books and answer “Can I see your library card?”",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name library actions: look for a book, talk to the librarian, wait in line, wear headphones",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "point someone out: “He's the one who's carrying the books.”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Library of Celsus” from Turkey and tell key facts about this very old library",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 4 · Metric system of measurement",
+   "summary": "Math: Metric system of measurement\nProject: Write a report about the measurements of different things.\nWriting Style: Capitalizing II (Names of Places)",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Math",
+     "notes": "Math: Metric system of measurement"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about the measurements of different things."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Capitalizing II (Names of Places)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn metric units like meters, kilograms and liters and what each one measures",
+     "ccss": [
+      "L.6.6",
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-MA.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "measure different things and write a report about their measurements",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-MA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare two measurements and say which thing is longer or heavier",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-MA.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write the names of places with capital letters, like Seoul and Mount Fuji",
+     "ccss": [
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Fun Experiences",
+   "summary": "Conversation: What did you do last summer? / We went to the Grand Canyon. / Wow! I'm jealous! / How long did you stay there? / We were there for seven days, and we did so many things. / What did you like best? / The rafting was fun.\nWords: eat Chinese food, go camping, ride in a hot air balloon, see a play, travel by plane, visit the Eiffel Tower\nGrammar: Has he ever gone camping? / Yes, he has. No, he hasn't. / Have you ever been to a library? / Yes, I have. No, I haven't.\nThe World around Us: A Hot Spring for Monkeys (Japan)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "What did you do last summer? / We went to the Grand Canyon. / Wow! I'm jealous! / How long did you stay there? / We were there for seven days, and we did so many things. / What did you like best? / The rafting was fun."
+    },
+    {
+     "title": "Words",
+     "notes": "eat Chinese food, go camping, ride in a hot air balloon, see a play, travel by plane, visit the Eiffel Tower"
+    },
+    {
+     "title": "Grammar",
+     "notes": "Has he ever gone camping? / Yes, he has. No, he hasn't. / Have you ever been to a library? / Yes, I have. No, I haven't."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "A Hot Spring for Monkeys (Japan)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the Grand Canyon conversation that begins “What did you do last summer?”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name experiences: ride in a hot air balloon, see a play, visit the Eiffel Tower",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “Have you ever been to a library?” and “Has he ever gone camping?”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell a partner about a trip they took and what they liked best",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “A Hot Spring for Monkeys” from Japan and tell facts about the monkeys",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Growing Up",
+   "summary": "Conversation: You're very good at skiing. / Who taught you? / My uncle taught me how to ski. / How old were you when you started skiing? / I was six years old. / Really? I wish I could ski like you. / Come on. I'll show you.\nWords: ride a tricycle, tie her shoes, use chopsticks, draw a person, count to twenty, write his name, peel a banana, get dressed\nGrammar: What could Ted do when he was four? / He could count to twenty by himself. / She (could / couldn't) peel a banana by herself when she was four.\nThe World around Us: How to Use Chopsticks",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "You're very good at skiing. / Who taught you? / My uncle taught me how to ski. / How old were you when you started skiing? / I was six years old. / Really? I wish I could ski like you. / Come on. I'll show you."
+    },
+    {
+     "title": "Words",
+     "notes": "ride a tricycle, tie her shoes, use chopsticks, draw a person, count to twenty, write his name, peel a banana, get dressed"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What could Ted do when he was four? / He could count to twenty by himself. / She (could / couldn't) peel a banana by herself when she was four."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "How to Use Chopsticks"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the skiing conversation that begins “You're very good at skiing.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name things young children learn: tie her shoes, use chopsticks, peel a banana, get dressed",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What could Ted do when he was four?” using could and couldn't",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell what they could or couldn't do by themselves when they were four",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “How to Use Chopsticks” and explain the steps in order",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.5"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Explain.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 5 · The Wright Brothers",
+   "summary": "History: The Wright Brothers\nProject: Make and fly a paper helicopter.\nWriting Style: Capitalizing III (Names of Special Things)",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "History",
+     "notes": "History: The Wright Brothers"
+    },
+    {
+     "title": "Project",
+     "notes": "Make and fly a paper helicopter."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Capitalizing III (Names of Special Things)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn how the Wright Brothers built and flew the first airplane",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SS.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "make and fly a paper helicopter by following the steps",
+     "ccss": [
+      "RI.6.7"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "tell how their paper helicopter flew and what made it spin",
+     "ccss": [
+      "SL.6.4"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Expressive"
+     ]
+    },
+    {
+     "text": "write names of special things with capital letters, like holidays, days and months",
+     "ccss": [
+      "L.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Up Until Now",
+   "summary": "Conversation: What's that? / That's my picture book. / This picture book looks old. / It is. I've had it since I was in kindergarten. / That's a long time. Where did you get it? / It was a birthday gift from my mom.\nWords: learn French, live in London, study for an exam, teach English, read a magazine, wait for a bus\nGrammar: How long has she been teaching English? / She's been teaching English for three years. / How long have they been waiting for a bus? / They've been waiting for a bus for thirty minutes.\nThe World around Us: The Family from Vietnam (USA)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "What's that? / That's my picture book. / This picture book looks old. / It is. I've had it since I was in kindergarten. / That's a long time. Where did you get it? / It was a birthday gift from my mom."
+    },
+    {
+     "title": "Words",
+     "notes": "learn French, live in London, study for an exam, teach English, read a magazine, wait for a bus"
+    },
+    {
+     "title": "Grammar",
+     "notes": "How long has she been teaching English? / She's been teaching English for three years. / How long have they been waiting for a bus? / They've been waiting for a bus for thirty minutes."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "The Family from Vietnam (USA)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation about an old picture book that begins “What's that?”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name things people keep doing: learn French, live in London, teach English, wait for a bus",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “How long has she been teaching English?” with “for three years”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell how long they have had something, using since and for",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "read “The Family from Vietnam” and tell what they learned about the family's life in the USA",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Dreams and Wishes",
+   "summary": "Conversation: This is our last summer in elementary school. / Let's take turns sharing our wishes for the future. / Yeah, that's a good idea. / I wish I could make a lot of money. / I wish I could be famous. / I wish I could travel the world. / I wish we could be friends forever.\nWords: be a public speaker, climb Mount Fuji, invent a flying car, go to the Moon, win a gold medal, meet a celebrity, own a farm, stop global warming\nGrammar: What would she do if she could do anything in the world? / She would own a farm. / If she could do anything in the world, she would climb Mount Fuji.\nThe World around Us: Saving Earth (Sweden)",
+   "default_weeks": 2,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Conversation",
+     "notes": "This is our last summer in elementary school. / Let's take turns sharing our wishes for the future. / Yeah, that's a good idea. / I wish I could make a lot of money. / I wish I could be famous. / I wish I could travel the world. / I wish we could be friends forever."
+    },
+    {
+     "title": "Words",
+     "notes": "be a public speaker, climb Mount Fuji, invent a flying car, go to the Moon, win a gold medal, meet a celebrity, own a farm, stop global warming"
+    },
+    {
+     "title": "Grammar",
+     "notes": "What would she do if she could do anything in the world? / She would own a farm. / If she could do anything in the world, she would climb Mount Fuji."
+    },
+    {
+     "title": "The World around Us",
+     "notes": "Saving Earth (Sweden)"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "act out the conversation about wishes that begins “This is our last summer in elementary school.”",
+     "ccss": [
+      "SL.6.1",
+      "SL.6.6"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "share wishes for the future, like “I wish I could travel the world.”",
+     "ccss": [
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive"
+     ]
+    },
+    {
+     "text": "name big dreams: climb Mount Fuji, invent a flying car, win a gold medal, own a farm",
+     "ccss": [
+      "L.6.6"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "ask and answer “What would she do if she could do anything in the world?”",
+     "ccss": [
+      "L.6.1",
+      "SL.6.1"
+     ],
+     "wida": [
+      "ELD-SI.6-8.Expressive",
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "read “Saving Earth” from Sweden and tell what people can do to help the planet",
+     "ccss": [
+      "RI.6.1",
+      "RI.6.2"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Interpretive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "School Link 6 · Robotics",
+   "summary": "Science: Robotics\nProject: Write a report about a special robot or machine with artificial intelligence.\nWriting Style: Check Your Writing",
+   "default_weeks": 1,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Science",
+     "notes": "Science: Robotics"
+    },
+    {
+     "title": "Project",
+     "notes": "Write a report about a special robot or machine with artificial intelligence."
+    },
+    {
+     "title": "Writing",
+     "notes": "Writing Style: Check Your Writing"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "learn what robots are and how some machines can think and learn",
+     "ccss": [
+      "RI.6.1"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "write a report about a special robot or a machine that can think and learn",
+     "ccss": [
+      "W.6.2"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "check their writing for capital letters, end marks and complete sentences",
+     "ccss": [
+      "L.6.2",
+      "W.6.5"
+     ],
+     "wida": [
+      "ELD-LA.6-8.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell the class how their robot or machine helps people",
+     "ccss": [
+      "SL.6.4"
+     ],
+     "wida": [
+      "ELD-SC.6-8.Explain.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

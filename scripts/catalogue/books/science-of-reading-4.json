@@ -1,0 +1,182 @@
+{
+  "series": "Science of Reading",
+  "level": "4",
+  "title": "Blends",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 4 Teacher Guide",
+  "units": [
+    {
+      "title": "Beginning blends",
+      "summary": "Lesson 7.1. A consonant blend is two consonants side by side that each keep their own sound (unlike digraphs). Beginning blends: R blends (fr, gr, br, pr, cr, tr, dr), L blends (fl, gl, bl, pl, cl) and S blends (sp, st, sl, sn, sm, sc, sk). Reading a word with four sounds is hard at first, so use sound boxes and finger spelling. Irregular words: want, from. Sentences: Fred has a frog. Stan is glad. Plug this in.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.2B",
+        "RF.1.3B",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant blends",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Review",
+          "notes": "Build chip: closed syllable, short vowel, which letters make one sound."
+        },
+        {
+          "title": "Phonemic awareness",
+          "notes": "Segment four-sound words with bingo chips."
+        },
+        {
+          "title": "Model",
+          "notes": "Build blend words (frog, glad, drum, flip) and read each sound in the blend."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list; dictation and sentence reading."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "want, from."
+        },
+        {
+          "title": "Dictation",
+          "notes": "e.g. \"I can hit the drum.\" \"A van did crash.\""
+        }
+      ],
+      "objectives": [
+        {
+          "text": "name the two sounds heard in a blend such as fr, gl or st",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like frog, glad, drum, stop and flip",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words that start with blends, such as clap, plan, snap and trip",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "tell a blend, where each letter keeps its sound, from the digraph sh",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Beginning Blends",
+        "Closed Syllables · Digraph & Triple Blends (str, spr, spl, scr)"
+      ]
+    },
+    {
+      "title": "Ending blends",
+      "summary": "Lesson 7.2. Ending blends: mp, nt, nd, lt, ld, lf, lp, ft, ct, st, sp, pt (nk comes later). Blends can come before or after the vowel in a syllable. Review at the end of the level: read and spell words with short vowels, digraphs and blends together to automaticity.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.2B",
+        "RF.1.3B"
+      ],
+      "skill_tags": [
+        "consonant blends",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Review",
+          "notes": "Build flash: which letters are a blend (fl) and which make one sound (sh)."
+        },
+        {
+          "title": "Model",
+          "notes": "Build words with ending blends (lamp, hand, felt, gift, mask)."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Decode and encode from the word list; dictation and sentence reading."
+        },
+        {
+          "title": "Mixed review",
+          "notes": "Read and spell words with short vowels, digraphs and blends together."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words that end in blends like lamp, hand, belt, gift and mask",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as jump, tent, best and soft by listening for each sound at the end",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "read words that mix digraphs and blends, like chimp and shrub",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read sentences with short vowels, digraphs and blends smoothly",
+          "ccss": [
+            "RF.1.2B",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Ending Blends",
+        "Closed Syllables · Review Together"
+      ]
+    }
+  ]
+}

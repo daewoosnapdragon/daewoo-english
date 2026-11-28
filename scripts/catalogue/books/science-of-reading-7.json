@@ -1,0 +1,1112 @@
+{
+  "series": "Science of Reading",
+  "level": "7",
+  "title": "Long Vowel Teams",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 7 Teacher Guide",
+  "units": [
+    {
+      "title": "ai",
+      "summary": "Lesson 1A: ai spells long a at the beginning or in the middle of a word (rain, wait, paint). A vowel team is two or more letters that together represent a vowel sound. The ai and ay lessons are followed by a lesson with both together.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long a ai ay",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long a sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "wait; irregular: said"
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like rain, wait, paint and snail with the ai vowel team",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "say that ai spells long a in the middle of a word",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as mail, train and tail using ai",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words wait and said",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Long a: ai, ay"
+      ]
+    },
+    {
+      "title": "ay",
+      "summary": "Lessons 1B and 1C: ay spells long a at the end of a word (day, play, stay). Then ai and ay are practised together, choosing by position. High-frequency words: day, way, play, say, wait; irregular: says, said.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long a ai ay",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long a sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "day, way, play, say, wait; irregular: says, said"
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        },
+        {
+          "title": "Lesson 1C: ai and ay together",
+          "notes": "Sort words by position and spell with the right team."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like day, play, stay and tray with the ay vowel team",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose ai or ay by where the sound comes in the word",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like pay, clay and spray using ay",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words day, way, play and say",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "ee",
+      "summary": "Lesson 2A: ee spells long e, usually in the middle but also at the end (see, tree, feet). Students will learn later that y also spells /ē/ at the end of longer words (happy), which links to the suffix -y. High-frequency words: green, sleep, three, need, keep, feet, week, feel.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long e ee ea",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long e sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "green, sleep, three, need, keep, feet, week, feel"
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like see, tree, feet and sleep with the ee vowel team",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as green, keep, week and queen using ee",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "hear that y can also say long e at the end of a longer word, like happy",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the common words green, three, need, keep and feel",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Long e: ee, ea",
+        "Multisyllable & Morphology · Y spells /ē/ & review Suffix -y"
+      ]
+    },
+    {
+      "title": "ea",
+      "summary": "Lessons 2B and 2C: ea also spells long e (eat, seat, beach). There is no trick to decide between ee and ea when spelling; over time students remember them, and the homophone lesson helps. ee and ea are practised together. High-frequency words: real, read, eat, each, means, please, leave, near, year.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long e ee ea",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long e sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "real, read, eat, each, means, please (p-l-ea-se), leave (l-ea-ve), near, year"
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        },
+        {
+          "title": "Lesson 2C: ee and ea together",
+          "notes": "Note to the teacher: no rule tells ee from ea in spelling."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like eat, seat, beach and teach with the ea vowel team",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "sort words with ee and ea by their spelling",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as leaf, dream and clean using ea",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words real, eat, each, please and year",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "oa",
+      "summary": "Lesson 3A: oa spells long o at the beginning or in the middle of a word (boat, soap, road). Word family -oad is practised with the ow and oe lessons.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long o oa ow",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long o sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Follow the encoding steps with oa words."
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like boat, soap, road and goat with the oa vowel team",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "say that oa spells long o in the middle of a word",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as coat, toast, float and load using oa",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "hear the long o sound in words that begin with oa, like oats",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Long o: oa, ow, oe"
+      ]
+    },
+    {
+      "title": "ow and oe",
+      "summary": "Lessons 3B and 3C: ow spells long o at the end of a word (snow, show, grow) except in a few words like shown, grown and own; oe at the end of a few words (toe, hoe, goes). oa, ow and oe are then practised together. High-frequency words: grow, show, know, own (goes, though).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long o oa ow",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long o sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "grow, show, goes, own, know; irregular: though"
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        },
+        {
+          "title": "Lesson 3C: oa, ow and oe together",
+          "notes": "Word sort and spelling by position."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like snow, grow, slow and toe with the ow and oe vowel teams",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose oa, ow or oe by where the sound comes in the word",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as blow, window and toe",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words grow, show, know and own",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "igh and ie",
+      "summary": "Lesson 4: igh spells long i, usually in the middle of a word followed by t (night, light) and at the end of a few words (high, thigh, sigh). The g and h are silent. ie spells long i at the end of a few words (pie, tie, lie, die). High-frequency words: high, might, light, night, right; irregular: eye, buy.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long i igh y",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Phonemic awareness",
+          "notes": "Hear the long i sound and isolate it in spoken words."
+        },
+        {
+          "title": "Teaching skill and model",
+          "notes": "Build words with the vowel team tile; two or more letters make one vowel sound."
+        },
+        {
+          "title": "Encoding and decoding",
+          "notes": "Sound boxes and mapping; read and spell words from the list."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Word lists, sentences, dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "high, might, light, night, right; irregular: eye, buy"
+        },
+        {
+          "title": "More practice",
+          "notes": "Open and closed word sorts, student workbook pages."
+        },
+        {
+          "title": "Review",
+          "notes": "The dropping y rule is revisited (taught earlier in the program)."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like night, light, high and sigh with igh",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the ie words pie, tie, lie and die",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as bright, fright and tight using igh",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words high, might, light, night and right",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Long i: igh, ie"
+      ]
+    },
+    {
+      "title": "Review of long vowel teams",
+      "summary": "Review Lessons 1 to 4: ai, ay, ee, ea, oa, ow, oe, igh and ie read and spelled together, with word sorts, a review of the dropping y rule, and spelling and reading assessments.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3C",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long vowel teams",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Mixed review",
+          "notes": "Read and spell words with all of the long vowel teams taught so far."
+        },
+        {
+          "title": "Spelling",
+          "notes": "Choosing among teams for the same sound."
+        },
+        {
+          "title": "Review pages",
+          "notes": "Workbook review and word sorts."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words that mix ai, ay, ee, ea, oa, ow and igh without stopping to decode",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose among the spellings of a long vowel sound in dictated words",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell two-syllable words that contain a long vowel team, such as rainbow and teacher",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "add the prefixes re- and un- to words, like redo and unlock",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Morphology: Prefixes re-, un-",
+        "Multisyllable & Morphology · 2-Syllable Words with long Vowel Teams"
+      ]
+    },
+    {
+      "title": "Other sounds of ea",
+      "summary": "Lessons 5A and 5B. ea does not always say long e: it can say short e (bread, head, deaf, meant) and, in a few words, long a (steak, break, great; optional). Teach the few long a words as heart words for now.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "long e ee ea",
+        "vowel teams",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 5A: ea says short e",
+          "notes": "Read and sort words like head, bread and deaf."
+        },
+        {
+          "title": "Lesson 5B: ea says long a (optional)",
+          "notes": "Not a full lesson; add on to the last lesson or teach as heart words."
+        },
+        {
+          "title": "Practice",
+          "notes": "Read ea words and decide which sound it makes."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "know that ea can say short e as well as long e, as in head and eat",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like bread, head, deaf and meant",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read the long a ea words steak, break and great",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "sort ea words by the sound the letters make",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "ie says long e",
+      "summary": "Lesson 6. ie can also spell long e in the middle of a word (field, chief, thief, piece), which is different from ie at the end of a word (pie), where it says long i.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F"
+      ],
+      "skill_tags": [
+        "long e ee ea",
+        "vowel teams"
+      ],
+      "lessons": [
+        {
+          "title": "Teaching skill",
+          "notes": "ie says long e in the middle of a word (field) and long i at the end (pie)."
+        },
+        {
+          "title": "Read and spell",
+          "notes": "Words with ie in the middle; word sorts."
+        },
+        {
+          "title": "Review",
+          "notes": "ie and other long e teams."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like field, chief, thief and shield with ie saying long e",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "tell ie at the end of pie from ie in the middle of field",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as brief, niece and piece",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "sort long e words by their spelling: ee, ea or ie",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Long e: ie; other sounds of ea"
+      ]
+    },
+    {
+      "title": "Homophones",
+      "summary": "Lesson 7. Homophones sound the same but are spelled differently and mean different things (see and sea, meet and meat, no and know, write and right). Because ee and ea cannot be told apart by sound, learning the meaning is how students choose the spelling. High-frequency words: know, knew, write, wrote.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F",
+        "L.2.2D"
+      ],
+      "skill_tags": [
+        "homophones",
+        "silent letters",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Homophones",
+          "notes": "Pairs of words with the same sound and different spelling and meaning; use each in a sentence."
+        },
+        {
+          "title": "Sorting",
+          "notes": "Sort pairs by meaning and by spelling pattern."
+        },
+        {
+          "title": "Silent letters",
+          "notes": "The silent letters in words such as know, write and sign."
+        },
+        {
+          "title": "Practice",
+          "notes": "Spell the right word for the sentence."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "tell homophones like sea and see, meet and meat apart by meaning",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "choose the correct spelling of a homophone for a sentence",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read and spell words with silent letters like knee, write and gnat",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "use apostrophes to read and write contractions like can't and it's",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Contractions",
+        "Silent Letters · Digraphs: kn, wr",
+        "Multisyllable & Morphology · Digraphs & ghost sounds: ph, gn, mb"
+      ]
+    },
+    {
+      "title": "ei says long a",
+      "summary": "Optional extra lesson 8. ei says long a in a few words, often with silent gh (eight, weigh, neighbor, veil). The eigh pattern is taught with its silent letters.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3C",
+        "RF.2.3F"
+      ],
+      "skill_tags": [
+        "vowel teams",
+        "long a ai ay"
+      ],
+      "lessons": [
+        {
+          "title": "Teaching skill",
+          "notes": "ei says long a; show the eigh tile with its silent gh."
+        },
+        {
+          "title": "Read and spell",
+          "notes": "eight, weigh, veil, vein and similar words."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like eight, weigh, veil and vein where ei says long a",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "notice the silent gh in eight and weigh",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell the numbers eight and eighty",
+          "ccss": [
+            "RF.2.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Suffixes -ful and -less",
+      "summary": "Lessons on -ful and -less: both make adjectives (hopeful, helpless). Words with a suffix: circle the base word and the suffix. Other adjective suffixes -y, -able and -ible are practised with these.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3E",
+        "L.2.4C"
+      ],
+      "skill_tags": [
+        "suffixes"
+      ],
+      "lessons": [
+        {
+          "title": "Introduce",
+          "notes": "-ful (full of) and -less (without) added to base words."
+        },
+        {
+          "title": "Reading and spelling",
+          "notes": "Words like careful, helpless, painful, joyful."
+        },
+        {
+          "title": "Reading sentences",
+          "notes": "Circle the base word and suffix."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say that -ful means full of and -less means without",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like careful, helpful, hopeless and painless",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "add -ful or -less to a base word and use it in a sentence",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "sort words with -ful, -less, -y, -able and -ible by suffix",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Vowel Teams · Morphology: -ful, -less, -ly, -ness",
+        "Vowel Teams · Morphology: Suffix -y",
+        "Multisyllable & Morphology · Morphology: Suffix -able",
+        "Multisyllable & Morphology · Suffix: ible"
+      ]
+    },
+    {
+      "title": "Suffixes -ly and -ness",
+      "summary": "Lessons on -ly and -ness: -ly usually makes adverbs (how) and -ness makes nouns (quality of). Words with more than one suffix, like deeply and playfully, are broken into base and suffixes.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3E",
+        "L.2.4C"
+      ],
+      "skill_tags": [
+        "suffixes"
+      ],
+      "lessons": [
+        {
+          "title": "Introduce",
+          "notes": "-ly (how) and -ness (quality of) added to base words."
+        },
+        {
+          "title": "Reading and spelling",
+          "notes": "Words like slowly, kindness, sadly, darkness."
+        },
+        {
+          "title": "Double suffixes",
+          "notes": "Circle each suffix in deeply and playfully."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say that -ly tells how and -ness names a quality, as in slowly and kindness",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like quickly, sadness, loudly and darkness",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "add -ly or -ness to a base word and use it in a sentence",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "break a word with two suffixes, like playfully, into its parts",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Multisyllable & Morphology · Suffix -ment",
+        "Multisyllable & Morphology · Morphology: Suffix -ive and -ion",
+        "Multisyllable & Morphology · Suffix -al/-ial (final stable cial, tial)"
+      ]
+    }
+  ]
+}

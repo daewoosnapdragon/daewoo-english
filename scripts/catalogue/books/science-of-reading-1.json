@@ -1,0 +1,528 @@
+{
+  "series": "Science of Reading",
+  "level": "1",
+  "title": "Alphabet",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 1 Teacher Guide",
+  "units": [
+    {
+      "title": "Set 1: a, b, t, s, m",
+      "summary": "Letters a, b, t, s, m (lessons 1 to 5). Teach what the letter looks like, what the mouth does, a motion and familiar words; the key words for a are apple, alligator and ax. Word parts: am, at, ab. Words to map and decode: am, at, ab, tab, Sam, mat, sat, bat.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.1D",
+        "RF.K.3A",
+        "RF.K.2D"
+      ],
+      "skill_tags": [
+        "letter sounds",
+        "blending"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 1: /ă/ = Aa",
+          "notes": "Key words apple, alligator, ax. Mouth wide open; a motion with cupped hands. Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 2: /b/ = Bb",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 3: /t/ = Tt",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 4: /s/ = Ss",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 5: /m/ = Mm",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Review the set",
+          "notes": "Letter hunts, games and workbook pages (workbook sold separately)."
+        },
+        {
+          "title": "Words to map and decode",
+          "notes": "am, at, ab, tab, Sam, mat, sat, bat"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say the sounds for a, b, t, s and m when shown each letter",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "sort pictures by their first sound: /ă/, /b/, /t/, /s/ or /m/",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "write a, b, t, s and m with the correct letter strokes",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "blend sounds to read words like am, at, mat and sat",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Alphabet · Set 1: a, b, t, s, m"
+      ]
+    },
+    {
+      "title": "Set 2: f, c, i, p",
+      "summary": "Letters f, c (/k/), i (/ĭ/) and p (lessons 6 to 9). Word parts: it, ip, ib, im, ap added to the Set 1 parts. Words to map and decode: if, it, is, fit, bit, sit, pit, tip, sip, bib, fib, Tim, tap, sap, map, cap, as.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.1D",
+        "RF.K.3A",
+        "RF.K.2D"
+      ],
+      "skill_tags": [
+        "letter sounds",
+        "blending"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 6: /f/ = Ff",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 7: /k/ = Cc",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 8: /ĭ/ = Ii",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 9: /p/ = Pp",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Review the set",
+          "notes": "Letter hunts, games and workbook pages (workbook sold separately)."
+        },
+        {
+          "title": "Words to map and decode",
+          "notes": "if, it, is, fit, bit, sit, pit, tip, sip, bib, fib, Tim, tap, sap, map, cap, as"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say the sounds for f, c, i and p, including c saying /k/",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "hear the short i sound at the start of words like igloo and itch",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "build and spell short words like fit, sip, tap and cap",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read words like if, it, tip and map by blending the sounds",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Alphabet · Set 2: f, c, i, p"
+      ]
+    },
+    {
+      "title": "Set 3: h, l, n, o",
+      "summary": "Letters h, l, n and o (/ŏ/) (lessons 10 to 13). Word parts: on, ot, ob, om, op, in, an. Words to map and decode include hot, lot, not, pot, mom, top, mop, hop, bin, tin, pin, ban, man, fan, can, ham, has, his and him.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.1D",
+        "RF.K.3A",
+        "RF.K.2D"
+      ],
+      "skill_tags": [
+        "letter sounds",
+        "blending"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 10: /h/ = Hh",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 11: /l/ = Ll",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 12: /n/ = Nn",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 13: /ŏ/ = Oo",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Review the set",
+          "notes": "Letter hunts, word hunts, games and workbook pages (workbook sold separately)."
+        },
+        {
+          "title": "Words to map and decode",
+          "notes": "on, tot, cot, pot, not, hot, lot, bob, sob, mob, mom, Tom, top, mop, cop, pop, hop, in, bin, tin, sin, fin, pin, ban, an, tan, man, fan, can, pan, ham, has, his, him"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say the sounds for h, l, n and o and give a word that starts with each",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "tell vowels from consonants, naming o as a vowel",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like hot, pin, man and top by tapping out the sounds",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read and sort words that end in -ot, -op, -in and -an",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Alphabet · Set 3: h, l, n, o"
+      ]
+    },
+    {
+      "title": "Set 4: g, d, r, k",
+      "summary": "Letters g, d, r and k (lessons 14 to 17); k and c both say /k/. Word parts: od, id, ad, og, ag, ig. Words to map and decode include hid, did, kid, dad, sad, had, nod, rod, dog, log, big, pig, dig, rag, bag, tag, ram, rat, kit and got.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.1D",
+        "RF.K.3A",
+        "RF.K.2D"
+      ],
+      "skill_tags": [
+        "letter sounds",
+        "blending"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 14: /g/ = Gg",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 15: /d/ = Dd",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 16: /r/ = Rr",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 17: /k/ = Kk",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Review the set",
+          "notes": "Letter hunts, word hunts, games and workbook pages (workbook sold separately)."
+        },
+        {
+          "title": "Words to map and decode",
+          "notes": "hid, bid, lid, did, kid, rid, dad, bad, tad, sad, mad, fad, pad, had, lad, rad, Tod, cod, pod, nod, rod, bog, fog, hog, log, dog, big, fig, pig, dig, rig, rag, bag, tag, sag, lag, gag, ram, rat, dab, kit, Kim, gab, got"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say the sounds for g, d, r and k and match each to its letter",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "notice that c and k can both spell the /k/ sound",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "write g, d, r and k and spell words like dog, big, rat and kid",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "blend and read words in the -og, -ig, -ad and -id families",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Alphabet · Set 4: g, d, r, k"
+      ]
+    },
+    {
+      "title": "Set 5: j, v, z, u",
+      "summary": "Letters j, v, z and u (/ŭ/) (lessons 18 to 21). Word parts: ub, ut, us, um, up, un, ud, ug. Words to map and decode include tub, cub, rub, but, cut, nut, bus, sum, gum, cup, sun, bun, run, mud, bug, mug, hug, rug, jug, zap, zip, vat and van.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.1D",
+        "RF.K.3A",
+        "RF.K.2D"
+      ],
+      "skill_tags": [
+        "letter sounds",
+        "blending"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 18: /j/ = Jj",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 19: /z/ = Zz",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 20: /v/ = Vv",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 21: /ŭ/ = Uu",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Review the set",
+          "notes": "Letter hunts, word hunts, games and workbook pages (workbook sold separately)."
+        },
+        {
+          "title": "Words to map and decode",
+          "notes": "tub, sub, cub, pub, hub, rub, but, cut, nut, hut, gut, us, bus, sum, hum, gum, up, pup, cup, sun, bun, fun, pun, run, bud, sud, mud, bug, tug, mug, pug, hug, lug, dug, rug, jug, zap, zip, vat, van"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say the sounds for j, v, z and u and give a word for each",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "hear the short u sound in words like umbrella, sun and bug",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like cup, bug, jug and zip using the letter sounds",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read word families -ub, -ut, -un and -ug by blending",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Alphabet · Set 5: j, v, z, u"
+      ]
+    },
+    {
+      "title": "Set 6: e, w, y, x, q",
+      "summary": "Letters e (/ĕ/), w, y, x (/ks/ at the end of words) and q (/kw/, always with u) (lessons 22 to 26). Word parts: eb, et, em, ep, en, ed, eg, ox, ix. Words to map and decode include web, bet, set, net, pet, ten, men, hen, bed, red, leg, peg, quit, yes, yet, box, fox, fix and mix. After the six sets: next steps and the alphabet assessment.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.K.1D",
+        "RF.K.3A",
+        "RF.K.2D"
+      ],
+      "skill_tags": [
+        "letter sounds",
+        "blending"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 22: /ĕ/ = Ee",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 23: /w/ = Ww",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 24: /y/ = Yy",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 25: /ks/ = Xx (at the end)",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Lesson 26: /kw/ = Qq (with u)",
+          "notes": "Sound, letter recognition (spot the letter), initial sound sort and letter formation."
+        },
+        {
+          "title": "Review the set",
+          "notes": "Letter hunts, games and workbook pages (workbook sold separately)."
+        },
+        {
+          "title": "Words to map and decode",
+          "notes": "web, bet, set, met, pet, net, let, get, jet, wet, hem, pep, ten, men, pen, hen, den, Ken, Jen, bed, Ted, fed, Ned, led, red, beg, leg, peg, quit, quip, yes, yet, box, fox, fix, mix, ox"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say the sounds for e, w, y, x and q, knowing q is always followed by u",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "hear /ks/ at the end of words like box, fox and mix",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like bed, leg, yes and fox by matching each sound to a letter",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Expressive"
+          ]
+        },
+        {
+          "text": "read short e words such as net, hen, red and peg",
+          "ccss": [
+            "RF.K.1D",
+            "RF.K.3A"
+          ],
+          "wida": [
+            "ELD-SI.K.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Alphabet · Set 6: e, w, y, x, q"
+      ]
+    }
+  ]
+}

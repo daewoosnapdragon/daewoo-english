@@ -1,0 +1,513 @@
+{
+  "series": "Science of Reading",
+  "level": "5",
+  "title": "Closed Syllable Rules",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 5 Teacher Guide",
+  "units": [
+    {
+      "title": "Suffix -ed",
+      "summary": "Lesson 8. Suffix -ed is added to action words to make the past tense and says /t/, /d/ or /id/ (jumped, planted). Review the terms base and suffix first. Teach -ed on closed syllables with a simple base (jump, planted); the doubling rule and the -ing suffix are practised with it.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3F",
+        "L.1.4C"
+      ],
+      "skill_tags": [
+        "suffixes",
+        "past tense"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Base word and suffix, with -s for plurals and verbs."
+        },
+        {
+          "title": "Introduce -ed",
+          "notes": "Build jump and jumped; yesterday I jumped in the pond."
+        },
+        {
+          "title": "Three sounds of -ed",
+          "notes": "Sort words by /t/, /d/ and /id/ (planted)."
+        },
+        {
+          "title": "Practice",
+          "notes": "Read and spell words with -ed; sentences."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say that -ed shows something already happened",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "hear -ed say /t/, /d/ or /id/ in jumped, rubbed and planted",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "add -ed to action words like jump, plant and help",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "name the base word in words like jumped and landed",
+          "ccss": [
+            "RF.1.3F",
+            "L.1.4C"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Morphology: Suffix -ed",
+        "Closed Syllables · Morphology: Suffix -ing",
+        "Closed Syllables · Morphology Rule: Doubling Rule"
+      ]
+    },
+    {
+      "title": "ll, ff, ss, zz (the floss rule)",
+      "summary": "Lesson 9. When a one-syllable word ends in f, l, s or z right after a short vowel, double the letter (floss, hill, kiss, buzz). No doubling after a long vowel or a consonant. Exceptions: bus, gas, if. A checklist poster has students ask each question. High-frequency words: will, well, still (also all, fall, small, call).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "L.1.2D",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "spelling rules",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Phonemic awareness",
+          "notes": "Listen for short vowels in mask, tell, meal, dress, chase, chill, felt, mile, shock, stuff."
+        },
+        {
+          "title": "Introduce the rule",
+          "notes": "Three things must happen before the last letter is doubled; sort words with double letters."
+        },
+        {
+          "title": "Model and guided practice",
+          "notes": "Run the checklist for each word, then add the double letter or not."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "will, well, still."
+        },
+        {
+          "title": "Dictation",
+          "notes": "Sentences from the word list."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "double f, l, s or z at the end of a short-vowel word, as in hill and miss",
+          "ccss": [
+            "RF.1.3B",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "decide whether a word needs double letters, using the checklist",
+          "ccss": [
+            "RF.1.3B",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "read words like stuff, spill, fuzz and dress",
+          "ccss": [
+            "RF.1.3B",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "name the exceptions bus, gas and if",
+          "ccss": [
+            "RF.1.3B",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Double Consonants: ll, ff, ss, zz",
+        "Closed Syllables · <all> spells /ŏl/"
+      ]
+    },
+    {
+      "title": "ck",
+      "summary": "Lesson 10. When a one-syllable word ends in /k/ right after a short vowel, spell it ck (duck, pack, stuck); after a long vowel or a consonant, use k (milk, disk, dusk). Very like the floss rule. Beginning /k/: use k when e, i or y follows, otherwise c.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "L.1.2D",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "spelling rules",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Review",
+          "notes": "Use the floss poster questions to decide whether a final letter is doubled."
+        },
+        {
+          "title": "Introduce the rule",
+          "notes": "ck after a short vowel, k after a consonant or long vowel."
+        },
+        {
+          "title": "Model and guided practice",
+          "notes": "Sort and spell words like disk, pack, stuck, milk, dusk, duck."
+        },
+        {
+          "title": "Dictation",
+          "notes": "Sentences from the word list."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "choose ck or k at the end of a word by checking what comes right before it",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like pack, kick, duck, milk and desk",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like sock, neck, risk and tusk",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "use k before e, i or y at the start of a word, as in kid and keg",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: ck",
+        "Closed Syllables · Beginning /k/ spelling rule"
+      ]
+    },
+    {
+      "title": "tch",
+      "summary": "Lesson 11. When a one-syllable word ends in /ch/ right after a short vowel, spell it tch (patch, clutch); otherwise ch (pinch, punch). tch is a digraph used only at the end of a one-syllable word. Review letters A to Z, sh, th, ch and ck.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "L.1.2D",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "spelling rules",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Review",
+          "notes": "Build words and decide ck or k."
+        },
+        {
+          "title": "Introduce the rule",
+          "notes": "Check the sound right before /ch/: short vowel means tch."
+        },
+        {
+          "title": "Model and guided practice",
+          "notes": "Sort and spell pinch, clutch, patch and punch."
+        },
+        {
+          "title": "Dictation",
+          "notes": "Sentences from the word list."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "choose tch or ch at the end of a word by checking the sound before it",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like match, stitch, lunch and bench",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like catch, fetch, pinch and hutch",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "explain why patch has tch and punch does not",
+          "ccss": [
+            "RF.1.3A",
+            "L.1.2D"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Consonant Digraphs: tch"
+      ]
+    },
+    {
+      "title": "ild, old, ost, olt, ind",
+      "summary": "Lesson 12. These closed syllables are exceptions: the vowel is long even though a consonant closes it in (wild, cold, most, bolt, kind). High-frequency words: find, kind, old, told, most (also cold, hold, mind). Sentences: Did you find it? That child is kind. The cold is wild!",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3C",
+        "RF.2.3F",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "long vowel exceptions",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm up and review",
+          "notes": "Visual drill (flip letters, students say the sound) and auditory drill (say a sound, students write the letter)."
+        },
+        {
+          "title": "Phonemic awareness",
+          "notes": "Segment words with bingo chips and ask questions about each sound."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "Closed syllables usually say a short vowel; these word endings are the exceptions."
+        },
+        {
+          "title": "Model and guided practice",
+          "notes": "Build words ending ild, old, olt, ind and ost."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "find, kind, old, told, most."
+        },
+        {
+          "title": "Dictation",
+          "notes": "Sentences from the word list."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read the long vowel in wild, cold, bolt, kind and most",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "recognise the endings ild, old, olt, ind and ost",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like child, gold, bolt and mind",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words find, kind, old, told and most",
+          "ccss": [
+            "RF.1.3C",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · Exceptions: ild, old, ost, ind, olt"
+      ]
+    },
+    {
+      "title": "ng and nk",
+      "summary": "Lesson 13 (\"Ring in the sink\"). The ng and nk endings: /ĭ/, ang and ank say /ă/. May be split into two lessons, one for ng and one for nk. Phonemic awareness: take away the first sounds to leave ink or ang (sink, stink; tank, bunk, think, bang, sang, hung, thing, wrong). Closed-closed words are divided between the two consonants (VCCV) and, for three consonants, usually after the first (VCCCV), keeping digraphs and blends together as in pump-kin.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3A",
+        "RF.1.3B",
+        "RF.K.3C",
+        "RF.1.3G"
+      ],
+      "skill_tags": [
+        "consonant digraphs",
+        "syllable division",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Review",
+          "notes": "Read the word endings -ind, -ild, -old, -olt and -ost."
+        },
+        {
+          "title": "Phonemic awareness",
+          "notes": "Say a word, take away the sounds before the ending (stink to ink)."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "ng and nk with short vowels; ring in the sink."
+        },
+        {
+          "title": "Model and guided practice",
+          "notes": "Build and read ng and nk words; sentences."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "bring, thing, think, thank, drink, sing, long."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words ending in ng and nk, like ring, sang, sink and tank",
+          "ccss": [
+            "RF.1.3A",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "hear the vowel sound before ng and nk in words like sing and bank",
+          "ccss": [
+            "RF.1.3A",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words like song, king, drink and trunk",
+          "ccss": [
+            "RF.1.3A",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Expressive"
+          ]
+        },
+        {
+          "text": "split two-syllable words between two consonants, as in rab-bit and pump-kin",
+          "ccss": [
+            "RF.1.3A",
+            "RF.1.3B"
+          ],
+          "wida": [
+            "ELD-SI.1.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Closed Syllables · -ng and -nk (& new grapheme: ng)",
+        "Multisyllable & Morphology · VCCV Words (closed-closed)",
+        "Multisyllable & Morphology · VCCCV Syllable Division Rule (closed-closed)"
+      ]
+    }
+  ]
+}

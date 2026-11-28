@@ -1,0 +1,693 @@
+{
+ "series": "Wonderskills Reading",
+ "level": "Intermediate 2",
+ "title": "",
+ "strand": "reading",
+ "color": "berry",
+ "kind": "sequence",
+ "source": "Wonderskills Reading Intermediate 2 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · Every Day Is Amazing!",
+   "summary": "Theme: Night and Day on Earth. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about day and night on Earth using key details",
+     "ccss": [
+      "RI.3.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about day and night, like sunrise, sunset, rotate and shadow",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Every Day Is Amazing! with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain in their own words why Earth has day and night",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Magnets Work!",
+   "summary": "Theme: The Earth’s Forces. Expository Text · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the author's purpose in Magnets Work! and what they want readers to know",
+     "ccss": [
+      "RI.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use magnet words, like magnet, attract, repel, force and metal",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Magnets Work! with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "test which classroom objects a magnet attracts and report what they find",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Starry Night",
+   "summary": "Theme: Look at the Sky!. Realistic Fiction · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of Starry Night in order, using first, next and finally",
+     "ccss": [
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use sky words, like star, constellation, telescope and shine",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Starry Night with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write about what they see when they look at the night sky",
+     "ccss": [
+      "W.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Lighting Lives",
+   "summary": "Theme: Ways People Help. Narrative Nonfiction · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the author's purpose in Lighting Lives and how it shows people helping others",
+     "ccss": [
+      "RI.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about helping others, like volunteer, donate, need and community",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Lighting Lives with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell one way they could help people in their community",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Tornado!",
+   "summary": "Theme: Weather Alert!. Expository Text · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Tornado! and the key details that support it",
+     "ccss": [
+      "RI.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use severe weather words, like tornado, funnel, warning, shelter and wind",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Tornado! with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "explain what to do to stay safe when there is a tornado warning",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Mia’s Song",
+   "summary": "Theme: Express Yourself. Realistic Fiction · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main message of Mia’s Song and the details that show it",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about expressing yourself, like song, express, feelings and perform",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Mia’s Song with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "share a way they like to express their feelings, like drawing or singing",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Places in Our World",
+   "summary": "Theme: All Around the World. Expository Text · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Places in Our World and the key details that support it",
+     "ccss": [
+      "RI.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use geography words, like continent, ocean, country, map and city",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Places in Our World with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "describe a place in the world they would like to visit and why",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Alaska, A Special Place",
+   "summary": "Theme: Earth’s Special Places. Expository Text · Compare and Contrast.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "compare and contrast two things described in Alaska, A Special Place",
+     "ccss": [
+      "RI.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about Alaska, like glacier, mountain, cold, wildlife and snow",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Alaska, A Special Place with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare Alaska with the place where they live",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Waves at Work",
+   "summary": "Theme: Earth Changes. Expository Text · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "explain how waves cause changes to the land, using cause and effect words",
+     "ccss": [
+      "RI.3.3",
+      "RI.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use earth change words, like wave, shore, sand, erosion and rock",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Waves at Work with the main idea and key details",
+     "ccss": [
+      "RI.3.2",
+      "W.3.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "draw before and after pictures of a beach and explain the change",
+     "ccss": [
+      "SL.3.5",
+      "W.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Happy New Year!",
+   "summary": "Theme: Our Culture Makes Us Special. Realistic Fiction · Compare and Contrast.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "compare and contrast the celebrations in Happy New Year! using alike and different",
+     "ccss": [
+      "RL.3.1",
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use celebration words, like culture, tradition, celebrate and custom",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Happy New Year! with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how their family celebrates the new year and what makes it special",
+     "ccss": [
+      "SL.3.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · Why the Sun and Moon Live in the Sky",
+   "summary": "Theme: Folktales About Nature. Folktale · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell what happens in Why the Sun and Moon Live in the Sky and why, using because",
+     "ccss": [
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use folktale words, like folktale, explain, nature, sun and moon",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of the folktale with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short folktale that explains something in nature",
+     "ccss": [
+      "W.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · The Snowman Contest",
+   "summary": "Theme: Exciting Nature. Realistic Fiction · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Vocabulary, Read the story\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.26"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary, Vocabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.27"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of The Snowman Contest in order, using first, next and finally",
+     "ccss": [
+      "RL.3.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use winter words, like snowman, contest, judge, prize and build",
+     "ccss": [
+      "L.3.4",
+      "L.3.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of The Snowman Contest with the characters, the events and the ending",
+     "ccss": [
+      "RL.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write how to build a snowman in order, using first, next and last",
+     "ccss": [
+      "W.3.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -8,6 +8,7 @@ import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRA
 import { addResource, appendDraft, deleteBook, deleteLesson, deleteObjective, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveObjective, saveSeries, saveSkill, saveUnit, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { needsUpdate } from '@/lib/dbUpdate'
+import BookUpdateView from './BookUpdateView'
 
 // ─── Bookshelf ───────────────────────────────────────────────────
 // The catalogue: every book the program uses, divided into units and
@@ -56,6 +57,7 @@ export default function BookshelfView() {
   const [selected, setSelected] = useState<string | null>(null)
   const [showRetired, setShowRetired] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [updating, setUpdating] = useState(false)
   const [showSkills, setShowSkills] = useState(false)
   // The open book rides in the tab's address (#bookshelf?book=<id>), so a reload comes back to the same book on the same tab.
   useEffect(() => {
@@ -84,10 +86,12 @@ export default function BookshelfView() {
       <div className="flex items-center justify-between gap-6 flex-wrap mb-4">
         <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2">{ko ? '프로그램이 쓰는 책과 그 단원, 차시.' : 'Every book the program uses, with its units and lessons. Series and books are edited here; where they are taught is set on the map.'}</p>
         <div className="flex gap-2">
+          {canManage && <button onClick={() => setUpdating(u => !u)} className={btn}><RefreshCw size={13} />{ko ? '책 업데이트' : 'Update the books'}</button>}
           {canManage && <button onClick={() => setAdding(a => !a)} className={btn}><Plus size={13} />{ko ? '책 추가' : 'Add a book'}</button>}
           <button onClick={c.reload} className={btn}><RefreshCw size={13} />{ko ? '새로고침' : 'Refresh'}</button>
         </div>
       </div>
+      {updating && canManage && <BookUpdateView onClose={() => setUpdating(false)} onChanged={c.reload} />}
 
       {c.missing && <p className="mb-4 text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql */}{needsUpdate({ en: 'curriculum catalog', ko: '교재 목록' }, ko)}</p>}
 

@@ -1,0 +1,703 @@
+{
+ "series": "Easy Reading",
+ "level": "2",
+ "title": "",
+ "strand": "reading",
+ "color": "ochre",
+ "kind": "sequence",
+ "source": "WonderSkills Easy Reading 2 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · A Rainy Day",
+   "summary": "Theme: Weather.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 6-11 / PPT File\nHomework: WB p.2"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 8-13 / PPT File\nHomework: WB p.3"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to A Rainy Day and tell what the weather is like in the story",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read A Rainy Day aloud with the teacher, then with a partner",
+     "ccss": [
+      "RF.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name kinds of weather, like rainy, sunny, cloudy, windy and snowy",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about today's weather: “It is rainy.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · We Run",
+   "summary": "Theme: Places.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 14-19 / PPT File\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 16-21 / PPT File\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to We Run and name the places in the story, using the pictures",
+     "ccss": [
+      "RL.1.1",
+      "RL.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read We Run aloud, pointing to each word as they say it",
+     "ccss": [
+      "RF.1.4",
+      "RF.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name places, like park, school, store, beach and zoo",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about places they go: “We go to the park.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Many Trees",
+   "summary": "Theme: Trees.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 22-27 / PPT File\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 24-29 / PPT File\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to Many Trees and tell what they learn about trees",
+     "ccss": [
+      "RI.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use the pictures in Many Trees to help them read new words",
+     "ccss": [
+      "RF.1.4C",
+      "RI.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name parts of a tree and tree words, like leaf, branch and trunk",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about trees: “The tree is tall.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · My Garden Grows",
+   "summary": "Theme: Plants.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 30-35 / PPT File\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 32-37 / PPT File\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to My Garden Grows and tell what grows in the garden",
+     "ccss": [
+      "RI.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "reread My Garden Grows aloud smoothly and with expression",
+     "ccss": [
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name plant words, like seed, root, stem, leaf and flower",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about how plants grow: “The seed needs water.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · In the Clouds",
+   "summary": "Theme: Nature.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 38-43 / PPT File\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 40-45 / PPT File\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to In the Clouds and tell what the clouds look like in the pictures",
+     "ccss": [
+      "RL.1.1",
+      "RL.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read In the Clouds aloud with the teacher, then with a partner",
+     "ccss": [
+      "RF.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name things in the sky and nature, like cloud, sun, rain and rainbow",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about the sky: “I see a white cloud.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · We Want Water",
+   "summary": "Theme: Wild Animals.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 46-51 / PPT File\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 48-53 / PPT File\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to We Want Water and tell which wild animals want water",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read We Want Water aloud, pointing to each word as they say it",
+     "ccss": [
+      "RF.1.4",
+      "RF.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name wild animals, like lion, elephant, zebra and giraffe",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about wild animals: “The elephant is big.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Let's Make a Salad",
+   "summary": "Theme: Cooking.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 54-59 / PPT File\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 56-61 / PPT File\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to Let's Make a Salad and tell what goes into the salad",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use the pictures in Let's Make a Salad to help them read new words",
+     "ccss": [
+      "RF.1.4C",
+      "RL.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name salad foods, like lettuce, tomato, carrot and cucumber",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about making a salad: “I put in a tomato.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Farm Sounds",
+   "summary": "Theme: Farm Animals.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 62-67 / PPT File\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 64-69 / PPT File\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to Farm Sounds and match each farm animal to its sound",
+     "ccss": [
+      "RI.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "reread Farm Sounds aloud smoothly and with expression",
+     "ccss": [
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name farm animals, like cow, pig, duck, sheep and horse",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about farm animals: “The cow says moo.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Cal and Jin",
+   "summary": "Theme: Friends.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 70-75 / PPT File\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 72-77 / PPT File\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to Cal and Jin and tell what the two friends do together",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read Cal and Jin aloud with the teacher, then with a partner",
+     "ccss": [
+      "RF.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about friends, like friend, share, help and play",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about a friend: “My friend and I play ball.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · The Good Vet",
+   "summary": "Theme: Vet and Pet.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 78-83 / PPT File\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 80-85 / PPT File\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to The Good Vet and tell how the vet helps the pets",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read The Good Vet aloud, pointing to each word as they say it",
+     "ccss": [
+      "RF.1.4",
+      "RF.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name words about vets and pets, like vet, sick, help, dog and cat",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about caring for a pet: “The vet helps my dog.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · My Friend Sam",
+   "summary": "Theme: Activities.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 86-91 / PPT File\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 88-93 / PPT File\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to My Friend Sam and tell what Sam likes to do",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use the pictures in My Friend Sam to help them read new words",
+     "ccss": [
+      "RF.1.4C",
+      "RL.1.7"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name activities, like swim, ride a bike, dance and play soccer",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about things they can do: “I can swim.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · A Winter Day",
+   "summary": "Theme: Clothes.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Warm-Up, Words to Know, Read the Story\nMaterial: SB pp. 94-99 / PPT File\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the Story, Understanding, Building Your Sentences\nMaterial: SB pp. 96-101 / PPT File\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "listen to A Winter Day and tell what people wear on a cold day",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "reread A Winter Day aloud smoothly and with expression",
+     "ccss": [
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name winter clothes, like coat, hat, scarf, gloves and boots",
+     "ccss": [
+      "L.1.5",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "build and say sentences about what they wear: “I wear a warm hat.”",
+     "ccss": [
+      "L.1.1",
+      "SL.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

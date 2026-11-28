@@ -1,0 +1,718 @@
+{
+ "series": "Super Phonics",
+ "level": "4",
+ "title": "",
+ "strand": "phonics",
+ "kind": "sequence",
+ "source": "Super Phonics 3rd ed. Teacher's Guide, Book 4",
+ "units": [
+  {
+   "title": "Unit 1 · sh, ch",
+   "summary": "Key words: ship, shop, shell, fish, wish, dish, chin, chop, rich, bench, lunch. Sight words: get, from, put.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "digraphs",
+    "final sounds",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the digraphs sh and ch at the start and end of words, like ship, fish, chin and lunch",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with sh and ch, like shop, dish, chop and bench",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for sh or ch and write the missing letters in words like shell, wish and rich",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words get, from and put",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new sh and ch words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB pp. 4–5 · Audio 01–04"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 6 · Audio 05"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 06–07"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 08–09"
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · th, wh, ck",
+   "summary": "Key words: thin, thick, bath, math, moth, whale, white, whisk, duck, sick, chick. Sight words: am, like, them.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "digraphs",
+    "final sounds",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the digraphs th, wh and ck at the start and end of words, like thin, bath, whale and duck",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with th, wh and ck, like thick, math, white and sick",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for th or wh and write the missing letters in words like moth, whisk and chick",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words am, like and them",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new th, wh and ck words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 12 · Audio 10–11"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 13 · Audio 12–13"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 14 · Audio 14"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 15–16"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 17–18"
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · th, ng, nk",
+   "summary": "Key words: this, that, king, ring, sing, wing, hang, ink, pink, wink, junk, skunk. Sight words: live, look, thank.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "digraphs",
+    "final sounds",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the sounds th, ng and nk at the start and end of words, like this, that, king and ring",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with th, ng and nk, like sing, wing, hang and pink",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for th or ng and write the missing letters in words like ink, wink, junk and skunk",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words live, look and thank",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new th, ng and nk words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 20 · Audio 19–20"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 21 · Audio 21–22"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 22 · Audio 23"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 24–25"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 26–27"
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · sm, sn, sw",
+   "summary": "Key words: smoke, smell, smile, smash, snake, snack, snap, swim, swing, switch. Sight words: make, just, want.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "blends",
+    "initial blends",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the blends sm, sn and sw at the start of words, like smoke, snake, swim and swing",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with sm, sn and sw, like smell, smile, snack and snap",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for sm or sn and write the missing letters in words like smash, snap and switch",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words make, just and want",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new sm, sn and sw words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 28 · Audio 28–29"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 29 · Audio 30–31"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 30 · Audio 32"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 33–34"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 35–36"
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · cl, bl, fl",
+   "summary": "Key words: clock, clap, clam, clip, black, block, blade, flag, flame, flap. Sight words: goes, you, not.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "blends",
+    "initial blends",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the blends cl, bl and fl at the start of words, like clock, black, flag and flap",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with cl, bl and fl, like clap, block, flame and clip",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for cl or bl and write the missing letters in words like clam, blade and flap",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words goes, you and not",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new cl, bl and fl words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 42 · Audio 40–41"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 43 · Audio 42–43"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 44 · Audio 44"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 45–46"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 47–48"
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · cr, br, fr",
+   "summary": "Key words: crab, crib, crane, crack, brick, bride, brave, brush, frog, frame, frost. Sight words: house, they, her.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "blends",
+    "initial blends",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the blends cr, br and fr at the start of words, like crab, brick, frog and frost",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with cr, br and fr, like crib, brave, brush and frame",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for cr or br and write the missing letters in words like crane, crack and bride",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words house, they and her",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new cr, br and fr words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 50 · Audio 49–50"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 51 · Audio 51–52"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 52 · Audio 53"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 54–55"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 56–57"
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · gl, pl, sl",
+   "summary": "Key words: glass, glide, globe, plane, plant, plug, plum, sled, slug, slide. Sight words: should, take, down.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "blends",
+    "initial blends",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the blends gl, pl and sl at the start of words, like glass, plane, plug and slug",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with gl, pl and sl, like globe, plant, plum and sled",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for gl or pl and write the missing letters in words like glide, slide and plant",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words should, take and down",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new gl, pl and sl words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 58 · Audio 58–59"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 59 · Audio 60–61"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 60 · Audio 62"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 63–64"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 65–66"
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · dr, gr, tr",
+   "summary": "Key words: dress, drive, drum, drink, grape, grab, grass, truck, trip, track. Sight words: there, and, back.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3A",
+    "RF.1.3G"
+   ],
+   "skill_tags": [
+    "blends",
+    "initial blends",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "say the blends dr, gr and tr at the start of words, like dress, grape, truck and trip",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "blend and break apart words with dr, gr and tr, like drum, grab, grass and track",
+     "ccss": [
+      "RF.1.3A",
+      "RF.1.2C"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Interpretive"
+     ]
+    },
+    {
+     "text": "listen for dr or gr and write the missing letters in words like drink, drive and trip",
+     "ccss": [
+      "RF.1.3A",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    },
+    {
+     "text": "read and write the sight words there, and and back",
+     "ccss": [
+      "RF.1.3G",
+      "L.1.2E"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use new dr, gr and tr words in speaking, reading and writing about the unit story",
+     "ccss": [
+      "SL.1.1",
+      "RF.1.4B"
+     ],
+     "wida": [
+      "ELD-SI.2-3.Expressive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Listen and learn",
+     "notes": "SB p. 66 · Audio 67–68"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 67 · Audio 69–70"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 68 · Audio 71"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 72–73"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 74–75"
+    }
+   ]
+  }
+ ]
+}

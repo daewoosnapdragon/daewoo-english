@@ -1,0 +1,710 @@
+{
+ "series": "Super Phonics",
+ "level": "1",
+ "title": "",
+ "strand": "phonics",
+ "kind": "sequence",
+ "source": "Super Phonics 3rd ed. Teacher's Guide, Book 1",
+ "units": [
+  {
+   "title": "Unit 1 · A, B, C",
+   "summary": "Key words: ant, alligator, apple, bear, bat, ball, cat, car, can. Sight words: on, in.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters A, B and C",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like ant, ball and car",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Aa, Bb and Cc using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to bear, bat and cat",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words on and in in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 6–7 · Audio 01–02"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 8 · Audio 03–04"
+    },
+    {
+     "title": "Say and circle",
+     "notes": ""
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 06–07"
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · D, E, F",
+   "summary": "Key words: dog, dinosaur, duck, egg, elephant, elbow, fish, fan, fire. Sight words: under, the.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters D, E and F",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like dog, egg and fish",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Dd, Ee and Ff using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to duck, elbow and fire",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words under and the in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 12–13 · Audio 01, 08"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 14 · Audio 09–10"
+    },
+    {
+     "title": "Say and circle",
+     "notes": ""
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 12–13"
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · G, H, I",
+   "summary": "Key words: gorilla, goat, gum, horse, hand, house, igloo, ink, insect. Sight words: with, in.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters G, H and I",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like goat, horse and igloo",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Gg, Hh and Ii using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to gum, hand and insect",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words with and in in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 18–19 · Audio 01, 14"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 20 · Audio 15–16"
+    },
+    {
+     "title": "Say and circle",
+     "notes": ""
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 18–19"
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · J, K, L",
+   "summary": "Key words: jelly, jar, jet, king, key, kite, lion, leaf, lamp. Sight words: in, a.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters J, K and L",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like jet, king and leaf",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Jj, Kk and Ll using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to jar, kite and lamp",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words in and a in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 24–25 · Audio 01, 20"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 26 · Audio 21–22"
+    },
+    {
+     "title": "Say and circle",
+     "notes": ""
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": "Audio 24"
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 25"
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · M, N, O",
+   "summary": "Key words: monkey, mask, mouse, nest, net, nut, octopus, orange, otter. Sight words: with, the.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters M, N and O",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like mouse, nest and octopus",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Mm, Nn and Oo using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to mask, nut and otter",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words with and the in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 36–37 · Audio 01, 29"
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 38 · Audio 30–31"
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 33–34"
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · P, Q, R",
+   "summary": "Key words: pig, pen, pot, queen, quarter, quilt, rabbit, rain, robot. Sight words: in, the.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters P, Q and R",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like pig, queen and robot",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Pp, Qq and Rr using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to pot, quilt and rain",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words in and the in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 42–43 · Audio 01, 35"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 44 · Audio 36–37"
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 39–40"
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · S, T, U, V",
+   "summary": "Key words: snake, sun, sock, tiger, tent, train, umbrella, under, up, violin, van, vest. Sight words: in, a.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters S, T, U and V",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like sun, tiger, umbrella and van",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Ss, Tt, Uu and Vv using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to sock, tent and vest",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words in and a in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 48–49 · Audio 01, 41"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 50 · Audio 42–43"
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": "Audio 45"
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 46"
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · W, X, Y, Z",
+   "summary": "Key words: watch, web, worm, fox, box, six, yo-yo, yak, yarn, zebra, zipper, zoo. Sight words: in, on.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.K.1D",
+    "RF.K.3A"
+   ],
+   "skill_tags": [
+    "letter names",
+    "letter sounds",
+    "initial sounds",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "name the uppercase and lowercase letters W, X, Y and Z",
+     "ccss": [
+      "RF.K.1D"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "say the first sound in words like web, fox, yak and zoo",
+     "ccss": [
+      "RF.K.3A",
+      "RF.K.2D"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "trace and write Ww, Xx, Yy and Zz using the correct letter shapes",
+     "ccss": [
+      "L.K.1A"
+     ],
+     "wida": [
+      "ELD-SI.K.Expressive"
+     ]
+    },
+    {
+     "text": "listen to and sing along with the letter song, then point to worm, six and zipper",
+     "ccss": [
+      "RF.K.1D",
+      "SL.K.1"
+     ],
+     "wida": [
+      "ELD-SI.K.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words in and on in a short story",
+     "ccss": [
+      "RF.K.3C"
+     ],
+     "wida": [
+      "ELD-LA.K.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 54–55 · Audio 01, 47"
+    },
+    {
+     "title": "Trace and write",
+     "notes": ""
+    },
+    {
+     "title": "Explore initial sounds",
+     "notes": "SB p. 56 · Audio 48–49"
+    },
+    {
+     "title": "Reinforce initial skills",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and phrase practice",
+     "notes": "Audio 51–52"
+    }
+   ]
+  }
+ ]
+}

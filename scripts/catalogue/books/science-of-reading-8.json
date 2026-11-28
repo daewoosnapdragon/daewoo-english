@@ -1,0 +1,606 @@
+{
+  "series": "Science of Reading",
+  "level": "8",
+  "title": "R-Controlled Vowels",
+  "strand": "phonics",
+  "kind": "sequence",
+  "source": "Science of Reading Level 8 Teacher Guide",
+  "units": [
+    {
+      "title": "ar",
+      "summary": "Lesson 1. When a vowel is in front of r it does not make one of its usual sounds; the vowel and r together make a new sound. ar says /ar/ (car, start, hard). High-frequency words: start, part, hard; irregular: are.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up and review",
+          "notes": "Sound deck flip and auditory drill on the graphemes taught so far."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "A vowel in front of r makes a new sound with the r: /ar/ (car)."
+        },
+        {
+          "title": "Modeling decoding",
+          "notes": "Build words with letter tiles; what syllable type is this (r-controlled, \"bossy r\")."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and spell words from the word list; sentences and dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: start, part, hard. Irregular: are"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like car, farm, start and hard with the ar spelling",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "say that the vowel and r together make a new sound",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as park, star, dark and scarf using ar",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words start, part, hard and are",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "R-Controlled · <ar>"
+      ]
+    },
+    {
+      "title": "or",
+      "summary": "Lesson 2. or says /or/ (for, corn, storm). High-frequency words: for, or (also your and four).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up and review",
+          "notes": "Sound deck flip and auditory drill on the graphemes taught so far."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "A vowel in front of r makes a new sound with the r: /or/ (fork)."
+        },
+        {
+          "title": "Modeling decoding",
+          "notes": "Build words with letter tiles; what syllable type is this (r-controlled, \"bossy r\")."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and spell words from the word list; sentences and dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: for, or"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like for, fork, corn and storm with the or spelling",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "tell /or/ in fork from /ar/ in farm",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as horn, sport, north and short using or",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words for and or",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "R-Controlled · <or>"
+      ]
+    },
+    {
+      "title": "er, ir and ur",
+      "summary": "Lesson 3. The /er/ sound is spelled er, ir or ur; there is no sound to tell them apart, so spelling must be learned by word. High-frequency words: first, her, turn, girl; irregular: were.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up and review",
+          "notes": "Sound deck flip and auditory drill on the graphemes taught so far."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "A vowel in front of r makes a new sound with the r: /er/ (her, bird, turn)."
+        },
+        {
+          "title": "Modeling decoding",
+          "notes": "Build words with letter tiles; what syllable type is this (r-controlled, \"bossy r\")."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and spell words from the word list; sentences and dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Regular: first, her, turn, girl. Irregular: were"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like her, bird, turn, girl and first with the /er/ sound",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "know that er, ir and ur all say /er/",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as fern, shirt, burn and nurse by learning the right spelling",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words first, her, turn and girl",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "R-Controlled · <ir>, <er>, <ur> = /er/",
+        "Multisyllable & Morphology · The Schwa"
+      ]
+    },
+    {
+      "title": "Review: ar, or, er",
+      "summary": "Lesson 4. Review /ar/, /or/ and /er/ spelled ar, or, er, ir and ur together, with warm-up, word sorts and sentences. Two-syllable words with r-controlled syllables are read and spelled here.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.1.3B",
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "fluency"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up",
+          "notes": "Sound deck and auditory drill."
+        },
+        {
+          "title": "Mixed reading",
+          "notes": "Words with ar, or, er, ir and ur sorted by sound."
+        },
+        {
+          "title": "Practice",
+          "notes": "Sentences and spelling."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "sort words by whether they have /ar/, /or/ or /er/",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read two-syllable words like farmer, corner and thirty",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell dictated words that mix ar, or, er, ir and ur",
+          "ccss": [
+            "RF.1.3B",
+            "RF.2.3F"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        }
+      ],
+      "replaces": [
+        "Multisyllable & Morphology · 2-Syllable Words with Bossy r"
+      ]
+    },
+    {
+      "title": "ear",
+      "summary": "Lesson 5 (mini-lesson). ear usually says /er/ in the middle of a word (search, earth, heard, earn); the letters can represent three different sounds, as in hear and bear. Only a few one-syllable words use ear for /er/, so students see them all.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up and review",
+          "notes": "Sound deck flip and auditory drill on the graphemes taught so far."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "A vowel in front of r makes a new sound with the r: /er/ (earth)."
+        },
+        {
+          "title": "Modeling decoding",
+          "notes": "Build words with letter tiles; what syllable type is this (r-controlled, \"bossy r\")."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and spell words from the word list; sentences and dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "Show students all the one-syllable /er/ ear words."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like search, earth, heard and earn with ear saying /er/",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "know that ear can say /er/ and use the sound to figure out new words",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell earth, learn and heard by remembering ear",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "name what type of syllable ear belongs to",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "w + ar and w + or",
+      "summary": "Lessons 6.1 and 6.2. When w comes before ar, the ar says /or/ (war, warm, warn, ward, warp). When w comes before or, the or says /er/ (word, work, worm). The same applies after qu. High-frequency words: warm, world, work, word (also watch, wash).",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 6.1: war",
+          "notes": "Build warn; w changes the sound, ar says /or/."
+        },
+        {
+          "title": "Lesson 6.2: wor",
+          "notes": "Build word, work and worm; or says /er/ after w."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "warm, world, work, word."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "know that w changes the sound that follows it, as in war and word",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like war, warm, warn, word, work and worm",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as ward, warp and worth",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words warm, world, work and word",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "R-Controlled · war, wor"
+      ]
+    },
+    {
+      "title": "Suffix -er",
+      "summary": "Lessons 7A and 7B. -er has two jobs: more than (brighter, colder, taller, smaller) used to compare two things, and a person who (baker, banker, cheater, boxer); -or can also mean a person who. -est means most. Identify the base word and the suffix in each word.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3E",
+        "L.2.4C"
+      ],
+      "skill_tags": [
+        "suffixes",
+        "r-controlled vowels"
+      ],
+      "lessons": [
+        {
+          "title": "Lesson 7A: -er, more than",
+          "notes": "Review suffixes -s, -es, -ed, -ing; read and spell colder, faster, taller."
+        },
+        {
+          "title": "Lesson 7B: -er, a person who",
+          "notes": "Baker and banker; -er and -or."
+        },
+        {
+          "title": "Practice",
+          "notes": "Break words into base and suffix and use them in sentences."
+        }
+      ],
+      "objectives": [
+        {
+          "text": "say that -er can mean more than, as in taller, or a person who, as in baker",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "read words like brighter, colder, baker and boxer",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "add -er to a base word and use it in a sentence",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "name the base word and the suffix in words such as smarter and cheater",
+          "ccss": [
+            "RF.2.3E",
+            "L.2.4C"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ],
+      "replaces": [
+        "R-Controlled · Morphology: Suffixes -er and -est",
+        "R-Controlled · Morphology: Suffix -en"
+      ]
+    },
+    {
+      "title": "our",
+      "summary": "Lesson 8 (mini-lesson). our says /or/ in some words (four, pour, court, fourth, mourn, source, your). Not many words use it and pronunciation varies (many people say your as yoor), so first grade may simply teach your and four as heart words.",
+      "default_weeks": 1,
+      "ccss": [
+        "RF.2.3F",
+        "RF.2.3G"
+      ],
+      "skill_tags": [
+        "r-controlled vowels",
+        "sight words"
+      ],
+      "lessons": [
+        {
+          "title": "Warm-up and review",
+          "notes": "Sound deck flip and auditory drill on the graphemes taught so far."
+        },
+        {
+          "title": "Teaching skill",
+          "notes": "A vowel in front of r makes a new sound with the r: /or/ (four)."
+        },
+        {
+          "title": "Modeling decoding",
+          "notes": "Build words with letter tiles; what syllable type is this (r-controlled, \"bossy r\")."
+        },
+        {
+          "title": "Guided practice",
+          "notes": "Read and spell words from the word list; sentences and dictation."
+        },
+        {
+          "title": "High-frequency words",
+          "notes": "your, four (heart words in first grade)"
+        }
+      ],
+      "objectives": [
+        {
+          "text": "read words like four, pour, court and fourth with our saying /or/",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        },
+        {
+          "text": "spell words such as pour, court and mourn",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Expressive"
+          ]
+        },
+        {
+          "text": "read the common words your and four",
+          "ccss": [
+            "RF.2.3F",
+            "RF.2.3G"
+          ],
+          "wida": [
+            "ELD-SI.2-3.Interpretive"
+          ]
+        }
+      ]
+    }
+  ]
+}

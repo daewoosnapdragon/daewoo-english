@@ -1,0 +1,647 @@
+{
+ "series": "Super Phonics",
+ "level": "3",
+ "title": "",
+ "strand": "phonics",
+ "kind": "sequence",
+ "source": "Super Phonics 3rd ed. Teacher's Guide, Book 3",
+ "units": [
+  {
+   "title": "Unit 1 · -ake, -ape, -ave",
+   "summary": "Key words: cake, bake, lake, tape, cape, ape, cave, wave, save. Sight words: this, for.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long a",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long a words with a silent e, like cake, tape and cave",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ake, -ape and -ave words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /āk/, /āp/ and /āv/ and write words like lake, cape and wave",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words this and for and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like bake, ape and save",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 4–5 · Audio 01–03"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 5"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 6"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 05–06"
+    },
+    {
+     "title": "Listen and write",
+     "notes": "Audio 07"
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 08–09"
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · -ame, -ate, -ane, -ase",
+   "summary": "Key words: name, game, same, gate, date, cane, mane, lane, vase, base, case. Sight words: who, what.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long a",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long a words with a silent e, like name, gate, cane and vase",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ame, -ate, -ane and -ase words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /ām/, /āt/, /ān/ and /ās/ and write words like game, date, lane and case",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words who and what and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like same, mane and base",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 12–13 · Audio 10, 12–13"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 13 · Audio 11"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 14"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 14–15"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 17–18"
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · -ike, -ime, -ive",
+   "summary": "Key words: bike, hike, like, time, dime, lime, five, dive, hive. Sight words: to, there.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long i",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long i words with a silent e, like bike, time and five",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ike, -ime and -ive words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /aɪk/, /aɪm/ and /aɪv/ and write words like hike, dime and hive",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words to and there and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like like, lime and dive",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 20–21 · Audio 19, 21–22"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 21 · Audio 20"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 22"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 23–24"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 26–27"
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · -ine, -ipe, -ite, -ire",
+   "summary": "Key words: nine, pine, line, pipe, wipe, kite, bite, fire, wire, tire. Sight words: he, up.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long i",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long i words with a silent e, like nine, pipe, kite and fire",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ine, -ipe, -ite and -ire words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /aɪn/, /aɪp/, /aɪt/ and /aɪr/ and write words like pine, wipe, bite and wire",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words he and up and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like line, tire and kite",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 28–29 · Audio 28, 30–31"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 29 · Audio 29"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 30"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 32–33"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 35–36"
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · -ose, -one, -ole",
+   "summary": "Key words: rose, nose, hose, bone, cone, mole, hole, pole. Sight words: have, everywhere.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long o",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long o words with a silent e, like rose, bone and mole",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ose, -one and -ole words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /oʊz/, /oʊn/ and /oʊl/ and write words like nose, cone and hole",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words have and everywhere and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like hose, pole and bone",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 42–43 · Audio 40, 42–43"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 43 · Audio 41"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 44"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 44–45"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 47–48"
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · -ome, -ope, -ote",
+   "summary": "Key words: dome, home, rope, hope, note, vote. Sight words: read, is.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long o",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long o words with a silent e, like dome, rope and note",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ome, -ope and -ote words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /oʊm/, /oʊp/ and /oʊt/ and write words like home, hope and vote",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words read and is and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like note, home and rope",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 50–51 · Audio 49, 51–52"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 51 · Audio 50"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 52"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 53–54"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 56–57"
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · -ute, -ube, -ule, -une",
+   "summary": "Key words: cute, mute, tube, cube, mule, dune, tune, June. Sight words: like, sing.",
+   "default_weeks": 2,
+   "ccss": [
+    "RF.1.3C",
+    "RF.2.3B"
+   ],
+   "skill_tags": [
+    "long u",
+    "silent e",
+    "blending",
+    "sight words"
+   ],
+   "objectives": [
+    {
+     "text": "read and spell long u words with a silent e, like cute, tube, mule and tune",
+     "ccss": [
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "explain how the silent e lets the vowel say its name in -ute, -ube, -ule and -une words",
+     "ccss": [
+      "RF.1.3C",
+      "RF.2.3B"
+     ],
+     "wida": [
+      "ELD-SI.1.Expressive"
+     ]
+    },
+    {
+     "text": "listen for the sounds /juːt/, /juːb/, /juːl/ and /juːn/ and write words like mute, cube and dune",
+     "ccss": [
+      "RF.1.3C",
+      "RF.1.2B"
+     ],
+     "wida": [
+      "ELD-SI.1.Interpretive"
+     ]
+    },
+    {
+     "text": "read the sight words like and sing and find them in a short story",
+     "ccss": [
+      "RF.1.3G"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "read the unit story smoothly, using words like June, tune and cute",
+     "ccss": [
+      "RF.1.4B",
+      "RF.1.3C"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    }
+   ],
+   "lessons": [
+    {
+     "title": "Warm up activity",
+     "notes": "SB pp. 58–59 · Audio 58, 60–61"
+    },
+    {
+     "title": "Listen, point, and learn",
+     "notes": "SB p. 59 · Audio 59"
+    },
+    {
+     "title": "Applying blending skills",
+     "notes": "SB p. 60"
+    },
+    {
+     "title": "Word recognition and listening",
+     "notes": "Audio 62–63"
+    },
+    {
+     "title": "Listen and write",
+     "notes": ""
+    },
+    {
+     "title": "Fluency and sight words",
+     "notes": "Audio 65–66"
+    }
+   ]
+  }
+ ]
+}

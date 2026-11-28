@@ -1,0 +1,696 @@
+{
+ "series": "Rich Reading",
+ "level": "Basic 3 Plus",
+ "title": "",
+ "strand": "reading",
+ "color": "teal",
+ "kind": "sequence",
+ "source": "WonderSkills Rich Reading Basic 3 Plus 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · The Lonely Lion",
+   "summary": "Theme: Feelings. Fantasy · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.6-11 / PPT file\nHomework: WB p.2"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.3"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of The Lonely Lion in order, using first, next and finally",
+     "ccss": [
+      "RL.1.2",
+      "RL.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use feeling words, like lonely, sad, happy and friendly",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "retell The Lonely Lion to a partner, using the pictures to help them remember",
+     "ccss": [
+      "RL.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a time they felt lonely and what helped",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Animal Tails",
+   "summary": "Theme: Animal Body Parts. Nonfiction · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.14-19 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Animal Tails and the key details that support it",
+     "ccss": [
+      "RI.1.2"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about how animals use their tails, like balance, swim and hold on",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "retell the most important facts from Animal Tails in their own words",
+     "ccss": [
+      "RI.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which animal tail they would like to have and why",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Mike’s Hard Work",
+   "summary": "Theme: Making Money. Realistic Fiction · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.22-27 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main problem in Mike’s Hard Work and how it is solved",
+     "ccss": [
+      "RL.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use money words, like earn, save, spend, coin and work",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "retell Mike’s Hard Work in their own words: beginning, middle and end",
+     "ccss": [
+      "RL.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how they could earn money and what they would do with it",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Glowing Bugs",
+   "summary": "Theme: Insects. Nonfiction · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.30-35 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Glowing Bugs and the key details that support it",
+     "ccss": [
+      "RI.1.2"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about glowing bugs, like firefly, glow, light and night",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "retell the most important facts from Glowing Bugs in their own words",
+     "ccss": [
+      "RI.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell one fact about glowing bugs that surprised them",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Being Together",
+   "summary": "Theme: Friendship. Realistic Fiction · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.38-43 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell what happens in Being Together and why, using because",
+     "ccss": [
+      "RL.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use friendship words, like together, miss, share and care",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "retell Being Together in their own words: beginning, middle and end",
+     "ccss": [
+      "RL.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about something they enjoy doing with a friend",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Animals Help People!",
+   "summary": "Theme: Animal Helpers. Nonfiction · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.46-51 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Animals Help People! and the key details that support it",
+     "ccss": [
+      "RI.1.2"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about animals that help, like guide dog, rescue and carry",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "retell the most important facts from Animals Help People! in their own words",
+     "ccss": [
+      "RI.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say which animal helper they think is most useful and why",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · Charm Scarves",
+   "summary": "Theme: Arts & Crafts. Realistic Fiction · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.54-59 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main problem in Charm Scarves and how it is solved",
+     "ccss": [
+      "RL.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use craft words, like scarf, yarn, colors, pattern and make",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "retell Charm Scarves in their own words: beginning, middle and end",
+     "ccss": [
+      "RL.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "describe a craft they have made and how they made it",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Measuring Weather",
+   "summary": "Theme: Weather Tools. Nonfiction · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.62-67 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Measuring Weather and the key details that support it",
+     "ccss": [
+      "RI.1.2"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name weather tools, like thermometer, rain gauge and wind vane",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "retell the most important facts from Measuring Weather in their own words",
+     "ccss": [
+      "RI.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which weather tool they would use to check today's weather and why",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · Fran and White",
+   "summary": "Theme: Playing with Pets. Realistic Fiction · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.70-75 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell what happens in Fran and White and why, using because",
+     "ccss": [
+      "RL.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about playing with pets, like fetch, chase, run and gentle",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "retell Fran and White in their own words: beginning, middle and end",
+     "ccss": [
+      "RL.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how they would play safely and kindly with a pet",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Making Paper Shapes",
+   "summary": "Theme: Papercrafts. Nonfiction · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.78-83 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "put the steps for making a paper shape in order: first, next, then, last",
+     "ccss": [
+      "RI.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use papercraft words, like fold, cut, glue, paper and shape",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "retell the most important facts from Making Paper Shapes in their own words",
+     "ccss": [
+      "RI.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "make a paper shape and explain to a partner how they made it",
+     "ccss": [
+      "SL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Explain.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · At Work with Mom",
+   "summary": "Theme: Medical Jobs. Realistic Fiction · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.86-91 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer who, what, where and why questions about At Work with Mom",
+     "ccss": [
+      "RL.1.1"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "name medical jobs and words, like doctor, nurse, hospital and patient",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "retell At Work with Mom in their own words: beginning, middle and end",
+     "ccss": [
+      "RL.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "say which medical job they would like and why",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · Two Kinds of Bears",
+   "summary": "Theme: Bears. Nonfiction · Compare and Contrast.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Key Words, Read the story, Stop and Check\nMaterial: SB p.94-99 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Retelling\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell how the two kinds of bears in Two Kinds of Bears are alike and different",
+     "ccss": [
+      "RI.1.3"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use bear words, like fur, claws, cub and den",
+     "ccss": [
+      "L.1.4",
+      "L.1.6"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "retell the most important facts from Two Kinds of Bears in their own words",
+     "ccss": [
+      "RI.1.2",
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say which kind of bear they find more interesting and why",
+     "ccss": [
+      "SL.1.4"
+     ],
+     "wida": [
+      "ELD-LA.1.Argue.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}

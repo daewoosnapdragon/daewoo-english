@@ -1,0 +1,689 @@
+{
+ "series": "Rich Reading",
+ "level": "Intermediate 2 Plus",
+ "title": "",
+ "strand": "reading",
+ "color": "teal",
+ "kind": "sequence",
+ "source": "WonderSkills Rich Reading Intermediate 2 Plus 12-week syllabus",
+ "units": [
+  {
+   "title": "Unit 1 · Fixing the Playground",
+   "summary": "Theme: Community. Realistic Fiction · Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.6-10 / PPT file\nHomework: WB p.2"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.8-13 / PPT file\nHomework: WB p.3"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell how different characters in Fixing the Playground feel, reading their parts in different voices",
+     "ccss": [
+      "RL.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use community words, like playground, neighbor, fix, together and safe",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Fixing the Playground with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how they could help make their neighborhood better",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 2 · Amazing Team Players!",
+   "summary": "Theme: Insects. Expository Text · Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.14-18 / PPT file\nHomework: WB p.4"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.16-21 / PPT file\nHomework: WB p.5"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "ask and answer questions about how insects work as a team",
+     "ccss": [
+      "RI.2.1"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about insect teams, like colony, ant, bee, queen and work",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Amazing Team Players! with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "compare insect teamwork with how their class works together",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 3 · Not So Bad!",
+   "summary": "Theme: Family. Realistic Fiction · Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.22-26 / PPT file\nHomework: WB p.6"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.24-29 / PPT file\nHomework: WB p.7"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell how different characters in Not So Bad! feel, reading their parts in different voices",
+     "ccss": [
+      "RL.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use family words, like brother, sister, share, help and get along",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Not So Bad! with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell about a time something turned out better than they expected",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 4 · Solar Power",
+   "summary": "Theme: Energy. Expository Text · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.30-34 / PPT file\nHomework: WB p.8"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.32-37 / PPT file\nHomework: WB p.9"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote Solar Power and what they want readers to know",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use energy words, like solar, energy, panel, sun and power",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Solar Power with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say whether their school should use solar power and why",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 5 · Our Special Tree",
+   "summary": "Theme: Neighbor Relations. Realistic Fiction · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.38-42 / PPT file\nHomework: WB p.10"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.40-45 / PPT file\nHomework: WB p.11"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main problem in Our Special Tree and how it is solved",
+     "ccss": [
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use neighbor words, like neighbor, share, fence, yard and agree",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Our Special Tree with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell how neighbors can solve a problem kindly",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 6 · Storms, Storms, Storms!",
+   "summary": "Theme: Environment. Expository Text · Compare and Contrast.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.46-50 / PPT file\nHomework: WB p.12"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.48-53 / PPT file\nHomework: WB p.13"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "compare the kinds of storms in Storms, Storms, Storms! and how they are alike and different",
+     "ccss": [
+      "RI.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "name kinds of storms, like thunderstorm, hurricane, tornado and blizzard",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Storms, Storms, Storms! with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell which kind of storm they think is most dangerous and why",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 7 · A Fun Day with Flowers",
+   "summary": "Theme: Diversity. Realistic Fiction · Point of View.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.54-58 / PPT file\nHomework: WB p.14"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.56-61 / PPT file\nHomework: WB p.15"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell how different characters in A Fun Day with Flowers feel, reading their parts in different voices",
+     "ccss": [
+      "RL.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use flower and color words, like petal, bloom, different and colorful",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A Fun Day with Flowers with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell one way they are different from a friend and why that is good",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 8 · Fingerprints - Your Personal Code",
+   "summary": "Theme: ID (Identification). Expository Text · Main Idea and Key Details.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.62-66 / PPT file\nHomework: WB p.16"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.64-69 / PPT file\nHomework: WB p.17"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main idea of Fingerprints - Your Personal Code and the key details that support it",
+     "ccss": [
+      "RI.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Interpretive"
+     ]
+    },
+    {
+     "text": "use fingerprint words, like fingerprint, pattern, loop, whorl and unique",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Fingerprints - Your Personal Code with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "look at their own fingerprint and describe its pattern",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 9 · A Hike in the Woods",
+   "summary": "Theme: Nature. Realistic Fiction · Sequence.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.70-74 / PPT file\nHomework: WB p.18"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.72-77 / PPT file\nHomework: WB p.19"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main events of A Hike in the Woods in order, using first, next and finally",
+     "ccss": [
+      "RL.2.5"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use hiking words, like trail, woods, path, map and backpack",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of A Hike in the Woods with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write about a walk or hike they took, in order",
+     "ccss": [
+      "W.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 10 · Salt",
+   "summary": "Theme: Minerals. Expository Text · Author's Purpose.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.78-82 / PPT file\nHomework: WB p.20"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.80-85 / PPT file\nHomework: WB p.21"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell why the author wrote Salt and what readers learn about salt",
+     "ccss": [
+      "RI.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Argue.Interpretive"
+     ]
+    },
+    {
+     "text": "use mineral words, like salt, mineral, crystal, ocean and mine",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of Salt with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "tell three ways people use salt every day",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 11 · What Makes Ella Laugh?",
+   "summary": "Theme: Humor. Realistic Fiction · Problem and Solution.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.86-90 / PPT file\nHomework: WB p.22"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.88-93 / PPT file\nHomework: WB p.23"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell the main problem in What Makes Ella Laugh? and how it is solved",
+     "ccss": [
+      "RL.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Interpretive"
+     ]
+    },
+    {
+     "text": "use words about humor, like funny, joke, laugh, silly and smile",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of What Makes Ella Laugh? with the characters, the events and the ending",
+     "ccss": [
+      "RL.2.2"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    },
+    {
+     "text": "tell a joke or a funny story that makes them laugh",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Narrate.Expressive"
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Unit 12 · The Wright Brothers",
+   "summary": "Theme: Inventions. Biography · Cause and Effect.",
+   "default_weeks": 3,
+   "ccss": [],
+   "skill_tags": [],
+   "lessons": [
+    {
+     "title": "Day 1 · Words and story",
+     "notes": "Look and Answer, Voabulary, Read the story, Stop and Check\nMaterial: SB p.94-98 / PPT file\nHomework: WB p.24"
+    },
+    {
+     "title": "Day 2 · Comprehension",
+     "notes": "Read the story, Comprehension Check, Comprehension Skill, Summary / Voabulary Review\nMaterial: SB p.96-101 / PPT file\nHomework: WB p.25"
+    }
+   ],
+   "objectives": [
+    {
+     "text": "tell causes and effects in The Wright Brothers, using because and so",
+     "ccss": [
+      "RI.2.3"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Explain.Interpretive"
+     ]
+    },
+    {
+     "text": "use flying words, like airplane, glider, wing, fly and test",
+     "ccss": [
+      "L.2.4",
+      "L.2.6"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "write a short summary of The Wright Brothers with the main idea and key details",
+     "ccss": [
+      "RI.2.2",
+      "W.2.8"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    },
+    {
+     "text": "say what they would like to invent and how they would test it",
+     "ccss": [
+      "SL.2.4"
+     ],
+     "wida": [
+      "ELD-LA.2-3.Inform.Expressive"
+     ]
+    }
+   ]
+  }
+ ]
+}
