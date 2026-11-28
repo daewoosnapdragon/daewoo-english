@@ -1,18 +1,18 @@
 'use client'
 
 import Loading from '@/components/brand/Loading'
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
 import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { classDot } from '@/lib/utils'
 import { STRAND_LABEL, bookName, colorHex, levelShort, splitUnitTitle, type CurriculumBook, type CurriculumUnit } from '@/lib/curriculumCore'
-import { TERMS, TERM_LABEL, academicYears, fitToTerm, groupByModule, layoutPacing, masterRows, placementLength, reviewOf, sectionEnds, termsFor, totalWeeks, yearWeeks, holidayWeeks, termDates, type HolidayCounts, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
-import { addPacingMany, copyPlacements, createPlacement, deletePlacement, dropPacing, dropPacingMany, movePacing, setReviewWeeks, patchMasterRows, setAimDate, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
+import { TERMS, TERM_LABEL, academicYears, groupByModule, layoutPacing, masterRows, placementLength, reviewOf, termsFor, totalWeeks, yearWeeks, holidayWeeks, termDates, type HolidayCounts, type CurriculumPlacement, type Term, type YearWeeks } from '@/lib/curriculumPacing'
+import { addPacingMany, copyPlacements, createPlacement, deletePlacement, dropPacing, dropPacingMany, movePacing, setReviewWeeks, setAimDate, setPacingWeeks, updatePlacementTerm } from '@/lib/curriculumPlacementsData'
 import { usePlanner, type Planner } from './usePlanner'
 import PeriodsLine from './PeriodsLine'
 import StoryPicker from './StoryPicker'
-import { ArrowDown, ArrowUp, Check, Copy, Loader2, Maximize2, Plus, Scissors, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, Copy, Loader2, Plus, Scissors, Trash2, X } from 'lucide-react'
 import { unitsInRange } from '@/lib/yearPlan'
 import { needsUpdate } from '@/lib/dbUpdate'
 
@@ -22,7 +22,7 @@ import { needsUpdate } from '@/lib/dbUpdate'
 // or stories go in the book's order at their suggested lengths. Click a chip
 // for its list: change a length, reorder, drop or add units, set an aim
 // date. Copy brings another grade's books over. Class plans shows the same
-// plans as a timeline.
+// plans as a timeline. The opened book shows right under its row.
 
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
 const btn = 'h-8 px-3 rounded border border-rule-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 hover:text-ink disabled:opacity-40 inline-flex items-center gap-1.5 whitespace-nowrap'
@@ -66,6 +66,9 @@ export default function MapView() {
   const masters = p.placements.filter(x => x.academic_year === theYear && x.is_master)
   const cellOf = (key: string) => { const [cls, g] = key.split('|'); return { cls, grade: Number(g) } }
   const activeKey = placing || copying || (open ? (() => { const pl = masters.find(x => x.id === open); return pl ? rowKey(pl.english_class, pl.grade) : null })() : null)
+  // Bring the panel into view when it opens (it sits under its row, so this is usually a small nudge or nothing).
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => { panelRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }) }, [activeKey, open])
 
   if (p.loading) return <Loading rows={5} />
   if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-warn">{/* supabase/migration-curriculum-catalogue.sql, supabase/migration-curriculum-placements.sql */}{p.missing === 'catalogue' ? needsUpdate({ en: 'curriculum catalog', ko: '교재 목록' }, ko) : needsUpdate({ en: 'curriculum placements', ko: '교재 배치' }, ko)}</p>
@@ -112,7 +115,8 @@ export default function MapView() {
           {GRADES.map(g => <div key={g} className="px-2 py-2 border-l border-rule">{ko ? `${g}학년` : `Grade ${g}`}</div>)}
         </div>
         {PLACED_ENGLISH_CLASSES.map(cls => (
-          <div key={cls} className="grid border-b border-rule last:border-b-0" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
+          <Fragment key={cls}>
+          <div className="grid border-b border-rule last:border-b-0" style={{ gridTemplateColumns: `130px repeat(${GRADES.length}, minmax(0, 1fr))` }}>
             <div className="px-3 py-2 flex items-start gap-2 pt-3">
               <span className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ background: classDot(cls as any) }} />
               <span className="text-[length:calc(12.5px*var(--ts))] font-semibold text-ink">{cls}</span>
@@ -132,17 +136,18 @@ export default function MapView() {
               )
             })}
           </div>
-        ))}
-      </div>
-
-      {(placing || copying || opened) && (
-        <div className="mt-4 border border-rule-2 rounded bg-paper-2 p-3 flex flex-col gap-2">
+          {/* The opened book, or the place and copy forms, right under the row that was clicked. */}
+          {(placing || copying || opened) && activeKey && cellOf(activeKey).cls === cls && (
+        <div ref={panelRef} className="border-b border-rule bg-paper-2 p-3 flex flex-col gap-2">
           <p className="text-[length:calc(12px*var(--ts))] text-ink-2">{(() => { const k = activeKey ? cellOf(activeKey) : null; return k ? `${k.cls} · ${ko ? `${k.grade}학년` : `Grade ${k.grade}`}` : '' })()}</p>
           {placing && <PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cellOf(placing).cls} grade={cellOf(placing).grade} year={theYear} existing={masters.filter(x => x.english_class === cellOf(placing).cls && x.grade === cellOf(placing).grade)} fail={fail} onDone={() => { setPlacing(null); p.reload() }} />}
           {copying && <CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cellOf(copying).cls, grade: cellOf(copying).grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(null); p.reload() }} />}
           {opened && <PlacementCard terms={terms} hc={hcOf(opened.grade)} pl={opened} p={p} ko={ko} label={label(opened)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpen(null)} />}
         </div>
-      )}
+          )}
+          </Fragment>
+        ))}
+      </div>
 
       <p className="text-[length:calc(11.5px*var(--ts))] text-ink-3 mt-4 leading-relaxed">{ko ? '칩을 누르면 목록을 봅니다.' : `Click a chip for its list.${showTags ? ' Sp and F are the spring and fall halves; Yr runs across both.' : ''}`}</p>
     </div>
@@ -181,10 +186,6 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
     if (!await confirmDialog({ title: ko ? '배치 삭제' : 'Take this book out', message: ko ? `${label}을(를) ${pl.english_class} ${pl.grade}학년에서 뺍니다.` : `${label} comes out of ${pl.english_class} Grade ${pl.grade} for ${TERM_LABEL[pl.term].en.toLowerCase()} ${pl.academic_year}, with its list of ${anthology ? 'stories' : 'units'}.`, confirmLabel: ko ? '삭제' : 'Remove' })) return
     if (!fail(await deletePlacement(pl.id, label))) { onRemoved(); p.reload() }
   }
-  const ends = sectionEnds(rows, units)
-  const allReviews = ends.length > 0 && ends.every(id => reviewOf(rows.find(r => r.id === id)!) > 0)
-  const reviewEverySection = async () => { setBusy(true); if (!fail(await setReviewWeeks(ends.map(id => ({ id, review_weeks: allReviews ? 0 : 1 })), label))) await p.reload(); setBusy(false) }
-  const fit = async () => { setBusy(true); if (!fail(await patchMasterRows(fitToTerm(rows, length), `${label} fitted to the term`))) await p.reload(); setBusy(false) }
   const addPicked = async () => { setBusy(true); const chosen = units.filter(u => picked.has(u.id)); if (!fail(await addPacingMany(pl.id, chosen, rows, label))) { setPicking(false); setPicked(new Set()); await p.reload() } setBusy(false) }
   const groups = groupByModule(bars.map(b => ({ ...b, title: b.unit.title, sort_order: b.pacing.sort_order })))
   const showGroups = groups.length > 1 || (groups[0] && groups[0].label !== 'Other')
@@ -202,8 +203,6 @@ export function PlacementCard({ pl, p, ko, label, yw, fail, confirmDialog, onRem
         <label className="text-[length:calc(11.5px*var(--ts))] text-ink-3 inline-flex items-center gap-1.5">{ko ? '목표일' : 'Aim to finish by'}
           <input type="date" value={pl.aim_date || ''} onChange={async e => { if (!fail(await setAimDate(pl.id, e.target.value || null, label))) p.reload() }} className={`${sel} w-[140px]`} />
         </label>
-        {length > 0 && rows.length > 0 && Math.abs(total - length) > 0.01 && <button onClick={fit} disabled={busy} className={btnS} title={ko ? '학기에 맞게 길이를 고르게 나눕니다' : 'Give every unit an even share so the list fills the term'}><Maximize2 size={11} />{ko ? '학기에 맞추기' : 'Fit to the term'}</button>}
-        {ends.length > 1 && <button onClick={reviewEverySection} disabled={busy} className={btnS} title={ko ? '각 단원군(섹션·모듈) 끝에 복습 1주' : 'A review week at the end of each section or module'}>{allReviews ? (ko ? '단원군 뒤 복습 지우기' : 'Take out section reviews') : (ko ? '단원군마다 복습 1주' : 'Review after every section')}</button>}
         {!anthology && listed.length > 2 && <button onClick={() => { setRange(r => r ? null : { from: listed[0].id, to: listed[listed.length - 1].id }); setPicking(false) }} className={range ? btnSOn : btnS} title={ko ? '처음과 끝 단원을 골라 그 사이만 남깁니다' : 'Pick a first and last unit; the units outside them come out'}><Scissors size={11} />{ko ? '범위만 남기기' : 'Keep a range'}</button>}
         {left.length > 0 && <button onClick={() => { setPicking(s => !s); setPicked(new Set()); setRange(null) }} className={picking ? btnSOn : btnS}><Plus size={11} />{anthology ? (ko ? '이야기 추가' : 'Add stories') : (ko ? '단원 추가' : 'Add units')}</button>}
         <select value={pl.term} onChange={async e => { if (!fail(await updatePlacementTerm(pl.id, e.target.value as Term, label))) p.reload() }} className={sel}>

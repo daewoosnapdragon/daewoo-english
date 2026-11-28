@@ -210,13 +210,11 @@ export function countBook(units: CurriculumUnit[], lessons: CurriculumLesson[]):
   return { units: units.length, lessons: ls.length, confirmedUnits: units.filter(u => !!u.confirmed_at).length, confirmedLessons: ls.filter(l => !!l.confirmed_at).length }
 }
 
-/** "4 units · 12 lessons · 9 confirmed", or "Not indexed yet". */
+/** "4 units · 12 lessons", or "Not indexed yet". Nothing is confirmed by hand, so there is no confirmed count. */
 export function countLine(c: BookCounts, ko: boolean): string {
   if (!c.units) return ko ? '아직 색인 안 됨' : 'Not indexed yet'
   const parts = [ko ? `단원 ${c.units}` : `${c.units} ${c.units === 1 ? 'unit' : 'units'}`]
   if (c.lessons) parts.push(ko ? `차시 ${c.lessons}` : `${c.lessons} ${c.lessons === 1 ? 'lesson' : 'lessons'}`)
-  const total = c.units + c.lessons, done = c.confirmedUnits + c.confirmedLessons
-  parts.push(done === total ? (ko ? '모두 확인됨' : 'all confirmed') : (ko ? `${done}/${total} 확인됨` : `${done} of ${total} confirmed`))
   return parts.join(' · ')
 }
 

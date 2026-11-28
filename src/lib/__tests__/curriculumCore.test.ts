@@ -70,8 +70,8 @@ describe('names and counts', () => {
   })
   it('writes the count line', () => {
     expect(countLine({ units: 0, lessons: 0, confirmedUnits: 0, confirmedLessons: 0 }, false)).toBe('Not indexed yet')
-    expect(countLine({ units: 4, lessons: 12, confirmedUnits: 4, confirmedLessons: 5 }, false)).toBe('4 units · 12 lessons · 9 of 16 confirmed')
-    expect(countLine({ units: 1, lessons: 2, confirmedUnits: 1, confirmedLessons: 2 }, false)).toBe('1 unit · 2 lessons · all confirmed')
+    expect(countLine({ units: 4, lessons: 12, confirmedUnits: 4, confirmedLessons: 5 }, false)).toBe('4 units · 12 lessons')
+    expect(countLine({ units: 1, lessons: 2, confirmedUnits: 1, confirmedLessons: 2 }, false)).toBe('1 unit · 2 lessons')
   })
 })
 

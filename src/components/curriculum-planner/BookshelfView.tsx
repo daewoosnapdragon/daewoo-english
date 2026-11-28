@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { useTeachers } from '@/hooks/useData'
 import { BOOK_COLORS, BOOK_STATUS_LABEL, RESOURCE_KINDS, SERIES_KIND_LABEL, STRANDS, STRAND_LABEL, bookName, colorHex, countBook, countLine, draftPrompt, isCurriculumMissing, kindFromUrl, levelShort, parseCatalogueLines, parseCodes, parseTags, unknownTags, type BookStatus, type CurriculumBook, type CurriculumLesson, type CurriculumResource, type CurriculumSeries, type CurriculumSkill, type CurriculumUnit, type ParsedUnit, type ResourceKind, type Strand } from '@/lib/curriculumCore'
-import { addResource, appendDraft, deleteBook, deleteLesson, deleteObjective, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveObjective, saveSeries, saveSkill, saveUnit, setConfirmed, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
+import { addResource, appendDraft, deleteBook, deleteLesson, deleteObjective, deleteResource, deleteSeries, deleteSkill, deleteUnit, fetchCatalogue, reorder, saveBook, saveLesson, saveObjective, saveSeries, saveSkill, saveUnit, type BookDraft, type Catalogue, type LessonDraft, type UnitDraft } from '@/lib/curriculumData'
 import { ArrowDown, ArrowUp, BookOpen, Check, ChevronDown, ChevronRight, Copy, ExternalLink, Loader2, Pencil, Plus, RefreshCw, Sparkles, Tag, Trash2, X } from 'lucide-react'
 import { needsUpdate } from '@/lib/dbUpdate'
 
@@ -14,8 +14,9 @@ import { needsUpdate } from '@/lib/dbUpdate'
 // lessons, each lesson with its "students will" line, CCSS codes and skill
 // tags, and links to the files in the shared Drive. Units and lessons
 // arrive as Claude's draft from a table of contents or the teacher's guide,
-// pasted into the box on the right, and show as "suggested" until admin
-// confirms them. Books in use and retired books are both here, so an old
+// pasted into the box on the right, and are in use as soon as they are in:
+// there is no confirm step. Objectives live in each unit's bank (one source),
+// so lesson rows do not show a lesson's own objective. Books in use and retired books are both here, so an old
 // year's plan still resolves. This is phase 1 of the
 // curriculum planner (docs/curriculum-planner-plan.md): placements, pacing
 // and the boards come next and read from these tables.
@@ -29,7 +30,6 @@ const btnS = 'h-7 px-2 rounded border border-rule-2 text-[length:calc(11.5px*var
 const chip = 'inline-flex items-center h-5 px-1.5 rounded text-[length:calc(11.5px*var(--ts))] font-semibold'
 const lbl = 'block text-[length:calc(11.5px*var(--ts))] text-ink-3 mb-1'
 const KST = 'Asia/Seoul'
-const fmtWhen = (iso: string, ko: boolean) => new Date(iso).toLocaleDateString(ko ? 'ko-KR' : 'en-US', { timeZone: KST, month: 'short', day: 'numeric' })
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 
 function useCatalogue() {
@@ -147,7 +147,7 @@ export default function BookshelfView() {
               <div className="border border-dashed border-rule-2 rounded p-8 text-center">
                 <BookOpen size={22} className="mx-auto text-ink-3 mb-2" />
                 <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{ko ? '왼쪽에서 책을 고르세요.' : 'Pick a book on the shelf to see its units and lessons.'}</p>
-                {canManage && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">{ko ? '책을 추가한 뒤 목차를 붙여넣으면 Claude가 쓴 단원과 차시가 들어옵니다.' : 'Add a book, then paste the lines Claude writes from its contents. Confirm them once you have looked.'}</p>}
+                {canManage && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-1">{ko ? '책을 추가한 뒤 목차를 붙여넣으면 Claude가 쓴 단원과 차시가 들어옵니다.' : 'Add a book, then paste the lines Claude writes from its contents.'}</p>}
               </div>
             )}
           </main>
@@ -195,11 +195,6 @@ function SeriesHeader({ s, bookCount, ko, canManage, fail, reload }: { s: Curric
       {canManage && <button onClick={() => { setD({ name: s.name, publisher: s.publisher, strand: s.strand, color: s.color, kind: s.kind }); setEditing(true) }} className="text-ink-3 hover:text-ink opacity-0 group-hover:opacity-100" aria-label="Edit series"><Pencil size={10} /></button>}
     </div>
   )
-}
-
-function SourceChip({ confirmed_at, confirmed_by, source, ko, nameOf }: { confirmed_at: string | null; confirmed_by: string | null; source: 'claude' | 'teacher'; ko: boolean; nameOf: (id: string | null) => string }) {
-  if (confirmed_at) return <span className={`${chip} bg-good-soft text-good`} title={`${nameOf(confirmed_by)} · ${fmtWhen(confirmed_at, ko)}`}><Check size={10} className="mr-0.5" />{ko ? '확인됨' : 'Confirmed'}</span>
-  return <span className={`${chip} bg-paper-3 text-ink-2`}>{source === 'claude' ? (ko ? 'Claude 제안' : 'Suggested by Claude') : (ko ? '미확인' : 'Not confirmed')}</span>
 }
 
 function Tags({ tags, codes }: { tags: string[]; codes: string[] }) {
@@ -335,13 +330,7 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
     if (!await confirmDialog({ title: ko ? '책 삭제' : 'Delete this book', message: ko ? `${label}과(와) 그 단원, 차시, 자료가 모두 지워집니다.` : `${label} and its ${counts.units} units, ${counts.lessons} lessons and their resources go. Retire it instead if any class has used it.`, confirmLabel: ko ? '삭제' : 'Delete' })) return
     if (!fail(await deleteBook(book.id, label))) onDeleted()
   }
-  const confirmAll = async () => {
-    const ls = c.lessons.filter(l => units.some(u => u.id === l.unit_id) && !l.confirmed_at).map(l => l.id)
-    const us = units.filter(u => !u.confirmed_at).map(u => u.id)
-    if (!us.length && !ls.length) { showToast(ko ? '모두 확인됨' : 'Everything is already confirmed'); return }
-    if (!await confirmDialog({ title: ko ? '모두 확인' : 'Confirm everything in this book', message: ko ? `단원 ${us.length}개, 차시 ${ls.length}개를 확인 표시합니다.` : `${us.length} units and ${ls.length} lessons will be marked confirmed by you.`, confirmLabel: ko ? '확인' : 'Confirm all' })) return
-    if (!fail(await setConfirmed('curriculum_units', us, me, true, label)) && !fail(await setConfirmed('curriculum_lessons', ls, me, true, label))) c.reload()
-  }
+
 
   return (
     <div>
@@ -397,7 +386,6 @@ function BookPanel({ book, series, c, ko, me, canManage, nameOf, fail, onDeleted
         <p className="eyebrow">{ko ? '단원' : 'Units'}</p>
         <div className="flex gap-1.5">
           {units.length > 0 && <button onClick={() => setOpen(allOpen ? {} : Object.fromEntries(units.map(u => [u.id, true])))} className={btnS}>{allOpen ? (ko ? '모두 접기' : 'Collapse all') : (ko ? '모두 펼치기' : 'Expand all')}</button>}
-          {canManage && units.length > 0 && <button onClick={confirmAll} className={btnS}><Check size={11} />{ko ? '모두 확인' : 'Confirm all'}</button>}
           {canManage && <button onClick={() => setAddingUnit(a => !a)} className={btnS}><Plus size={11} />{ko ? '단원 추가' : 'Add a unit'}</button>}
         </div>
       </div>
@@ -425,14 +413,13 @@ function DraftBox({ book, label, strand, units, lastOrder, c, ko, fail, onSaved 
   const copy = async () => { try { await navigator.clipboard.writeText(prompt); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { showToast(ko ? '복사할 수 없습니다' : 'Could not copy') } }
   const read = () => { const p = parseCatalogueLines(text); if (!p.length) { showToast(ko ? '읽을 단원이 없습니다. 줄이 "Unit 1 ·"로 시작하는지 확인하세요.' : 'No units found. Unit lines start with "Unit 1 ·" and lesson lines with "-".'); return } setParsed(p) }
   const fresh = parsed ? unknownTags(parsed, known) : []
-  const nothingConfirmed = units.every(u => !u.confirmed_at) && !c.lessons.some(l => units.some(u => u.id === l.unit_id) && l.confirmed_at)
   const save = async (replace: boolean) => {
     if (!parsed) return
-    if (replace && !await confirmDialog({ title: ko ? '단원 바꾸기' : 'Replace the units', message: ko ? `기존 단원 ${units.length}개를 지우고 새로 넣습니다.` : `The ${units.length} units already here go and these ${parsed.length} take their place. Nothing in them was confirmed.`, confirmLabel: ko ? '바꾸기' : 'Replace' })) return
+    if (replace && !await confirmDialog({ title: ko ? '단원 바꾸기' : 'Replace the units', message: ko ? `기존 단원 ${units.length}개를 지우고 새로 넣습니다.` : `The ${units.length} units already here go and these ${parsed.length} take their place, with their lessons and objectives.`, confirmLabel: ko ? '바꾸기' : 'Replace' })) return
     setSaving(true)
     const e = await appendDraft(book.id, parsed, { replace, after: lastOrder, label, strand, known: c.skills })
     setSaving(false)
-    if (!fail(e)) { const n = parsed.reduce((a, u) => a + u.lessons.length, 0); showToast(ko ? `단원 ${parsed.length}개, 차시 ${n}개 추가됨` : `${parsed.length} units and ${n} lessons added as suggested`); setText(''); setParsed(null); onSaved() }
+    if (!fail(e)) { const n = parsed.reduce((a, u) => a + u.lessons.length, 0); showToast(ko ? `단원 ${parsed.length}개, 차시 ${n}개 추가됨` : `${parsed.length} units and ${n} lessons added`); setText(''); setParsed(null); onSaved() }
   }
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -449,7 +436,7 @@ function DraftBox({ book, label, strand, units, lastOrder, c, ko, fail, onSaved 
         <div className="flex gap-2 mt-2 flex-wrap">
           <button onClick={read} disabled={!text.trim()} className={btn}>{ko ? '줄 읽기' : 'Read the lines'}</button>
           {parsed && <button onClick={() => save(false)} disabled={saving} className={btnP}>{saving ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}{units.length ? (ko ? '뒤에 추가' : 'Add after the existing units') : (ko ? '제안으로 저장' : 'Save as suggested')}</button>}
-          {parsed && units.length > 0 && nothingConfirmed && <button onClick={() => save(true)} disabled={saving} className={btn}>{ko ? '기존 단원 바꾸기' : 'Replace the existing units'}</button>}
+          {parsed && units.length > 0 && <button onClick={() => save(true)} disabled={saving} className={btn}>{ko ? '기존 단원 바꾸기' : 'Replace the existing units'}</button>}
         </div>
         {parsed && (
           <div className="mt-3 text-[length:calc(12px*var(--ts))] text-ink-2">
@@ -508,8 +495,6 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
   const [editing, setEditing] = useState(false)
   const [addingLesson, setAddingLesson] = useState(false)
   const label = `${bookLabel} · ${unit.title}`
-  const confirmedLessons = lessons.filter(l => l.confirmed_at).length
-  const flip = async () => { if (!fail(await setConfirmed('curriculum_units', [unit.id], me, !unit.confirmed_at, label))) c.reload() }
   const remove = async () => {
     if (!await confirmDialog({ title: ko ? '단원 삭제' : 'Delete this unit', message: ko ? `${unit.title}과(와) 차시 ${lessons.length}개가 지워집니다.` : `${unit.title} and its ${lessons.length} lessons go.`, confirmLabel: ko ? '삭제' : 'Delete' })) return
     if (!fail(await deleteUnit(unit.id, label))) c.reload()
@@ -526,8 +511,7 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
             <>
               <div className="flex items-center gap-2 flex-wrap">
                 <button onClick={onToggle} className="text-[length:calc(13.5px*var(--ts))] font-semibold text-ink text-left">{unit.title}</button>
-                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{num(unit.default_weeks)} {ko ? '주' : unit.default_weeks === 1 ? 'week' : 'weeks'} · {lessons.length} {ko ? '차시' : lessons.length === 1 ? 'lesson' : 'lessons'}{lessons.length ? ` · ${confirmedLessons} ${ko ? '확인' : 'confirmed'}` : ''}</span>
-                <SourceChip confirmed_at={unit.confirmed_at} confirmed_by={unit.confirmed_by} source={unit.source} ko={ko} nameOf={nameOf} />
+                <span className="text-[length:calc(11.5px*var(--ts))] text-ink-3">{num(unit.default_weeks)} {ko ? '주' : unit.default_weeks === 1 ? 'week' : 'weeks'} · {lessons.length} {ko ? '차시' : lessons.length === 1 ? 'lesson' : 'lessons'}</span>
               </div>
               {unit.summary && <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5">{unit.summary}</p>}
               <div className="mt-1"><Tags tags={unit.skill_tags} codes={unit.ccss_codes} /></div>
@@ -538,7 +522,6 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
           <div className="flex gap-1 shrink-0">
             <button onClick={() => move(-1)} disabled={index === 0} className={btnS} aria-label="Move up"><ArrowUp size={11} /></button>
             <button onClick={() => move(1)} disabled={index === total - 1} className={btnS} aria-label="Move down"><ArrowDown size={11} /></button>
-            <button onClick={flip} className={`${btnS} ${unit.confirmed_at ? '' : 'text-good border-good'}`}><Check size={11} />{unit.confirmed_at ? (ko ? '확인 취소' : 'Unconfirm') : (ko ? '확인' : 'Confirm')}</button>
             <button onClick={() => setEditing(true)} className={btnS} aria-label="Edit"><Pencil size={11} /></button>
             <button onClick={remove} className={btnS} aria-label="Delete"><Trash2 size={11} /></button>
           </div>
@@ -554,7 +537,6 @@ function UnitCard({ unit, index, total, siblings, bookLabel, strand, c, ko, me, 
           {addingLesson && <LessonForm initial={null} ko={ko} onCancel={() => setAddingLesson(false)} onSave={async (d) => { const r = await saveLesson(null, unit.id, d, { after: lessons.reduce((m, l) => Math.max(m, l.sort_order), 0), label, strand, known: c.skills }); if (!fail(r.error)) { setAddingLesson(false); c.reload() } }} />}
           <div className="flex items-center gap-2 mt-2 flex-wrap">
             {canManage && <button onClick={() => setAddingLesson(a => !a)} className={btnS}><Plus size={11} />{ko ? '차시 추가' : 'Add a lesson'}</button>}
-            {canManage && lessons.some(l => !l.confirmed_at) && <button onClick={async () => { if (!fail(await setConfirmed('curriculum_lessons', lessons.filter(l => !l.confirmed_at).map(l => l.id), me, true, label))) c.reload() }} className={btnS}><Check size={11} />{ko ? '차시 모두 확인' : 'Confirm these lessons'}</button>}
           </div>
           <Resources target={{ unit_id: unit.id }} items={resources} label={label} c={c} ko={ko} me={me} fail={fail} unitFolder={unit.drive_folder_url} />
         </div>
@@ -630,7 +612,6 @@ function LessonRow({ lesson, index, total, siblings, unitLabel, strand, c, ko, m
   const [showRes, setShowRes] = useState(false)
   const resources = c.resources.filter(r => r.lesson_id === lesson.id)
   const label = `${unitLabel} · ${lesson.title}`
-  const flip = async () => { if (!fail(await setConfirmed('curriculum_lessons', [lesson.id], me, !lesson.confirmed_at, label))) c.reload() }
   const remove = async () => {
     if (!await confirmDialog({ title: ko ? '차시 삭제' : 'Delete this lesson', message: lesson.title, confirmLabel: ko ? '삭제' : 'Delete' })) return
     if (!fail(await deleteLesson(lesson.id, label))) c.reload()
@@ -644,9 +625,7 @@ function LessonRow({ lesson, index, total, siblings, unitLabel, strand, c, ko, m
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[length:calc(13px*var(--ts))] font-medium text-ink">{lesson.title}</span>
-            <SourceChip confirmed_at={lesson.confirmed_at} confirmed_by={lesson.confirmed_by} source={lesson.source} ko={ko} nameOf={nameOf} />
           </div>
-          {lesson.objective ? <p className="text-[length:calc(12.5px*var(--ts))] text-ink-2 mt-0.5">{lesson.objective}</p> : <p className="text-[length:calc(12px*var(--ts))] text-warn mt-0.5">{ko ? '학습 목표 없음' : 'No "students will" line yet.'}</p>}
           {lesson.notes && <p className="text-[length:calc(12px*var(--ts))] text-ink-3 mt-0.5">{lesson.notes}</p>}
           <div className="mt-1 flex items-center gap-2 flex-wrap">
             <Tags tags={lesson.skill_tags} codes={lesson.ccss_codes} />
@@ -658,7 +637,6 @@ function LessonRow({ lesson, index, total, siblings, unitLabel, strand, c, ko, m
           <div className="flex gap-1 shrink-0">
             <button onClick={() => move(-1)} disabled={index === 0} className={btnS} aria-label="Move up"><ArrowUp size={11} /></button>
             <button onClick={() => move(1)} disabled={index === total - 1} className={btnS} aria-label="Move down"><ArrowDown size={11} /></button>
-            <button onClick={flip} className={`${btnS} ${lesson.confirmed_at ? '' : 'text-good border-good'}`}><Check size={11} /></button>
             <button onClick={() => setEditing(true)} className={btnS} aria-label="Edit"><Pencil size={11} /></button>
             <button onClick={remove} className={btnS} aria-label="Delete"><Trash2 size={11} /></button>
           </div>

@@ -24,6 +24,11 @@ export interface WhatsNewEntry {
 
 export const WHATS_NEW: WhatsNewEntry[] = [
   {
+    id: 'class-plans-drag', date: '2026-11-30', title: 'Curriculum: drag a unit on your class plan',
+    body: 'You can now give a unit more or less time on Curriculum → Class plans: drag the right end of its bar and the units after it move along. It saves when you let go, and the Year plan changes with it, because they are the same plan. Click a unit to see its objectives, lessons and files. The Bookshelf no longer asks anyone to confirm anything.',
+    path: '/curriculum#plans', guide: 'bookshelf',
+  },
+  {
     id: 'spelling-setting', date: '2026-11-30', title: 'American or British spelling',
     body: 'You can now choose American or British spelling in Settings, under Display. It applies to the words the app supplies: report comment phrases, the objective chips in your lesson plans and the unit text from the books, so “practice” and “practise” no longer mix on one page. What you type yourself is never changed. The Spelling switch in the comment builder is the same setting.',
     path: '/settings', guide: 'bookshelf',

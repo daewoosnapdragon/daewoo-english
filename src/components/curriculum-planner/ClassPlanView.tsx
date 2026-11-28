@@ -1,37 +1,39 @@
 'use client'
 
 import Loading from '@/components/brand/Loading'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '@/lib/context'
 import { GRADES, PLACED_ENGLISH_CLASSES } from '@/types'
 import { getKSTDateString } from '@/lib/utils'
 import { loadAwayDays, type AwayDay } from '@/lib/calendarDays'
-import { unitLabels } from '@/lib/yearPlan'
+import { changedWeeks, moveBoundary, teachingAtColumnOpen, unitLabels } from '@/lib/yearPlan'
 import { STRANDS, bookName, bookTone, colorHex, splitUnitTitle } from '@/lib/curriculumCore'
-import { TERM_LABEL, academicYears, aimWeek, barsForView, halfOf, holidayWeeks, layoutPacing, masterRows, placementLength, teachingToColumns, termDates, termsFor, todayPosition, totalWeeks, viewWeeks, viewsFor, yearWeeks, type CurriculumPlacement, type View } from '@/lib/curriculumPacing'
+import { TERM_LABEL, academicYears, aimWeek, barsForView, halfOf, holidayWeeks, layoutPacing, masterRows, placementLength, teachingToColumns, termDates, todayPosition, totalWeeks, viewWeeks, viewsFor, yearWeeks, type CurriculumPlacement, type View } from '@/lib/curriculumPacing'
 import { unitBank } from '@/lib/planLinks'
+import { patchMasterRows } from '@/lib/curriculumPlacementsData'
 import { standardInfo, standardTitle } from '@/lib/standardText'
 import { usePlanner } from './usePlanner'
-import { CopyForm, PlaceForm, PlacementCard } from './PlacementsView'
-import { Check, Copy, ExternalLink, Loader2, Plus, X } from 'lucide-react'
+import { Check, ExternalLink, X } from 'lucide-react'
 
 // ─── Class plans ─────────────────────────────────────────────────
 // One class and grade: a lane per book, each unit a bar at its suggested
 // length, end to end from the start of the term. Holiday weeks from the
 // school calendar are hatched and skipped. A line marks today and a flag
 // each book's aim date. Click a unit for its lessons, objectives and files.
-// Read-only for teachers; admin edits the lists under the timeline.
+// Drag a unit's right end to make it longer or shorter; the units after it
+// move along. Teachers drag their own class, admin any class. The rows are the
+// same ones the Year plan draws, so it follows. Books are added on the Year
+// plan or Books by class. Design: docs/superpowers/specs/2026-11-28-curriculum-page-cleanup-design.md
 
 const sel = 'h-8 px-2 bg-surface border border-rule-2 rounded text-[length:calc(12.5px*var(--ts))] text-ink'
-const btnSBase = 'h-7 px-2 rounded border text-[length:calc(11.5px*var(--ts))] disabled:opacity-40 inline-flex items-center gap-1 whitespace-nowrap'
-const btnS = `${btnSBase} border-rule-2 text-ink-2 hover:text-ink`
-/** A small toggle that is on: ink fill with paper text (btnS's ink-2 text would win and hide the label). */
-const btnSOn = `${btnSBase} bg-ink text-paper border-ink`
 const num = (n: number) => Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 const fmtDay = (iso: string) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
 const LABEL_W = 190
 const COL_MIN = 34
 const GRADE_KEY = 'daewoo_plan_grade'
+
+/** A drag on a unit's right end: the book's lengths when it started, the unit, and where the pointer and that end were. */
+interface Drag { plId: string; k: number; w0: number[]; x0: number; col0: number; colW: number; name: string }
 
 /** The class, grade, year and view a link asks for: #plans?cls=Daisy&grade=2&year=2026&view=fall. */
 function readLink(): { cls?: string; grade?: number; year?: string; view?: string } {
@@ -43,11 +45,10 @@ function readLink(): { cls?: string; grade?: number; year?: string; view?: strin
 }
 
 export default function ClassPlanView() {
-  const { currentTeacher, language, semesters, activeSemester, showToast, confirmDialog, sp } = useApp()
+  const { currentTeacher, language, semesters, activeSemester, showToast, sp } = useApp()
   const ko = language === 'ko'
   const p = usePlanner()
   const canManage = currentTeacher?.role === 'admin' || !!currentTeacher?.is_head_teacher
-  const me = currentTeacher?.id || ''
   const today = getKSTDateString()
   const ownClass = currentTeacher && (PLACED_ENGLISH_CLASSES as string[]).includes(currentTeacher.english_class) ? currentTeacher.english_class : PLACED_ENGLISH_CLASSES[0]
   const years = useMemo(() => { const ys = academicYears(semesters); if (activeSemester && !ys.includes(activeSemester.academic_year)) ys.unshift(activeSemester.academic_year); return ys }, [semesters, activeSemester])
@@ -71,7 +72,6 @@ export default function ClassPlanView() {
   const theYear = year || activeSemester?.academic_year || years[0] || ''
   const yw = useMemo(() => yearWeeks(semesters, theYear), [semesters, theYear])
   const views = useMemo(() => viewsFor(yw), [yw])
-  const terms = useMemo(() => termsFor(yw), [yw])
   const view: View = viewPick && views.includes(viewPick) ? viewPick : views.includes(halfOf(semesters, theYear, today)) ? halfOf(semesters, theYear, today) : views[0]
   const weeks = useMemo(() => viewWeeks(yw, view), [yw, view])
   const N = weeks.length
@@ -98,21 +98,78 @@ export default function ClassPlanView() {
     .map(pl => { const book = p.books.find(b => b.id === pl.book_id); const series = book ? p.series.find(s => s.id === book.series_id) : undefined; return { pl, book, series } })
     .sort((a, b) => STRANDS.indexOf(a.series?.strand || 'other') - STRANDS.indexOf(b.series?.strand || 'other') || (a.series?.name || '').localeCompare(b.series?.name || '')),
   [p.placements, p.books, p.series, cls, grade, theYear])
+  // ─── Dragging a unit's end ───
+  const [drag, setDrag] = useState<Drag | null>(null)
+  const [draft, setDraftState] = useState<{ id: string; weeks: number[] } | null>(null)
+  const draftRef = useRef<{ id: string; weeks: number[] } | null>(null)
+  const setDraft = (d: { id: string; weeks: number[] } | null) => { draftRef.current = d; setDraftState(d) }
+  const [tip, setTip] = useState<{ x: number; y: number } | null>(null)
+  const [saving, setSaving] = useState(false)
+  const canDrag = canManage || currentTeacher?.english_class === cls
+  const sortedRows = (plId: string) => masterRows(p.pacing, plId).sort((a, b) => a.sort_order - b.sort_order)
+
   const lanes = useMemo(() => placements.map(({ pl, book, series }) => {
-    const rows = masterRows(p.pacing, pl.id)
+    const base = sortedRows(pl.id)
+    const rows = draft && draft.id === pl.id ? base.map((r, i) => ({ ...r, weeks: draft.weeks[i] ?? r.weeks })) : base
     const bars = teachingToColumns(barsForView(layoutPacing(rows, p.units), pl.term, view, yw, hol.hc), hol.cols, N)
     const length = placementLength(pl.term, yw, hol.hc)
     const total = totalWeeks(rows)
     const aimW = aimWeek(pl.aim_date, pl.term, yw, hol.sets)
     return { pl, book, series, color: colorHex(series?.color || 'slate'), tone: bookTone(series?.color), bars, rows, length, total, aimW, aimPos: pl.aim_date ? todayPosition(weeks, pl.aim_date) : null }
-  }), [placements, p.pacing, p.units, view, yw, hol, N, weeks])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [placements, p.pacing, p.units, view, yw, hol, N, weeks, draft])
   const done = useMemo(() => new Set(p.done.map(d => `${d.placement_id}|${d.unit_id}`)), [p.done])
   const todayPos = todayPosition(weeks, today)
   const [openBar, setOpenBar] = useState<{ placement: string; unit: string } | null>(null)
   useEffect(() => { setOpenBar(null) }, [cls, grade, theYear, view])
-  const [placing, setPlacing] = useState(false)
-  const [copying, setCopying] = useState(false)
   const fail = (e: string | null) => { if (e) showToast(e); return !!e }
+
+  const save = async (pl: CurriculumPlacement, next: number[]) => {
+    const patches = changedWeeks(sortedRows(pl.id), next)
+    if (!patches.length) { setDraft(null); return }
+    setSaving(true)
+    const err = await patchMasterRows(patches, `${labelOf(pl)} · ${pl.english_class} G${pl.grade} a unit's length changed on the class plan`)
+    if (!fail(err)) await p.reload()
+    setDraft(null)
+    setSaving(false)
+  }
+  /** Starts a drag on unit `k`'s right end. `col0` is that end in columns of the view. */
+  const startDrag = (e: React.PointerEvent, pl: CurriculumPlacement, k: number, col0: number, name: string) => {
+    if (!canDrag || saving) return
+    e.preventDefault(); e.stopPropagation()
+    const track = (e.currentTarget as HTMLElement).closest('[data-lanes]') as HTMLElement | null
+    if (!track) return
+    const colW = (track.getBoundingClientRect().width - LABEL_W) / Math.max(1, N)
+    setDrag({ plId: pl.id, k, w0: sortedRows(pl.id).map(r => Math.max(0.5, Number(r.weeks) || 0)), x0: e.clientX, col0, colW, name })
+    setTip({ x: e.clientX, y: e.clientY })
+  }
+  useEffect(() => {
+    if (!drag) return
+    const pl = p.placements.find(x => x.id === drag.plId)
+    const move = (e: PointerEvent) => {
+      // Measured from where the end was, in teaching weeks: holiday columns count for nothing.
+      const delta = teachingAtColumnOpen(drag.col0 + (e.clientX - drag.x0) / drag.colW, hol.cols, N) - teachingAtColumnOpen(drag.col0, hol.cols, N)
+      setDraft({ id: drag.plId, weeks: moveBoundary(drag.w0, drag.k, delta) })
+      setTip({ x: e.clientX, y: e.clientY })
+    }
+    const up = () => {
+      setDrag(null); setTip(null)
+      const d = draftRef.current
+      if (pl && d && d.id === pl.id) void save(pl, d.weeks)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    document.body.style.userSelect = 'none'
+    return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', up); document.body.style.userSelect = '' }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag])
+  /** The arrow keys on a unit's end: half a week longer or shorter. */
+  const nudge = (pl: CurriculumPlacement, k: number, by: number) => {
+    if (!canDrag || saving) return
+    const w = sortedRows(pl.id).map(r => Math.max(0.5, Number(r.weeks) || 0))
+    void save(pl, moveBoundary(w, k, by))
+  }
 
   if (p.loading) return <Loading rows={5} />
   if (p.missing) return <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '아직 준비되지 않았습니다.' : 'Class plans are not set up yet.'}</p>
@@ -146,7 +203,7 @@ export default function ClassPlanView() {
         <p className="text-[length:calc(13px*var(--ts))] text-ink-2">{ko ? `${cls} ${grade}학년의 ${theYear} 계획이 아직 없습니다.` : `No books in ${cls} Grade ${grade}'s plan for ${theYear} yet.`}</p>
       ) : (
         <div className="border border-rule rounded bg-surface overflow-x-auto">
-          <div className="relative" style={{ minWidth: LABEL_W + N * COL_MIN }}>
+          <div data-lanes className="relative" style={{ minWidth: LABEL_W + N * COL_MIN }}>
             {/* Week columns: holidays hatched */}
             {weeks.map((w, i) => hol.cols.has(w.n) && (
               <div key={'h' + w.n} title={hol.names.get(w.n)} className="absolute top-0 bottom-0" style={{ left: left(i), width: `calc((100% - ${LABEL_W}px) / ${N})`, backgroundImage: 'repeating-linear-gradient(135deg, rgb(var(--paper-3)) 0 6px, transparent 6px 10px)' }} />
@@ -186,14 +243,27 @@ export default function ClassPlanView() {
                         className="absolute top-3 h-[40px] rounded-sm px-1.5 text-[length:calc(11.5px*var(--ts))] leading-[40px] font-semibold overflow-hidden whitespace-nowrap"
                         style={{ ...place, color: l.tone.text, boxShadow: `inset 0 0 0 1px ${l.tone.edge}`, backgroundImage: `repeating-linear-gradient(135deg, ${l.tone.alt} 0 5px, ${l.tone.fill} 5px 10px)` }}>{ko ? '복습' : 'Review'}</div>
                     )
+                    const k = l.rows.findIndex(r => r.id === b.pacing.id)
+                    const grip = canDrag && !b.cutRight && k >= 0
                     return (
-                      <button key={b.pacing.id} onClick={() => setOpenBar(on ? null : { placement: l.pl.id, unit: b.unit.id })}
+                      <Fragment key={b.pacing.id}>
+                      <button onClick={() => setOpenBar(on ? null : { placement: l.pl.id, unit: b.unit.id })}
                         title={`${b.unit.title} · ${num(b.pacing.weeks)} wk${isDone ? ' · done' : ''}`}
                         className={`absolute top-3 h-[40px] rounded-sm px-1.5 text-left text-[length:calc(11.5px*var(--ts))] leading-tight overflow-hidden ${on ? 'ring-2 ring-ink ring-offset-1' : ''}`}
                         style={{ ...place, background: l.tone.fill, color: l.tone.text, boxShadow: `inset 0 0 0 1px ${l.tone.edge}`, opacity: isDone ? 0.5 : 1 }}>
                         <span className="block truncate font-semibold">{isDone && <Check size={10} className="inline mr-0.5 -mt-px" />}{name}</span>
                         {t.badge && <span className="block truncate opacity-80 text-[length:calc(11.5px*var(--ts))]">{t.badge}</span>}
                       </button>
+                      {grip && (
+                        <button aria-label={ko ? `${name} 길이 조절` : `Make ${name} longer or shorter`} title={ko ? '끌어서 길이 조절 (←/→ 키도 됨). 뒤 단원은 함께 이동' : 'Drag to make this unit longer or shorter (or use ← →); the units after it move along'}
+                          onPointerDown={e => startDrag(e, l.pl, k, b.viewEnd, name)}
+                          onKeyDown={e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); nudge(l.pl, k, e.key === 'ArrowRight' ? 0.5 : -0.5) } }}
+                          className="absolute top-3 h-[40px] w-[12px] -ml-[6px] z-[2] cursor-col-resize touch-none group flex justify-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent"
+                          style={{ left: left(b.viewEnd) }}>
+                          <span className={`w-[3px] my-1.5 rounded ${drag?.plId === l.pl.id && drag.k === k ? 'opacity-90' : 'opacity-0 group-hover:opacity-70 group-focus-visible:opacity-70'}`} style={{ background: l.tone.text }} />
+                        </button>
+                      )}
+                      </Fragment>
                     )
                   })}
                   {l.aimPos !== null && (
@@ -206,11 +276,18 @@ export default function ClassPlanView() {
           </div>
         </div>
       )}
+      {lanes.length > 0 && N > 0 && canDrag && <p className="-mt-2 text-[length:calc(12px*var(--ts))] text-ink-3">{ko ? '단원을 눌러 자세히 보고, 오른쪽 끝을 끌어 길이를 바꾸세요. 연간 계획에도 바로 반영됩니다.' : 'Click a unit to see it. Drag its right end to make it longer or shorter; the Year plan changes with it.'}{saving ? (ko ? ' · 저장 중…' : ' · Saving…') : ''}</p>}
+      {drag && tip && draft && (
+        <div className="fixed z-50 pointer-events-none rounded bg-ink text-paper px-2 py-1 text-[length:calc(12px*var(--ts))] shadow" style={{ left: tip.x + 14, top: tip.y + 14 }}>
+          {drag.name}: {num(draft.weeks[drag.k])} {ko ? '주' : 'wk'}{draft.weeks[drag.k] !== drag.w0[drag.k] ? ` (${draft.weeks[drag.k] > drag.w0[drag.k] ? '+' : ''}${num(draft.weeks[drag.k] - drag.w0[drag.k])})` : ''}
+        </div>
+      )}
 
       {opened && openedUnit && (() => {
         const t = splitUnitTitle(openedUnit.title)
         const lessons = p.lessons.filter(x => x.unit_id === openedUnit.id).sort((a, b) => a.sort_order - b.sort_order)
-        const bank = unitBank(p.objectives.filter(o => o.unit_id === openedUnit.id), lessons)
+        // The unit's objective bank only: never lessons' objectives, which for some books came from teachers' plans.
+        const bank = unitBank(p.objectives.filter(o => o.unit_id === openedUnit.id), [])
         const ids = new Set(lessons.map(x => x.id))
         const files = p.resources.filter(r => (r.unit_id === openedUnit.id || (r.lesson_id && ids.has(r.lesson_id))) && !!r.url)
         const row = opened.rows.find(r => r.unit_id === openedUnit.id)
@@ -228,12 +305,12 @@ export default function ClassPlanView() {
             </div>
             {openedUnit.summary && <p className="mt-2 text-[length:calc(12.5px*var(--ts))] text-ink-2 leading-snug whitespace-pre-line">{sp(openedUnit.summary)}</p>}
             <div className="mt-3 grid gap-4 md:grid-cols-2">
-              {bank.length > 0 && (
-                <div>
-                  <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
-                  <ul className="space-y-1">{bank.map(o => <li key={o.text} className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {sp(o.text)}</li>)}</ul>
-                </div>
-              )}
+              <div>
+                <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '학습 목표' : 'Objectives'}</p>
+                {bank.length > 0
+                  ? <ul className="space-y-1">{bank.map(o => <li key={o.text} className="text-[length:calc(12.5px*var(--ts))] text-ink-2"><span className="italic text-ink-3">Students will</span> {sp(o.text)}</li>)}</ul>
+                  : <p className="text-[length:calc(12.5px*var(--ts))] text-ink-3">{ko ? '이 단원의 학습 목표는 아직 없습니다.' : 'Objectives for this unit are not written yet.'}</p>}
+              </div>
               {lessons.length > 0 && (
                 <div>
                   <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mb-1">{ko ? '차시' : 'Lessons'}</p>
@@ -250,19 +327,6 @@ export default function ClassPlanView() {
           </section>
         )
       })()}
-
-      {canManage && N > 0 && (
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-[length:calc(12px*var(--ts))] font-semibold text-ink-2 mr-2">{ko ? `${cls} ${grade}학년 계획 편집` : `Edit ${cls} Grade ${grade}'s plan`}</p>
-            <button onClick={() => { setPlacing(v => !v); setCopying(false) }} className={placing ? btnSOn : btnS}><Plus size={11} />{ko ? '교재 추가' : 'Add a book'}</button>
-            <button onClick={() => { setCopying(v => !v); setPlacing(false) }} className={copying ? btnSOn : btnS}><Copy size={11} />{ko ? '다른 학년에서 복사' : 'Copy another grade’s books'}</button>
-          </div>
-          {placing && <div className="border border-rule-2 rounded bg-paper-2 p-3"><PlaceForm terms={terms} p={p} ko={ko} me={me} cls={cls} grade={grade} year={theYear} existing={placements.map(x => x.pl)} fail={fail} onDone={() => { setPlacing(false); p.reload() }} /></div>}
-          {copying && <div className="border border-rule-2 rounded bg-paper-2 p-3"><CopyForm p={p} ko={ko} me={me} years={years} to={{ english_class: cls, grade, academic_year: theYear }} fail={fail} onDone={() => { setCopying(false); p.reload() }} /></div>}
-          {placements.map(({ pl }) => <PlacementCard key={pl.id} terms={terms} hc={hol.hc} pl={pl} p={p} ko={ko} label={labelOf(pl)} yw={yw} fail={fail} confirmDialog={confirmDialog} onRemoved={() => setOpenBar(null)} />)}
-        </section>
-      )}
     </div>
   )
 }

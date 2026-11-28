@@ -12,7 +12,7 @@ import YearPlanView from './YearPlanView'
 
 // ─── Curriculum ──────────────────────────────────────────────────
 // Class plans: one class and grade's books as a timeline, units at their
-// suggested lengths (admin edits the lists under it). All classes this
+// suggested lengths; drag a unit's end to change it. All classes this
 // week: every class's units this week and what they share. Books by class:
 // the grid of every class plan, for admin. Year plan: one class's books
 // for the year on a board with a timeline you drag (the planning meeting).
